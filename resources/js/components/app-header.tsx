@@ -8,9 +8,16 @@ import {
     Swords,
     Trophy,
 } from 'lucide-react';
+import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,16 +31,10 @@ import {
     NavigationMenuList,
     navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
+import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as challengesIndex } from '@/routes/challenges';
@@ -77,9 +78,14 @@ const mainNavItems: NavItem[] = [
 const activeItemStyles = 'bg-accent text-accent-foreground';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
-    const { auth } = usePage<{ auth: Auth }>().props;
+    const page = usePage<{ auth: Auth }>();
+    const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const resolvedBreadcrumbs = withHomeBreadcrumb(
+        breadcrumbs.length > 0 ? breadcrumbs : buildBreadcrumbsFromUrl(page.url),
+    );
 
     return (
         <>
@@ -87,26 +93,26 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
                     {/* Mobile Menu */}
                     <div className="lg:hidden">
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="mr-2 size-8.5"
-                                >
-                                    <Menu className="size-5" />
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent
-                                side="left"
-                                className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
-                            >
-                                <SheetTitle className="sr-only">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="mr-2 size-8.5"
+                            onClick={() => setIsMobileMenuOpen(true)}
+                        >
+                            <Menu className="size-5" />
+                        </Button>
+
+                        <AlertDialog
+                            open={isMobileMenuOpen}
+                            onOpenChange={setIsMobileMenuOpen}
+                        >
+                            <AlertDialogContent className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar sm:max-w-64">
+                                <AlertDialogTitle className="sr-only">
                                     Navigation menu
-                                </SheetTitle>
-                                <SheetHeader className="flex justify-start text-left">
+                                </AlertDialogTitle>
+                                <AlertDialogHeader className="flex justify-start text-left">
                                     <AppLogoIcon className="size-6 fill-current text-black dark:text-white" />
-                                </SheetHeader>
+                                </AlertDialogHeader>
                                 <div className="flex h-full flex-1 flex-col gap-4 p-4">
                                     <div className="flex h-full flex-col text-sm">
                                         <div className="flex flex-col gap-4">
@@ -115,6 +121,11 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     key={item.title}
                                                     href={item.href}
                                                     className="flex items-center gap-2 font-medium"
+                                                    onClick={() =>
+                                                        setIsMobileMenuOpen(
+                                                            false,
+                                                        )
+                                                    }
                                                 >
                                                     {item.icon && (
                                                         <item.icon className="size-5" />
@@ -125,8 +136,8 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         </div>
                                     </div>
                                 </div>
-                            </SheetContent>
-                        </Sheet>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
 
                     <Link
@@ -207,10 +218,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
                 </div>
             </div>
-            {breadcrumbs.length > 1 && (
+            {resolvedBreadcrumbs.length > 1 && (
                 <div className="flex w-full border-b border-sidebar-border/70">
                     <div className="text-muted-foreground mx-auto flex h-12 w-full items-center justify-start px-4 text-sm md:max-w-7xl">
-                        <Breadcrumbs breadcrumbs={breadcrumbs} />
+                        <Breadcrumbs breadcrumbs={resolvedBreadcrumbs} />
                     </div>
                 </div>
             )}

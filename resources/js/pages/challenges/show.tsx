@@ -26,6 +26,7 @@ import {
     quickSubmit,
     show as challengeShow,
 } from '@/routes/challenges';
+import { dashboard } from '@/routes';
 
 type ChallengeOption = {
     label: string;
@@ -442,6 +443,10 @@ export default function ChallengesShow({
 
 ChallengesShow.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Challenges',
             href: challengesIndex(),

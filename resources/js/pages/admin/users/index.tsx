@@ -32,14 +32,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetFooter,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
 import { useInitials } from '@/hooks/use-initials';
 import { destroy, index as usersIndex, update } from '@/routes/admin/users';
 
@@ -359,14 +351,14 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                     footerInfo={`Showing ${users.from ?? 0} - ${users.to ?? 0} of ${users.total} users.`}
                 />
 
-                <Sheet open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
-                    <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-                        <SheetHeader>
-                            <SheetTitle>Edit User Access</SheetTitle>
-                            <SheetDescription>
+                <AlertDialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
+                    <AlertDialogContent className="w-full overflow-y-auto sm:max-w-xl">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Edit User Access</AlertDialogTitle>
+                            <AlertDialogDescription>
                                 Update access for {editingUser?.username ? `@${editingUser.username}` : editingUser?.name ?? 'this user'}.
-                            </SheetDescription>
-                        </SheetHeader>
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
 
                         <div className="flex flex-col gap-3 px-4">
                             <div className="flex flex-col gap-1.5">
@@ -412,16 +404,16 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                             </div>
                         </div>
 
-                        <SheetFooter className="mt-4 sm:flex-row sm:justify-end">
-                            <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
+                        <AlertDialogFooter className="mt-4 sm:flex-row sm:justify-end">
+                            <AlertDialogCancel onClick={() => setEditingUser(null)}>
                                 Cancel
-                            </Button>
+                            </AlertDialogCancel>
                             <Button type="button" onClick={submitEdit} disabled={isSubmittingEdit}>
                                 {isSubmittingEdit ? 'Saving...' : 'Save changes'}
                             </Button>
-                        </SheetFooter>
-                    </SheetContent>
-                </Sheet>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
 
                 <AlertDialog open={Boolean(deletingUser)} onOpenChange={(open) => !open && setDeletingUser(null)}>
                     <AlertDialogContent>

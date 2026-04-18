@@ -5,15 +5,16 @@ import {
     update as coursesUpdate,
 } from '@/actions/App/Http/Controllers/Admin/CourseManagementController';
 import type { CourseFormData, CourseRow } from '@/components/course-types';
-import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -86,18 +87,25 @@ export function CourseFormDialog({
     const isCreate = mode === 'create';
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-            <DialogContent className="w-full overflow-y-auto sm:max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>
+        <AlertDialog
+            open={open}
+            onOpenChange={(isOpen) => {
+                if (!isOpen) {
+                    handleClose();
+                }
+            }}
+        >
+            <AlertDialogContent className="w-full overflow-y-auto sm:max-w-xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
                         {isCreate ? 'Create Course' : 'Edit Course'}
-                    </DialogTitle>
-                    <DialogDescription>
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
                         {isCreate
                             ? 'Fill the initial information to create a new course.'
                             : 'Update title and description for this course.'}
-                    </DialogDescription>
-                </DialogHeader>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
 
                 <div className="flex flex-col gap-4 px-4">
                     <div className="flex flex-col gap-2">
@@ -186,7 +194,10 @@ export function CourseFormDialog({
                     ) : null}
                 </div>
 
-                <DialogFooter className="mt-4 sm:flex-row sm:justify-end">
+                <AlertDialogFooter className="mt-4 sm:flex-row sm:justify-end">
+                    <AlertDialogCancel onClick={handleClose}>
+                        Cancel
+                    </AlertDialogCancel>
                     <Button
                         type="button"
                         disabled={form.processing}
@@ -194,8 +205,8 @@ export function CourseFormDialog({
                     >
                         {isCreate ? 'Create' : 'Update'}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }

@@ -1,4 +1,5 @@
 import CoursesIndex from '@/pages/courses/index';
+import { dashboard } from '@/routes';
 import { index as labsIndex } from '@/routes/labs';
 
 export default function LabsIndex() {
@@ -16,6 +17,10 @@ export default function LabsIndex() {
 
 LabsIndex.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Labs',
             href: labsIndex(),

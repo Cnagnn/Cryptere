@@ -4,11 +4,17 @@ import { useEffect, useMemo, useState } from 'react';
 import {
     destroyLesson,
     destroyTask,
+    updateTask,
     updateLesson,
 } from '@/actions/App/Http/Controllers/Admin/CourseManagementController';
 import { QuizPanel } from '@/components/course-quiz-panel';
+import { QuizQuestionsEditor } from '@/components/course-quiz-questions-editor';
 import { TaskFormSheet } from '@/components/course-task-form-sheet';
-import type { ComboboxOption, TaskRow } from '@/components/course-types';
+import type {
+    ComboboxOption,
+    QuizQuestionForm,
+    TaskRow,
+} from '@/components/course-types';
 import { VideoPlayer } from '@/components/course-video-player';
 import {
     Accordion,
@@ -33,18 +39,9 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import {
     Empty,
     EmptyDescription,
@@ -242,7 +239,11 @@ export default function CourseShow({
     const [isEnrolling, setIsEnrolling] = useState(false);
     const [isCompletingLesson, setIsCompletingLesson] = useState(false);
     const [isPublishingTask, setIsPublishingTask] = useState(false);
+    const [isSavingQuizQuestions, setIsSavingQuizQuestions] = useState(false);
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+    const [createTaskLessonId, setCreateTaskLessonId] = useState<number | null>(
+        null,
+    );
     const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
     const [deletingTask, setDeletingTask] = useState<TaskRow | null>(null);
     const [editingTopic, setEditingTopic] = useState<MockLesson | null>(null);
@@ -263,6 +264,9 @@ export default function CourseShow({
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(
         mappedInitialLessons[0]?.tasks[0]?.id ?? null,
     );
+    const [quizQuestionsDraft, setQuizQuestionsDraft] = useState<
+        QuizQuestionForm[]
+    >([]);
 
     const [notice, setNotice] = useState<string | null>(null);
     const topics = useMemo(() => mapLessonsToTopics(lessons), [lessons]);
@@ -314,6 +318,31 @@ export default function CourseShow({
             ) ?? null,
         [resolvedSelectedTaskId, selectedLesson],
     );
+
+    const selectedTaskQuizQuestions = useMemo<QuizQuestionForm[]>(() => {
+        if (!selectedTask || selectedTask.type !== 'quiz') {
+            return [];
+        }
+
+        return selectedTask.quizQuestions.map((question) => ({
+            question: question.question,
+            options: question.options,
+            correct_option:
+                question.correctIndex >= 0 ? question.correctIndex : 0,
+            explanation: question.explanation,
+        }));
+    }, [selectedTask]);
+
+    useEffect(() => {
+        setQuizQuestionsDraft(selectedTaskQuizQuestions);
+    }, [selectedTaskQuizQuestions]);
+
+    const hasQuizDraftChanges = useMemo(() => {
+        return (
+            JSON.stringify(quizQuestionsDraft) !==
+            JSON.stringify(selectedTaskQuizQuestions)
+        );
+    }, [quizQuestionsDraft, selectedTaskQuizQuestions]);
 
     const lessonOptions = useMemo<ComboboxOption[]>(() => {
         return lessons.map((lesson) => ({
@@ -407,22 +436,6 @@ export default function CourseShow({
         };
     }, [notice]);
 
-    useEffect(() => {
-        if (role !== 'admin') {
-            return;
-        }
-
-        const handleCreateTopic = () => {
-            setIsCreateTopicOpen(true);
-        };
-
-        window.addEventListener('course-topic:create', handleCreateTopic);
-
-        return () => {
-            window.removeEventListener('course-topic:create', handleCreateTopic);
-        };
-    }, [role]);
-
     return (
         <>
             <Head title={`${course.title} - Course Detail`} />
@@ -434,17 +447,30 @@ export default function CourseShow({
                     </Alert>
                 ) : null}
 
+                <section className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                        <h1 className="text-2xl font-semibold tracking-tight">
+                            {course.title}
+                        </h1>
+                        <p className="max-w-3xl text-sm text-muted-foreground">
+                            {course.summary}
+                        </p>
+                    </div>
+                    {role === 'admin' ? (
+                        <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setIsCreateTopicOpen(true)}
+                        >
+                            <Plus data-icon="inline-start" />
+                            Create Topic
+                        </Button>
+                    ) : null}
+                </section>
+
                 <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
                     <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:h-fit">
                         <Card className="gap-0">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base">
-                                    {course.title}
-                                </CardTitle>
-                                <CardDescription>
-                                    {course.summary}
-                                </CardDescription>
-                            </CardHeader>
                             <CardContent className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-1.5">
                                     <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -501,7 +527,7 @@ export default function CourseShow({
                                                     </EmptyTitle>
                                                     <EmptyDescription>
                                                         Click Create Topic in
-                                                        the header.
+                                                        the page title row.
                                                     </EmptyDescription>
                                                 </EmptyHeader>
                                             </Empty>
@@ -640,6 +666,9 @@ export default function CourseShow({
                                                                     className="justify-start gap-2"
                                                                     onClick={() => {
                                                                         setSelectedLessonId(
+                                                                            topic.id,
+                                                                        );
+                                                                        setCreateTaskLessonId(
                                                                             topic.id,
                                                                         );
                                                                         setIsCreateTaskOpen(
@@ -937,6 +966,70 @@ export default function CourseShow({
                                             </EmptyHeader>
                                         </Empty>
                                     )
+                                ) : role === 'admin' ? (
+                                    <div className="flex flex-col gap-3">
+                                        <QuizQuestionsEditor
+                                            prefix={`main-${selectedTask.id}`}
+                                            questions={quizQuestionsDraft}
+                                            onChange={setQuizQuestionsDraft}
+                                        />
+
+                                        <div className="flex justify-end">
+                                            <Button
+                                                type="button"
+                                                disabled={
+                                                    isSavingQuizQuestions ||
+                                                    !hasQuizDraftChanges
+                                                }
+                                                onClick={() => {
+                                                    if (
+                                                        !selectedTask ||
+                                                        !selectedLesson
+                                                    ) {
+                                                        return;
+                                                    }
+
+                                                    setIsSavingQuizQuestions(
+                                                        true,
+                                                    );
+
+                                                    router.patch(
+                                                        updateTask.url({
+                                                            task: selectedTask.id,
+                                                        }),
+                                                        {
+                                                            lesson_id:
+                                                                selectedLesson.id,
+                                                            title: selectedTask.title,
+                                                            type: 'quiz',
+                                                            minutes:
+                                                                selectedTask.minutes,
+                                                            video_url: '',
+                                                            quiz_questions:
+                                                                quizQuestionsDraft,
+                                                        },
+                                                        {
+                                                            preserveScroll: true,
+                                                            onSuccess: () => {
+                                                                setNotice(
+                                                                    'Quiz questions updated successfully.',
+                                                                );
+                                                            },
+                                                            onFinish: () => {
+                                                                setIsSavingQuizQuestions(
+                                                                    false,
+                                                                );
+                                                            },
+                                                        },
+                                                    );
+                                                }}
+                                            >
+                                                {isSavingQuizQuestions
+                                                    ? 'Saving...'
+                                                    : 'Save Quiz Questions'}
+                                            </Button>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <QuizPanel
                                         key={`${selectedTask.id}-${selectedTask.quizQuestions.length}`}
@@ -1024,7 +1117,7 @@ export default function CourseShow({
             </div>
 
             {role === 'admin' ? (
-                <Dialog
+                <AlertDialog
                     open={isCreateTopicOpen}
                     onOpenChange={(open) => {
                         setIsCreateTopicOpen(open);
@@ -1034,13 +1127,13 @@ export default function CourseShow({
                         }
                     }}
                 >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Create Topic</DialogTitle>
-                            <DialogDescription>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Create Topic</AlertDialogTitle>
+                            <AlertDialogDescription>
                                 Create a new lesson topic for this course.
-                            </DialogDescription>
-                        </DialogHeader>
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
 
                         <div className="grid gap-2">
                             <Label htmlFor="topic-title">Title</Label>
@@ -1054,17 +1147,15 @@ export default function CourseShow({
                             />
                         </div>
 
-                        <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
+                        <AlertDialogFooter>
+                            <AlertDialogCancel
                                 onClick={() => {
                                     setIsCreateTopicOpen(false);
                                     setTopicTitle('');
                                 }}
                             >
                                 Cancel
-                            </Button>
+                            </AlertDialogCancel>
                             <Button
                                 type="button"
                                 disabled={
@@ -1101,18 +1192,28 @@ export default function CourseShow({
                                     ? 'Creating...'
                                     : 'Create Topic'}
                             </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             ) : null}
 
             {role === 'admin' ? (
                 <TaskFormSheet
                     mode="create"
                     open={isCreateTaskOpen}
-                    onOpenChange={setIsCreateTaskOpen}
+                    onOpenChange={(open) => {
+                        setIsCreateTaskOpen(open);
+
+                        if (!open) {
+                            setCreateTaskLessonId(null);
+                        }
+                    }}
                     lessonOptions={lessonOptions}
-                    selectedLessonId={selectedLesson?.id ?? 0}
+                    selectedLessonId={
+                        createTaskLessonId ?? selectedLesson?.id ?? 0
+                    }
+                    showLessonFieldOnCreate={false}
+                    showQuizQuestionsEditor={false}
                 />
             ) : null}
 
@@ -1127,12 +1228,13 @@ export default function CourseShow({
                     }}
                     lessonOptions={lessonOptions}
                     selectedLessonId={selectedLesson?.id ?? 0}
+                    showQuizQuestionsEditor={false}
                     task={editingTask}
                 />
             ) : null}
 
             {role === 'admin' ? (
-                <Dialog
+                <AlertDialog
                     open={editingTopic !== null}
                     onOpenChange={(open) => {
                         if (!open) {
@@ -1141,13 +1243,13 @@ export default function CourseShow({
                         }
                     }}
                 >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Edit Topic</DialogTitle>
-                            <DialogDescription>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Edit Topic</AlertDialogTitle>
+                            <AlertDialogDescription>
                                 Update topic title for this course.
-                            </DialogDescription>
-                        </DialogHeader>
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
 
                         <div className="grid gap-2">
                             <Label htmlFor="edit-topic-title">Title</Label>
@@ -1161,17 +1263,15 @@ export default function CourseShow({
                             />
                         </div>
 
-                        <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
+                        <AlertDialogFooter>
+                            <AlertDialogCancel
                                 onClick={() => {
                                     setEditingTopic(null);
                                     setTopicEditTitle('');
                                 }}
                             >
                                 Cancel
-                            </Button>
+                            </AlertDialogCancel>
                             <Button
                                 type="button"
                                 disabled={
@@ -1214,9 +1314,9 @@ export default function CourseShow({
                                     ? 'Updating...'
                                     : 'Update Topic'}
                             </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             ) : null}
 
             {role === 'admin' ? (

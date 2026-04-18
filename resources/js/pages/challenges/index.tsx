@@ -1,4 +1,5 @@
 import CoursesIndex from '@/pages/courses/index';
+import { dashboard } from '@/routes';
 import { index as challengesIndex } from '@/routes/challenges';
 
 type ChallengeItem = {
@@ -51,6 +52,10 @@ export default function ChallengesIndex({ challenges }: Props) {
 
 ChallengesIndex.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Challenges',
             href: challengesIndex(),

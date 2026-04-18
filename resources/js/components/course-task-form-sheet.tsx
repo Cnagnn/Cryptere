@@ -13,15 +13,16 @@ import type {
     TaskRow,
     TaskType,
 } from '@/components/course-types';
-import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -37,6 +38,8 @@ interface TaskFormSheetProps {
     onOpenChange: (open: boolean) => void;
     lessonOptions: ComboboxOption[];
     selectedLessonId: number;
+    showLessonFieldOnCreate?: boolean;
+    showQuizQuestionsEditor?: boolean;
     /** Edit mode only */
     task?: TaskRow | null;
 }
@@ -47,13 +50,17 @@ export function TaskFormSheet({
     onOpenChange,
     lessonOptions,
     selectedLessonId,
+    showLessonFieldOnCreate = true,
+    showQuizQuestionsEditor = true,
     task,
 }: TaskFormSheetProps) {
+    const fallbackLessonId = Number(lessonOptions[0]?.value ?? 0);
+
     const form = useForm<TaskFormData>({
         lesson_id:
             selectedLessonId > 0
                 ? selectedLessonId
-                : Number(lessonOptions[0]?.value ?? 0),
+                : fallbackLessonId,
         title: '',
         type: 'video',
         minutes: 10,
@@ -84,7 +91,7 @@ export function TaskFormSheet({
                 lesson_id:
                     selectedLessonId > 0
                         ? selectedLessonId
-                        : Number(lessonOptions[0]?.value ?? 0),
+                        : fallbackLessonId,
                 title: '',
                 type: 'video',
                 minutes: 10,
@@ -95,7 +102,7 @@ export function TaskFormSheet({
             form.clearErrors();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open]);
+    }, [fallbackLessonId, mode, open, selectedLessonId, task]);
 
     const handleClose = () => {
         form.reset();
@@ -143,7 +150,7 @@ export function TaskFormSheet({
     const isCreate = mode === 'create';
 
     return (
-        <Dialog
+        <AlertDialog
             open={open}
             onOpenChange={(isOpen) => {
                 if (!isOpen) {
@@ -151,20 +158,20 @@ export function TaskFormSheet({
                 }
             }}
         >
-            <DialogContent className="max-h-[85vh] w-full overflow-y-auto sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>
+            <AlertDialogContent className="max-h-[85vh] w-full overflow-y-auto sm:max-w-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
                         {isCreate ? 'Create Task' : 'Edit Task'}
-                    </DialogTitle>
-                    <DialogDescription>
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
                         {isCreate
-                            ? 'Create a new task in selected lesson.'
+                            ? 'Create a new task in selected topic.'
                             : 'Update selected task details.'}
-                    </DialogDescription>
-                </DialogHeader>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
 
                 <div className="flex flex-col gap-3 px-4">
-                    {isCreate ? (
+                    {isCreate && showLessonFieldOnCreate ? (
                         <div className="flex flex-col gap-2">
                             <Label>Lesson</Label>
                             <SearchableCombobox
@@ -215,23 +222,6 @@ export function TaskFormSheet({
                         />
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor={`${mode}-task-minutes`}>Minutes</Label>
-                        <Input
-                            id={`${mode}-task-minutes`}
-                            type="number"
-                            min={1}
-                            max={240}
-                            value={form.data.minutes}
-                            onChange={(e) =>
-                                form.setData(
-                                    'minutes',
-                                    Number(e.target.value) || 1,
-                                )
-                            }
-                        />
-                    </div>
-
                     {form.data.type === 'video' ? (
                         <div className="flex flex-col gap-2">
                             <Label htmlFor={`${mode}-task-video-url`}>
@@ -271,7 +261,7 @@ export function TaskFormSheet({
                         </div>
                     ) : null}
 
-                    {form.data.type === 'quiz' ? (
+                    {form.data.type === 'quiz' && showQuizQuestionsEditor ? (
                         <QuizQuestionsEditor
                             prefix={mode}
                             questions={form.data.quiz_questions}
@@ -282,7 +272,10 @@ export function TaskFormSheet({
                     ) : null}
                 </div>
 
-                <DialogFooter className="mt-4 sm:flex-row sm:justify-end">
+                <AlertDialogFooter className="mt-4 sm:flex-row sm:justify-end">
+                    <AlertDialogCancel onClick={handleClose}>
+                        Cancel
+                    </AlertDialogCancel>
                     <Button
                         type="button"
                         disabled={form.processing || (mode === 'edit' && !task)}
@@ -290,8 +283,8 @@ export function TaskFormSheet({
                     >
                         {isCreate ? 'Create' : 'Update'}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { dashboard } from '@/routes';
 import { index as labsIndex, show as labsShow } from '@/routes/labs';
 
 type Lab = {
@@ -1291,6 +1292,10 @@ export default function LabsShow({ lab }: Props) {
 
 LabsShow.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Labs',
             href: labsIndex(),

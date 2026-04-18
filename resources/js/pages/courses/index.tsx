@@ -9,6 +9,13 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { CourseFormDialog } from '@/components/course-form-dialog';
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,18 +45,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { show as showChallenge } from '@/routes/challenges';
+import { dashboard } from '@/routes';
 import {
     enroll,
     index as coursesIndex,
@@ -532,6 +532,7 @@ export default function CoursesIndex({
     const isChallengesCatalog = catalogMode === 'challenges';
     const isAdmin = auth.user.is_admin;
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [enrollmentFilter, setEnrollmentFilter] =
@@ -772,90 +773,100 @@ export default function CoursesIndex({
 
                         <div className="lg:hidden">
                             {sidebarMode === 'filters' ? (
-                                <Sheet>
-                                    <SheetTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                        >
-                                            <Filter className="size-4" />
-                                            Filters
-                                            {activeFilterCount > 0 ? (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="ml-1"
-                                                >
-                                                    {activeFilterCount}
-                                                </Badge>
-                                            ) : null}
-                                        </Button>
-                                    </SheetTrigger>
-                                    <SheetContent
-                                        side="left"
-                                        className="w-full sm:max-w-sm"
+                                <>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            setIsMobileFiltersOpen(true)
+                                        }
                                     >
-                                        <SheetHeader className="px-4">
-                                            <SheetTitle className="text-base">
-                                                Sort and filter
-                                            </SheetTitle>
-                                            <SheetDescription>
-                                                {isLabsCatalog
-                                                    ? 'Refine labs by keyword, group, and sort mode.'
-                                                    : isChallengesCatalog
-                                                      ? 'Refine challenge cards by keyword and availability.'
-                                                      : 'Refine your catalog before you enroll or continue.'}
-                                            </SheetDescription>
-                                        </SheetHeader>
-                                        <div className="px-4 pb-6">
-                                            <CatalogFilters
-                                                idPrefix="mobile"
-                                                searchTerm={searchTerm}
-                                                onSearchTermChange={(value) => {
-                                                    setSearchTerm(value);
-                                                    setCurrentPage(1);
-                                                }}
-                                                isLabsCatalog={isLabsCatalog}
-                                                isChallengesCatalog={
-                                                    isChallengesCatalog
-                                                }
-                                                enrollmentFilter={
-                                                    enrollmentFilter
-                                                }
-                                                onEnrollmentFilterChange={(
-                                                    value,
-                                                ) => {
-                                                    setEnrollmentFilter(value);
-                                                    setCurrentPage(1);
-                                                }}
-                                                labsGroupFilter={
-                                                    labsGroupFilter
-                                                }
-                                                onLabsGroupFilterChange={(
-                                                    value,
-                                                ) => {
-                                                    setLabsGroupFilter(value);
-                                                    setCurrentPage(1);
-                                                }}
-                                                sortBy={sortBy}
-                                                onSortByChange={(value) => {
-                                                    setSortBy(value);
-                                                    setCurrentPage(1);
-                                                }}
-                                                hasActiveFilters={
-                                                    hasActiveFilters
-                                                }
-                                                clearFilters={clearFilters}
-                                                totalCourses={
-                                                    catalogCourses.length
-                                                }
-                                                enrolledCourses={
-                                                    enrollmentSummary
-                                                }
-                                            />
-                                        </div>
-                                    </SheetContent>
-                                </Sheet>
+                                        <Filter className="size-4" />
+                                        Filters
+                                        {activeFilterCount > 0 ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="ml-1"
+                                            >
+                                                {activeFilterCount}
+                                            </Badge>
+                                        ) : null}
+                                    </Button>
+
+                                    <AlertDialog
+                                        open={isMobileFiltersOpen}
+                                        onOpenChange={setIsMobileFiltersOpen}
+                                    >
+                                        <AlertDialogContent className="w-full sm:max-w-sm">
+                                            <AlertDialogHeader className="px-4">
+                                                <AlertDialogTitle className="text-base">
+                                                    Sort and filter
+                                                </AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    {isLabsCatalog
+                                                        ? 'Refine labs by keyword, group, and sort mode.'
+                                                        : isChallengesCatalog
+                                                          ? 'Refine challenge cards by keyword and availability.'
+                                                          : 'Refine your catalog before you enroll or continue.'}
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <div className="px-4 pb-6">
+                                                <CatalogFilters
+                                                    idPrefix="mobile"
+                                                    searchTerm={searchTerm}
+                                                    onSearchTermChange={(
+                                                        value,
+                                                    ) => {
+                                                        setSearchTerm(value);
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    isLabsCatalog={isLabsCatalog}
+                                                    isChallengesCatalog={
+                                                        isChallengesCatalog
+                                                    }
+                                                    enrollmentFilter={
+                                                        enrollmentFilter
+                                                    }
+                                                    onEnrollmentFilterChange={(
+                                                        value,
+                                                    ) => {
+                                                        setEnrollmentFilter(
+                                                            value,
+                                                        );
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    labsGroupFilter={
+                                                        labsGroupFilter
+                                                    }
+                                                    onLabsGroupFilterChange={(
+                                                        value,
+                                                    ) => {
+                                                        setLabsGroupFilter(
+                                                            value,
+                                                        );
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    sortBy={sortBy}
+                                                    onSortByChange={(value) => {
+                                                        setSortBy(value);
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    hasActiveFilters={
+                                                        hasActiveFilters
+                                                    }
+                                                    clearFilters={clearFilters}
+                                                    totalCourses={
+                                                        catalogCourses.length
+                                                    }
+                                                    enrolledCourses={
+                                                        enrollmentSummary
+                                                    }
+                                                />
+                                            </div>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </>
                             ) : (
                                 <Card className="w-full sm:w-72">
                                     <CardHeader>
@@ -1454,6 +1465,10 @@ export default function CoursesIndex({
 
 CoursesIndex.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Courses',
             href: coursesIndex(),

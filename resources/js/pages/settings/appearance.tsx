@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import AppearanceTabs from '@/components/appearance-tabs';
 import { TypographyLarge, TypographyMuted } from '@/components/ui/typography';
+import { dashboard } from '@/routes';
 import { edit as editAppearance } from '@/routes/appearance';
 
 export default function Appearance() {
@@ -27,6 +28,10 @@ export default function Appearance() {
 
 Appearance.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Appearance settings',
             href: editAppearance(),

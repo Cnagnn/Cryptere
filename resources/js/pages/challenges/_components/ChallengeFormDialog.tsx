@@ -1,15 +1,16 @@
 import { router } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { store as storeChallenge, update as updateChallenge } from '@/routes/admin/challenges';
 import {
     ChallengeFormFields,
@@ -108,32 +109,30 @@ export function ChallengeFormDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="flex w-full flex-col overflow-y-auto sm:max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>
+        <AlertDialog open={open} onOpenChange={handleOpenChange}>
+            <AlertDialogContent className="flex w-full flex-col overflow-y-auto sm:max-w-xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
                         {mode === 'create' ? 'Create Challenge' : 'Edit Challenge'}
-                    </DialogTitle>
-                    <DialogDescription>
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
                         {mode === 'create'
                             ? 'Add a new challenge to the catalog.'
                             : 'Update the challenge details and schedule.'}
-                    </DialogDescription>
-                </DialogHeader>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
 
                 <div className="flex-1 py-6">
                     <ChallengeFormFields form={form} setForm={setForm} />
                 </div>
 
-                <DialogFooter className="mt-auto sm:flex-row sm:justify-end">
-                    <Button
-                        type="button"
-                        variant="outline"
+                <AlertDialogFooter className="mt-auto sm:flex-row sm:justify-end">
+                    <AlertDialogCancel
                         onClick={() => handleOpenChange(false)}
                         disabled={processing}
                     >
                         Cancel
-                    </Button>
+                    </AlertDialogCancel>
                     <Button
                         type="button"
                         onClick={handleSubmit}
@@ -144,8 +143,8 @@ export function ChallengeFormDialog({
                         )}
                         {mode === 'create' ? 'Create' : 'Save Changes'}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }

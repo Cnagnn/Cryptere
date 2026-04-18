@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { TypographyLarge, TypographyMuted } from '@/components/ui/typography';
+import { dashboard } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { Auth } from '@/types';
 
@@ -127,6 +128,10 @@ export default function Profile({
 
 Profile.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Profile settings',
             href: edit(),

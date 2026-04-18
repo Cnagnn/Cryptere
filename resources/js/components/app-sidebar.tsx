@@ -84,7 +84,22 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={dashboard()} prefetch>
-                                <AppLogo />
+                                <div className="flex w-full justify-center">
+                                    <AppLogo
+                                        className="group-data-[collapsible=icon]:hidden"
+                                        imageClassName="h-10"
+                                    />
+                                    <img
+                                        src="/images/Logo/Logo-Black.svg"
+                                        alt="Crypter"
+                                        className="hidden h-7 w-auto group-data-[collapsible=icon]:block dark:group-data-[collapsible=icon]:hidden"
+                                    />
+                                    <img
+                                        src="/images/Logo/Logo.svg"
+                                        alt="Crypter"
+                                        className="hidden h-7 w-auto dark:group-data-[collapsible=icon]:block"
+                                    />
+                                </div>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

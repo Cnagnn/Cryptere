@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
+import { dashboard } from '@/routes';
 
 type LeaderboardEntry = {
     id: number;
@@ -279,6 +280,10 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
 
 LeaderboardIndex.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Leaderboard',
             href: leaderboardIndex(),

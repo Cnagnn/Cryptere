@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { TypographyLarge, TypographyMuted } from '@/components/ui/typography';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
+import { dashboard } from '@/routes';
 import { edit } from '@/routes/security';
 import { disable, enable } from '@/routes/two-factor';
 
@@ -247,6 +248,10 @@ export default function Security({
 
 Security.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Security settings',
             href: edit(),

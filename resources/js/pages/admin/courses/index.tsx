@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { dashboard } from '@/routes';
 import {
     destroy as coursesDestroy,
     index as adminCoursesIndex,
@@ -390,6 +391,10 @@ export default function AdminCoursesIndex({
 
 AdminCoursesIndex.layout = {
     breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
         {
             title: 'Management',
             href: adminCoursesIndex(),

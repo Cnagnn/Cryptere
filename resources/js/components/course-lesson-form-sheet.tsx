@@ -10,17 +10,18 @@ import type {
     LessonFormData,
     LessonRow,
 } from '@/components/course-types';
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetFooter,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
 
 interface LessonFormSheetProps {
     mode: 'create' | 'edit';
@@ -100,18 +101,25 @@ export function LessonFormSheet({
     const isCreate = mode === 'create';
 
     return (
-        <Sheet open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-            <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-                <SheetHeader>
-                    <SheetTitle>
+        <AlertDialog
+            open={open}
+            onOpenChange={(isOpen) => {
+                if (!isOpen) {
+                    handleClose();
+                }
+            }}
+        >
+            <AlertDialogContent className="w-full overflow-y-auto sm:max-w-xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
                         {isCreate ? 'Create Lesson' : 'Edit Lesson'}
-                    </SheetTitle>
-                    <SheetDescription>
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
                         {isCreate
                             ? 'Create a new lesson in selected course.'
                             : 'Update selected lesson details.'}
-                    </SheetDescription>
-                </SheetHeader>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
 
                 <div className="flex flex-col gap-3 px-4">
                     {isCreate ? (
@@ -153,7 +161,10 @@ export function LessonFormSheet({
                     </div>
                 </div>
 
-                <SheetFooter className="mt-4 sm:flex-row sm:justify-end">
+                <AlertDialogFooter className="mt-4 sm:flex-row sm:justify-end">
+                    <AlertDialogCancel onClick={handleClose}>
+                        Cancel
+                    </AlertDialogCancel>
                     <Button
                         type="button"
                         disabled={
@@ -163,8 +174,8 @@ export function LessonFormSheet({
                     >
                         {isCreate ? 'Create' : 'Update'}
                     </Button>
-                </SheetFooter>
-            </SheetContent>
-        </Sheet>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }

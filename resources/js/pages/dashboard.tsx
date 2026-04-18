@@ -597,6 +597,10 @@ export default function Dashboard({ academy, stats }: Props) {
 Dashboard.layout = {
     breadcrumbs: [
         {
+            title: 'Home',
+            href: dashboard(),
+        },
+        {
             title: 'Dashboard',
             href: dashboard(),
         },
