@@ -6,11 +6,12 @@ use Database\Factories\ChallengeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['slug', 'title', 'prompt', 'hint', 'difficulty', 'expected_answer', 'points_reward', 'is_published', 'time_start', 'time_end'])]
+#[Fillable(['slug', 'title', 'prompt', 'hint', 'expected_answer', 'sort_order', 'is_published', 'time_start', 'time_end', 'time_limit_seconds', 'questions_per_session', 'max_points_per_question'])]
 #[Hidden(['expected_answer'])]
 class Challenge extends Model
 {
@@ -28,6 +29,9 @@ class Challenge extends Model
             'is_published' => 'boolean',
             'time_start' => 'datetime',
             'time_end' => 'datetime',
+            'time_limit_seconds' => 'integer',
+            'questions_per_session' => 'integer',
+            'max_points_per_question' => 'integer',
         ];
     }
 
@@ -58,10 +62,38 @@ class Challenge extends Model
     }
 
     /**
+     * Get questions for the challenge.
+     */
+    public function questions(): HasMany
+    {
+        return $this->hasMany(ChallengeQuestion::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
      * Get submissions for the challenge.
      */
     public function submissions(): HasMany
     {
         return $this->hasMany(ChallengeSubmission::class);
+    }
+
+    /**
+     * Pick N random questions for a quiz session.
+     *
+     * @return Collection<int, ChallengeQuestion>
+     */
+    public function getRandomQuestions(?int $count = null): Collection
+    {
+        $limit = $count ?? $this->questions_per_session ?? 10;
+
+        return $this->questions()->inRandomOrder()->limit($limit)->get();
+    }
+
+    /**
+     * Determine whether this challenge has a question bank (quiz mode).
+     */
+    public function hasQuestionBank(): bool
+    {
+        return $this->questions()->exists();
     }
 }

@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ReorderAdminCoursesRequest;
+use App\Http\Requests\Admin\ReorderAdminLessonsRequest;
+use App\Http\Requests\Admin\ReorderAdminTasksRequest;
 use App\Http\Requests\Admin\StoreAdminCourseRequest;
 use App\Http\Requests\Admin\StoreAdminLessonRequest;
 use App\Http\Requests\Admin\StoreAdminLessonTaskRequest;
+use App\Http\Requests\Admin\TogglePublishAdminCourseRequest;
 use App\Http\Requests\Admin\UpdateAdminCourseRequest;
 use App\Http\Requests\Admin\UpdateAdminLessonRequest;
 use App\Http\Requests\Admin\UpdateAdminLessonTaskRequest;
 use App\Jobs\ConvertLessonDocument;
+use App\Jobs\ConvertLessonVideo;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonTask;
@@ -17,6 +22,7 @@ use App\Models\QuizQuestion;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -48,13 +54,15 @@ class CourseManagementController extends Controller
         }
 
         $search = trim((string) $request->input('search', ''));
+        $perPage = (int) $request->integer('per_page', 10);
+        $perPage = max(10, min($perPage, 100));
 
         $courses = Course::query()
             ->withCount(['lessons', 'enrollments'])
             ->searchManagement($search)
             ->orderBy('sort_order')
             ->orderBy('title')
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
         // Transform paginated data to include cover URL and extra fields
@@ -76,86 +84,153 @@ class CourseManagementController extends Controller
         $selectedCourseId = (int) $request->integer('course_id', (int) ($courseOptions->first()?->id ?? 0));
         $selectedLessonId = (int) $request->integer('lesson_id', 0);
 
-        $lessons = collect();
-        $tasks = collect();
+        $emptyPaginated = [
+            'data' => [],
+            'current_page' => 1,
+            'last_page' => 1,
+            'per_page' => $perPage,
+            'total' => 0,
+            'from' => null,
+            'to' => null,
+        ];
+
+        $lessons = $emptyPaginated;
+        $tasks = $emptyPaginated;
 
         if ($section === self::SECTION_LESSON || $section === self::SECTION_TASK) {
-            $lessons = Lesson::query()
-                ->with('course:id,slug,title')
+            $lessonPaginator = Lesson::query()
+                ->with(['course:id,slug,title'])
                 ->withCount('tasks')
                 ->when($selectedCourseId > 0, fn ($q) => $q->where('course_id', $selectedCourseId))
                 ->orderBy('course_id')
                 ->orderBy('position')
-                ->get(['id', 'course_id', 'slug', 'title', 'position', 'xp_reward', 'content'])
-                ->map(function (Lesson $lesson): array {
-                    $legacyTasks = $this->extractLegacyTaskPayloads((string) $lesson->content);
+                ->paginate($perPage)
+                ->withQueryString();
 
-                    return [
-                        'id' => $lesson->id,
-                        'course_id' => $lesson->course_id,
-                        'course_slug' => $lesson->course?->slug,
-                        'course_title' => $lesson->course?->title,
-                        'slug' => $lesson->slug,
-                        'title' => $lesson->title,
-                        'position' => $lesson->position,
-                        'xp_reward' => $lesson->xp_reward,
-                        'tasks_count' => (int) $lesson->tasks_count > 0
-                            ? (int) $lesson->tasks_count
-                            : $legacyTasks->count(),
-                    ];
-                });
+            $lessonPaginator->getCollection()->transform(function (Lesson $lesson): array {
+                $legacyTasks = $this->extractLegacyTaskPayloads((string) $lesson->content);
+
+                return [
+                    'id' => $lesson->id,
+                    'management_id' => 'topic-'.$lesson->id,
+                    'course_id' => $lesson->course_id,
+                    'course_slug' => $lesson->course?->slug,
+                    'course_title' => $lesson->course?->title,
+                    'slug' => $lesson->slug,
+                    'title' => $lesson->title,
+                    'description' => (string) ($lesson->description ?? ''),
+                    'position' => $lesson->position,
+                    'xp_reward' => $lesson->xp_reward,
+                    'tasks_count' => (int) $lesson->tasks_count > 0
+                        ? (int) $lesson->tasks_count
+                        : $legacyTasks->count(),
+                ];
+            });
+
+            $lessons = [
+                'data' => $lessonPaginator->items(),
+                'current_page' => $lessonPaginator->currentPage(),
+                'last_page' => $lessonPaginator->lastPage(),
+                'per_page' => $lessonPaginator->perPage(),
+                'total' => $lessonPaginator->total(),
+                'from' => $lessonPaginator->firstItem(),
+                'to' => $lessonPaginator->lastItem(),
+            ];
         }
 
         if ($section === self::SECTION_TASK) {
-            if ($selectedLessonId === 0 && $lessons->isNotEmpty()) {
-                $selectedLessonId = (int) $lessons->first()['id'];
+            if ($selectedLessonId === 0 && ! empty($lessons['data'])) {
+                $selectedLessonId = (int) data_get($lessons['data'][0], 'id', 0);
             }
 
             $selectedLesson = Lesson::query()
-                ->with(['course:id,slug,title', 'tasks:id,lesson_id,title,type,minutes,video_url,sort_order'])
+                ->with('course:id,slug,title')
                 ->when($selectedLessonId > 0, fn ($q) => $q->whereKey($selectedLessonId))
                 ->first(['id', 'course_id', 'slug', 'title', 'content']);
 
             if ($selectedLesson !== null) {
-                $tasks = $selectedLesson->tasks->isNotEmpty()
-                    ? $selectedLesson->tasks
-                        ->load('quizQuestions:id,lesson_task_id,question,options,correct_option,explanation,sort_order')
-                        ->values()
-                        ->map(function (LessonTask $task, int $index) use ($selectedLesson): array {
-                            return [
-                                'id' => $task->id,
-                                'task_index' => $index,
-                                'lesson_id' => $selectedLesson->id,
-                                'lesson_title' => $selectedLesson->title,
-                                'course_slug' => $selectedLesson->course?->slug,
-                                'type' => $task->type,
-                                'title' => $task->title,
-                                'minutes' => $task->minutes,
-                                'video_url' => $task->video_url,
-                                'quiz_questions' => $task->quizQuestions->map(fn (QuizQuestion $q): array => [
-                                    'question' => $q->question,
-                                    'options' => $q->options,
-                                    'correct_option' => $q->correct_option,
-                                    'explanation' => $q->explanation,
-                                ])->values()->all(),
-                            ];
-                        })
-                    : $this->extractLegacyTaskPayloads((string) $selectedLesson->content)
+                if ($selectedLesson->tasks()->exists()) {
+                    $taskPaginator = LessonTask::query()
+                        ->where('lesson_id', $selectedLesson->id)
+                        ->with('quizQuestions:id,lesson_task_id,question,options,correct_option,explanation,sort_order')
+                        ->orderBy('sort_order')
+                        ->orderBy('id')
+                        ->paginate($perPage)
+                        ->withQueryString();
+
+                    $taskPaginator->getCollection()->values()->transform(function (LessonTask $task, int $index) use ($selectedLesson, $taskPaginator): array {
+                        $globalIndex = (($taskPaginator->currentPage() - 1) * $taskPaginator->perPage()) + $index;
+
+                        return [
+                            'id' => $task->id,
+                            'management_id' => 'task-'.$task->id,
+                            'is_legacy' => false,
+                            'task_index' => $globalIndex,
+                            'lesson_id' => $selectedLesson->id,
+                            'lesson_title' => $selectedLesson->title,
+                            'course_slug' => $selectedLesson->course?->slug,
+                            'type' => $task->type,
+                            'title' => $task->title,
+                            'description' => (string) ($task->description ?? ''),
+                            'minutes' => $task->minutes,
+                            'video_url' => $task->video_url,
+                            'quiz_questions' => $task->quizQuestions->map(fn (QuizQuestion $q): array => [
+                                'question' => $q->question,
+                                'options' => $q->options,
+                                'correct_option' => $q->correct_option,
+                                'explanation' => $q->explanation,
+                            ])->values()->all(),
+                        ];
+                    });
+
+                    $tasks = [
+                        'data' => $taskPaginator->items(),
+                        'current_page' => $taskPaginator->currentPage(),
+                        'last_page' => $taskPaginator->lastPage(),
+                        'per_page' => $taskPaginator->perPage(),
+                        'total' => $taskPaginator->total(),
+                        'from' => $taskPaginator->firstItem(),
+                        'to' => $taskPaginator->lastItem(),
+                    ];
+                } else {
+                    $legacyTasks = $this->extractLegacyTaskPayloads((string) $selectedLesson->content)
                         ->values()
                         ->map(function (array $task, int $index) use ($selectedLesson): array {
                             return [
-                                'id' => 0,
+                                'id' => -($index + 1),
+                                'management_id' => 'legacy-task-'.$selectedLesson->id.'-'.($index + 1),
+                                'is_legacy' => true,
                                 'task_index' => $index,
                                 'lesson_id' => $selectedLesson->id,
                                 'lesson_title' => $selectedLesson->title,
                                 'course_slug' => $selectedLesson->course?->slug,
                                 'type' => (string) ($task['type'] ?? 'video'),
                                 'title' => (string) ($task['title'] ?? 'Task'),
+                                'description' => '',
                                 'minutes' => (int) ($task['minutes'] ?? 5),
                                 'video_url' => isset($task['videoUrl']) ? (string) $task['videoUrl'] : null,
                                 'quiz_questions' => [],
                             ];
                         });
+
+                    $legacyPaginator = new LengthAwarePaginator(
+                        items: $legacyTasks->forPage($request->integer('page', 1), $perPage)->values()->all(),
+                        total: $legacyTasks->count(),
+                        perPage: $perPage,
+                        currentPage: max(1, $request->integer('page', 1)),
+                        options: ['path' => $request->url(), 'query' => $request->query()],
+                    );
+
+                    $tasks = [
+                        'data' => $legacyPaginator->items(),
+                        'current_page' => $legacyPaginator->currentPage(),
+                        'last_page' => $legacyPaginator->lastPage(),
+                        'per_page' => $legacyPaginator->perPage(),
+                        'total' => $legacyPaginator->total(),
+                        'from' => $legacyPaginator->firstItem(),
+                        'to' => $legacyPaginator->lastItem(),
+                    ];
+                }
             }
         }
 
@@ -214,7 +289,7 @@ class CourseManagementController extends Controller
             $coverMimeType = $coverFile->getMimeType();
         }
 
-        Course::query()->create([
+        $course = Course::query()->create([
             'slug' => $slug,
             'title' => $validated['title'],
             'summary' => $validated['description'],
@@ -275,6 +350,27 @@ class CourseManagementController extends Controller
         return back(fallback: route('admin.courses.index'));
     }
 
+    public function reorderCourses(ReorderAdminCoursesRequest $request): RedirectResponse
+    {
+        $items = collect($request->validated('items'));
+
+        DB::transaction(function () use ($items): void {
+            $items->each(function (array $item): void {
+                Course::query()
+                    ->whereKey((int) $item['id'])
+                    ->update(['sort_order' => (int) $item['sort_order'] + 1000]);
+            });
+
+            $items->each(function (array $item): void {
+                Course::query()
+                    ->whereKey((int) $item['id'])
+                    ->update(['sort_order' => (int) $item['sort_order']]);
+            });
+        });
+
+        return back(fallback: route('admin.courses.index'));
+    }
+
     // ── lessons CRUD ─────────────────────────────────────────────────────────
 
     public function storeLesson(StoreAdminLessonRequest $request): RedirectResponse
@@ -299,6 +395,7 @@ class CourseManagementController extends Controller
             'course_id' => $course->id,
             'slug' => $slug,
             'title' => $validated['title'],
+            'description' => $validated['description'],
             'content' => '',
             'position' => $nextPosition,
             'xp_reward' => (int) ($validated['xp_reward'] ?? 50),
@@ -313,16 +410,50 @@ class CourseManagementController extends Controller
 
         $lesson->update([
             'title' => $validated['title'],
+            'description' => $validated['description'],
             'xp_reward' => (int) ($validated['xp_reward'] ?? $lesson->xp_reward),
         ]);
 
         return back();
     }
 
+    public function reorderLessons(ReorderAdminLessonsRequest $request): RedirectResponse
+    {
+        $items = collect($request->validated('items'));
+
+        DB::transaction(function () use ($items): void {
+            $items->each(function (array $item): void {
+                Lesson::query()
+                    ->whereKey((int) $item['id'])
+                    ->update(['position' => (int) $item['position'] + 1000]);
+            });
+
+            $items->each(function (array $item): void {
+                Lesson::query()
+                    ->whereKey((int) $item['id'])
+                    ->update(['position' => (int) $item['position']]);
+            });
+        });
+
+        return back();
+    }
+
     public function destroyLesson(Lesson $lesson): RedirectResponse
     {
-        $courseId = $lesson->course_id;
         $lesson->delete();
+
+        return back();
+    }
+
+    public function togglePublish(TogglePublishAdminCourseRequest $request, Course $course): RedirectResponse
+    {
+        $isPublished = $request->has('is_published')
+            ? (bool) $request->boolean('is_published')
+            : ! $course->is_published;
+
+        $course->update([
+            'is_published' => $isPublished,
+        ]);
 
         return back();
     }
@@ -335,6 +466,11 @@ class CourseManagementController extends Controller
         $lesson = Lesson::query()->findOrFail($validated['lesson_id']);
         $documentName = null;
         $conversionStatus = null;
+        $videoProcessingStatus = null;
+
+        if ($validated['type'] === 'video' && ! empty($validated['video_url'])) {
+            $videoProcessingStatus = 'pending';
+        }
 
         if ($validated['type'] === 'read') {
             $uploadedDocument = $request->file('document');
@@ -350,13 +486,16 @@ class CourseManagementController extends Controller
 
         $nextOrder = (int) LessonTask::query()->where('lesson_id', $lesson->id)->max('sort_order') + 1;
 
-        DB::transaction(function () use ($validated, $lesson, $documentName, $conversionStatus, $nextOrder): void {
+        $createdTask = DB::transaction(function () use ($validated, $lesson, $documentName, $conversionStatus, $nextOrder, $videoProcessingStatus): LessonTask {
             $task = LessonTask::query()->create([
                 'lesson_id' => $lesson->id,
                 'title' => $validated['title'],
+                'description' => $validated['description'],
                 'type' => $validated['type'],
                 'minutes' => (int) $validated['minutes'],
                 'video_url' => $validated['type'] === 'video' ? ($validated['video_url'] ?? null) : null,
+                'video_processing_status' => $videoProcessingStatus,
+                'video_mp4_url' => null,
                 'document_name' => $documentName,
                 'conversion_status' => $conversionStatus,
                 'pdf_url' => null,
@@ -379,7 +518,13 @@ class CourseManagementController extends Controller
                         ]);
                     });
             }
+
+            return $task;
         });
+
+        if ($createdTask->type === 'video' && $createdTask->video_processing_status === 'pending') {
+            ConvertLessonVideo::dispatch($createdTask->id);
+        }
 
         return back();
     }
@@ -390,6 +535,8 @@ class CourseManagementController extends Controller
         $documentName = $task->document_name;
         $conversionStatus = $task->conversion_status;
         $pdfUrl = $task->pdf_url;
+        $videoProcessingStatus = $task->video_processing_status;
+        $videoMp4Url = $task->video_mp4_url;
 
         if ($validated['type'] === 'read') {
             $uploadedDocument = $request->file('document');
@@ -408,12 +555,23 @@ class CourseManagementController extends Controller
             $pdfUrl = null;
         }
 
-        DB::transaction(function () use ($task, $validated, $documentName, $conversionStatus, $pdfUrl): void {
+        if ($validated['type'] === 'video') {
+            $videoProcessingStatus = ! empty($validated['video_url']) ? 'pending' : null;
+            $videoMp4Url = null;
+        } else {
+            $videoProcessingStatus = null;
+            $videoMp4Url = null;
+        }
+
+        DB::transaction(function () use ($task, $validated, $documentName, $conversionStatus, $pdfUrl, $videoProcessingStatus, $videoMp4Url): void {
             $task->update([
                 'title' => $validated['title'],
+                'description' => $validated['description'],
                 'type' => $validated['type'],
                 'minutes' => (int) $validated['minutes'],
                 'video_url' => $validated['type'] === 'video' ? ($validated['video_url'] ?? null) : null,
+                'video_processing_status' => $videoProcessingStatus,
+                'video_mp4_url' => $videoMp4Url,
                 'document_name' => $documentName,
                 'conversion_status' => $conversionStatus,
                 'pdf_url' => $pdfUrl,
@@ -435,6 +593,31 @@ class CourseManagementController extends Controller
                         ]);
                     });
             }
+        });
+
+        if ($task->type === 'video' && $task->video_processing_status === 'pending') {
+            ConvertLessonVideo::dispatch($task->id);
+        }
+
+        return back();
+    }
+
+    public function reorderTasks(ReorderAdminTasksRequest $request): RedirectResponse
+    {
+        $items = collect($request->validated('items'));
+
+        DB::transaction(function () use ($items): void {
+            $items->each(function (array $item): void {
+                LessonTask::query()
+                    ->whereKey((int) $item['id'])
+                    ->update(['sort_order' => (int) $item['sort_order'] + 1000]);
+            });
+
+            $items->each(function (array $item): void {
+                LessonTask::query()
+                    ->whereKey((int) $item['id'])
+                    ->update(['sort_order' => (int) $item['sort_order']]);
+            });
         });
 
         return back();

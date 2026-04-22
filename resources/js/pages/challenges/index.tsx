@@ -8,11 +8,13 @@ type ChallengeItem = {
     title: string;
     prompt: string;
     hint: string | null;
-    pointsReward: number;
     timeStart: string | null;
     timeEnd: string | null;
     status: 'upcoming' | 'active' | 'ended';
     isSolved: boolean;
+    hasQuestionBank: boolean;
+    questionsCount: number;
+    bestScore: number;
 };
 
 type Props = {
@@ -31,11 +33,13 @@ export default function ChallengesIndex({ challenges }: Props) {
         enrollmentCount: 0,
         isEnrolled: false,
         progressPercentage: challenge.isSolved ? 100 : 0,
-        pointsReward: challenge.pointsReward,
         timeStart: challenge.timeStart,
         timeEnd: challenge.timeEnd,
         status: challenge.status,
         isSolved: challenge.isSolved,
+        hasQuestionBank: challenge.hasQuestionBank,
+        questionsCount: challenge.questionsCount,
+        bestScore: challenge.bestScore,
     }));
 
     return (
@@ -44,7 +48,7 @@ export default function ChallengesIndex({ challenges }: Props) {
             catalogMode="challenges"
             headTitle="Challenges"
             pageTitle="Challenges"
-            pageDescription="Published challenges from management appear here automatically with the same catalog experience as courses and labs."
+            pageDescription="Solve published cryptography challenges and track your results alongside courses and labs."
             sidebarMode="filters"
         />
     );

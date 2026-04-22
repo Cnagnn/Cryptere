@@ -5,18 +5,25 @@ import {
     update as coursesUpdate,
 } from '@/actions/App/Http/Controllers/Admin/CourseManagementController';
 import type { CourseFormData, CourseRow } from '@/components/course-types';
-import {
-    AlertDialog,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Field,
+    FieldContent,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 interface CourseFormDialogProps {
@@ -87,7 +94,7 @@ export function CourseFormDialog({
     const isCreate = mode === 'create';
 
     return (
-        <AlertDialog
+        <Dialog
             open={open}
             onOpenChange={(isOpen) => {
                 if (!isOpen) {
@@ -95,21 +102,22 @@ export function CourseFormDialog({
                 }
             }}
         >
-            <AlertDialogContent className="w-full overflow-y-auto sm:max-w-xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>
+            <DialogContent className="w-full overflow-y-auto sm:max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>
                         {isCreate ? 'Create Course' : 'Edit Course'}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
+                    </DialogTitle>
+                    <DialogDescription>
                         {isCreate
                             ? 'Fill the initial information to create a new course.'
                             : 'Update title and description for this course.'}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+                    </DialogDescription>
+                </DialogHeader>
 
-                <div className="flex flex-col gap-4 px-4">
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor={`${mode}-course-title`}>Title</Label>
+                <FieldGroup className="px-4">
+                    <Field>
+                        <FieldLabel htmlFor={`${mode}-course-title`}>Title</FieldLabel>
+                        <FieldContent>
                         <Input
                             id={`${mode}-course-title`}
                             placeholder={
@@ -121,17 +129,13 @@ export function CourseFormDialog({
                             }
                             aria-invalid={Boolean(form.errors.title)}
                         />
-                        {form.errors.title ? (
-                            <p className="text-sm text-destructive">
-                                {form.errors.title}
-                            </p>
-                        ) : null}
-                    </div>
+                            <FieldError>{form.errors.title}</FieldError>
+                        </FieldContent>
+                    </Field>
 
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor={`${mode}-course-description`}>
-                            Description
-                        </Label>
+                    <Field>
+                        <FieldLabel htmlFor={`${mode}-course-description`}>Description</FieldLabel>
+                        <FieldContent>
                         <Textarea
                             id={`${mode}-course-description`}
                             placeholder={
@@ -145,17 +149,13 @@ export function CourseFormDialog({
                             }
                             aria-invalid={Boolean(form.errors.description)}
                         />
-                        {form.errors.description ? (
-                            <p className="text-sm text-destructive">
-                                {form.errors.description}
-                            </p>
-                        ) : null}
-                    </div>
+                            <FieldError>{form.errors.description}</FieldError>
+                        </FieldContent>
+                    </Field>
 
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor={`${mode}-course-cover`}>
-                            Grid Cover Image
-                        </Label>
+                    <Field>
+                        <FieldLabel htmlFor={`${mode}-course-cover`}>Grid Cover Image</FieldLabel>
+                        <FieldContent>
                         <Input
                             id={`${mode}-course-cover`}
                             type="file"
@@ -169,16 +169,13 @@ export function CourseFormDialog({
                             aria-invalid={Boolean(form.errors.cover_image)}
                         />
                         {!isCreate ? (
-                            <p className="text-sm text-muted-foreground">
+                                <FieldDescription>
                                 Leave empty to keep the current grid cover.
-                            </p>
+                                </FieldDescription>
                         ) : null}
-                        {form.errors.cover_image ? (
-                            <p className="text-sm text-destructive">
-                                {form.errors.cover_image}
-                            </p>
-                        ) : null}
-                    </div>
+                            <FieldError>{form.errors.cover_image}</FieldError>
+                        </FieldContent>
+                    </Field>
 
                     {!isCreate && course?.cover ? (
                         <div className="flex flex-col gap-1">
@@ -192,12 +189,14 @@ export function CourseFormDialog({
                             />
                         </div>
                     ) : null}
-                </div>
+                </FieldGroup>
 
-                <AlertDialogFooter className="mt-4 sm:flex-row sm:justify-end">
-                    <AlertDialogCancel onClick={handleClose}>
+                <DialogFooter className="mt-4 sm:flex-row sm:justify-end">
+                    <DialogClose asChild>
+                        <Button type="button" variant="outline" onClick={handleClose}>
                         Cancel
-                    </AlertDialogCancel>
+                        </Button>
+                    </DialogClose>
                     <Button
                         type="button"
                         disabled={form.processing}
@@ -205,8 +204,8 @@ export function CourseFormDialog({
                     >
                         {isCreate ? 'Create' : 'Update'}
                     </Button>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

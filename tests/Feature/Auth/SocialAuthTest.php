@@ -12,7 +12,12 @@ it('can redirect to social provider', function () {
     $response->assertRedirect();
 });
 
-it('auto-registers new social users and logs them in', function () {
+it('returns 404 for invalid social provider', function () {
+    $this->get('/auth/twitter/redirect')->assertNotFound();
+    $this->get('/auth/facebook/callback')->assertNotFound();
+});
+
+it('redirects new social users to register page with session data', function () {
     $socialUser = Mockery::mock(Laravel\Socialite\Two\User::class);
     $socialUser->shouldReceive('getId')->andReturn('999999');
     $socialUser->shouldReceive('getEmail')->andReturn('newuser@example.com');
@@ -27,15 +32,17 @@ it('auto-registers new social users and logs them in', function () {
 
     $response = $this->get('/auth/github/callback');
 
-    $response->assertRedirect(route('dashboard'));
-    $this->assertAuthenticated();
+    $response->assertRedirect(route('register'));
+    $this->assertGuest();
 
-    $user = Auth::user();
-    expect($user->email)->toBe('newuser@example.com');
-    expect($user->username)->toBe('new_social_user');
-    expect($user->socialAccounts()->count())->toBe(1);
-    expect($user->socialAccounts()->first()->provider)->toBe('github');
-    expect($user->hasVerifiedEmail())->toBeTrue();
+    expect(session('social_user'))->toBe([
+        'provider' => 'github',
+        'id' => '999999',
+        'email' => 'newuser@example.com',
+        'name' => 'New Social User',
+        'avatar' => 'avatar.jpg',
+        'nickname' => 'newsocial',
+    ]);
 });
 
 it('seamlessly links social account to existing email', function () {
@@ -64,13 +71,33 @@ it('seamlessly links social account to existing email', function () {
     $response->assertRedirect(route('dashboard'));
     $this->assertAuthenticatedAs($existingUser);
 
-    // Check if social account was created
     expect($existingUser->socialAccounts()->count())->toBe(1);
     expect($existingUser->socialAccounts()->first()->provider)->toBe('google');
     expect($existingUser->fresh()?->email_verified_at)->not->toBeNull();
     expect($existingUser->fresh()?->avatar_image)->toBe('avatar-binary');
     expect($existingUser->fresh()?->avatar_mime_type)->toBe('image/jpeg');
     expect($existingUser->fresh()?->avatar_path)->toBeNull();
+});
+
+it('flashes status message when linking social account to existing user', function () {
+    $existingUser = User::factory()->create([
+        'email' => 'flash@example.com',
+    ]);
+
+    $socialUser = Mockery::mock(Laravel\Socialite\Two\User::class);
+    $socialUser->shouldReceive('getId')->andReturn('flash-123');
+    $socialUser->shouldReceive('getEmail')->andReturn('flash@example.com');
+    $socialUser->shouldReceive('getName')->andReturn('Flash User');
+    $socialUser->shouldReceive('getAvatar')->andReturn(null);
+
+    $provider = Mockery::mock(GoogleProvider::class);
+    $provider->shouldReceive('user')->andReturn($socialUser);
+
+    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+    $response = $this->get('/auth/google/callback');
+
+    $response->assertSessionHas('status', 'Your Google account has been linked.');
 });
 
 it('marks previously linked social users as verified when logging in', function () {
@@ -104,7 +131,19 @@ it('marks previously linked social users as verified when logging in', function 
     expect($user->fresh()?->email_verified_at)->not->toBeNull();
 });
 
-it('allows user to submit standard register and auto-links them', function () {
+it('handles denied OAuth grants gracefully', function () {
+    $provider = Mockery::mock(GithubProvider::class);
+    $provider->shouldReceive('user')->andThrow(new Exception('Access denied'));
+
+    Socialite::shouldReceive('driver')->with('github')->andReturn($provider);
+
+    $response = $this->get('/auth/github/callback');
+
+    $response->assertRedirect(route('login'));
+    $response->assertSessionHasErrors('email');
+});
+
+it('allows user to complete registration after social callback', function () {
     session()->put('social_user', [
         'provider' => 'github',
         'id' => '777777',
@@ -129,5 +168,77 @@ it('allows user to submit standard register and auto-links them', function () {
     expect($user->email)->toBe('setup@example.com');
     expect($user->username)->toBe('mysetupname');
     expect($user->socialAccounts()->count())->toBe(1);
+    expect($user->socialAccounts()->first()->provider)->toBe('github');
+    expect($user->hasVerifiedEmail())->toBeTrue();
     expect(session()->has('social_user'))->toBeFalse();
+});
+
+it('renders register page with socialUser prop from session', function () {
+    $this->withSession([
+        'social_user' => [
+            'provider' => 'google',
+            'id' => 'google-123',
+            'email' => 'social@example.com',
+            'name' => 'Social User',
+            'avatar' => 'https://example.com/avatar.jpg',
+            'nickname' => 'socialuser',
+        ],
+    ]);
+
+    $response = $this->get(route('register'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/register')
+        ->has('socialUser')
+        ->where('socialUser.provider', 'google')
+        ->where('socialUser.email', 'social@example.com')
+        ->where('socialUser.name', 'Social User')
+    );
+});
+
+it('flashes social hint on failed login when user has social account', function () {
+    $user = User::factory()->create([
+        'email' => 'social@example.com',
+        'password' => bcrypt('correct-password'),
+    ]);
+
+    $user->socialAccounts()->create([
+        'provider' => 'google',
+        'provider_user_id' => 'hint-123',
+        'provider_email' => 'social@example.com',
+        'provider_name' => 'Social User',
+        'provider_avatar' => null,
+    ]);
+
+    $this->post('/login', [
+        'email' => 'social@example.com',
+        'password' => 'wrong-password',
+    ]);
+
+    $response = $this->get(route('login'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/login')
+        ->where('socialHint', 'Google')
+    );
+});
+
+it('does not flash social hint when user has no social account', function () {
+    User::factory()->create([
+        'email' => 'regular@example.com',
+        'password' => bcrypt('correct-password'),
+    ]);
+
+    $this->post('/login', [
+        'email' => 'regular@example.com',
+        'password' => 'wrong-password',
+    ]);
+
+    $response = $this->get(route('login'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/login')
+        ->where('socialHint', null)
+    );
 });

@@ -19,6 +19,8 @@ class UserManagementController extends Controller
     {
         $search = trim((string) $request->input('search', ''));
         $role = (string) $request->input('role', 'all');
+        $perPage = (int) $request->integer('per_page', 10);
+        $perPage = max(10, min($perPage, 100));
         $authenticatedUserId = (int) $request->user()?->getKey();
         $adminCount = User::query()->where('role', 'admin')->count();
 
@@ -26,7 +28,7 @@ class UserManagementController extends Controller
             ->searchManagement($search)
             ->filterManagementRole($role)
             ->orderBy('name')
-            ->paginate(10, ['id', 'name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'points', 'role', 'created_at'])
+            ->paginate($perPage, ['id', 'name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'points', 'role', 'created_at'])
             ->through(function (User $user) use ($adminCount, $authenticatedUserId): array {
                 $cannotDeleteLastAdmin = $user->role === 'admin' && $adminCount <= 1;
                 $cannotDeleteSelf = (int) $user->getKey() === $authenticatedUserId;

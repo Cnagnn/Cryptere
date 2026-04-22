@@ -24,12 +24,13 @@ interface Challenge {
     slug: string;
     prompt: string;
     hint: string | null;
-    difficulty?: 'beginner' | 'intermediate' | 'advanced' | null;
     time_start: string | null;
     time_end: string | null;
     expected_answer: string;
-    points_reward: number;
     is_published: boolean;
+    time_limit_seconds: number;
+    questions_per_session: number;
+    max_points_per_question: number;
 }
 
 type Props = {
@@ -46,12 +47,13 @@ function getInitialFormState(mode: Props['mode'], challenge?: Challenge): Challe
             prompt: challenge.prompt,
             thumbnail_name: '',
             hint: challenge.hint ?? '',
-            difficulty: challenge.difficulty ?? 'beginner',
             time_start: challenge.time_start ?? '',
             time_end: challenge.time_end ?? '',
             expected_answer: challenge.expected_answer,
-            points_reward: challenge.points_reward as any,
             is_published: challenge.is_published,
+            time_limit_seconds: challenge.time_limit_seconds ?? 20,
+            questions_per_session: challenge.questions_per_session ?? 10,
+            max_points_per_question: challenge.max_points_per_question ?? 1000,
         };
     }
 
@@ -83,7 +85,6 @@ export function ChallengeFormDialog({
 
         const data = {
             ...payload,
-            points_reward: Number(payload.points_reward),
             time_start: payload.time_start || null,
             time_end: payload.time_end || null,
         };

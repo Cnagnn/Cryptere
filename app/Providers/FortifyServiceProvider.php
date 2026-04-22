@@ -55,6 +55,14 @@ class FortifyServiceProvider extends ServiceProvider
                 return $user;
             }
 
+            if ($user) {
+                $provider = $user->socialAccounts()->value('provider');
+
+                if ($provider) {
+                    $request->session()->flash('socialHint', ucfirst($provider));
+                }
+            }
+
             return null;
         });
     }
@@ -68,6 +76,7 @@ class FortifyServiceProvider extends ServiceProvider
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
+            'socialHint' => $request->session()->get('socialHint'),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [

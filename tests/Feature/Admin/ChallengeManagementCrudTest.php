@@ -18,8 +18,6 @@ test('admin can create update and delete challenge from management', function ()
             'time_start' => '2026-04-12 09:00:00',
             'time_end' => '2026-04-12 11:00:00',
             'expected_answer' => 'hash',
-            'difficulty' => 'beginner',
-            'points_reward' => 75,
             'is_published' => true,
         ])
         ->assertRedirect();
@@ -37,8 +35,6 @@ test('admin can create update and delete challenge from management', function ()
             'time_start' => '2026-04-13 09:00:00',
             'time_end' => '2026-04-13 12:00:00',
             'expected_answer' => 'signature',
-            'difficulty' => 'intermediate',
-            'points_reward' => 90,
             'is_published' => true,
         ])
         ->assertRedirect();
@@ -80,4 +76,31 @@ test('challenge catalog shows challenges from management data', function () {
                 ->pluck('title')
                 ->contains('Challenge Two') === false),
         );
+});
+
+test('admin can reorder challenges from management endpoint', function () {
+    $admin = User::factory()->create([
+        'is_admin' => true,
+        'role' => 'admin',
+    ]);
+
+    $firstChallenge = Challenge::factory()->create([
+        'sort_order' => 1,
+    ]);
+
+    $secondChallenge = Challenge::factory()->create([
+        'sort_order' => 2,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.challenges.reorder'), [
+            'items' => [
+                ['id' => $firstChallenge->id, 'sort_order' => 2],
+                ['id' => $secondChallenge->id, 'sort_order' => 1],
+            ],
+        ])
+        ->assertRedirect();
+
+    expect($firstChallenge->fresh()?->sort_order)->toBe(2);
+    expect($secondChallenge->fresh()?->sort_order)->toBe(1);
 });

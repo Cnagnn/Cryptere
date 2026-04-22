@@ -1,6 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpenCheck,
+    ChevronRight,
+    Flame,
     FlaskConical,
     LayoutGrid,
     Swords,
@@ -11,18 +13,28 @@ import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
+    SidebarGroupContent,
     SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
+import { index as adminChallengesIndex } from '@/routes/admin/challenges';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as challengesIndex } from '@/routes/challenges';
@@ -62,9 +74,9 @@ const mainNavItems: NavItem[] = [
 
 const managementNavItems: NavItem[] = [
     {
-        title: 'Courses',
-        href: adminCoursesIndex(),
-        icon: BookOpenCheck,
+        title: 'Challenges',
+        href: adminChallengesIndex(),
+        icon: Swords,
     },
     {
         title: 'Users',
@@ -74,8 +86,13 @@ const managementNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage<{ auth: Auth }>().props;
+    const page = usePage<{ auth: Auth }>();
+    const { auth } = page.props;
     const { isCurrentUrl } = useCurrentUrl();
+    const isCourseManagementPage = isCurrentUrl(adminCoursesIndex(), undefined, true);
+    const activeCourseSection = isCourseManagementPage
+        ? (new URLSearchParams(page.url.split('?')[1] ?? '').get('section') ?? 'catalog')
+        : null;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -111,27 +128,78 @@ export function AppSidebar() {
                 {auth.user.is_admin ? (
                     <SidebarGroup className="px-2 py-0">
                         <SidebarGroupLabel>Management</SidebarGroupLabel>
-                        <SidebarMenu>
-                            {managementNavItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={isCurrentUrl(item.href)}
-                                        tooltip={{ children: item.title }}
-                                    >
-                                        <Link href={item.href} prefetch>
-                                            {item.icon && <item.icon />}
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                <Collapsible defaultOpen={isCourseManagementPage} className="group/courses">
+                                    <SidebarMenuItem>
+                                        <CollapsibleTrigger asChild>
+                                            <SidebarMenuButton
+                                                isActive={isCourseManagementPage}
+                                                tooltip={{ children: 'Courses' }}
+                                            >
+                                                <BookOpenCheck />
+                                                <span>Courses</span>
+                                                <ChevronRight className="ml-auto transition-transform group-data-[state=open]/courses:rotate-90" />
+                                            </SidebarMenuButton>
+                                        </CollapsibleTrigger>
+
+                                        <CollapsibleContent>
+                                            <SidebarMenuSub>
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton asChild isActive={activeCourseSection === 'catalog'}>
+                                                        <Link href={adminCoursesIndex.url({ query: { section: 'catalog' } })} prefetch>
+                                                            <span>Title</span>
+                                                        </Link>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton asChild isActive={activeCourseSection === 'lesson'}>
+                                                        <Link href={adminCoursesIndex.url({ query: { section: 'lesson' } })} prefetch>
+                                                            <span>Topic</span>
+                                                        </Link>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton asChild isActive={activeCourseSection === 'task'}>
+                                                        <Link href={adminCoursesIndex.url({ query: { section: 'task' } })} prefetch>
+                                                            <span>Task</span>
+                                                        </Link>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                    </SidebarMenuItem>
+                                </Collapsible>
+
+                                {managementNavItems.map((item) => (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={isCurrentUrl(item.href)}
+                                            tooltip={{ children: item.title }}
+                                        >
+                                            <Link href={item.href} prefetch>
+                                                {item.icon && <item.icon />}
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
                     </SidebarGroup>
                 ) : null}
             </SidebarContent>
 
             <SidebarFooter>
+                {auth.user && auth.user.current_streak > 0 && (
+                    <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                        <Flame className="size-4 shrink-0 text-orange-500" />
+                        <span className="truncate group-data-[collapsible=icon]:hidden">
+                            <span className="font-semibold">{auth.user.current_streak}</span> day streak
+                        </span>
+                    </div>
+                )}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

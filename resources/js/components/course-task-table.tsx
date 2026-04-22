@@ -133,7 +133,7 @@ export function TaskTable({
                 id: 'actions',
                 enableHiding: false,
                 cell: ({ row }) => {
-                    if (row.original.id === 0) {
+                    if (row.original.is_legacy ?? row.original.id <= 0) {
                         return (
                             <div className="text-center text-sm text-muted-foreground">
                                 Legacy
@@ -187,7 +187,6 @@ export function TaskTable({
             showFilterInput={false}
             centered
             showColumnToggle={false}
-            showPageSizeSelector={false}
             showPageInfo={false}
             footerInfo={`Showing ${tasks.length} tasks.`}
         />

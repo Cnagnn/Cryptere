@@ -7,12 +7,19 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\SocialAvatarService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
 {
+    /**
+     * Allowed OAuth providers.
+     *
+     * @var list<string>
+     */
+    private const array ALLOWED_PROVIDERS = ['google', 'github'];
+
     public function __construct(private readonly SocialAvatarService $socialAvatarService) {}
 
     /**
@@ -22,22 +29,27 @@ class SocialAuthController extends Controller
      */
     public function redirect(string $provider)
     {
+        abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
+
         return Socialite::driver($provider)->redirect();
     }
 
     /**
      * Obtain the user information from the provider.
-     *
-     * @return RedirectResponse
      */
-    public function callback(\Illuminate\Http\Request $request, string $provider)
+    public function callback(Request $request, string $provider): RedirectResponse
     {
+        abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
+
         try {
             $socialUser = Socialite::driver($provider)->user();
         } catch (\Exception $e) {
-            return redirect()->route('login')->withErrors(['email' => 'Unable to authenticate with '.ucfirst($provider).'. Please try again.']);
+            return redirect()->route('login')->withErrors([
+                'email' => 'Unable to authenticate with '.ucfirst($provider).'. Please try again.',
+            ]);
         }
 
+        // Case 1: Existing social account — update info and login directly
         $socialAccount = SocialAccount::where('provider', $provider)
             ->where('provider_user_id', $socialUser->getId())
             ->first();
@@ -66,64 +78,39 @@ class SocialAuthController extends Controller
 
         $user = User::where('email', $socialUser->getEmail())->first();
 
-        if (! $user) {
-            $resolvedName = $socialUser->getName() ?? $socialUser->getNickname() ?? 'User';
-            $isFirstUser = ! User::query()->exists();
-
-            $user = User::create([
-                'name' => $resolvedName,
-                'email' => $socialUser->getEmail(),
-                'username' => $this->generateUsername($resolvedName),
-                'password' => bcrypt(\Illuminate\Support\Str::random(16)),
-                'is_admin' => $isFirstUser,
-                'role' => $isFirstUser ? 'admin' : 'member',
-                'status' => 'active',
+        // Case 2: Existing user by email — link social account and login
+        if ($user) {
+            $user->socialAccounts()->create([
+                'provider' => $provider,
+                'provider_user_id' => $socialUser->getId(),
+                'provider_email' => $socialUser->getEmail(),
+                'provider_name' => $socialUser->getName(),
+                'provider_avatar' => $socialUser->getAvatar(),
             ]);
 
-            $user->markEmailAsVerified();
+            if (! $user->hasVerifiedEmail()) {
+                $user->markEmailAsVerified();
+            }
+
+            $this->socialAvatarService->syncUserAvatarFromUrl($user, $socialUser->getAvatar());
+
+            Auth::login($user, true);
+            $request->session()->regenerate();
+
+            return redirect()->intended(route('dashboard'))
+                ->with('status', 'Your '.ucfirst($provider).' account has been linked.');
         }
 
-        $user->socialAccounts()->create([
+        // Case 3: New user — store social data in session and redirect to register
+        $request->session()->put('social_user', [
             'provider' => $provider,
-            'provider_user_id' => $socialUser->getId(),
-            'provider_email' => $socialUser->getEmail(),
-            'provider_name' => $socialUser->getName(),
-            'provider_avatar' => $socialUser->getAvatar(),
+            'id' => $socialUser->getId(),
+            'email' => $socialUser->getEmail(),
+            'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? 'User',
+            'avatar' => $socialUser->getAvatar(),
+            'nickname' => $socialUser->getNickname(),
         ]);
 
-        if (! $user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
-        }
-
-        $this->socialAvatarService->syncUserAvatarFromUrl($user, $socialUser->getAvatar());
-
-        Auth::login($user, true);
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('dashboard'));
-    }
-
-    /**
-     * Generate a unique username.
-     *
-     * @return string
-     */
-    protected function generateUsername(string $name)
-    {
-        $baseUsername = Str::slug($name, '_');
-
-        if (empty($baseUsername)) {
-            $baseUsername = 'user';
-        }
-
-        $username = $baseUsername;
-        $counter = 1;
-
-        while (User::where('username', $username)->exists()) {
-            $username = $baseUsername.$counter;
-            $counter++;
-        }
-
-        return $username;
+        return redirect()->route('register');
     }
 }

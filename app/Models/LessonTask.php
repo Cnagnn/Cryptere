@@ -11,13 +11,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'lesson_id',
     'title',
+    'description',
     'type',
     'minutes',
     'video_url',
+    'video_processing_status',
+    'video_mp4_url',
     'document_name',
     'conversion_status',
     'pdf_url',
     'sort_order',
+    'xp_reward',
     'published_at',
     'published_by',
 ])]
@@ -35,6 +39,7 @@ class LessonTask extends Model
         return [
             'minutes' => 'integer',
             'sort_order' => 'integer',
+            'xp_reward' => 'integer',
             'published_at' => 'datetime',
             'published_by' => 'integer',
         ];

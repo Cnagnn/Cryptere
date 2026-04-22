@@ -83,7 +83,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                             <LoaderCircle className="size-4 animate-spin -ml-1 mr-2" />
                                         )}
                                         {isSuccess && !processing && (
-                                            <CheckCircle2 className="size-4 -ml-1 mr-2 text-green-500" />
+                                            <CheckCircle2 className="-ml-1 mr-2 size-4 text-foreground" />
                                         )}
                                         {isSuccess
                                             ? 'Terkirim ke Email anda (jika cocok)'

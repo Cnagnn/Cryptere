@@ -34,9 +34,7 @@ class ChallengeFactory extends Factory
             'title' => $title,
             'prompt' => sprintf('Submit the core keyword that best describes the security goal of %s.', $topic['algorithm']),
             'hint' => 'Think about the one-word cryptography concept introduced in the lesson.',
-            'difficulty' => fake()->randomElement(['beginner', 'intermediate', 'advanced']),
             'expected_answer' => $topic['answer'],
-            'points_reward' => fake()->numberBetween(50, 120),
             'is_published' => true,
         ];
     }

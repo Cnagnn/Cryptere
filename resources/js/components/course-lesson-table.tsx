@@ -135,7 +135,6 @@ export function LessonTable({
             showFilterInput={false}
             centered
             showColumnToggle={false}
-            showPageSizeSelector={false}
             showPageInfo={false}
             footerInfo={`Showing ${lessons.length} lessons.`}
         />

@@ -1,20 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { CheckCircle2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import {
-    destroyLesson,
-    destroyTask,
-    updateTask,
-    updateLesson,
-} from '@/actions/App/Http/Controllers/Admin/CourseManagementController';
 import { QuizPanel } from '@/components/course-quiz-panel';
-import { QuizQuestionsEditor } from '@/components/course-quiz-questions-editor';
-import { TaskFormSheet } from '@/components/course-task-form-sheet';
-import type {
-    ComboboxOption,
-    QuizQuestionForm,
-    TaskRow,
-} from '@/components/course-types';
 import { VideoPlayer } from '@/components/course-video-player';
 import {
     Accordion,
@@ -23,22 +10,12 @@ import {
     AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 
 import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -48,8 +25,7 @@ import {
     EmptyHeader,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 
 import { Progress } from '@/components/ui/progress';
 
@@ -61,9 +37,7 @@ import {
 } from '@/routes/courses';
 import {
     complete as completeLesson,
-    store as storeLesson,
 } from '@/routes/courses/lessons';
-import { publish as publishTask } from '@/routes/courses/lessons/tasks';
 import type { Auth } from '@/types/auth';
 
 type TaskType = 'video' | 'read' | 'quiz';
@@ -94,13 +68,6 @@ type MockLesson = {
     title: string;
     summary: string;
     tasks: MockTask[];
-};
-
-type MockRole = 'learner' | 'admin';
-
-type TopicItem = {
-    id: number;
-    topic: string;
 };
 
 type ServerTaskQuestion = {
@@ -168,6 +135,10 @@ function defaultTaskDescription(type: TaskType, title: string): string {
     return `Complete ${title} to validate your understanding before moving forward.`;
 }
 
+function normalizeTaskTitle(title: string): string {
+    return title.replace(/^(video|quiz|read)\s*:\s*/i, '').trim();
+}
+
 function mapServerLessonsToMockLessons(
     serverLessons: ServerLesson[],
 ): MockLesson[] {
@@ -177,13 +148,14 @@ function mapServerLessonsToMockLessons(
         summary: lesson.content?.trim() || 'No summary available yet.',
         tasks: lesson.tasks.map((task, index) => {
             const mappedTaskId = task.taskId ?? lesson.id * 1000 + index + 1;
+            const displayTaskTitle = normalizeTaskTitle(task.title);
 
             return {
                 id: mappedTaskId,
                 type: task.type,
-                title: task.title,
+                title: displayTaskTitle,
                 minutes: Math.max(1, task.minutes || 1),
-                description: defaultTaskDescription(task.type, task.title),
+                description: defaultTaskDescription(task.type, displayTaskTitle),
                 videoUrl: task.videoUrl,
                 pdfUrl: task.pdfUrl,
                 pdfName: task.documentName,
@@ -200,13 +172,6 @@ function mapServerLessonsToMockLessons(
                 })),
             };
         }),
-    }));
-}
-
-function mapLessonsToTopics(lessons: MockLesson[]): TopicItem[] {
-    return lessons.map((lesson) => ({
-        id: lesson.id,
-        topic: lesson.title,
     }));
 }
 
@@ -234,25 +199,9 @@ export default function CourseShow({
 
     const course = mappedInitialCourse;
     const lessons = mappedInitialLessons;
-    const role: MockRole = isAdmin ? 'admin' : 'learner';
     const [isEnrolled, setIsEnrolled] = useState(enrollment !== null);
     const [isEnrolling, setIsEnrolling] = useState(false);
     const [isCompletingLesson, setIsCompletingLesson] = useState(false);
-    const [isPublishingTask, setIsPublishingTask] = useState(false);
-    const [isSavingQuizQuestions, setIsSavingQuizQuestions] = useState(false);
-    const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
-    const [createTaskLessonId, setCreateTaskLessonId] = useState<number | null>(
-        null,
-    );
-    const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
-    const [deletingTask, setDeletingTask] = useState<TaskRow | null>(null);
-    const [editingTopic, setEditingTopic] = useState<MockLesson | null>(null);
-    const [isUpdatingTopic, setIsUpdatingTopic] = useState(false);
-    const [topicEditTitle, setTopicEditTitle] = useState('');
-    const [deletingTopic, setDeletingTopic] = useState<MockLesson | null>(null);
-    const [isCreateTopicOpen, setIsCreateTopicOpen] = useState(false);
-    const [topicTitle, setTopicTitle] = useState('');
-    const [isCreatingTopic, setIsCreatingTopic] = useState(false);
     const [completedLessonIds, setCompletedLessonIds] = useState<number[]>(
         serverLessons
             .filter((lesson) => lesson.isCompleted)
@@ -264,12 +213,9 @@ export default function CourseShow({
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(
         mappedInitialLessons[0]?.tasks[0]?.id ?? null,
     );
-    const [quizQuestionsDraft, setQuizQuestionsDraft] = useState<
-        QuizQuestionForm[]
-    >([]);
 
     const [notice, setNotice] = useState<string | null>(null);
-    const topics = useMemo(() => mapLessonsToTopics(lessons), [lessons]);
+
     const [expandedTopicValue, setExpandedTopicValue] = useState<
         string | undefined
     >(mappedInitialLessons[0] ? String(mappedInitialLessons[0].id) : undefined);
@@ -319,68 +265,11 @@ export default function CourseShow({
         [resolvedSelectedTaskId, selectedLesson],
     );
 
-    const selectedTaskQuizQuestions = useMemo<QuizQuestionForm[]>(() => {
-        if (!selectedTask || selectedTask.type !== 'quiz') {
-            return [];
-        }
-
-        return selectedTask.quizQuestions.map((question) => ({
-            question: question.question,
-            options: question.options,
-            correct_option:
-                question.correctIndex >= 0 ? question.correctIndex : 0,
-            explanation: question.explanation,
-        }));
-    }, [selectedTask]);
-
-    useEffect(() => {
-        setQuizQuestionsDraft(selectedTaskQuizQuestions);
-    }, [selectedTaskQuizQuestions]);
-
-    const hasQuizDraftChanges = useMemo(() => {
-        return (
-            JSON.stringify(quizQuestionsDraft) !==
-            JSON.stringify(selectedTaskQuizQuestions)
-        );
-    }, [quizQuestionsDraft, selectedTaskQuizQuestions]);
-
-    const lessonOptions = useMemo<ComboboxOption[]>(() => {
-        return lessons.map((lesson) => ({
-            value: String(lesson.id),
-            label: lesson.title,
-        }));
-    }, [lessons]);
-
-    const mapTaskToRow = (
-        lesson: MockLesson,
-        task: MockTask,
-        index: number,
-    ): TaskRow => {
-        return {
-            id: task.id,
-            task_index: index,
-            lesson_id: lesson.id,
-            lesson_title: lesson.title,
-            course_slug: serverCourse.slug,
-            type: task.type,
-            title: task.title,
-            minutes: task.minutes,
-            video_url: task.videoUrl,
-            quiz_questions: task.quizQuestions.map((question) => ({
-                question: question.question,
-                options: question.options,
-                correct_option:
-                    question.correctIndex >= 0 ? question.correctIndex : 0,
-                explanation: question.explanation,
-            })),
-        };
-    };
-
     const unlockedLessonIds = useMemo(() => {
         const unlockedMap = new Map<number, boolean>();
 
         lessons.forEach((lesson, index) => {
-            if (role === 'admin') {
+            if (isAdmin) {
                 unlockedMap.set(lesson.id, true);
 
                 return;
@@ -408,7 +297,7 @@ export default function CourseShow({
         });
 
         return unlockedMap;
-    }, [completedLessonIds, isEnrolled, lessons, role]);
+    }, [completedLessonIds, isAdmin, isEnrolled, lessons]);
 
     const completedCount = useMemo(
         () =>
@@ -448,29 +337,23 @@ export default function CourseShow({
                 ) : null}
 
                 <section className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1">
-                        <h1 className="text-2xl font-semibold tracking-tight">
-                            {course.title}
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
+                    <div className="flex flex-col gap-0">
+                        <TypographyH1>{course.title}</TypographyH1>
+                        <TypographyMuted className="max-w-3xl text-sm/6">
                             {course.summary}
-                        </p>
+                        </TypographyMuted>
                     </div>
-                    {role === 'admin' ? (
-                        <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => setIsCreateTopicOpen(true)}
-                        >
-                            <Plus data-icon="inline-start" />
-                            Create Topic
-                        </Button>
-                    ) : null}
                 </section>
 
                 <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
                     <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:h-fit">
-                        <Card className="gap-0">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Course Topics</CardTitle>
+                                <CardDescription>
+                                    Select a lesson to open its tasks.
+                                </CardDescription>
+                            </CardHeader>
                             <CardContent className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-1.5">
                                     <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -483,7 +366,7 @@ export default function CourseShow({
                                     />
                                 </div>
 
-                                {role === 'learner' && !isEnrolled ? (
+                                {!isAdmin && !isEnrolled ? (
                                     <Button
                                         type="button"
                                         className="w-full"
@@ -517,375 +400,110 @@ export default function CourseShow({
                                     </Button>
                                 ) : null}
 
-                                <div>
-                                    <div className="flex flex-col gap-4">
-                                        {topics.length === 0 ? (
-                                            <Empty className="px-3 py-6">
-                                                <EmptyHeader>
-                                                    <EmptyTitle>
-                                                        No topics yet
-                                                    </EmptyTitle>
-                                                    <EmptyDescription>
-                                                        Click Create Topic in
-                                                        the page title row.
-                                                    </EmptyDescription>
-                                                </EmptyHeader>
-                                            </Empty>
-                                        ) : (
-                                            <Accordion
-                                                type="single"
-                                                collapsible
-                                                value={expandedTopicValue}
-                                                onValueChange={(value) => {
-                                                    setExpandedTopicValue(
-                                                        value === ''
-                                                            ? undefined
-                                                            : value,
-                                                    );
-                                                }}
-                                                className="w-full"
+                                {lessons.length === 0 ? (
+                                    <Empty className="px-3 py-6">
+                                        <EmptyHeader>
+                                            <EmptyTitle>
+                                                No topics yet
+                                            </EmptyTitle>
+                                            <EmptyDescription>
+                                                Topics and tasks are not available for this course yet.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                ) : (
+                                    <Accordion
+                                        type="single"
+                                        collapsible
+                                        value={expandedTopicValue}
+                                        onValueChange={(value) => {
+                                            setExpandedTopicValue(
+                                                value === ''
+                                                    ? undefined
+                                                    : value,
+                                            );
+                                        }}
+                                        className="w-full"
+                                    >
+                                        {lessons.map((lesson) => (
+                                            <AccordionItem
+                                                key={lesson.id}
+                                                value={String(lesson.id)}
                                             >
-                                                {topics.map((topic) => (
-                                                    <AccordionItem
-                                                        key={topic.id}
-                                                        value={String(topic.id)}
-                                                    >
-                                                        <AccordionTrigger
-                                                            onClick={() => {
-                                                                const matchedLesson =
-                                                                    lessons.find(
-                                                                        (
-                                                                            lesson,
-                                                                        ) =>
-                                                                            lesson.id ===
-                                                                            topic.id,
-                                                                    );
-
-                                                                if (
-                                                                    !matchedLesson
-                                                                ) {
-                                                                    return;
-                                                                }
-
-                                                                setSelectedLessonId(
-                                                                    matchedLesson.id,
-                                                                );
-                                                                setSelectedTaskId(
-                                                                    matchedLesson
-                                                                        .tasks[0]
-                                                                        ?.id ??
-                                                                        null,
-                                                                );
-                                                            }}
-                                                        >
-                                                            <div className="flex w-full items-center justify-between gap-2 pr-2">
-                                                                <span className="truncate">
-                                                                    {topic.topic}
-                                                                </span>
-
-                                                                {role ===
-                                                                'admin' ? (
-                                                                    <div className="flex items-center gap-1">
+                                                <AccordionTrigger
+                                                    onClick={() => {
+                                                        setSelectedLessonId(lesson.id);
+                                                        setSelectedTaskId(
+                                                            lesson.tasks[0]?.id ?? null,
+                                                        );
+                                                    }}
+                                                >
+                                                    <div className="flex w-full items-center justify-between gap-2 pr-2">
+                                                        <span className="truncate">
+                                                            {lesson.title}
+                                                        </span>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="flex flex-col gap-3">
+                                                    {lesson.tasks.length > 0 ? (
+                                                        <div className="flex flex-col gap-2">
+                                                            {lesson.tasks.map(
+                                                                (task) => (
+                                                                    <div
+                                                                        key={`${lesson.id}-${task.id}`}
+                                                                        className="flex items-center gap-1"
+                                                                    >
                                                                         <Button
                                                                             type="button"
-                                                                            size="icon"
-                                                                            variant="ghost"
-                                                                            className="size-7"
-                                                                            onClick={(
-                                                                                event,
-                                                                            ) => {
-                                                                                event.preventDefault();
-                                                                                event.stopPropagation();
-                                                                                const lesson =
-                                                                                    lessons.find(
-                                                                                        (
-                                                                                            currentLesson,
-                                                                                        ) =>
-                                                                                            currentLesson.id ===
-                                                                                            topic.id,
-                                                                                    );
-
-                                                                                if (
-                                                                                    !lesson
-                                                                                ) {
-                                                                                    return;
-                                                                                }
-
-                                                                                setEditingTopic(
-                                                                                    lesson,
-                                                                                );
-                                                                                setTopicEditTitle(
-                                                                                    lesson.title,
-                                                                                );
+                                                                            variant={
+                                                                                selectedTaskId ===
+                                                                                task.id
+                                                                                    ? 'secondary'
+                                                                                    : 'outline'
+                                                                            }
+                                                                            size="lg"
+                                                                            className="flex-1 justify-start gap-2"
+                                                                            onClick={() => {
+                                                                                setSelectedLessonId(lesson.id);
+                                                                                setSelectedTaskId(task.id);
                                                                             }}
                                                                         >
-                                                                            <Pencil className="size-3.5" />
-                                                                        </Button>
-                                                                        <Button
-                                                                            type="button"
-                                                                            size="icon"
-                                                                            variant="ghost"
-                                                                            className="size-7 text-destructive hover:text-destructive"
-                                                                            onClick={(
-                                                                                event,
-                                                                            ) => {
-                                                                                event.preventDefault();
-                                                                                event.stopPropagation();
-                                                                                const lesson =
-                                                                                    lessons.find(
-                                                                                        (
-                                                                                            currentLesson,
-                                                                                        ) =>
-                                                                                            currentLesson.id ===
-                                                                                            topic.id,
-                                                                                    );
-
-                                                                                if (
-                                                                                    !lesson
-                                                                                ) {
-                                                                                    return;
-                                                                                }
-
-                                                                                setDeletingTopic(
-                                                                                    lesson,
-                                                                                );
-                                                                            }}
-                                                                        >
-                                                                            <Trash2 className="size-3.5" />
+                                                                            <span className="truncate">
+                                                                                {task.title}
+                                                                            </span>
                                                                         </Button>
                                                                     </div>
-                                                                ) : null}
-                                                            </div>
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="flex flex-col gap-3">
-                                                            {role === 'admin' ? (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    className="justify-start gap-2"
-                                                                    onClick={() => {
-                                                                        setSelectedLessonId(
-                                                                            topic.id,
-                                                                        );
-                                                                        setCreateTaskLessonId(
-                                                                            topic.id,
-                                                                        );
-                                                                        setIsCreateTaskOpen(
-                                                                            true,
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    <Plus className="size-3.5" />
-                                                                    <span>
-                                                                        Create
-                                                                        Task
-                                                                    </span>
-                                                                </Button>
-                                                            ) : null}
-
-                                                            {lessons.find(
-                                                                (lesson) =>
-                                                                    lesson.id ===
-                                                                    topic.id,
-                                                            )?.tasks.length ? (
-                                                                <div className="flex flex-col gap-2">
-                                                                    {lessons
-                                                                        .find(
-                                                                            (
-                                                                                lesson,
-                                                                            ) =>
-                                                                                lesson.id ===
-                                                                                topic.id,
-                                                                        )
-                                                                        ?.tasks.map(
-                                                                            (
-                                                                                task,
-                                                                                taskIndex,
-                                                                            ) => (
-                                                                                <div
-                                                                                    key={`${topic.id}-${task.id}`}
-                                                                                    className="flex items-center gap-1"
-                                                                                >
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant={
-                                                                                            selectedTaskId ===
-                                                                                            task.id
-                                                                                                ? 'secondary'
-                                                                                                : 'outline'
-                                                                                        }
-                                                                                        size="sm"
-                                                                                        className="flex-1 justify-start gap-2"
-                                                                                        onClick={() => {
-                                                                                            setSelectedLessonId(
-                                                                                                topic.id,
-                                                                                            );
-                                                                                            setSelectedTaskId(
-                                                                                                task.id,
-                                                                                            );
-                                                                                        }}
-                                                                                    >
-                                                                                        <Badge
-                                                                                            variant="outline"
-                                                                                            className="size-5 rounded-full p-0 text-[11px] leading-none"
-                                                                                        >
-                                                                                            {taskIndex +
-                                                                                                1}
-                                                                                        </Badge>
-                                                                                        <span className="truncate">
-                                                                                            {
-                                                                                                task.title
-                                                                                            }
-                                                                                        </span>
-                                                                                    </Button>
-
-                                                                                    {role ===
-                                                                                    'admin' ? (
-                                                                                        <>
-                                                                                            <Button
-                                                                                                type="button"
-                                                                                                size="icon"
-                                                                                                variant="ghost"
-                                                                                                className="size-7"
-                                                                                                onClick={() => {
-                                                                                                    const lesson =
-                                                                                                        lessons.find(
-                                                                                                            (
-                                                                                                                currentLesson,
-                                                                                                            ) =>
-                                                                                                                currentLesson.id ===
-                                                                                                                topic.id,
-                                                                                                        );
-
-                                                                                                    if (
-                                                                                                        !lesson
-                                                                                                    ) {
-                                                                                                        return;
-                                                                                                    }
-
-                                                                                                    setEditingTask(
-                                                                                                        mapTaskToRow(
-                                                                                                            lesson,
-                                                                                                            task,
-                                                                                                            taskIndex,
-                                                                                                        ),
-                                                                                                    );
-                                                                                                }}
-                                                                                            >
-                                                                                                <Pencil className="size-3.5" />
-                                                                                            </Button>
-                                                                                            <Button
-                                                                                                type="button"
-                                                                                                size="icon"
-                                                                                                variant="ghost"
-                                                                                                className="size-7 text-destructive hover:text-destructive"
-                                                                                                onClick={() => {
-                                                                                                    const lesson =
-                                                                                                        lessons.find(
-                                                                                                            (
-                                                                                                                currentLesson,
-                                                                                                            ) =>
-                                                                                                                currentLesson.id ===
-                                                                                                                topic.id,
-                                                                                                        );
-
-                                                                                                    if (
-                                                                                                        !lesson
-                                                                                                    ) {
-                                                                                                        return;
-                                                                                                    }
-
-                                                                                                    setDeletingTask(
-                                                                                                        mapTaskToRow(
-                                                                                                            lesson,
-                                                                                                            task,
-                                                                                                            taskIndex,
-                                                                                                        ),
-                                                                                                    );
-                                                                                                }}
-                                                                                            >
-                                                                                                <Trash2 className="size-3.5" />
-                                                                                            </Button>
-                                                                                        </>
-                                                                                    ) : null}
-                                                                                </div>
-                                                                            ),
-                                                                        )}
-                                                                </div>
-                                                            ) : (
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    No tasks
-                                                                    available
-                                                                    yet.
-                                                                </p>
+                                                                ),
                                                             )}
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                ))}
-                                            </Accordion>
-                                        )}
-                                    </div>
-                                </div>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            No tasks available yet.
+                                                        </p>
+                                                    )}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        ))}
+                                    </Accordion>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
 
                     <div className="flex flex-col gap-4">
                         <Card className="gap-0">
-                            {selectedLesson ? (
-                                <CardHeader className="mt-4 pb-3">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <CardTitle className="text-xl tracking-tight">
-                                            {role === 'admin' &&
-                                            selectedTask &&
-                                            !selectedTask.isPublished
-                                                ? `${selectedTask.title} (Preview)`
-                                                : selectedLesson.title}
-                                        </CardTitle>
-
-                                        {role === 'admin' &&
-                                        selectedTask &&
-                                        !selectedTask.isPublished ? (
-                                            <Button
-                                                type="button"
-                                                disabled={isPublishingTask}
-                                                onClick={() => {
-                                                    setIsPublishingTask(true);
-
-                                                    router.post(
-                                                        publishTask({
-                                                            course: serverCourse.slug,
-                                                            lesson: selectedLesson.id,
-                                                            task: selectedTask.id,
-                                                        }),
-                                                        {},
-                                                        {
-                                                            preserveScroll: true,
-                                                            onSuccess: () => {
-                                                                setNotice(
-                                                                    `Task "${selectedTask.title}" published.`,
-                                                                );
-                                                            },
-                                                            onFinish: () => {
-                                                                setIsPublishingTask(
-                                                                    false,
-                                                                );
-                                                            },
-                                                        },
-                                                    );
-                                                }}
-                                            >
-                                                {isPublishingTask
-                                                    ? 'Publishing...'
-                                                    : 'Publish Task'}
-                                            </Button>
-                                        ) : null}
-                                    </div>
-                                </CardHeader>
-                            ) : null}
-
                             <CardContent className="flex flex-col gap-4">
+                                {selectedTask ? (
+                                    <div className="flex flex-col gap-1">
+                                        <h3 className="text-base font-medium">
+                                            {selectedTask.title}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            {selectedTask.description}
+                                        </p>
+                                    </div>
+                                ) : null}
+
                                 {!selectedLesson ? (
                                     <Empty className="px-2 py-6">
                                         <EmptyHeader>
@@ -898,7 +516,7 @@ export default function CourseShow({
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
-                                ) : role === 'learner' &&
+                                                                ) : !isAdmin &&
                                   !(
                                       unlockedLessonIds.get(
                                           selectedLesson.id,
@@ -921,7 +539,7 @@ export default function CourseShow({
                                                 No task yet
                                             </EmptyTitle>
                                             <EmptyDescription>
-                                                Create one from the topic panel.
+                                                No task is currently assigned to this topic.
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
@@ -966,70 +584,6 @@ export default function CourseShow({
                                             </EmptyHeader>
                                         </Empty>
                                     )
-                                ) : role === 'admin' ? (
-                                    <div className="flex flex-col gap-3">
-                                        <QuizQuestionsEditor
-                                            prefix={`main-${selectedTask.id}`}
-                                            questions={quizQuestionsDraft}
-                                            onChange={setQuizQuestionsDraft}
-                                        />
-
-                                        <div className="flex justify-end">
-                                            <Button
-                                                type="button"
-                                                disabled={
-                                                    isSavingQuizQuestions ||
-                                                    !hasQuizDraftChanges
-                                                }
-                                                onClick={() => {
-                                                    if (
-                                                        !selectedTask ||
-                                                        !selectedLesson
-                                                    ) {
-                                                        return;
-                                                    }
-
-                                                    setIsSavingQuizQuestions(
-                                                        true,
-                                                    );
-
-                                                    router.patch(
-                                                        updateTask.url({
-                                                            task: selectedTask.id,
-                                                        }),
-                                                        {
-                                                            lesson_id:
-                                                                selectedLesson.id,
-                                                            title: selectedTask.title,
-                                                            type: 'quiz',
-                                                            minutes:
-                                                                selectedTask.minutes,
-                                                            video_url: '',
-                                                            quiz_questions:
-                                                                quizQuestionsDraft,
-                                                        },
-                                                        {
-                                                            preserveScroll: true,
-                                                            onSuccess: () => {
-                                                                setNotice(
-                                                                    'Quiz questions updated successfully.',
-                                                                );
-                                                            },
-                                                            onFinish: () => {
-                                                                setIsSavingQuizQuestions(
-                                                                    false,
-                                                                );
-                                                            },
-                                                        },
-                                                    );
-                                                }}
-                                            >
-                                                {isSavingQuizQuestions
-                                                    ? 'Saving...'
-                                                    : 'Save Quiz Questions'}
-                                            </Button>
-                                        </div>
-                                    </div>
                                 ) : (
                                     <QuizPanel
                                         key={`${selectedTask.id}-${selectedTask.quizQuestions.length}`}
@@ -1039,7 +593,7 @@ export default function CourseShow({
                                     />
                                 )}
 
-                                {role === 'learner' &&
+                                {!isAdmin &&
                                 selectedLesson &&
                                 isEnrolled &&
                                 (unlockedLessonIds.get(selectedLesson.id) ??
@@ -1098,7 +652,7 @@ export default function CourseShow({
                                     </Button>
                                 ) : null}
 
-                                {role === 'learner' &&
+                                {!isAdmin &&
                                 selectedLesson &&
                                 completedLessonIds.includes(
                                     selectedLesson.id,
@@ -1115,313 +669,6 @@ export default function CourseShow({
                     </div>
                 </section>
             </div>
-
-            {role === 'admin' ? (
-                <AlertDialog
-                    open={isCreateTopicOpen}
-                    onOpenChange={(open) => {
-                        setIsCreateTopicOpen(open);
-
-                        if (!open) {
-                            setTopicTitle('');
-                        }
-                    }}
-                >
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Create Topic</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Create a new lesson topic for this course.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="topic-title">Title</Label>
-                            <Input
-                                id="topic-title"
-                                value={topicTitle}
-                                onChange={(event) =>
-                                    setTopicTitle(event.target.value)
-                                }
-                                placeholder="Enter topic title"
-                            />
-                        </div>
-
-                        <AlertDialogFooter>
-                            <AlertDialogCancel
-                                onClick={() => {
-                                    setIsCreateTopicOpen(false);
-                                    setTopicTitle('');
-                                }}
-                            >
-                                Cancel
-                            </AlertDialogCancel>
-                            <Button
-                                type="button"
-                                disabled={
-                                    isCreatingTopic ||
-                                    topicTitle.trim().length === 0
-                                }
-                                onClick={() => {
-                                    setIsCreatingTopic(true);
-
-                                    router.post(
-                                        storeLesson({
-                                            course: serverCourse.slug,
-                                        }),
-                                        {
-                                            title: topicTitle.trim(),
-                                        },
-                                        {
-                                            preserveScroll: true,
-                                            onSuccess: () => {
-                                                setNotice(
-                                                    'Topic created successfully.',
-                                                );
-                                                setIsCreateTopicOpen(false);
-                                                setTopicTitle('');
-                                            },
-                                            onFinish: () => {
-                                                setIsCreatingTopic(false);
-                                            },
-                                        },
-                                    );
-                                }}
-                            >
-                                {isCreatingTopic
-                                    ? 'Creating...'
-                                    : 'Create Topic'}
-                            </Button>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            ) : null}
-
-            {role === 'admin' ? (
-                <TaskFormSheet
-                    mode="create"
-                    open={isCreateTaskOpen}
-                    onOpenChange={(open) => {
-                        setIsCreateTaskOpen(open);
-
-                        if (!open) {
-                            setCreateTaskLessonId(null);
-                        }
-                    }}
-                    lessonOptions={lessonOptions}
-                    selectedLessonId={
-                        createTaskLessonId ?? selectedLesson?.id ?? 0
-                    }
-                    showLessonFieldOnCreate={false}
-                    showQuizQuestionsEditor={false}
-                />
-            ) : null}
-
-            {role === 'admin' ? (
-                <TaskFormSheet
-                    mode="edit"
-                    open={editingTask !== null}
-                    onOpenChange={(open) => {
-                        if (!open) {
-                            setEditingTask(null);
-                        }
-                    }}
-                    lessonOptions={lessonOptions}
-                    selectedLessonId={selectedLesson?.id ?? 0}
-                    showQuizQuestionsEditor={false}
-                    task={editingTask}
-                />
-            ) : null}
-
-            {role === 'admin' ? (
-                <AlertDialog
-                    open={editingTopic !== null}
-                    onOpenChange={(open) => {
-                        if (!open) {
-                            setEditingTopic(null);
-                            setTopicEditTitle('');
-                        }
-                    }}
-                >
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Edit Topic</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Update topic title for this course.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="edit-topic-title">Title</Label>
-                            <Input
-                                id="edit-topic-title"
-                                value={topicEditTitle}
-                                onChange={(event) =>
-                                    setTopicEditTitle(event.target.value)
-                                }
-                                placeholder="Enter topic title"
-                            />
-                        </div>
-
-                        <AlertDialogFooter>
-                            <AlertDialogCancel
-                                onClick={() => {
-                                    setEditingTopic(null);
-                                    setTopicEditTitle('');
-                                }}
-                            >
-                                Cancel
-                            </AlertDialogCancel>
-                            <Button
-                                type="button"
-                                disabled={
-                                    isUpdatingTopic ||
-                                    !editingTopic ||
-                                    topicEditTitle.trim().length === 0
-                                }
-                                onClick={() => {
-                                    if (!editingTopic) {
-                                        return;
-                                    }
-
-                                    setIsUpdatingTopic(true);
-
-                                    router.patch(
-                                        updateLesson.url({
-                                            lesson: editingTopic.id,
-                                        }),
-                                        {
-                                            title: topicEditTitle.trim(),
-                                            xp_reward: 50,
-                                        },
-                                        {
-                                            preserveScroll: true,
-                                            onSuccess: () => {
-                                                setNotice(
-                                                    `Topic "${editingTopic.title}" updated.`,
-                                                );
-                                                setEditingTopic(null);
-                                                setTopicEditTitle('');
-                                            },
-                                            onFinish: () => {
-                                                setIsUpdatingTopic(false);
-                                            },
-                                        },
-                                    );
-                                }}
-                            >
-                                {isUpdatingTopic
-                                    ? 'Updating...'
-                                    : 'Update Topic'}
-                            </Button>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            ) : null}
-
-            {role === 'admin' ? (
-                <AlertDialog
-                    open={deletingTopic !== null}
-                    onOpenChange={(open) => {
-                        if (!open) {
-                            setDeletingTopic(null);
-                        }
-                    }}
-                >
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>
-                                Delete topic?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>
-                                Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => {
-                                    if (!deletingTopic) {
-                                        return;
-                                    }
-
-                                    router.delete(
-                                        destroyLesson.url({
-                                            lesson: deletingTopic.id,
-                                        }),
-                                        {
-                                            preserveScroll: true,
-                                            onSuccess: () => {
-                                                setNotice(
-                                                    `Topic "${deletingTopic.title}" deleted.`,
-                                                );
-                                                setDeletingTopic(null);
-                                            },
-                                        },
-                                    );
-                                }}
-                            >
-                                Delete
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            ) : null}
-
-            {role === 'admin' ? (
-                <AlertDialog
-                    open={deletingTask !== null}
-                    onOpenChange={(open) => {
-                        if (!open) {
-                            setDeletingTask(null);
-                        }
-                    }}
-                >
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>
-                                Delete task?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>
-                                Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => {
-                                    if (!deletingTask) {
-                                        return;
-                                    }
-
-                                    router.delete(
-                                        destroyTask.url({
-                                            task: deletingTask.id,
-                                        }),
-                                        {
-                                            preserveScroll: true,
-                                            onSuccess: () => {
-                                                setNotice(
-                                                    `Task "${deletingTask.title}" deleted.`,
-                                                );
-                                                setDeletingTask(null);
-                                            },
-                                        },
-                                    );
-                                }}
-                            >
-                                Delete
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            ) : null}
         </>
     );
 }

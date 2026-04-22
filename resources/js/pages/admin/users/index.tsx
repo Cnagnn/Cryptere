@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Shield, Trash2, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     AlertDialog,
@@ -13,16 +13,30 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    DataTable,
-} from '@/components/ui/data-table';
+import { DataTable } from '@/components/ui/data-table';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -32,7 +46,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
+import { dashboard } from '@/routes';
 import { destroy, index as usersIndex, update } from '@/routes/admin/users';
 
 type UserRow = {
@@ -65,98 +81,38 @@ type Props = {
     };
 };
 
+function splitEmail(email: string): { localPart: string; domain: string } {
+    const [localPart, ...domainParts] = email.split('@');
+
+    return {
+        localPart,
+        domain: domainParts.join('@') || 'unknown',
+    };
+}
+
 export default function AdminUsersIndex({ users, filters }: Props) {
     const getInitials = useInitials();
     const pointsFormatter = useMemo(() => new Intl.NumberFormat('id-ID'), []);
     const [searchInput, setSearchInput] = useState(filters.search);
     const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'member'>(
-        filters.role === 'admin' || filters.role === 'member' ? filters.role : 'all'
+        filters.role === 'admin' || filters.role === 'member' ? filters.role : 'all',
     );
+
     const [editingUser, setEditingUser] = useState<UserRow | null>(null);
     const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
-    const [editingUsername, setEditingUsername] = useState('');
-    const [editingEmail, setEditingEmail] = useState('');
     const [editingRole, setEditingRole] = useState<'admin' | 'member'>('member');
     const [editingPoints, setEditingPoints] = useState('0');
     const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
     const [isSubmittingDelete, setIsSubmittingDelete] = useState(false);
+
     const hasInitializedAutoFilter = useRef(false);
 
-    const openEditDialog = useCallback((user: UserRow) => {
-        setEditingUser(user);
-        setEditingUsername(user.username ?? '');
-        setEditingEmail(user.email);
-        setEditingRole(user.role);
-        setEditingPoints(pointsFormatter.format(user.points));
-    }, [pointsFormatter]);
-
-    const resolvePointsValue = (): number => {
-        if (!editingUser) {
-            return 0;
-        }
-
-        const parsedValue = Number.parseInt(editingPoints.replace(/\./g, '').trim(), 10);
-
-        if (Number.isNaN(parsedValue)) {
-            return editingUser.points;
-        }
-
-        return Math.max(0, parsedValue);
-    };
-
-    const incrementPoints = (delta: number) => {
-        const current = Number.parseInt(editingPoints.replace(/\./g, ''), 10);
-        const safeCurrent = Number.isNaN(current) ? 0 : current;
-
-        setEditingPoints(pointsFormatter.format(Math.max(0, safeCurrent + delta)));
-    };
-
-    const handlePointsChange = (rawValue: string) => {
-        const digitsOnly = rawValue.replace(/\D/g, '');
-
-        if (digitsOnly === '') {
-            setEditingPoints('');
-
-            return;
-        }
-
-        setEditingPoints(pointsFormatter.format(Number.parseInt(digitsOnly, 10)));
-    };
-
-    const submitEdit = () => {
-        if (!editingUser) {
-            return;
-        }
-
-        setIsSubmittingEdit(true);
-        router.patch(update.url({ user: editingUser.id }), {
-            role: editingRole,
-            points: resolvePointsValue(),
-        }, {
-            preserveScroll: true,
-            onFinish: () => setIsSubmittingEdit(false),
-            onSuccess: () => setEditingUser(null),
-        });
-    };
-
-    const submitDelete = () => {
-        if (!deletingUser) {
-            return;
-        }
-
-        setIsSubmittingDelete(true);
-        router.delete(destroy.url({ user: deletingUser.id }), {
-            preserveScroll: true,
-            onFinish: () => setIsSubmittingDelete(false),
-            onSuccess: () => setDeletingUser(null),
-        });
-    };
-
-    const syncFilters = useCallback((searchValue: string, roleValue: 'all' | 'admin' | 'member', page = 1): void => {
+    const syncFilters = useCallback((searchValue: string, roleValue: 'all' | 'admin' | 'member', page = 1, perPage = users.per_page): void => {
         router.get(
             usersIndex.url({
                 query: {
                     page,
+                    per_page: perPage,
                     search: searchValue.trim() || undefined,
                     role: roleValue === 'all' ? undefined : roleValue,
                 },
@@ -168,11 +124,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                 replace: true,
             },
         );
-    }, []);
-
-    const handlePageChange = (nextPage: number): void => {
-        syncFilters(searchInput, roleFilter, nextPage);
-    };
+    }, [users.per_page]);
 
     useEffect(() => {
         if (!hasInitializedAutoFilter.current) {
@@ -188,91 +140,132 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         return () => window.clearTimeout(timer);
     }, [roleFilter, searchInput, syncFilters]);
 
+    const resolvePointsValue = (): number => {
+        if (!editingUser) {
+            return 0;
+        }
+
+        const parsedValue = Number.parseInt(editingPoints.replace(/\./g, '').trim(), 10);
+
+        if (Number.isNaN(parsedValue)) {
+            return editingUser.points;
+        }
+
+        return Math.max(0, parsedValue);
+    };
+
+    const handlePointsChange = (rawValue: string): void => {
+        const digitsOnly = rawValue.replace(/\D/g, '');
+
+        if (digitsOnly === '') {
+            setEditingPoints('');
+
+            return;
+        }
+
+        setEditingPoints(pointsFormatter.format(Number.parseInt(digitsOnly, 10)));
+    };
+
+    const submitEdit = (): void => {
+        if (!editingUser) {
+            return;
+        }
+
+        setIsSubmittingEdit(true);
+        router.patch(update.url({ user: editingUser.id }), {
+            role: editingRole,
+            points: resolvePointsValue(),
+        }, {
+            preserveScroll: true,
+            onFinish: () => setIsSubmittingEdit(false),
+            onSuccess: () => setEditingUser(null),
+        });
+    };
+
+    const submitDelete = (): void => {
+        if (!deletingUser) {
+            return;
+        }
+
+        setIsSubmittingDelete(true);
+        router.delete(destroy.url({ user: deletingUser.id }), {
+            preserveScroll: true,
+            onFinish: () => setIsSubmittingDelete(false),
+            onSuccess: () => setDeletingUser(null),
+        });
+    };
+
     const columns = useMemo<ColumnDef<UserRow>[]>(() => [
         {
-            accessorKey: 'username',
-            header: ({ column }) => (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                    aria-sort={column.getIsSorted() === false ? 'none' : column.getIsSorted() === 'asc' ? 'ascending' : 'descending'}
-                >
-                    Username
-                    <ArrowUpDown className="size-4" />
-                </Button>
-            ),
+            accessorKey: 'name',
+            header: 'User',
             cell: ({ row }) => (
-                <div className="flex justify-center">
-                    <div className="grid w-64 grid-cols-[1.75rem_1fr] items-center gap-2 text-left">
-                        <Avatar className="size-7 rounded-full">
-                            <AvatarImage src={row.original.avatar ?? undefined} alt={row.original.name} />
-                            <AvatarFallback>{getInitials(row.original.username ?? row.original.name)}</AvatarFallback>
-                        </Avatar>
-                        <p className="truncate font-medium">{row.original.username ? `@${row.original.username}` : '-'}</p>
-                    </div>
+                <div className="flex items-center gap-3 text-left">
+                    <Avatar>
+                        <AvatarImage src={row.original.avatar ?? undefined} alt={row.original.name} />
+                        <AvatarFallback>{getInitials(row.original.username ?? row.original.name)}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm">
+                        {row.original.username ? `@${row.original.username}` : '@unknown'}
+                    </p>
                 </div>
             ),
         },
         {
             accessorKey: 'email',
-            header: ({ column }) => (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                    aria-sort={column.getIsSorted() === false ? 'none' : column.getIsSorted() === 'asc' ? 'ascending' : 'descending'}
-                >
-                    Email
-                    <ArrowUpDown className="size-4" />
-                </Button>
-            ),
+            header: 'Email Address',
             cell: ({ row }) => {
-                const [localPart, domainPart] = row.original.email.split('@');
+                const { localPart, domain } = splitEmail(row.original.email);
 
                 return (
-                    <div className="flex justify-center">
-                        <div className="grid w-80 grid-cols-[1fr_auto_1fr] items-center text-sm text-muted-foreground">
-                            <span className="truncate text-right">{localPart}</span>
-                            <span className="px-0.5">@</span>
-                            <span className="truncate text-left">{domainPart ?? ''}</span>
-                        </div>
-                    </div>
+                    <span className="inline-grid grid-cols-[14ch_auto] items-baseline text-sm text-muted-foreground">
+                        <span className="truncate text-right">{localPart}</span>
+                        <span className="pl-1">@{domain}</span>
+                    </span>
                 );
             },
         },
         {
-            accessorKey: 'points',
-            header: ({ column }) => (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                    aria-sort={column.getIsSorted() === false ? 'none' : column.getIsSorted() === 'asc' ? 'ascending' : 'descending'}
-                >
-                    Points
-                    <ArrowUpDown className="size-4" />
-                </Button>
-            ),
-            cell: ({ row }) => pointsFormatter.format(row.original.points),
-        },
-        {
             accessorKey: 'role',
             header: 'Role',
-            cell: ({ row }) => <p className="capitalize">{row.original.role}</p>,
+            cell: ({ row }) => (
+                <div className="flex justify-center">
+                    <Badge variant="outline" className="capitalize">
+                        {row.original.role === 'admin' ? <Shield /> : <UserRound />}
+                        {row.original.role}
+                    </Badge>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'points',
+            header: 'Points',
+            cell: ({ row }) => `${pointsFormatter.format(row.original.points)} pts`,
         },
         {
             id: 'actions',
-            enableHiding: false,
+            header: '',
             cell: ({ row }) => (
                 <div className="flex justify-center">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button type="button" variant="ghost" size="icon" className="size-8">
-                                <MoreHorizontal className="size-4" />
+                            <Button type="button" variant="ghost" size="icon">
+                                <MoreHorizontal />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditDialog(row.original)}>
-                                Edit
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    setEditingUser(row.original);
+                                    setEditingRole(row.original.role);
+                                    setEditingPoints(pointsFormatter.format(row.original.points));
+                                }}
+                            >
+                                <Shield data-icon="inline-start" />
+                                Edit access
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 disabled={!row.original.can_delete}
                                 onClick={() => {
@@ -283,6 +276,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     setDeletingUser(row.original);
                                 }}
                             >
+                                <Trash2 data-icon="inline-start" />
                                 Delete
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -290,25 +284,25 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                 </div>
             ),
         },
-    ], [getInitials, openEditDialog, pointsFormatter]);
+    ], [getInitials, pointsFormatter]);
 
     return (
         <>
             <Head title="Management - Users" />
 
             <div className="flex flex-col gap-6 px-4 py-6">
-                <header className="flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <h1 className="text-2xl font-semibold tracking-tight">Users Management</h1>
+                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex flex-col gap-0">
+                        <TypographyH1>User Management</TypographyH1>
+                        <TypographyMuted className="text-sm/6">
+                            Manage user roles and point balances from a single workspace.
+                        </TypographyMuted>
                     </div>
 
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <p className="text-sm text-muted-foreground">
-                            Manage user access, roles, and point balances.
-                        </p>
-
-                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                        <div className="w-full sm:w-80">
                             <Input
+                                id="user-search"
                                 value={searchInput}
                                 onChange={(event) => setSearchInput(event.target.value)}
                                 onKeyDown={(event) => {
@@ -317,64 +311,83 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         syncFilters(searchInput, roleFilter, 1);
                                     }
                                 }}
-                                placeholder="Search name, username, or email"
-                                className="w-full sm:min-w-72"
+                                placeholder="Search username..."
                             />
-                            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as 'all' | 'admin' | 'member')}>
-                                <SelectTrigger className="w-full sm:w-40">
-                                    <SelectValue placeholder="All roles" />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectGroup>
-                                        <SelectItem value="all">All roles</SelectItem>
-                                        <SelectItem value="admin">Admin</SelectItem>
-                                        <SelectItem value="member">Member</SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
                         </div>
+
+                        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as 'all' | 'admin' | 'member')}>
+                            <SelectTrigger id="role-filter" className="w-full sm:w-40">
+                                <SelectValue placeholder="All roles" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem value="all">All roles</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="member">Member</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </header>
 
-                <DataTable
-                    columns={columns}
-                    data={users.data}
-                    showFilterInput={false}
-                    showColumnToggle={false}
-                    centered
-                    showPageSizeSelector={false}
-                    showPageInfo={false}
-                    page={users.current_page}
-                    pageCount={users.last_page}
-                    pageSize={users.per_page}
-                    onPageChange={handlePageChange}
-                    footerInfo={`Showing ${users.from ?? 0} - ${users.to ?? 0} of ${users.total} users.`}
-                />
+                <section className="grid gap-4">
+                    <div className="flex flex-col gap-4">
+                        {users.data.length === 0 ? (
+                            <Empty>
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <UserRound />
+                                    </EmptyMedia>
+                                    <EmptyTitle>No users found</EmptyTitle>
+                                    <EmptyDescription>
+                                        Try different filters or keywords.
+                                    </EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
+                        ) : (
+                            <DataTable
+                                columns={columns}
+                                data={users.data}
+                                centered
+                                showFilterInput={false}
+                                showColumnToggle={false}
+                                showPageInfo={false}
+                                enableDefaultIdSort={false}
+                                page={users.current_page}
+                                pageCount={users.last_page}
+                                pageSize={users.per_page}
+                                onPageChange={(nextPage) => syncFilters(searchInput, roleFilter, nextPage)}
+                                onPageSizeChange={(nextPageSize) => syncFilters(searchInput, roleFilter, 1, nextPageSize)}
+                                footerInfo={`Showing ${users.from ?? 0} - ${users.to ?? 0} of ${users.total} users`}
+                            />
+                        )}
+                    </div>
+                </section>
 
                 <AlertDialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
-                    <AlertDialogContent className="w-full overflow-y-auto sm:max-w-xl">
+                    <AlertDialogContent className="sm:max-w-lg">
                         <AlertDialogHeader>
                             <AlertDialogTitle>Edit User Access</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Update access for {editingUser?.username ? `@${editingUser.username}` : editingUser?.name ?? 'this user'}.
+                                Update role and points for {editingUser?.username ? `@${editingUser.username}` : editingUser?.name ?? 'this user'}.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
 
-                        <div className="flex flex-col gap-3 px-4">
-                            <div className="flex flex-col gap-1.5">
-                                <p className="text-sm font-medium">Username</p>
-                                <Input value={editingUsername} readOnly className="bg-muted/40" />
-                            </div>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel>Username</FieldLabel>
+                                <Input value={editingUser?.username ?? '-'} readOnly />
+                            </Field>
 
-                            <div className="flex flex-col gap-1.5">
-                                <p className="text-sm font-medium">Email</p>
-                                <Input type="email" value={editingEmail} readOnly className="bg-muted/40" />
-                            </div>
+                            <Field>
+                                <FieldLabel>Email</FieldLabel>
+                                <Input value={editingUser?.email ?? ''} readOnly />
+                            </Field>
 
-                            <div className="flex flex-col gap-1.5">
-                                <p className="text-sm font-medium">Role</p>
+                            <Field>
+                                <FieldLabel htmlFor="edit-user-role">Role</FieldLabel>
                                 <Select value={editingRole} onValueChange={(value: 'admin' | 'member') => setEditingRole(value)}>
-                                    <SelectTrigger className="w-full">
+                                    <SelectTrigger id="edit-user-role">
                                         <SelectValue placeholder="Select role" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -384,33 +397,29 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </Field>
 
-                            <div className="flex flex-col gap-1.5">
-                                <p className="text-sm font-medium">Points</p>
+                            <Field>
+                                <FieldLabel htmlFor="edit-user-points">Points</FieldLabel>
                                 <Input
+                                    id="edit-user-points"
                                     type="text"
                                     inputMode="numeric"
                                     value={editingPoints}
                                     onChange={(event) => handlePointsChange(event.target.value)}
                                     placeholder="0"
                                 />
-                                <div className="flex flex-wrap gap-2 pt-1">
-                                    <Button type="button" size="sm" variant="outline" onClick={() => incrementPoints(1)}>+1</Button>
-                                    <Button type="button" size="sm" variant="outline" onClick={() => incrementPoints(5)}>+5</Button>
-                                    <Button type="button" size="sm" variant="outline" onClick={() => incrementPoints(10)}>+10</Button>
-                                    <Button type="button" size="sm" variant="outline" onClick={() => incrementPoints(50)}>+50</Button>
-                                </div>
-                            </div>
-                        </div>
+                                <FieldDescription>
+                                    Numbers only. Values are formatted automatically.
+                                </FieldDescription>
+                            </Field>
+                        </FieldGroup>
 
-                        <AlertDialogFooter className="mt-4 sm:flex-row sm:justify-end">
-                            <AlertDialogCancel onClick={() => setEditingUser(null)}>
-                                Cancel
-                            </AlertDialogCancel>
-                            <Button type="button" onClick={submitEdit} disabled={isSubmittingEdit}>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setEditingUser(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={submitEdit} disabled={isSubmittingEdit}>
                                 {isSubmittingEdit ? 'Saving...' : 'Save changes'}
-                            </Button>
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -423,16 +432,11 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 This action cannot be undone. {deletingUser?.username ? `@${deletingUser.username}` : deletingUser?.name ?? 'This user'} will lose access permanently.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
-
                         <AlertDialogFooter>
                             <AlertDialogCancel type="button" onClick={() => setDeletingUser(null)}>
                                 Cancel
                             </AlertDialogCancel>
-                            <AlertDialogAction
-                                type="button"
-                                onClick={submitDelete}
-                                disabled={isSubmittingDelete}
-                            >
+                            <AlertDialogAction type="button" onClick={submitDelete} disabled={isSubmittingDelete}>
                                 {isSubmittingDelete ? 'Deleting...' : 'Delete'}
                             </AlertDialogAction>
                         </AlertDialogFooter>
@@ -442,3 +446,20 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         </>
     );
 }
+
+AdminUsersIndex.layout = {
+    breadcrumbs: [
+        {
+            title: 'Home',
+            href: dashboard(),
+        },
+        {
+            title: 'Management',
+            href: usersIndex(),
+        },
+        {
+            title: 'Users',
+            href: usersIndex(),
+        },
+    ],
+};

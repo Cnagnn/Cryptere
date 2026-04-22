@@ -2,16 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreCourseLessonRequest;
-use App\Http\Requests\StoreLessonTaskRequest;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -54,103 +49,6 @@ class CourseController extends Controller
     }
 
     /**
-     * Store a new lesson for the course.
-     */
-    public function storeLesson(StoreCourseLessonRequest $request, Course $course): RedirectResponse
-    {
-        abort_unless($course->is_published, 404);
-
-        $validated = $request->validated();
-        $baseSlug = Str::slug($validated['title']);
-
-        if ($baseSlug === '') {
-            $baseSlug = 'lesson';
-        }
-
-        $existingSlugs = Lesson::query()
-            ->whereBelongsTo($course)
-            ->where('slug', 'like', $baseSlug.'%')
-            ->pluck('slug');
-
-        $slug = $baseSlug;
-        $counter = 2;
-
-        while ($existingSlugs->contains($slug)) {
-            $slug = sprintf('%s-%d', $baseSlug, $counter);
-            $counter++;
-        }
-
-        $nextPosition = ((int) Lesson::query()
-            ->whereBelongsTo($course)
-            ->max('position')) + 1;
-
-        Lesson::query()->create([
-            'course_id' => $course->id,
-            'slug' => $slug,
-            'title' => $validated['title'],
-            'content' => '',
-            'position' => $nextPosition,
-        ]);
-
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => __('Lesson created.'),
-        ]);
-
-        return back();
-    }
-
-    /**
-     * Store a new task entry for a lesson.
-     */
-    public function storeTask(StoreLessonTaskRequest $request, Course $course, Lesson $lesson): RedirectResponse
-    {
-        abort_unless($course->is_published, 404);
-        abort_unless($lesson->course_id === $course->id, 404);
-
-        $validated = $request->validated();
-        $documentName = null;
-        $conversionStatus = null;
-        $pdfUrl = null;
-
-        if ($validated['type'] === 'read') {
-            $uploadedDocument = $request->file('document');
-
-            if ($uploadedDocument !== null) {
-                $storedPath = $uploadedDocument->store('lesson-documents', 'public');
-                $documentName = $uploadedDocument->getClientOriginalName();
-                $conversionStatus = 'pending';
-                $pdfUrl = Storage::disk('public')->url($storedPath);
-            }
-        }
-
-        LessonTask::query()->create([
-            'lesson_id' => $lesson->id,
-            'title' => $validated['title'],
-            'type' => $validated['type'],
-            'minutes' => match ($validated['type']) {
-                'video' => 18,
-                'read' => 10,
-                default => 5,
-            },
-            'video_url' => $validated['type'] === 'video' ? $validated['video_url'] : null,
-            'document_name' => $documentName,
-            'conversion_status' => $conversionStatus,
-            'pdf_url' => $pdfUrl,
-            'sort_order' => (int) LessonTask::query()->where('lesson_id', $lesson->id)->max('sort_order') + 1,
-            'published_at' => null,
-            'published_by' => null,
-        ]);
-
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => __('Task created.'),
-        ]);
-
-        return back();
-    }
-
-    /**
      * Show a single course detail page.
      */
     public function show(Request $request, Course $course): Response
@@ -159,7 +57,9 @@ class CourseController extends Controller
         $isAdmin = (bool) $request->user()?->isAdmin();
 
         $course->load([
-            'lessons' => fn ($query) => $query->with(['tasks.quizQuestions'])->orderBy('position'),
+            'lessons' => fn ($query) => $query
+                ->with(['tasks.quizQuestions'])
+                ->orderBy('position'),
         ])->loadCount('enrollments');
 
         $enrollment = $request->user()
@@ -200,7 +100,8 @@ class CourseController extends Controller
                         'type' => $task->type,
                         'title' => $task->title,
                         'minutes' => $task->minutes,
-                        'videoUrl' => $task->video_url,
+                        'videoUrl' => $task->video_mp4_url ?? $task->video_url,
+                        'videoProcessingStatus' => $task->video_processing_status,
                         'documentName' => $task->document_name,
                         'conversionStatus' => $task->conversion_status,
                         'pdfUrl' => $task->pdf_url,
@@ -239,39 +140,7 @@ class CourseController extends Controller
     }
 
     /**
-     * Publish a lesson task once (one-way).
-     */
-    public function publishTask(Request $request, Course $course, Lesson $lesson, LessonTask $task): RedirectResponse
-    {
-        abort_unless($request->user()?->isAdmin(), 403);
-        abort_unless($course->is_published, 404);
-        abort_unless($lesson->course_id === $course->id, 404);
-        abort_unless($task->lesson_id === $lesson->id, 404);
-
-        if ($task->published_at !== null) {
-            Inertia::flash('toast', [
-                'type' => 'info',
-                'message' => __('Task is already published.'),
-            ]);
-
-            return back();
-        }
-
-        $task->update([
-            'published_at' => now(),
-            'published_by' => $request->user()->id,
-        ]);
-
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => __('Task published.'),
-        ]);
-
-        return back();
-    }
-
-    /**
-    * @return array<int, array{type: string, title: string, minutes: int, videoUrl: string|null, documentName: string|null, conversionStatus: string|null, pdfUrl: string|null, taskId: null, isPublished: bool, publishedAt: string|null, questionCount: int}>
+     * @return array<int, array{type: string, title: string, minutes: int, videoUrl: string|null, documentName: string|null, conversionStatus: string|null, pdfUrl: string|null, taskId: null, isPublished: bool, publishedAt: string|null, questionCount: int}>
      */
     private function extractLegacyTaskPayloads(string $content): array
     {

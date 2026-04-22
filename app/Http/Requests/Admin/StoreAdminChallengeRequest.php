@@ -4,7 +4,6 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreAdminChallengeRequest extends FormRequest
 {
@@ -27,12 +26,13 @@ class StoreAdminChallengeRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'prompt' => ['required', 'string'],
             'hint' => ['nullable', 'string'],
-            'difficulty' => ['required', 'string', Rule::in(['beginner', 'intermediate', 'advanced'])],
             'expected_answer' => ['required', 'string', 'max:255'],
-            'points_reward' => ['required', 'integer', 'min:1'],
             'is_published' => ['required', 'boolean'],
             'time_start' => ['nullable', 'date'],
             'time_end' => ['nullable', 'date', 'after_or_equal:time_start'],
+            'time_limit_seconds' => ['nullable', 'integer', 'min:5', 'max:300'],
+            'questions_per_session' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'max_points_per_question' => ['nullable', 'integer', 'min:100', 'max:5000'],
         ];
     }
 }

@@ -17,17 +17,20 @@ import { Separator } from '@/components/ui/separator';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
+import { redirect as socialRedirect } from '@/routes/social';
 
 type Props = {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    socialHint?: string | null;
 };
 
 export default function Login({
     canResetPassword,
     canRegister,
     status,
+    socialHint,
 }: Props) {
     const failedSignInMessage = 'Sign in failed. Check credentials or reset password.';
     const [identifier, setIdentifier] = useState('');
@@ -68,6 +71,21 @@ export default function Login({
                             </Alert>
                         )}
 
+                        {socialHint && (
+                            <Alert className="mb-4">
+                                <AlertDescription>
+                                    Try signing in with{' '}
+                                    <a
+                                        href={socialRedirect.url(socialHint.toLowerCase())}
+                                        className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+                                    >
+                                        {socialHint}
+                                    </a>{' '}
+                                    instead.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
                         <Form
                             {...store.form()}
                             resetOnSuccess={['password']}
@@ -81,7 +99,7 @@ export default function Login({
 
                                     <div className="grid grid-cols-2 gap-3">
                                         <Button variant="outline" className="w-full" asChild>
-                                            <a href="/auth/google/redirect">
+                                            <a href={socialRedirect.url('google')}>
                                                 <svg viewBox="0 0 24 24" className="size-4" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                                                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.07-3.71 1.07-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -93,7 +111,7 @@ export default function Login({
                                         </Button>
 
                                         <Button variant="outline" className="w-full" asChild>
-                                            <a href="/auth/github/redirect">
+                                            <a href={socialRedirect.url('github')}>
                                                 <svg
                                                     viewBox="0 0 24 24"
                                                     className="size-4"

@@ -8,7 +8,6 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { CourseFormDialog } from '@/components/course-form-dialog';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -47,9 +46,10 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
-import { show as showChallenge } from '@/routes/challenges';
 import { dashboard } from '@/routes';
+import { show as showChallenge } from '@/routes/challenges';
 import {
     enroll,
     index as coursesIndex,
@@ -77,11 +77,13 @@ type CourseCard = {
         | 'asymmetric'
         | 'hashing'
         | 'signature';
-    pointsReward?: number;
     timeStart?: string | null;
     timeEnd?: string | null;
     status?: 'upcoming' | 'active' | 'ended';
     isSolved?: boolean;
+    hasQuestionBank?: boolean;
+    questionsCount?: number;
+    bestScore?: number;
 };
 
 type CountdownParts = {
@@ -107,9 +109,7 @@ type Props = {
 
 type SortValue =
     | 'title-asc'
-    | 'progress-desc'
-    | 'duration-asc'
-    | 'learners-desc';
+    | 'progress-desc';
 
 type EnrollmentFilterValue = 'all' | 'enrolled' | 'not-enrolled';
 type LabsGroupFilterValue =
@@ -134,11 +134,10 @@ type CatalogFiltersProps = {
     onSortByChange: (value: SortValue) => void;
     hasActiveFilters: boolean;
     clearFilters: () => void;
-    totalCourses: number;
-    enrolledCourses: number;
+    resultCount: number;
 };
 
-const COURSES_PER_PAGE = 9;
+const COURSES_PER_PAGE = 4;
 
 function getCountdownParts(
     targetTime: string | null | undefined,
@@ -183,61 +182,17 @@ function getCountdownParts(
     };
 }
 
-function challengeStatusLabel(status: CourseCard['status']): string {
-    if (status === 'upcoming') {
-        return 'Upcoming';
-    }
-
-    if (status === 'ended') {
-        return 'Ended';
-    }
-
-    return 'Active';
-}
-
 type CourseThumbnailProps = {
     title: string;
-    coverImage: string | null;
 };
 
-function CourseThumbnail({ title, coverImage }: CourseThumbnailProps) {
-    const [hasImageError, setHasImageError] = useState(false);
-    const hasCoverImage =
-        typeof coverImage === 'string' &&
-        coverImage.trim() !== '' &&
-        !hasImageError;
+function CourseThumbnail({ title }: CourseThumbnailProps) {
 
     return (
-        <div className="relative h-36 overflow-hidden rounded-xl border bg-muted/35">
-            {hasCoverImage ? (
-                <>
-                    <img
-                        src={coverImage}
-                        alt={`${title} cover image`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        onError={() => {
-                            setHasImageError(true);
-                        }}
-                    />
-                    <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/50 via-black/10 to-transparent" />
-                </>
-            ) : (
-                <div className="absolute inset-0 bg-linear-to-br from-muted via-muted/75 to-muted/55" />
-            )}
-
-            <div
-                className={cn(
-                    'absolute right-3 bottom-3 inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5',
-                    hasCoverImage
-                        ? 'border-white/25 bg-black/50 text-white'
-                        : 'border-border/60 bg-background/85 text-muted-foreground',
-                )}
-            >
-                <BookOpenCheck className="size-4" />
-                {!hasCoverImage ? (
-                    <span className="text-xs font-medium">No thumbnail</span>
-                ) : null}
+        <div className="relative aspect-video overflow-hidden border-b bg-muted/40">
+            <div className="flex h-full w-full items-center justify-center">
+                <BookOpenCheck className="size-5 text-muted-foreground" aria-hidden="true" />
+                <span className="sr-only">{title} thumbnail</span>
             </div>
         </div>
     );
@@ -344,8 +299,7 @@ function CatalogFilters({
     onSortByChange,
     hasActiveFilters,
     clearFilters,
-    totalCourses,
-    enrolledCourses,
+    resultCount,
 }: CatalogFiltersProps) {
     return (
         <div className="flex flex-col gap-4">
@@ -359,15 +313,12 @@ function CatalogFilters({
                         onChange={(event) =>
                             onSearchTermChange(event.target.value)
                         }
-                        placeholder={
-                            isLabsCatalog
-                                ? 'Algorithm name, summary, or keyword'
-                                : isChallengesCatalog
-                                  ? 'Challenge title, prompt, or keyword'
-                                  : 'Course title, summary, or topic'
-                        }
-                        className="pl-8"
+                        placeholder="Search..."
+                        className="pr-24 pl-8"
                     />
+                    <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
+                        {resultCount} Result
+                    </span>
                 </div>
             </div>
 
@@ -450,12 +401,6 @@ function CatalogFilters({
                             <SelectItem value="progress-desc">
                                 Progress highest
                             </SelectItem>
-                            <SelectItem value="duration-asc">
-                                Duration shortest
-                            </SelectItem>
-                            <SelectItem value="learners-desc">
-                                Most learners
-                            </SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -473,23 +418,6 @@ function CatalogFilters({
                 </Button>
             </div>
 
-            <div className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
-                <p>
-                    {totalCourses}{' '}
-                    {isLabsCatalog
-                        ? 'lab module(s).'
-                        : isChallengesCatalog
-                          ? 'published challenge(s).'
-                          : 'published course(s).'}
-                </p>
-                <p className="mt-1">
-                    {isLabsCatalog
-                        ? 'Simulation-only catalog. No progress or points tracked.'
-                        : isChallengesCatalog
-                          ? 'Challenge submissions tracked per challenge card.'
-                          : `${enrolledCourses} enrolled in your current catalog.`}
-                </p>
-            </div>
         </div>
     );
 }
@@ -523,8 +451,8 @@ export default function CoursesIndex({
     catalogMode = 'learning',
     sidebarMode = 'filters',
     statistics = [],
-    pageTitle = 'Course catalog',
-    pageDescription = 'Discover the right track, refine results with filters, then continue your lessons with a clear action path.',
+    pageTitle = 'Courses',
+    pageDescription = 'Browse learning tracks, filter results, and continue your progress in one place.',
     headTitle = 'Courses',
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
@@ -599,16 +527,6 @@ export default function CoursesIndex({
                     return (
                         (secondCourse.progressPercentage ?? 0) -
                         (firstCourse.progressPercentage ?? 0)
-                    );
-                case 'duration-asc':
-                    return (
-                        firstCourse.estimatedMinutes -
-                        secondCourse.estimatedMinutes
-                    );
-                case 'learners-desc':
-                    return (
-                        secondCourse.enrollmentCount -
-                        firstCourse.enrollmentCount
                     );
                 default:
                     return firstCourse.title.localeCompare(secondCourse.title);
@@ -685,34 +603,12 @@ export default function CoursesIndex({
 
     const paginationItems = buildPaginationItems();
 
-    const enrollmentSummary = catalogCourses.filter(
-        (course) => course.isEnrolled,
-    ).length;
     const activeFilterChips = [
         searchTerm.trim().length > 0
             ? {
                   key: 'search',
                   label: `Search: ${searchTerm.trim()}`,
                   onClear: () => setSearchTerm(''),
-              }
-            : null,
-        !isLabsCatalog && !isChallengesCatalog && enrollmentFilter !== 'all'
-            ? {
-                  key: 'group',
-                  label:
-                      enrollmentFilter === 'enrolled'
-                          ? 'Enrollment: Enrolled'
-                          : 'Enrollment: Not enrolled',
-                  onClear: () => {
-                      setEnrollmentFilter('all');
-                  },
-              }
-            : null,
-        !isLabsCatalog && !isChallengesCatalog && sortBy !== 'title-asc'
-            ? {
-                  key: 'sort',
-                  label: `Sort: ${sortBy.replace('-', ' ')}`,
-                  onClear: () => setSortBy('title-asc' as SortValue),
               }
             : null,
     ].filter(
@@ -728,13 +624,11 @@ export default function CoursesIndex({
 
             <div className="flex flex-col gap-6 px-4 py-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <h1 className="text-2xl leading-tight font-semibold tracking-tight">
-                            {pageTitle}
-                        </h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                    <div className="flex flex-col gap-0">
+                        <TypographyH1>{pageTitle}</TypographyH1>
+                        <TypographyMuted>
                             {pageDescription}
-                        </p>
+                        </TypographyMuted>
                     </div>
 
                     <div className="flex items-center justify-end gap-2">
@@ -754,23 +648,6 @@ export default function CoursesIndex({
                                 />
                             </>
                         )}
-                        {isAdmin && !isChallengesCatalog && !isLabsCatalog && (
-                            <>
-                                <Button
-                                    type="button"
-                                    onClick={() => setIsCreateModalOpen(true)}
-                                >
-                                    <Plus className="mr-2 size-4" />
-                                    Add Course
-                                </Button>
-                                <CourseFormDialog
-                                    mode="create"
-                                    open={isCreateModalOpen}
-                                    onOpenChange={setIsCreateModalOpen}
-                                />
-                            </>
-                        )}
-
                         <div className="lg:hidden">
                             {sidebarMode === 'filters' ? (
                                 <>
@@ -856,11 +733,8 @@ export default function CoursesIndex({
                                                         hasActiveFilters
                                                     }
                                                     clearFilters={clearFilters}
-                                                    totalCourses={
-                                                        catalogCourses.length
-                                                    }
-                                                    enrolledCourses={
-                                                        enrollmentSummary
+                                                    resultCount={
+                                                        visibleCourses.length
                                                     }
                                                 />
                                             </div>
@@ -931,8 +805,7 @@ export default function CoursesIndex({
                                     }}
                                     hasActiveFilters={hasActiveFilters}
                                     clearFilters={clearFilters}
-                                    totalCourses={catalogCourses.length}
-                                    enrolledCourses={enrollmentSummary}
+                                    resultCount={visibleCourses.length}
                                 />
                             ) : (
                                 <CatalogStatistics statistics={statistics} />
@@ -979,7 +852,6 @@ export default function CoursesIndex({
                                         <CardHeader className="flex flex-col gap-4">
                                             <CourseThumbnail
                                                 title={course.title}
-                                                coverImage={course.coverImage}
                                             />
 
                                             <div className="flex flex-col gap-2">
@@ -1113,45 +985,19 @@ export default function CoursesIndex({
                                         {paginatedCourses.map((course) => (
                                             <Card
                                                 key={course.id}
-                                                className="flex h-full flex-col overflow-hidden"
+                                                className="relative flex h-full flex-col overflow-hidden pt-0"
                                             >
-                                                <CardHeader className="flex flex-col gap-4">
-                                                    <CourseThumbnail
-                                                        title={course.title}
-                                                        coverImage={
-                                                            course.coverImage
-                                                        }
-                                                    />
+                                                <CourseThumbnail
+                                                    title={course.title}
+                                                />
 
-                                                    <div className="flex flex-col gap-2">
-                                                        {isChallengesCatalog ? (
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                {isChallengesCatalog &&
-                                                                typeof course.pointsReward ===
-                                                                    'number' ? (
-                                                                    <Badge variant="secondary">
-                                                                        {
-                                                                            course.pointsReward
-                                                                        }{' '}
-                                                                        points
-                                                                    </Badge>
-                                                                ) : null}
-                                                                {isChallengesCatalog ? (
-                                                                    <Badge variant="outline">
-                                                                        {challengeStatusLabel(
-                                                                            course.status,
-                                                                        )}
-                                                                    </Badge>
-                                                                ) : null}
-                                                            </div>
-                                                        ) : null}
-                                                        <CardTitle className="text-xl leading-tight tracking-tight">
-                                                            {course.title}
-                                                        </CardTitle>
-                                                        <CardDescription className="text-sm leading-relaxed">
-                                                            {course.summary}
-                                                        </CardDescription>
-                                                    </div>
+                                                <CardHeader>
+                                                    <CardTitle className="text-xl leading-tight tracking-tight">
+                                                        {course.title}
+                                                    </CardTitle>
+                                                    <CardDescription className="text-sm leading-relaxed">
+                                                        {course.summary}
+                                                    </CardDescription>
                                                 </CardHeader>
 
                                                 {!isLabsCatalog &&
@@ -1195,6 +1041,23 @@ export default function CoursesIndex({
                                                     </CardContent>
                                                 ) : isChallengesCatalog ? (
                                                     <CardContent className="flex flex-col gap-4">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            {course.hasQuestionBank && (course.questionsCount ?? 0) > 0 && (
+                                                                <Badge variant="secondary">
+                                                                    {course.questionsCount} questions
+                                                                </Badge>
+                                                            )}
+                                                            {(course.bestScore ?? 0) > 0 && (
+                                                                <Badge variant="outline">
+                                                                    Best: {course.bestScore} pts
+                                                                </Badge>
+                                                            )}
+                                                            {course.isSolved && (
+                                                                <Badge variant="default">
+                                                                    Solved
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                         <div className="rounded-md border bg-muted/20 p-3">
                                                             {(() => {
                                                                 const countdown =

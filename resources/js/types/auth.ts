@@ -5,6 +5,8 @@ export type User = {
     email: string;
     avatar?: string;
     points: number;
+    current_streak: number;
+    longest_streak: number;
     is_admin: boolean;
     role: 'admin' | 'member';
     status: 'active' | 'inactive';

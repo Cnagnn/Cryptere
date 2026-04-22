@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\SubmitChallengeRequest;
 use App\Models\Challenge;
+use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
 use App\Models\User;
+use App\Services\ChallengeScoreService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -16,9 +19,15 @@ class ChallengeSubmissionController extends Controller
 {
     private const ROUND_TIME_LIMIT_SECONDS = 30;
 
+    private const BASE_CHALLENGE_POINTS = 100;
+
     private const SPEED_SCORE_FLOOR_RATIO = 0.25;
 
     private const SPEED_SCORE_MINIMUM = 10;
+
+    public function __construct(
+        private readonly ChallengeScoreService $scoreService,
+    ) {}
 
     /**
      * Submit a standalone challenge answer.
@@ -101,6 +110,141 @@ class ChallengeSubmissionController extends Controller
     }
 
     /**
+     * Submit a single quiz question answer (new quiz mode).
+     *
+     * Accepts session_id, challenge_question_id, answer, elapsed_ms, question_index,
+     * and consecutive_correct (client-tracked streak). Returns score + feedback.
+     */
+    public function quizSubmit(Request $request, Challenge $challenge): JsonResponse
+    {
+        abort_unless($challenge->is_published, 404);
+
+        $validated = $request->validate([
+            'session_id' => ['required', 'string', 'max:36'],
+            'challenge_question_id' => ['required', 'integer', 'exists:challenge_questions,id'],
+            'answer' => ['required', 'string', 'max:500'],
+            'elapsed_ms' => ['required', 'integer', 'min:0', 'max:120000'],
+            'question_index' => ['required', 'integer', 'min:0'],
+            'consecutive_correct' => ['required', 'integer', 'min:0'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+        $question = ChallengeQuestion::findOrFail($validated['challenge_question_id']);
+
+        abort_unless($question->challenge_id === $challenge->id, 422);
+
+        $isCorrect = $question->isCorrect($validated['answer']);
+        $timeLimitMs = ($challenge->time_limit_seconds ?? 20) * 1000;
+        $maxPoints = $challenge->max_points_per_question ?? 1000;
+
+        $questionScore = $isCorrect
+            ? $this->scoreService->calculateQuestionScore($validated['elapsed_ms'], $timeLimitMs, $maxPoints)
+            : 0;
+
+        $streakBonus = $isCorrect
+            ? $this->scoreService->calculateStreakBonus($validated['consecutive_correct'] + 1)
+            : 0;
+
+        ChallengeSubmission::query()->create([
+            'user_id' => $user->id,
+            'challenge_id' => $challenge->id,
+            'session_id' => $validated['session_id'],
+            'challenge_question_id' => $question->id,
+            'answer' => $validated['answer'],
+            'is_correct' => $isCorrect,
+            'score' => $questionScore,
+            'elapsed_ms' => $validated['elapsed_ms'],
+            'streak_bonus' => $streakBonus,
+            'question_index' => $validated['question_index'],
+            'submitted_at' => now(),
+        ]);
+
+        return response()->json([
+            'isCorrect' => $isCorrect,
+            'correctAnswer' => $question->correct_answer,
+            'explanation' => $question->explanation,
+            'questionScore' => $questionScore,
+            'streakBonus' => $streakBonus,
+            'totalQuestionPoints' => $questionScore + $streakBonus,
+        ]);
+    }
+
+    /**
+     * Finalize a quiz session: calculate totals and award points (first session only).
+     */
+    public function sessionSummary(Request $request, Challenge $challenge): JsonResponse
+    {
+        abort_unless($challenge->is_published, 404);
+
+        $validated = $request->validate([
+            'session_id' => ['required', 'string', 'max:36'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+        $sessionId = $validated['session_id'];
+
+        $submissions = ChallengeSubmission::query()
+            ->whereBelongsTo($user)
+            ->whereBelongsTo($challenge)
+            ->where('session_id', $sessionId)
+            ->get();
+
+        if ($submissions->isEmpty()) {
+            return response()->json(['message' => 'No submissions found for this session.'], 404);
+        }
+
+        $totalScore = $submissions->sum('score');
+        $totalStreakBonus = $submissions->sum('streak_bonus');
+        $totalPoints = $totalScore + $totalStreakBonus;
+        $correctCount = $submissions->where('is_correct', true)->count();
+        $totalQuestions = $submissions->count();
+        $averageElapsedMs = (int) round($submissions->avg('elapsed_ms') ?? 0);
+
+        // Best streak within this session
+        $bestStreak = 0;
+        $currentStreak = 0;
+        foreach ($submissions->sortBy('question_index') as $submission) {
+            if ($submission->is_correct) {
+                $currentStreak++;
+                $bestStreak = max($bestStreak, $currentStreak);
+            } else {
+                $currentStreak = 0;
+            }
+        }
+
+        // Award points only if this is the user's first completed session for this challenge
+        $hasEarlierSession = ChallengeSubmission::query()
+            ->whereBelongsTo($user)
+            ->whereBelongsTo($challenge)
+            ->whereNotNull('session_id')
+            ->where('session_id', '!=', $sessionId)
+            ->where('is_correct', true)
+            ->exists();
+
+        $awardedPoints = 0;
+        if (! $hasEarlierSession && $totalPoints > 0) {
+            $awardedPoints = $totalPoints;
+            $user->increment('points', $awardedPoints);
+        }
+
+        return response()->json([
+            'sessionId' => $sessionId,
+            'totalScore' => $totalScore,
+            'totalStreakBonus' => $totalStreakBonus,
+            'totalPoints' => $totalPoints,
+            'correctCount' => $correctCount,
+            'totalQuestions' => $totalQuestions,
+            'averageElapsedMs' => $averageElapsedMs,
+            'bestStreak' => $bestStreak,
+            'awardedPoints' => $awardedPoints,
+            'isFirstSession' => ! $hasEarlierSession,
+            'userTotalPoints' => $user->fresh()->points,
+        ]);
+    }
+
+    /**
      * Persist challenge submission and award points once per challenge.
      *
      * @return array{isCorrect: bool, alreadySolved: bool, awardedPoints: int, correctAnswer: string, elapsedMs: int, timeLimitSeconds: int}
@@ -129,8 +273,8 @@ class ChallengeSubmissionController extends Controller
 
         $awardedPoints = $isCorrect && ! $alreadySolved
             ? ($speedBased
-                ? $this->resolveSpeedAwardedPoints($challenge, $safeElapsedMilliseconds, $timeLimitMilliseconds)
-                : (int) $challenge->points_reward)
+                ? $this->resolveSpeedAwardedPoints($safeElapsedMilliseconds, $timeLimitMilliseconds)
+                : self::BASE_CHALLENGE_POINTS)
             : 0;
 
         DB::transaction(function () use ($challenge, $user, $answer, $isCorrect, $awardedPoints): void {
@@ -180,11 +324,10 @@ class ChallengeSubmissionController extends Controller
      * Resolve speed-based awarded points within min-max boundaries.
      */
     private function resolveSpeedAwardedPoints(
-        Challenge $challenge,
         int $elapsedMilliseconds,
         int $timeLimitMilliseconds,
     ): int {
-        $maximumPoints = max(1, (int) $challenge->points_reward);
+        $maximumPoints = self::BASE_CHALLENGE_POINTS;
         $minimumPoints = min(
             $maximumPoints,
             max(self::SPEED_SCORE_MINIMUM, (int) round($maximumPoints * self::SPEED_SCORE_FLOOR_RATIO))

@@ -4,30 +4,34 @@ import {
     storeLesson,
     updateLesson,
 } from '@/actions/App/Http/Controllers/Admin/CourseManagementController';
-import { SearchableCombobox } from '@/components/course-searchable-combobox';
 import type {
-    ComboboxOption,
     LessonFormData,
     LessonRow,
 } from '@/components/course-types';
-import {
-    AlertDialog,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Field,
+    FieldContent,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface LessonFormSheetProps {
     mode: 'create' | 'edit';
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    courseOptions: ComboboxOption[];
     selectedCourseId: number;
     /** Edit mode only */
     lesson?: LessonRow | null;
@@ -37,16 +41,13 @@ export function LessonFormSheet({
     mode,
     open,
     onOpenChange,
-    courseOptions,
     selectedCourseId,
     lesson,
 }: LessonFormSheetProps) {
     const form = useForm<LessonFormData>({
-        course_id:
-            selectedCourseId > 0
-                ? selectedCourseId
-                : Number(courseOptions[0]?.value ?? 0),
+        course_id: selectedCourseId > 0 ? selectedCourseId : 0,
         title: '',
+        description: '',
         xp_reward: 50,
     });
 
@@ -55,6 +56,7 @@ export function LessonFormSheet({
             form.setData({
                 course_id: lesson.course_id,
                 title: lesson.title,
+                description: lesson.description,
                 xp_reward: lesson.xp_reward,
             });
             form.clearErrors();
@@ -62,11 +64,9 @@ export function LessonFormSheet({
 
         if (mode === 'create' && open) {
             form.setData({
-                course_id:
-                    selectedCourseId > 0
-                        ? selectedCourseId
-                        : Number(courseOptions[0]?.value ?? 0),
+                course_id: selectedCourseId > 0 ? selectedCourseId : 0,
                 title: '',
+                description: '',
                 xp_reward: 50,
             });
             form.clearErrors();
@@ -101,7 +101,7 @@ export function LessonFormSheet({
     const isCreate = mode === 'create';
 
     return (
-        <AlertDialog
+        <Dialog
             open={open}
             onOpenChange={(isOpen) => {
                 if (!isOpen) {
@@ -109,42 +109,22 @@ export function LessonFormSheet({
                 }
             }}
         >
-            <AlertDialogContent className="w-full overflow-y-auto sm:max-w-xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>
+            <DialogContent className="w-full overflow-y-auto sm:max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>
                         {isCreate ? 'Create Lesson' : 'Edit Lesson'}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
+                    </DialogTitle>
+                    <DialogDescription>
                         {isCreate
-                            ? 'Create a new lesson in selected course.'
+                            ? 'Create a new lesson.'
                             : 'Update selected lesson details.'}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+                    </DialogDescription>
+                </DialogHeader>
 
-                <div className="flex flex-col gap-3 px-4">
-                    {isCreate ? (
-                        <div className="flex flex-col gap-2">
-                            <Label>Course</Label>
-                            <SearchableCombobox
-                                value={
-                                    form.data.course_id > 0
-                                        ? String(form.data.course_id)
-                                        : undefined
-                                }
-                                options={courseOptions}
-                                placeholder="Select course"
-                                searchPlaceholder="Search course..."
-                                emptyMessage="No course found."
-                                className="w-full"
-                                onSelect={(value) =>
-                                    form.setData('course_id', Number(value))
-                                }
-                            />
-                        </div>
-                    ) : null}
-
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor={`${mode}-lesson-title`}>Title</Label>
+                <FieldGroup className="px-4">
+                    <Field>
+                        <FieldLabel htmlFor={`${mode}-lesson-title`}>Title</FieldLabel>
+                        <FieldContent>
                         <Input
                             id={`${mode}-lesson-title`}
                             value={form.data.title}
@@ -153,18 +133,34 @@ export function LessonFormSheet({
                             }
                             aria-invalid={Boolean(form.errors.title)}
                         />
-                        {form.errors.title ? (
-                            <p className="text-sm text-destructive">
-                                {form.errors.title}
-                            </p>
-                        ) : null}
-                    </div>
-                </div>
+                            <FieldError>{form.errors.title}</FieldError>
+                        </FieldContent>
+                    </Field>
 
-                <AlertDialogFooter className="mt-4 sm:flex-row sm:justify-end">
-                    <AlertDialogCancel onClick={handleClose}>
+                    <Field>
+                        <FieldLabel htmlFor={`${mode}-lesson-description`}>Description</FieldLabel>
+                        <FieldContent>
+                            <Textarea
+                                id={`${mode}-lesson-description`}
+                                value={form.data.description}
+                                onChange={(event) =>
+                                    form.setData('description', event.target.value)
+                                }
+                                maxLength={5000}
+                                rows={4}
+                                aria-invalid={Boolean(form.errors.description)}
+                            />
+                            <FieldError>{form.errors.description}</FieldError>
+                        </FieldContent>
+                    </Field>
+                </FieldGroup>
+
+                <DialogFooter className="mt-4 sm:flex-row sm:justify-end">
+                    <DialogClose asChild>
+                        <Button type="button" variant="outline" onClick={handleClose}>
                         Cancel
-                    </AlertDialogCancel>
+                        </Button>
+                    </DialogClose>
                     <Button
                         type="button"
                         disabled={
@@ -174,8 +170,8 @@ export function LessonFormSheet({
                     >
                         {isCreate ? 'Create' : 'Update'}
                     </Button>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

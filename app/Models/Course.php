@@ -19,7 +19,6 @@ use Illuminate\Support\Str;
     'cover_image',
     'cover_mime_type',
     'cover_path',
-    'difficulty',
     'estimated_minutes',
     'sort_order',
     'is_published',
@@ -97,16 +96,16 @@ class Course extends Model
         return null;
     }
 
-        private function buildDefaultCoverDataUri(): string
-        {
-                $initial = Str::upper(Str::substr(trim((string) $this->title), 0, 1));
+    private function buildDefaultCoverDataUri(): string
+    {
+        $initial = Str::upper(Str::substr(trim((string) $this->title), 0, 1));
 
-                if ($initial === '') {
-                        $initial = 'C';
-                }
+        if ($initial === '') {
+            $initial = 'C';
+        }
 
-                $safeInitial = htmlspecialchars($initial, ENT_QUOTES | ENT_XML1);
-                $svg = <<<SVG
+        $safeInitial = htmlspecialchars($initial, ENT_QUOTES | ENT_XML1);
+        $svg = <<<SVG
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360" fill="none" role="img" aria-label="Course cover placeholder">
     <defs>
         <linearGradient id="course-cover-gradient" x1="0" y1="0" x2="1" y2="1">
@@ -122,8 +121,8 @@ class Course extends Model
 </svg>
 SVG;
 
-                return 'data:image/svg+xml;utf8,'.rawurlencode($svg);
-        }
+        return 'data:image/svg+xml;utf8,'.rawurlencode($svg);
+    }
 
     public function lessons(): HasMany
     {

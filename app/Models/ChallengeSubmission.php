@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'challenge_id', 'answer', 'is_correct', 'score', 'submitted_at'])]
+#[Fillable(['user_id', 'challenge_id', 'session_id', 'challenge_question_id', 'answer', 'is_correct', 'score', 'elapsed_ms', 'streak_bonus', 'question_index', 'submitted_at'])]
 class ChallengeSubmission extends Model
 {
     /** @use HasFactory<ChallengeSubmissionFactory> */
@@ -24,6 +24,9 @@ class ChallengeSubmission extends Model
         return [
             'is_correct' => 'boolean',
             'submitted_at' => 'datetime',
+            'elapsed_ms' => 'integer',
+            'streak_bonus' => 'integer',
+            'question_index' => 'integer',
         ];
     }
 
@@ -41,5 +44,13 @@ class ChallengeSubmission extends Model
     public function challenge(): BelongsTo
     {
         return $this->belongsTo(Challenge::class);
+    }
+
+    /**
+     * Get the challenge question for this submission.
+     */
+    public function challengeQuestion(): BelongsTo
+    {
+        return $this->belongsTo(ChallengeQuestion::class);
     }
 }

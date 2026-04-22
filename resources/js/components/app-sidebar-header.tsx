@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
 import type { BreadcrumbItem } from '@/types';
@@ -20,6 +21,12 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
             <div className="flex w-full min-w-0 items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                     <SidebarTrigger className="-ml-1" />
+                    {resolvedBreadcrumbs.length > 1 ? (
+                        <Separator
+                            orientation="vertical"
+                            className="mr-2 h-4"
+                        />
+                    ) : null}
                     {resolvedBreadcrumbs.length > 1 ? (
                         <div className="min-w-0 [&_ol]:flex-nowrap [&_ol]:overflow-hidden [&_span[aria-current='page']]:truncate">
                             <Breadcrumbs breadcrumbs={resolvedBreadcrumbs} />

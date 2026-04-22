@@ -2,12 +2,17 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\XpService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
     protected $rootView = 'app';
+
+    public function __construct(
+        private readonly XpService $xpService,
+    ) {}
 
     public function version(Request $request): ?string
     {
@@ -17,6 +22,10 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+
+        if ($user !== null) {
+            $this->xpService->updateDailyStreak($user);
+        }
 
         return [
             ...parent::share($request),
@@ -29,10 +38,8 @@ class HandleInertiaRequests extends Middleware
                     'username' => $user->username,
                     'avatar' => $user->avatar,
                     'points' => $user->points,
-                    'is_admin' => $user->isAdmin(),
-                    'role' => $user->role,
-                    'status' => $user->status,
-                    'two_factor_enabled' => ! is_null($user->two_factor_confirmed_at),
+                    'current_streak' => $user->current_streak,
+                    'longest_streak' => $user->longest_streak,
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

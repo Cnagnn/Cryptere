@@ -10,7 +10,6 @@ use App\Models\LessonTask;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
@@ -36,250 +35,6 @@ test('authenticated users can view the course catalog', function () {
             ->has('courses', 1)
             ->where('courses.0.slug', $publishedCourse->slug),
         );
-});
-
-test('admin users can create a lesson from course detail', function () {
-    $user = User::factory()->create([
-        'is_admin' => true,
-        'role' => 'admin',
-    ]);
-
-    $course = Course::factory()->create([
-        'slug' => 'lesson-create-course',
-        'is_published' => true,
-    ]);
-
-    Lesson::factory()->for($course)->create([
-        'slug' => 'caesar-warmup',
-        'title' => 'Caesar Warmup',
-        'position' => 1,
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.store', ['course' => $course->slug]), [
-            'title' => 'Caesar Warmup',
-        ])
-        ->assertRedirect();
-
-    $createdLesson = Lesson::query()
-        ->whereBelongsTo($course)
-        ->where('position', 2)
-        ->first();
-
-    expect($createdLesson)->not->toBeNull();
-    expect($createdLesson?->title)->toBe('Caesar Warmup');
-    expect($createdLesson?->slug)->toBe('caesar-warmup-2');
-    expect($createdLesson?->content)->toBe('');
-});
-
-test('lesson creation requires a title', function () {
-    $user = User::factory()->create([
-        'is_admin' => true,
-        'role' => 'admin',
-    ]);
-
-    $course = Course::factory()->create([
-        'slug' => 'lesson-create-validation-course',
-        'is_published' => true,
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.store', ['course' => $course->slug]), [
-            'title' => '',
-        ])
-        ->assertRedirect()
-        ->assertSessionHasErrors(['title']);
-
-    expect(Lesson::query()->whereBelongsTo($course)->count())->toBe(0);
-});
-
-test('admin users can create a task for an empty lesson', function () {
-    $user = User::factory()->create([
-        'is_admin' => true,
-        'role' => 'admin',
-    ]);
-
-    $course = Course::factory()->create([
-        'slug' => 'task-create-course',
-        'is_published' => true,
-    ]);
-
-    $lesson = Lesson::factory()->for($course)->create([
-        'content' => '',
-        'position' => 1,
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.tasks.store', ['course' => $course->slug, 'lesson' => $lesson->id]), [
-            'title' => 'Warmup Video',
-            'type' => 'video',
-            'video_url' => 'https://example.com/video/warmup',
-        ])
-        ->assertRedirect();
-
-    $task = LessonTask::query()
-        ->where('lesson_id', $lesson->id)
-        ->where('title', 'Warmup Video')
-        ->first();
-
-    expect($task)->not->toBeNull();
-    expect($task?->type)->toBe('video');
-    expect($task?->minutes)->toBe(18);
-    expect($task?->video_url)->toBe('https://example.com/video/warmup');
-});
-
-test('task creation requires title and type', function () {
-    $user = User::factory()->create([
-        'is_admin' => true,
-        'role' => 'admin',
-    ]);
-
-    $course = Course::factory()->create([
-        'slug' => 'task-create-validation-course',
-        'is_published' => true,
-    ]);
-
-    $lesson = Lesson::factory()->for($course)->create([
-        'content' => '',
-        'position' => 1,
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.tasks.store', ['course' => $course->slug, 'lesson' => $lesson->id]), [
-            'title' => '',
-            'type' => '',
-        ])
-        ->assertRedirect()
-        ->assertSessionHasErrors(['title', 'type']);
-});
-
-test('video task creation requires a video url', function () {
-    $user = User::factory()->create([
-        'is_admin' => true,
-        'role' => 'admin',
-    ]);
-
-    $course = Course::factory()->create([
-        'slug' => 'task-video-url-required-course',
-        'is_published' => true,
-    ]);
-
-    $lesson = Lesson::factory()->for($course)->create([
-        'content' => '',
-        'position' => 1,
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.tasks.store', ['course' => $course->slug, 'lesson' => $lesson->id]), [
-            'title' => 'Video without URL',
-            'type' => 'video',
-        ])
-        ->assertRedirect()
-        ->assertSessionHasErrors(['video_url']);
-
-    expect(LessonTask::query()->where('lesson_id', $lesson->id)->count())->toBe(0);
-});
-
-test('read task creation requires a pdf document upload', function () {
-    Storage::fake('public');
-
-    $user = User::factory()->create([
-        'is_admin' => true,
-        'role' => 'admin',
-    ]);
-
-    $course = Course::factory()->create([
-        'slug' => 'task-create-read-validation-course',
-        'is_published' => true,
-    ]);
-
-    $lesson = Lesson::factory()->for($course)->create([
-        'content' => '',
-        'position' => 1,
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.tasks.store', ['course' => $course->slug, 'lesson' => $lesson->id]), [
-            'title' => 'Read docs without file',
-            'type' => 'read',
-        ])
-        ->assertRedirect()
-        ->assertSessionHasErrors(['document']);
-
-    expect(LessonTask::query()->where('lesson_id', $lesson->id)->count())->toBe(0);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.tasks.store', ['course' => $course->slug, 'lesson' => $lesson->id]), [
-            'title' => 'Read docs with non-pdf',
-            'type' => 'read',
-            'document' => UploadedFile::fake()->create('notes.docx', 64),
-        ])
-        ->assertRedirect()
-        ->assertSessionHasErrors(['document']);
-
-    expect(LessonTask::query()->where('lesson_id', $lesson->id)->count())->toBe(0);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.tasks.store', ['course' => $course->slug, 'lesson' => $lesson->id]), [
-            'title' => 'Read docs with pdf',
-            'type' => 'read',
-            'document' => UploadedFile::fake()->create('notes.pdf', 64, 'application/pdf'),
-        ])
-        ->assertRedirect();
-
-    $task = LessonTask::query()
-        ->where('lesson_id', $lesson->id)
-        ->where('title', 'Read docs with pdf')
-        ->first();
-
-    expect($task)->not->toBeNull();
-    expect($task?->type)->toBe('read');
-    expect($task?->document_name)->toBe('notes.pdf');
-    expect($task?->conversion_status)->toBe('pending');
-    expect($task?->pdf_url)->not->toBeNull();
-    expect($task?->pdf_url)->toContain('/storage/lesson-documents/');
-});
-
-test('non-admin users cannot create a lesson from course detail', function () {
-    $user = User::factory()->create([
-        'is_admin' => false,
-        'role' => 'member',
-    ]);
-
-    $course = Course::factory()->create([
-        'slug' => 'lesson-create-forbidden-course',
-        'is_published' => true,
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.store', ['course' => $course->slug]), [
-            'title' => 'Forbidden lesson',
-        ])
-        ->assertForbidden();
-});
-
-test('non-admin users cannot create a task from course detail', function () {
-    $user = User::factory()->create([
-        'is_admin' => false,
-        'role' => 'member',
-    ]);
-
-    $course = Course::factory()->create([
-        'slug' => 'task-create-forbidden-course',
-        'is_published' => true,
-    ]);
-
-    $lesson = Lesson::factory()->for($course)->create([
-        'position' => 1,
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('courses.lessons.tasks.store', ['course' => $course->slug, 'lesson' => $lesson->id]), [
-            'title' => 'Forbidden task',
-            'type' => 'video',
-            'video_url' => 'https://example.com/video/warmup',
-        ])
-        ->assertForbidden();
 });
 
 test('users must complete lessons in sequence to finish a course', function () {
@@ -442,52 +197,43 @@ test('learners only receive published tasks while admins see draft tasks', funct
         );
 });
 
-test('admin can publish a task once and repeated publish is idempotent', function () {
-    $admin = User::factory()->create([
-        'is_admin' => true,
-        'role' => 'admin',
+test('course detail payload returns lessons ordered by position', function () {
+    $learner = User::factory()->create([
+        'is_admin' => false,
+        'role' => 'member',
     ]);
 
     $course = Course::factory()->create([
-        'slug' => 'publish-once-course',
+        'slug' => 'lesson-order-course',
         'is_published' => true,
     ]);
 
-    $lesson = Lesson::factory()->for($course)->create([
+    $lessonOne = Lesson::factory()->for($course)->create([
+        'title' => 'Substitution Ciphers',
         'position' => 1,
     ]);
 
-    $task = LessonTask::factory()->for($lesson)->create([
-        'title' => 'Needs publish',
-        'published_at' => null,
-        'published_by' => null,
+    $lessonTwo = Lesson::factory()->for($course)->create([
+        'title' => 'Practice Session',
+        'position' => 2,
     ]);
 
-    $this->actingAs($admin)
-        ->post(route('courses.lessons.tasks.publish', [
-            'course' => $course->slug,
-            'lesson' => $lesson->id,
-            'task' => $task->id,
-        ]))
+    $this->actingAs($learner)
+        ->post(route('courses.enroll', ['course' => $course->slug]))
         ->assertRedirect();
 
-    $task->refresh();
-    expect($task->published_at)->not->toBeNull();
-    expect($task->published_by)->toBe($admin->id);
-
-    $publishedAt = $task->published_at;
-
-    $this->actingAs($admin)
-        ->post(route('courses.lessons.tasks.publish', [
-            'course' => $course->slug,
-            'lesson' => $lesson->id,
-            'task' => $task->id,
-        ]))
-        ->assertRedirect();
-
-    $task->refresh();
-    expect($task->published_at?->toIso8601String())->toBe($publishedAt?->toIso8601String());
-    expect($task->published_by)->toBe($admin->id);
+    $this->actingAs($learner)
+        ->get(route('courses.show', ['course' => $course->slug]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('courses/show')
+            ->has('lessons', 2)
+            ->where('lessons.0.id', $lessonOne->id)
+            ->where('lessons.0.title', 'Substitution Ciphers')
+            ->where('lessons.1.id', $lessonTwo->id)
+            ->where('lessons.1.title', 'Practice Session')
+            ->missing('chapters'),
+        );
 });
 
 test('challenge points are only awarded once per challenge', function () {
@@ -496,7 +242,6 @@ test('challenge points are only awarded once per challenge', function () {
     $challenge = Challenge::factory()->create([
         'slug' => 'points-once',
         'expected_answer' => 'hash',
-        'points_reward' => 80,
         'is_published' => true,
     ]);
 
@@ -512,7 +257,7 @@ test('challenge points are only awarded once per challenge', function () {
         ])
         ->assertRedirect();
 
-    expect($user->refresh()->points)->toBe(80);
+    expect($user->refresh()->points)->toBe(100);
 
     expect(ChallengeSubmission::query()
         ->whereBelongsTo($user)
@@ -525,28 +270,24 @@ test('challenge index includes speed-round payload for quiz mode', function () {
 
     Challenge::factory()->create([
         'title' => 'Beginner Cipher',
-        'difficulty' => 'beginner',
         'expected_answer' => 'cipher',
         'is_published' => true,
     ]);
 
     Challenge::factory()->create([
         'title' => 'Beginner Hash',
-        'difficulty' => 'beginner',
         'expected_answer' => 'hash',
         'is_published' => true,
     ]);
 
     Challenge::factory()->create([
         'title' => 'Intermediate Nonce',
-        'difficulty' => 'intermediate',
         'expected_answer' => 'nonce',
         'is_published' => true,
     ]);
 
     Challenge::factory()->create([
         'title' => 'Advanced Signature',
-        'difficulty' => 'advanced',
         'expected_answer' => 'signature',
         'is_published' => true,
     ]);
@@ -571,8 +312,6 @@ test('published challenge detail can be viewed by learners', function () {
         'slug' => 'detail-visible-challenge',
         'title' => 'Detail Visible Challenge',
         'expected_answer' => 'hash',
-        'difficulty' => 'intermediate',
-        'points_reward' => 90,
         'is_published' => true,
     ]);
 
@@ -583,7 +322,6 @@ test('published challenge detail can be viewed by learners', function () {
             ->component('challenges/show')
             ->where('challenge.slug', $challenge->slug)
             ->where('challenge.title', $challenge->title)
-            ->where('challenge.pointsReward', 90)
             ->has('challenge.options')
             ->where('submissionSummary.attemptCount', 0),
         );
@@ -837,7 +575,6 @@ test('quick challenge submissions return json and award points once', function (
     $challenge = Challenge::factory()->create([
         'slug' => 'quick-json-points',
         'expected_answer' => 'hash',
-        'points_reward' => 80,
         'is_published' => true,
     ]);
 
@@ -849,7 +586,7 @@ test('quick challenge submissions return json and award points once', function (
         ->assertOk()
         ->assertJsonPath('isCorrect', true)
         ->assertJsonPath('alreadySolved', false)
-        ->assertJsonPath('awardedPoints', 80)
+        ->assertJsonPath('awardedPoints', 100)
         ->assertJsonPath('correctAnswer', 'hash');
 
     $this->actingAs($user)
@@ -862,7 +599,7 @@ test('quick challenge submissions return json and award points once', function (
         ->assertJsonPath('alreadySolved', true)
         ->assertJsonPath('awardedPoints', 0);
 
-    expect($user->refresh()->points)->toBe(80);
+    expect($user->refresh()->points)->toBe(100);
 
     expect(ChallengeSubmission::query()
         ->whereBelongsTo($user)
@@ -876,16 +613,12 @@ test('quick challenge scoring gives more points for faster correct answers', fun
     $fastChallenge = Challenge::factory()->create([
         'slug' => 'speed-fast',
         'expected_answer' => 'hash',
-        'difficulty' => 'advanced',
-        'points_reward' => 100,
         'is_published' => true,
     ]);
 
     $slowChallenge = Challenge::factory()->create([
         'slug' => 'speed-slow',
         'expected_answer' => 'hash',
-        'difficulty' => 'advanced',
-        'points_reward' => 100,
         'is_published' => true,
     ]);
 

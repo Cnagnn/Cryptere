@@ -25,6 +25,7 @@ class StoreAdminLessonRequest extends FormRequest
         return [
             'course_id' => ['required', 'integer', 'exists:courses,id'],
             'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:5000'],
             'xp_reward' => ['nullable', 'integer', 'min:0', 'max:1000'],
         ];
     }

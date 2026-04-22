@@ -1,10 +1,17 @@
 import { router } from '@inertiajs/react';
-import type { ColumnDef } from '@tanstack/react-table';
+import {
+    flexRender,
+    getCoreRowModel,
+    getSortedRowModel,
+    useReactTable,
+} from '@tanstack/react-table';
+import type { ColumnDef, RowSelectionState, SortingState } from '@tanstack/react-table';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
-import { useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import type { CourseRow, Paginated } from '@/components/course-types';
 import { Button } from '@/components/ui/button';
-import { DataTable } from '@/components/ui/data-table';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,6 +20,15 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { show as coursesShow } from '@/routes/courses';
 
 interface CourseTableProps {
@@ -21,6 +37,7 @@ interface CourseTableProps {
     onFilterChange: (value: string) => void;
     onEdit: (course: CourseRow) => void;
     onDelete: (course: CourseRow) => void;
+    toolbarAction?: ReactNode;
 }
 
 export function CourseTable({
@@ -29,9 +46,38 @@ export function CourseTable({
     onFilterChange,
     onEdit,
     onDelete,
+    toolbarAction,
 }: CourseTableProps) {
+    const [sorting, setSorting] = useState<SortingState>([]);
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const columns = useMemo<ColumnDef<CourseRow>[]>(
         () => [
+            {
+                id: 'select',
+                header: ({ table }) => (
+                    <div className="flex justify-center">
+                        <Checkbox
+                            checked={
+                                table.getIsAllPageRowsSelected()
+                                || (table.getIsSomePageRowsSelected() && 'indeterminate')
+                            }
+                            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                            aria-label="Select all rows"
+                        />
+                    </div>
+                ),
+                cell: ({ row }) => (
+                    <div className="flex justify-center">
+                        <Checkbox
+                            checked={row.getIsSelected()}
+                            onCheckedChange={(value) => row.toggleSelected(!!value)}
+                            aria-label={`Select ${row.original.title}`}
+                        />
+                    </div>
+                ),
+                enableSorting: false,
+                enableHiding: false,
+            },
             {
                 accessorKey: 'title',
                 header: ({ column }) => (
@@ -143,7 +189,7 @@ export function CourseTable({
                                 <DropdownMenuItem
                                     onClick={() => onEdit(row.original)}
                                 >
-                                    Edit
+                                    Open Builder
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => onDelete(row.original)}
@@ -168,19 +214,101 @@ export function CourseTable({
         [onEdit, onDelete],
     );
 
+    const filteredCourses = useMemo(() => {
+        const keyword = filterValue.trim().toLowerCase();
+
+        if (keyword === '') {
+            return courses.data;
+        }
+
+        return courses.data.filter((course) =>
+            course.title.toLowerCase().includes(keyword),
+        );
+    }, [courses.data, filterValue]);
+
+    const table = useReactTable({
+        data: filteredCourses,
+        columns,
+        getRowId: (row) => String(row.id),
+        onSortingChange: setSorting,
+        onRowSelectionChange: setRowSelection,
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        state: {
+            rowSelection,
+            sorting,
+        },
+    });
+
     return (
-        <DataTable
-            columns={columns}
-            data={courses.data}
-            filterColumn="title"
-            filterValue={filterValue}
-            onFilterChange={onFilterChange}
-            showFilterInput={false}
-            centered
-            showColumnToggle={false}
-            showPageSizeSelector={false}
-            showPageInfo={false}
-            footerInfo={`Showing ${courses.from ?? 0} - ${courses.to ?? 0} of ${courses.total} courses.`}
-        />
+        <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Input
+                    value={filterValue}
+                    onChange={(event) => onFilterChange(event.target.value)}
+                    placeholder="Search courses..."
+                    className="w-full sm:max-w-sm"
+                />
+
+                {toolbarAction ? (
+                    <div className="sm:shrink-0">
+                        {toolbarAction}
+                    </div>
+                ) : null}
+            </div>
+
+            <div className="overflow-hidden rounded-md border">
+                <Table>
+                    <TableHeader>
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id}>
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead key={header.id} className="text-center align-middle">
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext(),
+                                            )}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableHeader>
+                    <TableBody>
+                        {table.getRowModel().rows.length ? (
+                            table.getRowModel().rows.map((row) => (
+                                <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell key={cell.id} className="text-center align-middle">
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext(),
+                                            )}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="h-24 text-center">
+                                    No courses found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">
+                    {table.getSelectedRowModel().rows.length} of {table.getRowModel().rows.length} row(s) selected.
+                </p>
+
+                <p className="text-sm text-muted-foreground">
+                    Showing {courses.from ?? 0} - {courses.to ?? 0} of {courses.total} courses.
+                </p>
+            </div>
+        </div>
     );
 }

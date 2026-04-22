@@ -1,56 +1,121 @@
-import { useMemo } from 'react';
+import Plyr from 'plyr';
+import 'plyr/dist/plyr.css';
+import { useEffect, useMemo, useRef } from 'react';
+
+type PlayerSource =
+    | { kind: 'youtube' | 'vimeo'; embedId: string }
+    | { kind: 'file'; src: string }
+    | { kind: 'unsupported' };
+
+function resolvePlayerSource(url: string): PlayerSource {
+    try {
+        const parsedUrl = new URL(url);
+        const host = parsedUrl.hostname.toLowerCase();
+
+        if (host.includes('youtube.com') || host.includes('youtu.be')) {
+            const youtubeId =
+                parsedUrl.searchParams.get('v') ??
+                parsedUrl.pathname.split('/').filter(Boolean).pop();
+
+            if (youtubeId) {
+                return { kind: 'youtube', embedId: youtubeId };
+            }
+        }
+
+        if (host.includes('vimeo.com')) {
+            const vimeoId = parsedUrl.pathname.split('/').filter(Boolean).pop();
+
+            if (vimeoId) {
+                return { kind: 'vimeo', embedId: vimeoId };
+            }
+        }
+
+        if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+            return { kind: 'file', src: url };
+        }
+
+        return { kind: 'unsupported' };
+    } catch {
+        return { kind: 'unsupported' };
+    }
+}
 
 export function VideoPlayer({ url }: { url: string }) {
-    const embedUrl = useMemo(() => {
-        try {
-            const urlObj = new URL(url);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const source = useMemo(() => resolvePlayerSource(url), [url]);
 
-            if (
-                urlObj.hostname.includes('youtube.com') ||
-                urlObj.hostname.includes('youtu.be')
-            ) {
-                const videoId =
-                    urlObj.searchParams.get('v') ||
-                    urlObj.pathname.split('/').pop();
-
-                return videoId
-                    ? `https://www.youtube.com/embed/${videoId}?rel=0`
-                    : null;
-            }
-
-            if (urlObj.hostname.includes('vimeo.com')) {
-                const videoId = urlObj.pathname.split('/').pop();
-
-                return videoId
-                    ? `https://player.vimeo.com/video/${videoId}`
-                    : null;
-            }
-
-            return null;
-        } catch {
-            return null;
+    useEffect(() => {
+        if (!containerRef.current || source.kind === 'unsupported') {
+            return;
         }
-    }, [url]);
 
-    if (embedUrl) {
+        const targetElement = containerRef.current.querySelector('[data-plyr-player]');
+
+        if (!targetElement) {
+            return;
+        }
+
+        const player = new Plyr(targetElement as HTMLElement, {
+            controls: [
+                'play-large',
+                'play',
+                'progress',
+                'current-time',
+                'mute',
+                'volume',
+                'settings',
+                'pip',
+                'airplay',
+                'fullscreen',
+            ],
+            ratio: '16:9',
+            youtube: {
+                noCookie: true,
+                controls: 0,
+                disablekb: 1,
+                rel: 0,
+                modestbranding: 1,
+                iv_load_policy: 3,
+                playsinline: 1,
+            },
+            vimeo: {
+                byline: false,
+                portrait: false,
+                title: false,
+            },
+        });
+
+        return () => {
+            player.destroy();
+        };
+    }, [source]);
+
+    if (source.kind !== 'unsupported') {
         return (
-            <div className="overflow-hidden rounded-xl border bg-black">
-                <iframe
-                    src={embedUrl}
-                    className="aspect-video w-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                />
+            <div ref={containerRef} className="overflow-hidden rounded-xl border bg-black">
+                <div className="aspect-video w-full">
+                    {source.kind === 'file' ? (
+                        <video data-plyr-player controls className="h-full w-full">
+                            <source src={source.src} />
+                            Your browser does not support this video element.
+                        </video>
+                    ) : (
+                        <div
+                            data-plyr-player
+                            data-plyr-provider={source.kind}
+                            data-plyr-embed-id={source.embedId}
+                        />
+                    )}
+                </div>
             </div>
         );
     }
 
     return (
         <div className="overflow-hidden rounded-xl border bg-black">
-            <video controls preload="metadata" className="aspect-video w-full">
-                <source src={url} />
-                Your browser does not support this video element.
-            </video>
+            <div className="flex aspect-video w-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
+                Video URL is not supported or invalid. Please update the task video link in admin.
+            </div>
         </div>
     );
 }

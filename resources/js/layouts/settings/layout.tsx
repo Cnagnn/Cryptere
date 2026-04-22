@@ -13,9 +13,10 @@ import { toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
+import { edit as editSocialAccounts } from '@/routes/social-accounts';
 import type { NavItem } from '@/types';
 
-const sidebarNavItems: Array<NavItem & { value: 'profile' | 'security' | 'appearance' }> = [
+const sidebarNavItems: Array<NavItem & { value: 'profile' | 'security' | 'social-accounts' | 'appearance' }> = [
     {
         value: 'profile',
         title: 'Profile',
@@ -26,6 +27,12 @@ const sidebarNavItems: Array<NavItem & { value: 'profile' | 'security' | 'appear
         value: 'security',
         title: 'Security',
         href: editSecurity(),
+        icon: null,
+    },
+    {
+        value: 'social-accounts',
+        title: 'Social Accounts',
+        href: editSocialAccounts(),
         icon: null,
     },
     {
@@ -45,7 +52,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     return (
         <div className="px-4 py-6">
             <div className="mb-8 flex flex-col gap-1">
-                <TypographyH3 className="text-2xl leading-tight font-semibold tracking-tight">
+                <TypographyH3>
                     Settings
                 </TypographyH3>
                 <TypographyMuted className="text-sm/6">

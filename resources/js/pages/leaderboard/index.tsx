@@ -13,10 +13,11 @@ import {
 } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import { index as leaderboardIndex } from '@/routes/leaderboard';
 import { dashboard } from '@/routes';
+import { index as leaderboardIndex } from '@/routes/leaderboard';
 
 type LeaderboardEntry = {
     id: number;
@@ -80,8 +81,8 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
                 <span
                     className={cn(
                         'font-semibold',
-                        row.original.rank === 1 && 'text-yellow-400',
-                        row.original.rank === 2 && 'text-zinc-300',
+                        row.original.rank === 1 && 'text-amber-400',
+                        row.original.rank === 2 && 'text-slate-300',
                         row.original.rank === 3 && 'text-amber-600',
                     )}
                 >
@@ -164,14 +165,22 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
 
             <div className="flex flex-col gap-6 px-4 py-6">
                 <header>
-                    <div>
-                        <h1 className="text-2xl leading-tight font-semibold tracking-tight">
-                            Global leaderboard
-                        </h1>
-                        <p className="mt-1 text-sm/6 text-muted-foreground">
-                            Rankings are updated from completed lessons and
-                            standalone challenges.
-                        </p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="flex flex-col gap-0">
+                            <TypographyH1>Leaderboard</TypographyH1>
+                            <TypographyMuted className="text-sm/6">
+                                Live rankings based on points earned from lessons and challenge submissions.
+                            </TypographyMuted>
+                        </div>
+
+                        <div className="w-full sm:w-auto">
+                            <Input
+                                value={usernameInput}
+                                onChange={(event) => setUsernameInput(event.target.value)}
+                                placeholder="Search username..."
+                                className="w-full sm:w-80"
+                            />
+                        </div>
                     </div>
 
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -223,24 +232,6 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
 
                 <section className="grid gap-4">
                     <div className="flex flex-col gap-4">
-                        <div>
-                            <h2 className="text-2xl leading-tight font-semibold tracking-tight">
-                                Top learners
-                            </h2>
-                            <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-sm/6 text-muted-foreground">
-                                    Ordered by total points from lessons and standalone
-                                    challenge submissions.
-                                </p>
-                                <Input
-                                    value={usernameInput}
-                                    onChange={(event) => setUsernameInput(event.target.value)}
-                                    placeholder="Search username..."
-                                    className="w-full sm:max-w-sm"
-                                />
-                            </div>
-                        </div>
-
                         {leaders.data.length === 0 ? (
                             <Card>
                                 <CardHeader>
@@ -261,7 +252,6 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
                                 showFilterInput={false}
                                 centered
                                 showColumnToggle={false}
-                                showPageSizeSelector={false}
                                 showPageInfo={false}
                                 page={leaders.current_page}
                                 pageCount={leaders.last_page}

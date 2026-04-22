@@ -227,8 +227,8 @@ export function QuizPanel({ task, courseSlug, lessonId }: QuizPanelProps) {
                                     className={cn(
                                         'mt-4 rounded-md p-3 text-sm font-medium',
                                         answerResult
-                                            ? 'bg-emerald-100/50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                            : 'bg-red-100/50 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+                                            ? 'bg-muted text-foreground'
+                                            : 'bg-destructive/10 text-destructive',
                                     )}
                                 >
                                     {answerResult ? 'Correct!' : 'Incorrect.'}{' '}
