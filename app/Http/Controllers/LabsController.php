@@ -2,12 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LabVisit;
+use App\Services\BadgeService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class LabsController extends Controller
 {
+    public function __construct(
+        private readonly BadgeService $badgeService,
+    ) {}
+
     /**
      * @return array<string, array{title: string, summary: string, group: string}>
      */
@@ -61,6 +67,27 @@ class LabsController extends Controller
 
         if ($labDefinition === null) {
             abort(404);
+        }
+
+        $user = $request->user();
+
+        if ($user !== null) {
+            $visit = LabVisit::query()->firstOrNew([
+                'user_id' => $user->id,
+                'lab_slug' => $lab,
+            ]);
+
+            if (! $visit->exists) {
+                $visit->visit_count = 1;
+                $visit->first_visited_at = now();
+            } else {
+                $visit->visit_count++;
+            }
+
+            $visit->last_visited_at = now();
+            $visit->save();
+
+            $this->badgeService->checkAndAward($user, 'labs_visited');
         }
 
         return Inertia::render('labs/show', [

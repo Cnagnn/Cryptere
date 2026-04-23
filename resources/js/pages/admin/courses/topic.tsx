@@ -1,6 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { CourseRow, LessonRow, Paginated } from '@/components/course-types';
@@ -47,6 +47,7 @@ import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as lessonsDestroy } from '@/routes/admin/courses/lessons';
 import { reorder as lessonsReorder } from '@/routes/admin/courses/lessons';
 import { store as lessonsStore } from '@/routes/admin/courses/lessons';
+import { update as lessonsUpdate } from '@/routes/admin/courses/lessons';
 
 type Props = {
     lessons: Paginated<LessonRow>;
@@ -64,12 +65,14 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
     const [rows, setRows] = useState<LessonRow[]>(lessons.data);
     const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<string | null>(null);
     const [createTopicDialogOpen, setCreateTopicDialogOpen] = useState(false);
+    const [editingTopic, setEditingTopic] = useState<LessonRow | null>(null);
     const [isSavingTopic, setIsSavingTopic] = useState(false);
     const [topicForm, setTopicForm] = useState({
         course_id: selectedCourseId,
         title: '',
         description: '',
     });
+    const isEditMode = editingTopic !== null;
 
     const topicCourseHasError = Boolean(errors.course_id);
     const topicTitleHasError = Boolean(errors.title);
@@ -80,11 +83,22 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
     }, [selectedCourseId]);
 
     const resetTopicForm = () => {
+        setEditingTopic(null);
         setTopicForm({
             course_id: selectedCourseId,
             title: '',
             description: '',
         });
+    };
+
+    const openEditTopicDialog = (topic: LessonRow) => {
+        setEditingTopic(topic);
+        setTopicForm({
+            course_id: topic.course_id,
+            title: topic.title,
+            description: topic.description,
+        });
+        setCreateTopicDialogOpen(true);
     };
 
     useEffect(() => {
@@ -193,6 +207,10 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => openEditTopicDialog(row.original)}>
+                                <Pencil data-icon="inline-start" />
+                                Edit
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => {
                                     router.delete(lessonsDestroy.url({ lesson: row.original.id }), {
@@ -227,7 +245,7 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
     };
 
     return (
-        <div className="flex flex-col gap-6 px-4 py-6">
+        <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
             <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex flex-col gap-0">
                     <TypographyH1>Course Topic Management</TypographyH1>
@@ -281,7 +299,10 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
                         }}
                     >
                         <DialogTrigger asChild>
-                            <Button type="button" onClick={() => setCreateTopicDialogOpen(true)}>
+                            <Button type="button" onClick={() => {
+                                resetTopicForm();
+                                setCreateTopicDialogOpen(true);
+                            }}>
                                 <Plus data-icon="inline-start" />
                                 Create Topic
                             </Button>
@@ -296,13 +317,21 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
                                     payload.append('title', topicForm.title);
                                     payload.append('description', topicForm.description);
 
-                                    router.post(lessonsStore.url(), payload, {
+                                    const requestUrl = isEditMode
+                                        ? lessonsUpdate.url({ lesson: editingTopic.id })
+                                        : lessonsStore.url();
+
+                                    if (isEditMode) {
+                                        payload.append('_method', 'PATCH');
+                                    }
+
+                                    router.post(requestUrl, payload, {
                                         forceFormData: true,
                                         preserveScroll: true,
                                         preserveState: true,
                                         onStart: () => setIsSavingTopic(true),
                                         onSuccess: () => {
-                                            toast.success('Topic created successfully.');
+                                            toast.success(isEditMode ? 'Topic updated successfully.' : 'Topic created successfully.');
                                             resetTopicForm();
                                             setCreateTopicDialogOpen(false);
                                         },
@@ -311,9 +340,11 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
                                 }}
                             >
                                 <DialogHeader className="pr-10">
-                                    <DialogTitle>Create topic</DialogTitle>
+                                    <DialogTitle>{isEditMode ? 'Edit topic' : 'Create topic'}</DialogTitle>
                                     <DialogDescription>
-                                        Add a new topic for the selected course title.
+                                        {isEditMode
+                                            ? 'Update topic title and description.'
+                                            : 'Add a new topic for the selected course title.'}
                                     </DialogDescription>
                                 </DialogHeader>
 

@@ -49,6 +49,7 @@ type DataTableProps<TData, TValue> = {
     centered?: boolean;
     showColumnToggle?: boolean;
     showPageInfo?: boolean;
+    showFooter?: boolean;
     footerInfo?: string;
     page?: number;
     pageCount?: number;
@@ -87,6 +88,7 @@ export function DataTable<TData, TValue>({
     showFilterInput = true,
     centered = false,
     showPageInfo = true,
+    showFooter = true,
     footerInfo,
     page,
     pageCount,
@@ -450,7 +452,7 @@ export function DataTable<TData, TValue>({
                 </Table>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            {showFooter && <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-sm text-muted-foreground">
                     {footerInfo ?? `Showing ${rows.length} row(s).`}
                 </div>
@@ -571,7 +573,7 @@ export function DataTable<TData, TValue>({
                         </Pagination>
                     ) : null}
                 </div>
-            </div>
+            </div>}
         </div>
     );
 }

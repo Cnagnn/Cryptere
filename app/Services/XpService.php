@@ -70,5 +70,7 @@ class XpService
             'longest_streak' => $longestStreak,
             'last_active_date' => $today,
         ]);
+
+        app(BadgeService::class)->checkAndAward($user, 'streak_days');
     }
 }

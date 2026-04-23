@@ -33,7 +33,6 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
                         </div>
                     ) : null}
                 </div>
-
             </div>
         </header>
     );

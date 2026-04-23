@@ -1,8 +1,9 @@
 import { Head, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, Award } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
@@ -26,6 +28,9 @@ type LeaderboardEntry = {
     username: string | null;
     avatar: string | null;
     points: number;
+    level: number;
+    levelName: string;
+    badgeCount: number;
 };
 
 type CurrentUserStanding = {
@@ -113,6 +118,32 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
             ),
         },
         {
+            accessorKey: 'level',
+            header: 'Level',
+            cell: ({ row }) => (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="text-sm font-medium">
+                                Lv.{row.original.level}
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent>{row.original.levelName}</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ),
+        },
+        {
+            accessorKey: 'badgeCount',
+            header: 'Badges',
+            cell: ({ row }) => (
+                <Badge variant="outline" className="gap-1">
+                    <Award className="size-3" />
+                    {row.original.badgeCount}
+                </Badge>
+            ),
+        },
+        {
             accessorKey: 'points',
             header: 'Points',
             cell: ({ row }) => (
@@ -163,7 +194,7 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
         <>
             <Head title="Leaderboard" />
 
-            <div className="flex flex-col gap-6 px-4 py-6">
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <header>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div className="flex flex-col gap-0">

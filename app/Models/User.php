@@ -172,4 +172,38 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(SocialAccount::class);
     }
+
+    /**
+     * Get the badges earned by the user.
+     */
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'user_badges')
+            ->withPivot('earned_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the lab visits for the user.
+     */
+    public function labVisits(): HasMany
+    {
+        return $this->hasMany(LabVisit::class);
+    }
+
+    /**
+     * Get the bookmarks for the user.
+     */
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class);
+    }
+
+    /**
+     * Get the notes for the user.
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(Note::class);
+    }
 }

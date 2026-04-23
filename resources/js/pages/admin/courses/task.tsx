@@ -1,6 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ChevronDown, Download, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronDown, Download, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { CourseRow, LessonRow, Paginated, TaskRow } from '@/components/course-types';
 import { Button } from '@/components/ui/button';
@@ -47,6 +47,7 @@ import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as tasksDestroy } from '@/routes/admin/courses/tasks';
 import { reorder as tasksReorder } from '@/routes/admin/courses/tasks';
 import { store as tasksStore } from '@/routes/admin/courses/tasks';
+import { update as tasksUpdate } from '@/routes/admin/courses/tasks';
 
 type Props = {
     tasks: Paginated<TaskRow>;
@@ -154,7 +155,9 @@ export default function AdminCoursesTask({
     const [rows, setRows] = useState<TaskRow[]>(tasks.data);
     const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<string | null>(null);
     const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
     const [isSavingTask, setIsSavingTask] = useState(false);
+    const isEditMode = editingTask !== null;
     const [quizImportFileName, setQuizImportFileName] = useState('');
     const [quizQuestions, setQuizQuestions] = useState<QuizImportQuestion[]>([]);
     const [taskForm, setTaskForm] = useState({
@@ -185,6 +188,7 @@ export default function AdminCoursesTask({
     const taskQuizQuestionsHasError = Boolean(errors.quiz_questions);
 
     const resetTaskForm = () => {
+        setEditingTask(null);
         setTaskForm({
             lesson_id: selectedLessonId || lessonOptions[0]?.id || 0,
             title: '',
@@ -195,6 +199,31 @@ export default function AdminCoursesTask({
         });
         setQuizImportFileName('');
         setQuizQuestions([]);
+    };
+
+    const openEditTaskDialog = (task: TaskRow) => {
+        setEditingTask(task);
+        setTaskForm({
+            lesson_id: task.lesson_id,
+            title: task.title,
+            description: task.description,
+            type: task.type as 'video' | 'read' | 'quiz',
+            video_url: task.video_url ?? '',
+            document: null,
+        });
+        setQuizImportFileName('');
+        setQuizQuestions(
+            (task.quiz_questions ?? []).map((q) => ({
+                question: q.question,
+                optionA: q.options[0] ?? '',
+                optionB: q.options[1] ?? '',
+                optionC: q.options[2] ?? '',
+                optionD: q.options[3] ?? '',
+                correctOption: q.correct_option,
+                explanation: q.explanation,
+            })),
+        );
+        setCreateTaskDialogOpen(true);
     };
 
     const filteredTasks = useMemo(() => {
@@ -330,6 +359,10 @@ export default function AdminCoursesTask({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => openEditTaskDialog(row.original)}>
+                                    <Pencil data-icon="inline-start" />
+                                    Edit
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => {
                                         router.delete(tasksDestroy.url({ task: row.original.id }), {
@@ -381,7 +414,7 @@ export default function AdminCoursesTask({
     };
 
     return (
-        <div className="flex flex-col gap-6 px-4 py-6">
+        <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
             <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex flex-col gap-0">
                     <TypographyH1>Course Task Management</TypographyH1>
@@ -462,7 +495,10 @@ export default function AdminCoursesTask({
                         }}
                     >
                         <DialogTrigger asChild>
-                            <Button type="button" onClick={() => setCreateTaskDialogOpen(true)}>
+                            <Button type="button" onClick={() => {
+                                resetTaskForm();
+                                setCreateTaskDialogOpen(true);
+                            }}>
                                 <Plus data-icon="inline-start" />
                                 Create Task
                             </Button>
@@ -506,13 +542,21 @@ export default function AdminCoursesTask({
                                         });
                                     }
 
-                                    router.post(tasksStore.url(), payload, {
+                                    const requestUrl = isEditMode
+                                        ? tasksUpdate.url({ task: editingTask.id })
+                                        : tasksStore.url();
+
+                                    if (isEditMode) {
+                                        payload.append('_method', 'PATCH');
+                                    }
+
+                                    router.post(requestUrl, payload, {
                                         forceFormData: true,
                                         preserveScroll: true,
                                         preserveState: true,
                                         onStart: () => setIsSavingTask(true),
                                         onSuccess: () => {
-                                            toast.success('Task created successfully.');
+                                            toast.success(isEditMode ? 'Task updated successfully.' : 'Task created successfully.');
                                             resetTaskForm();
                                             setCreateTaskDialogOpen(false);
                                         },
@@ -521,9 +565,11 @@ export default function AdminCoursesTask({
                                 }}
                             >
                                 <DialogHeader className="pr-10">
-                                    <DialogTitle>Create task</DialogTitle>
+                                    <DialogTitle>{isEditMode ? 'Edit task' : 'Create task'}</DialogTitle>
                                     <DialogDescription>
-                                        Add a new task under the selected topic.
+                                        {isEditMode
+                                            ? 'Update task details and content.'
+                                            : 'Add a new task under the selected topic.'}
                                     </DialogDescription>
                                 </DialogHeader>
 
@@ -647,8 +693,13 @@ export default function AdminCoursesTask({
                                     {taskForm.type === 'read' && (
                                         <Field className="gap-2" data-invalid={taskDocumentHasError || undefined}>
                                             <FieldLabel htmlFor="task-document">
-                                                Document <span className="text-destructive">*</span>
+                                                Document {!isEditMode && <span className="text-destructive">*</span>}
                                             </FieldLabel>
+                                            {isEditMode && editingTask.document_name && (
+                                                <p className="text-sm text-muted-foreground">
+                                                    Current: {editingTask.document_name}
+                                                </p>
+                                            )}
                                             <Input
                                                 id="task-document"
                                                 name="document"
@@ -659,7 +710,7 @@ export default function AdminCoursesTask({
                                                     const file = event.target.files?.[0] ?? null;
                                                     setTaskForm((current) => ({ ...current, document: file }));
                                                 }}
-                                                required
+                                                required={!isEditMode}
                                             />
                                             {taskDocumentHasError && (
                                                 <FieldDescription className="text-destructive">{errors.document}</FieldDescription>
@@ -671,8 +722,13 @@ export default function AdminCoursesTask({
                                         <>
                                             <Field className="gap-2" data-invalid={taskQuizQuestionsHasError || undefined}>
                                                 <FieldLabel htmlFor="task-quiz-import">
-                                                    Import Questions <span className="text-destructive">*</span>
+                                                    Import Questions {!isEditMode && <span className="text-destructive">*</span>}
                                                 </FieldLabel>
+                                                {isEditMode && quizQuestions.length > 0 && (
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {quizQuestions.length} question(s) loaded. Upload a new file to replace.
+                                                    </p>
+                                                )}
                                                 <Input
                                                     id="task-quiz-import"
                                                     type="file"
@@ -703,7 +759,7 @@ export default function AdminCoursesTask({
                                                             toast.error('Gagal membaca file. Gunakan template CSV/Excel dari tombol template.');
                                                         }
                                                     }}
-                                                    required
+                                                    required={!isEditMode || quizQuestions.length === 0}
                                                 />
                                                 {taskQuizQuestionsHasError && (
                                                     <FieldDescription className="text-destructive">{errors.quiz_questions}</FieldDescription>

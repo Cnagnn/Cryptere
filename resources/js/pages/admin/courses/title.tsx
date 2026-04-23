@@ -214,8 +214,8 @@ export default function AdminCoursesTitle({ courses }: Props) {
             accessorKey: 'title',
             header: 'Title',
             cell: ({ row }) => (
-                <div className="text-left">
-                    <p className="font-medium">{row.original.title}</p>
+                <div className="max-w-48 text-left">
+                    <p className="truncate font-medium" title={row.original.title}>{row.original.title}</p>
                 </div>
             ),
         },
@@ -251,9 +251,11 @@ export default function AdminCoursesTitle({ courses }: Props) {
                 <div className="flex justify-center">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline">Open</Button>
+                            <Button type="button" variant="ghost" size="icon">
+                                <MoreHorizontal />
+                            </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent align="end">
                             <DropdownMenuGroup>
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={() => router.get(coursesShow.url(row.original.slug))}>
@@ -295,7 +297,7 @@ export default function AdminCoursesTitle({ courses }: Props) {
 
     return (
         <>
-            <div className="flex flex-col gap-6 px-4 py-6">
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex flex-col gap-0">
                         <TypographyH1>Course Title Management</TypographyH1>

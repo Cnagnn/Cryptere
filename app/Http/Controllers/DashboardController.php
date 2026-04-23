@@ -2,9 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Challenge;
+use App\Models\ChallengeSubmission;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LessonProgress;
 use App\Models\User;
+use App\Services\DailyChallengeService;
+use App\Services\LevelService;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -12,12 +19,144 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly LevelService $levelService,
+        private readonly DailyChallengeService $dailyChallengeService,
+    ) {}
+
     /**
-     * Show the learner dashboard.
+     * Show the dashboard — learner view for members, analytics view for admins.
      */
     public function __invoke(Request $request): Response
     {
         $user = $request->user();
+
+        if ($user->isAdmin()) {
+            return $this->adminDashboard();
+        }
+
+        return $this->learnerDashboard($user);
+    }
+
+    /**
+     * Admin analytics dashboard.
+     */
+    private function adminDashboard(): Response
+    {
+        $totalUsers = User::count();
+        $totalCourses = Course::count();
+        $totalChallenges = Challenge::count();
+        $totalEnrollments = Enrollment::count();
+        $activeUsers = User::where('last_active_date', '>=', now()->subDays(30))->count();
+        $newUsersThisMonth = User::where('created_at', '>=', now()->startOfMonth())->count();
+
+        $monthsWindowStart = now()->subMonths(5)->startOfMonth();
+
+        $enrollmentTrends = collect(range(5, 0))->map(function (int $monthOffset): array {
+            $month = now()->subMonths($monthOffset)->startOfMonth();
+            $end = (clone $month)->endOfMonth();
+
+            return [
+                'month' => $month->format('M'),
+                'enrollments' => Enrollment::whereBetween('created_at', [$month, $end])->count(),
+            ];
+        })->values();
+
+        $userGrowth = collect(range(5, 0))->map(function (int $monthOffset): array {
+            $month = now()->subMonths($monthOffset)->startOfMonth();
+            $end = (clone $month)->endOfMonth();
+
+            return [
+                'month' => $month->format('M'),
+                'users' => User::whereBetween('created_at', [$month, $end])->count(),
+            ];
+        })->values();
+
+        $coursePerformance = Course::query()
+            ->where('is_published', true)
+            ->withCount([
+                'enrollments',
+                'enrollments as completed_enrollments_count' => function ($query): void {
+                    $query->whereNotNull('completed_at');
+                },
+            ])
+            ->orderByDesc('enrollments_count')
+            ->take(5)
+            ->get(['id', 'title'])
+            ->map(function (Course $course): array {
+                $enrollmentCount = (int) $course->enrollments_count;
+                $completedCount = (int) $course->completed_enrollments_count;
+
+                return [
+                    'title' => $course->title,
+                    'enrollments' => $enrollmentCount,
+                    'completionRate' => $enrollmentCount > 0
+                        ? round(($completedCount / $enrollmentCount) * 100, 1)
+                        : 0.0,
+                ];
+            });
+
+        $challengePerformance = Challenge::query()
+            ->where('is_published', true)
+            ->withCount([
+                'submissions',
+                'submissions as correct_submissions_count' => function ($query): void {
+                    $query->where('is_correct', true);
+                },
+            ])
+            ->orderByDesc('submissions_count')
+            ->take(5)
+            ->get(['id', 'title'])
+            ->map(function (Challenge $challenge): array {
+                $submissionCount = (int) $challenge->submissions_count;
+                $correctCount = (int) $challenge->correct_submissions_count;
+
+                return [
+                    'title' => $challenge->title,
+                    'submissions' => $submissionCount,
+                    'successRate' => $submissionCount > 0
+                        ? round(($correctCount / $submissionCount) * 100, 1)
+                        : 0.0,
+                ];
+            });
+
+        $recentUsers = User::query()
+            ->latest()
+            ->take(5)
+            ->get(['id', 'name', 'username', 'email', 'role', 'created_at'])
+            ->map(fn (User $u): array => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'username' => $u->username,
+                'email' => $u->email,
+                'role' => $u->role,
+                'createdAt' => $u->created_at?->diffForHumans(),
+            ]);
+
+        return Inertia::render('dashboard', [
+            'admin' => [
+                'stats' => [
+                    'totalUsers' => $totalUsers,
+                    'totalCourses' => $totalCourses,
+                    'totalChallenges' => $totalChallenges,
+                    'totalEnrollments' => $totalEnrollments,
+                    'activeUsers' => $activeUsers,
+                    'newUsersThisMonth' => $newUsersThisMonth,
+                ],
+                'enrollmentTrends' => $enrollmentTrends,
+                'userGrowth' => $userGrowth,
+                'coursePerformance' => $coursePerformance,
+                'challengePerformance' => $challengePerformance,
+                'recentUsers' => $recentUsers,
+            ],
+        ]);
+    }
+
+    /**
+     * Learner dashboard for regular members.
+     */
+    private function learnerDashboard(User $user): Response
+    {
 
         $enrollmentQuery = Enrollment::query()->whereBelongsTo($user);
 
@@ -291,6 +430,96 @@ class DashboardController extends Controller
         $firstName = Str::of($user->name)->trim()->before(' ')->toString();
         $displayName = $firstName !== '' ? $firstName : 'Learner';
 
+        // Level info
+        $levelInfo = $this->levelService->getUserLevel($user);
+
+        // Recent badges (last 5 earned)
+        $recentBadges = $user->badges()
+            ->orderByPivot('earned_at', 'desc')
+            ->take(5)
+            ->get(['badges.id', 'name', 'description', 'icon', 'tier', 'category'])
+            ->map(fn ($badge): array => [
+                'id' => $badge->id,
+                'name' => $badge->name,
+                'description' => $badge->description,
+                'icon' => $badge->icon,
+                'tier' => $badge->tier,
+                'category' => $badge->category,
+                'earnedAt' => $badge->pivot->earned_at
+                    ? Carbon::parse($badge->pivot->earned_at)->diffForHumans()
+                    : null,
+            ]);
+
+        // Daily challenge
+        $dailyChallenge = $this->dailyChallengeService->getTodaysChallenge();
+        $dailyChallengePayload = null;
+
+        if ($dailyChallenge !== null) {
+            $dailyChallengePayload = [
+                'id' => $dailyChallenge->id,
+                'slug' => $dailyChallenge->slug,
+                'title' => $dailyChallenge->title,
+                'prompt' => Str::limit($dailyChallenge->prompt, 120),
+                'isSolved' => $this->dailyChallengeService->hasUserSolvedToday($user->id, $dailyChallenge),
+            ];
+        }
+
+        // Learning path nodes (lightweight — loaded eagerly)
+        $pathCourses = Course::query()
+            ->published()
+            ->with('prerequisite:id,title,slug')
+            ->withCount('lessons')
+            ->orderBy('path_position')
+            ->orderBy('sort_order')
+            ->get([
+                'id',
+                'slug',
+                'title',
+                'summary',
+                'category',
+                'difficulty',
+                'path_position',
+                'prerequisite_course_id',
+                'estimated_minutes',
+                'cover_path',
+            ]);
+
+        $pathEnrollments = Enrollment::query()
+            ->whereBelongsTo($user)
+            ->get(['course_id', 'progress_percentage', 'completed_at'])
+            ->keyBy('course_id');
+
+        $learningPathNodes = $pathCourses->map(function (Course $course) use ($pathEnrollments): array {
+            $enrollment = $pathEnrollments->get($course->id);
+            $prerequisiteCompleted = true;
+
+            if ($course->prerequisite_course_id !== null) {
+                $prereqEnrollment = $pathEnrollments->get($course->prerequisite_course_id);
+                $prerequisiteCompleted = $prereqEnrollment !== null && $prereqEnrollment->completed_at !== null;
+            }
+
+            return [
+                'id' => $course->id,
+                'slug' => $course->slug,
+                'title' => $course->title,
+                'summary' => $course->summary,
+                'category' => $course->category,
+                'difficulty' => $course->difficulty,
+                'pathPosition' => $course->path_position,
+                'prerequisiteId' => $course->prerequisite_course_id,
+                'prerequisiteTitle' => $course->prerequisite?->title,
+                'lessonCount' => $course->lessons_count,
+                'estimatedMinutes' => $course->estimated_minutes,
+                'cover' => $course->cover,
+                'isEnrolled' => $enrollment !== null,
+                'progressPercentage' => $enrollment?->progress_percentage ?? 0,
+                'isCompleted' => $enrollment?->completed_at !== null,
+                'isLocked' => ! $prerequisiteCompleted,
+            ];
+        })->values();
+
+        $learningPathCategories = $pathCourses->pluck('category')->filter()->unique()->values();
+
         return Inertia::render('dashboard', [
             'stats' => [
                 'enrolledCourses' => $enrolledCourses,
@@ -299,6 +528,9 @@ class DashboardController extends Controller
                 'solvedChallenges' => $solvedChallenges,
                 'points' => $user->points,
             ],
+            'level' => $levelInfo,
+            'recentBadges' => $recentBadges,
+            'dailyChallenge' => $dailyChallengePayload,
             'recentCourses' => $enrollments->map(function (Enrollment $enrollment): array {
                 return [
                     'id' => $enrollment->course?->id,
@@ -345,6 +577,7 @@ class DashboardController extends Controller
                         'rank' => $index + 1,
                         'name' => $learner->name,
                         'username' => $learner->username,
+                        'avatar' => $learner->avatar,
                         'points' => $learner->points,
                     ];
                 }),
@@ -360,6 +593,183 @@ class DashboardController extends Controller
                 'popularCourses' => $popularCoursesPayload,
                 'recentActivity' => $recentActivity,
             ],
+            'learningPath' => [
+                'nodes' => $learningPathNodes,
+                'categories' => $learningPathCategories,
+            ],
+            'analytics' => [
+                'stats' => [
+                    'totalPoints' => $user->points,
+                    'currentStreak' => $user->current_streak,
+                    'longestStreak' => $user->longest_streak,
+                    'completedCourses' => $completedCourses,
+                    'completedLessons' => $completedLessons,
+                    'solvedChallenges' => $solvedChallenges,
+                    'badgeCount' => $user->badges()->count(),
+                ],
+                // Heavy data — deferred so the Overview tab loads instantly
+                'activityHeatmap' => Inertia::defer(fn () => $this->buildActivityHeatmap($user->id)),
+                'skillRadar' => Inertia::defer(fn () => $this->buildSkillRadar($user->id)),
+                'streakCalendar' => Inertia::defer(fn () => $this->buildStreakCalendar($user->id)),
+                'progressTrend' => Inertia::defer(fn () => $this->buildProgressTrend($user->id)),
+            ],
         ]);
+    }
+
+    /**
+     * Build activity heatmap data (last 365 days).
+     *
+     * @return array<int, array{date: string, count: int}>
+     */
+    private function buildActivityHeatmap(int $userId): array
+    {
+        $startDate = now()->subYear()->startOfDay();
+
+        $lessonActivity = LessonProgress::query()
+            ->where('user_id', $userId)
+            ->where('completed_at', '>=', $startDate)
+            ->selectRaw('DATE(completed_at) as activity_date, COUNT(*) as cnt')
+            ->groupByRaw('DATE(completed_at)')
+            ->pluck('cnt', 'activity_date');
+
+        $challengeActivity = ChallengeSubmission::query()
+            ->where('user_id', $userId)
+            ->where('submitted_at', '>=', $startDate)
+            ->selectRaw('DATE(submitted_at) as activity_date, COUNT(*) as cnt')
+            ->groupByRaw('DATE(submitted_at)')
+            ->pluck('cnt', 'activity_date');
+
+        $heatmap = [];
+        $period = CarbonPeriod::create($startDate, now());
+
+        foreach ($period as $date) {
+            $dateStr = $date->toDateString();
+            $count = ($lessonActivity[$dateStr] ?? 0) + ($challengeActivity[$dateStr] ?? 0);
+            $heatmap[] = [
+                'date' => $dateStr,
+                'count' => $count,
+            ];
+        }
+
+        return $heatmap;
+    }
+
+    /**
+     * Build skill radar data based on course categories.
+     *
+     * @return array<int, array{category: string, score: int}>
+     */
+    private function buildSkillRadar(int $userId): array
+    {
+        $enrollments = Enrollment::query()
+            ->where('user_id', $userId)
+            ->join('courses', 'enrollments.course_id', '=', 'courses.id')
+            ->whereNotNull('courses.category')
+            ->selectRaw('courses.category, AVG(enrollments.progress_percentage) as avg_progress')
+            ->groupBy('courses.category')
+            ->get();
+
+        return $enrollments->map(fn ($row) => [
+            'category' => $row->category ?? 'General',
+            'score' => (int) round($row->avg_progress),
+        ])->values()->all();
+    }
+
+    /**
+     * Build streak calendar data (5 full weeks, today in the middle week).
+     *
+     * @return array<int, array{date: string, active: bool, isToday: bool, isOutOfRange: bool, isFuture: bool}>
+     */
+    private function buildStreakCalendar(int $userId): array
+    {
+        $user = User::find($userId);
+        $today = now()->startOfDay();
+
+        // Find the Sunday that starts the current week (Indonesian week starts Sunday)
+        $currentWeekSunday = $today->copy()->startOfWeek(Carbon::SUNDAY);
+
+        // 5 weeks total, today's week in the middle (week 3) → start 2 weeks before
+        $calendarStart = $currentWeekSunday->copy()->subWeeks(2);
+        $calendarEnd = $calendarStart->copy()->addWeeks(5)->subDay(); // 35 days total
+
+        // Query activity from calendar start (past dates only)
+        $lessonDates = LessonProgress::query()
+            ->where('user_id', $userId)
+            ->where('completed_at', '>=', $calendarStart)
+            ->where('completed_at', '<=', $today)
+            ->selectRaw('DATE(completed_at) as d')
+            ->groupByRaw('DATE(completed_at)')
+            ->pluck('d');
+
+        $challengeDates = ChallengeSubmission::query()
+            ->where('user_id', $userId)
+            ->where('submitted_at', '>=', $calendarStart)
+            ->where('submitted_at', '<=', $today)
+            ->selectRaw('DATE(submitted_at) as d')
+            ->groupByRaw('DATE(submitted_at)')
+            ->pluck('d');
+
+        // Include streak login dates so the calendar matches the streak counter
+        $streakDates = collect();
+        if ($user && $user->last_active_date && $user->current_streak > 0) {
+            $lastActive = Carbon::parse($user->last_active_date);
+            for ($i = 0; $i < $user->current_streak; $i++) {
+                $streakDates->push($lastActive->copy()->subDays($i)->toDateString());
+            }
+        }
+
+        $activeDates = $lessonDates->merge($challengeDates)->merge($streakDates)->unique();
+
+        $calendar = [];
+        $todayStr = $today->toDateString();
+        $period = CarbonPeriod::create($calendarStart, $calendarEnd);
+
+        foreach ($period as $date) {
+            $dateStr = $date->toDateString();
+            $isFuture = $date->gt($today);
+            $calendar[] = [
+                'date' => $dateStr,
+                'active' => ! $isFuture && $activeDates->contains($dateStr),
+                'isToday' => $dateStr === $todayStr,
+                'isOutOfRange' => false,
+                'isFuture' => $isFuture,
+            ];
+        }
+
+        return $calendar;
+    }
+
+    /**
+     * Build progress trend (weekly points earned over last 12 weeks).
+     *
+     * @return array<int, array{week: string, points: int}>
+     */
+    private function buildProgressTrend(int $userId): array
+    {
+        $weeks = [];
+
+        for ($i = 11; $i >= 0; $i--) {
+            $weekStart = now()->subWeeks($i)->startOfWeek();
+            $weekEnd = now()->subWeeks($i)->endOfWeek();
+
+            $lessonPoints = LessonProgress::query()
+                ->where('user_id', $userId)
+                ->whereBetween('completed_at', [$weekStart, $weekEnd])
+                ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
+                ->sum('lessons.xp_reward');
+
+            $challengePoints = ChallengeSubmission::query()
+                ->where('user_id', $userId)
+                ->where('is_correct', true)
+                ->whereBetween('submitted_at', [$weekStart, $weekEnd])
+                ->sum('score');
+
+            $weeks[] = [
+                'week' => $weekStart->format('M d'),
+                'points' => (int) ($lessonPoints + $challengePoints),
+            ];
+        }
+
+        return $weeks;
     }
 }

@@ -975,7 +975,7 @@ export default function LabsShow({ lab }: Props) {
         <>
             <Head title={`${lab.title} Lab`} />
 
-            <div className="flex flex-col gap-6 px-4 py-6">
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-col gap-2">
                         <Button variant="ghost" size="sm" asChild className="-ml-2">

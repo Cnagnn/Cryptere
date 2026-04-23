@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['slug', 'title', 'prompt', 'hint', 'expected_answer', 'sort_order', 'is_published', 'time_start', 'time_end', 'time_limit_seconds', 'questions_per_session', 'max_points_per_question'])]
+#[Fillable(['slug', 'title', 'prompt', 'hint', 'expected_answer', 'sort_order', 'is_published', 'category', 'is_daily', 'daily_date', 'time_start', 'time_end', 'time_limit_seconds', 'questions_per_session', 'max_points_per_question'])]
 #[Hidden(['expected_answer'])]
 class Challenge extends Model
 {
@@ -27,6 +27,8 @@ class Challenge extends Model
     {
         return [
             'is_published' => 'boolean',
+            'is_daily' => 'boolean',
+            'daily_date' => 'date',
             'time_start' => 'datetime',
             'time_end' => 'datetime',
             'time_limit_seconds' => 'integer',
@@ -41,6 +43,15 @@ class Challenge extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('is_published', true);
+    }
+
+    /**
+     * Scope to today's daily challenge.
+     */
+    public function scopeDaily(Builder $query): Builder
+    {
+        return $query->where('is_daily', true)
+            ->whereDate('daily_date', now()->toDateString());
     }
 
     /**

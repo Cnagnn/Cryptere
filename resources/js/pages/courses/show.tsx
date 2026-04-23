@@ -329,7 +329,7 @@ export default function CourseShow({
         <>
             <Head title={`${course.title} - Course Detail`} />
 
-            <div className="flex flex-col gap-6 px-4 py-6">
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 {notice ? (
                     <Alert>
                         <AlertDescription>{notice}</AlertDescription>

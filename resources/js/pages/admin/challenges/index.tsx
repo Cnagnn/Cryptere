@@ -222,7 +222,7 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
         <>
             <Head title="Management - Challenges" />
 
-            <div className="flex flex-col gap-6 px-4 py-6">
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex flex-col gap-0">
                         <TypographyH1>Challenge Management</TypographyH1>

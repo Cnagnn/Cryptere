@@ -85,5 +85,215 @@ test('authenticated users can visit the dashboard', function () {
             ->has('academy.monthlyProgress.series', 6)
             ->has('academy.popularCourses')
             ->has('academy.recentActivity')
+            ->has('learningPath')
+            ->has('learningPath.nodes')
+            ->has('learningPath.categories')
+            ->has('analytics')
+            ->has('analytics.stats')
         );
+});
+
+test('admin users see the analytics dashboard', function () {
+    $admin = User::factory()->create([
+        'is_admin' => true,
+        'role' => 'admin',
+    ]);
+
+    // Seed some data for analytics
+    User::factory()->count(3)->create();
+
+    $course = Course::factory()->create([
+        'is_published' => true,
+    ]);
+
+    $challenge = Challenge::factory()->create([
+        'is_published' => true,
+    ]);
+
+    $member = User::factory()->create();
+
+    Enrollment::factory()->for($member)->for($course)->create();
+
+    ChallengeSubmission::factory()->for($member)->for($challenge)->create([
+        'is_correct' => true,
+    ]);
+
+    $this->actingAs($admin);
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('dashboard')
+            ->has('admin')
+            ->has('admin.stats')
+            ->where('admin.stats.totalCourses', 1)
+            ->where('admin.stats.totalChallenges', 1)
+            ->where('admin.stats.totalEnrollments', 1)
+            ->has('admin.enrollmentTrends', 6)
+            ->has('admin.userGrowth', 6)
+            ->has('admin.coursePerformance')
+            ->has('admin.challengePerformance')
+            ->has('admin.recentUsers')
+            ->missing('stats')
+            ->missing('academy')
+            ->missing('learningPath')
+            ->missing('analytics')
+        );
+});
+
+test('admin dashboard does not include learner props', function () {
+    $admin = User::factory()->create([
+        'is_admin' => true,
+        'role' => 'admin',
+    ]);
+
+    $this->actingAs($admin);
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('dashboard')
+            ->has('admin')
+            ->missing('stats')
+            ->missing('recentCourses')
+            ->missing('recommendedCourses')
+            ->missing('academy')
+            ->missing('learningPath')
+            ->missing('analytics')
+        );
+});
+
+test('member users do not see admin analytics', function () {
+    $member = User::factory()->create([
+        'is_admin' => false,
+        'role' => 'member',
+    ]);
+
+    $this->actingAs($member);
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('dashboard')
+            ->has('stats')
+            ->has('academy')
+            ->has('learningPath')
+            ->has('analytics')
+            ->missing('admin')
+        );
+});
+
+// ─── Learning Path (merged from LearningPathTest) ────────────────────────────
+
+test('dashboard includes learning path with published courses', function () {
+    $user = User::factory()->create();
+
+    $course = Course::factory()->create([
+        'is_published' => true,
+        'category' => 'Classical Ciphers',
+        'difficulty' => 'beginner',
+        'path_position' => 1,
+    ]);
+
+    Course::factory()->create(['is_published' => false]);
+
+    $response = $this->actingAs($user)->get(route('dashboard'));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->has('learningPath.nodes', 1)
+        ->where('learningPath.nodes.0.title', $course->title)
+        ->where('learningPath.nodes.0.category', 'Classical Ciphers')
+        ->where('learningPath.nodes.0.difficulty', 'beginner')
+        ->where('learningPath.nodes.0.isLocked', false)
+        ->where('learningPath.nodes.0.isEnrolled', false)
+    );
+});
+
+test('dashboard learning path shows locked status when prerequisite not completed', function () {
+    $user = User::factory()->create();
+
+    $prereq = Course::factory()->create([
+        'is_published' => true,
+        'path_position' => 1,
+    ]);
+
+    $course = Course::factory()->create([
+        'is_published' => true,
+        'prerequisite_course_id' => $prereq->id,
+        'path_position' => 2,
+    ]);
+
+    $response = $this->actingAs($user)->get(route('dashboard'));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('learningPath.nodes.1.isLocked', true)
+    );
+});
+
+test('dashboard learning path shows unlocked when prerequisite is completed', function () {
+    $user = User::factory()->create();
+
+    $prereq = Course::factory()->create([
+        'is_published' => true,
+        'path_position' => 1,
+    ]);
+
+    $course = Course::factory()->create([
+        'is_published' => true,
+        'prerequisite_course_id' => $prereq->id,
+        'path_position' => 2,
+    ]);
+
+    Enrollment::factory()->create([
+        'user_id' => $user->id,
+        'course_id' => $prereq->id,
+        'completed_at' => now(),
+        'progress_percentage' => 100,
+    ]);
+
+    $response = $this->actingAs($user)->get(route('dashboard'));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('learningPath.nodes.1.isLocked', false)
+    );
+});
+
+test('dashboard learning path shows enrollment progress', function () {
+    $user = User::factory()->create();
+
+    $course = Course::factory()->create(['is_published' => true]);
+
+    Enrollment::factory()->create([
+        'user_id' => $user->id,
+        'course_id' => $course->id,
+        'progress_percentage' => 60,
+    ]);
+
+    $response = $this->actingAs($user)->get(route('dashboard'));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('learningPath.nodes.0.isEnrolled', true)
+        ->where('learningPath.nodes.0.progressPercentage', 60)
+    );
+});
+
+// ─── Analytics (merged from AnalyticsTest) ───────────────────────────────────
+
+test('dashboard includes analytics stats with expected keys', function () {
+    $user = User::factory()->create(['points' => 500]);
+
+    $response = $this->actingAs($user)->get(route('dashboard'));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->has('analytics.stats.totalPoints')
+        ->has('analytics.stats.currentStreak')
+        ->has('analytics.stats.longestStreak')
+        ->has('analytics.stats.completedCourses')
+        ->has('analytics.stats.completedLessons')
+        ->has('analytics.stats.solvedChallenges')
+        ->has('analytics.stats.badgeCount')
+    );
 });

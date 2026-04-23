@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\FlashesAchievements;
 use App\Http\Requests\SubmitChallengeRequest;
 use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
 use App\Models\User;
+use App\Services\BadgeService;
 use App\Services\ChallengeScoreService;
+use App\Services\LevelService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +20,8 @@ use Inertia\Inertia;
 
 class ChallengeSubmissionController extends Controller
 {
+    use FlashesAchievements;
+
     private const ROUND_TIME_LIMIT_SECONDS = 30;
 
     private const BASE_CHALLENGE_POINTS = 100;
@@ -27,6 +32,8 @@ class ChallengeSubmissionController extends Controller
 
     public function __construct(
         private readonly ChallengeScoreService $scoreService,
+        private readonly BadgeService $badgeService,
+        private readonly LevelService $levelService,
     ) {}
 
     /**
@@ -64,6 +71,18 @@ class ChallengeSubmissionController extends Controller
             return back();
         }
 
+        if ($result['isCorrect']) {
+            $user = $request->user();
+            $user->refresh();
+            $this->checkAndFlashAchievements(
+                $this->badgeService,
+                $this->levelService,
+                $user,
+                ['challenges_solved', 'speed_demon', 'points_earned'],
+                $user->points - $result['awardedPoints'],
+            );
+        }
+
         Inertia::flash('toast', [
             'type' => $result['alreadySolved'] ? 'info' : 'success',
             'message' => $result['alreadySolved']
@@ -96,6 +115,18 @@ class ChallengeSubmissionController extends Controller
             $request->integer('elapsed_ms'),
             true,
         );
+
+        if ($result['isCorrect']) {
+            $user = $request->user();
+            $user->refresh();
+            $this->checkAndFlashAchievements(
+                $this->badgeService,
+                $this->levelService,
+                $user,
+                ['challenges_solved', 'speed_demon', 'points_earned'],
+                $user->points - $result['awardedPoints'],
+            );
+        }
 
         return response()->json([
             'challengeId' => $challenge->id,
@@ -224,10 +255,20 @@ class ChallengeSubmissionController extends Controller
             ->exists();
 
         $awardedPoints = 0;
+        $previousPoints = $user->points;
         if (! $hasEarlierSession && $totalPoints > 0) {
             $awardedPoints = $totalPoints;
             $user->increment('points', $awardedPoints);
         }
+
+        $user->refresh();
+        $this->checkAndFlashAchievements(
+            $this->badgeService,
+            $this->levelService,
+            $user,
+            ['challenges_solved', 'perfect_quiz', 'speed_demon', 'points_earned'],
+            $previousPoints,
+        );
 
         return response()->json([
             'sessionId' => $sessionId,

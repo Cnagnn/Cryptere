@@ -290,7 +290,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         <>
             <Head title="Management - Users" />
 
-            <div className="flex flex-col gap-6 px-4 py-6">
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex flex-col gap-0">
                         <TypographyH1>User Management</TypographyH1>

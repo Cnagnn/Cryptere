@@ -3,7 +3,6 @@ import {
     ArrowRight,
     BookOpenCheck,
     Filter,
-    Plus,
     Search,
     X,
 } from 'lucide-react';
@@ -58,7 +57,6 @@ import {
 } from '@/routes/courses';
 import { show as showLab } from '@/routes/labs';
 import type { Auth } from '@/types/auth';
-import { ChallengeFormDialog } from '../challenges/_components/ChallengeFormDialog';
 
 type CourseCard = {
     id: number;
@@ -458,8 +456,6 @@ export default function CoursesIndex({
     const { auth } = usePage<{ auth: Auth }>().props;
     const isLabsCatalog = catalogMode === 'labs';
     const isChallengesCatalog = catalogMode === 'challenges';
-    const isAdmin = auth.user.is_admin;
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -622,7 +618,7 @@ export default function CoursesIndex({
         <>
             <Head title={headTitle} />
 
-            <div className="flex flex-col gap-6 px-4 py-6">
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-col gap-0">
                         <TypographyH1>{pageTitle}</TypographyH1>
@@ -632,22 +628,6 @@ export default function CoursesIndex({
                     </div>
 
                     <div className="flex items-center justify-end gap-2">
-                        {isAdmin && isChallengesCatalog && (
-                            <>
-                                <Button
-                                    type="button"
-                                    onClick={() => setIsCreateModalOpen(true)}
-                                >
-                                    <Plus className="mr-2 size-4" />
-                                    Add Challenge
-                                </Button>
-                                <ChallengeFormDialog
-                                    mode="create"
-                                    open={isCreateModalOpen}
-                                    onOpenChange={setIsCreateModalOpen}
-                                />
-                            </>
-                        )}
                         <div className="lg:hidden">
                             {sidebarMode === 'filters' ? (
                                 <>

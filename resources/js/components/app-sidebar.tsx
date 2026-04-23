@@ -2,7 +2,6 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpenCheck,
     ChevronRight,
-    Flame,
     FlaskConical,
     LayoutGrid,
     Swords,
@@ -192,14 +191,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                {auth.user && auth.user.current_streak > 0 && (
-                    <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-                        <Flame className="size-4 shrink-0 text-orange-500" />
-                        <span className="truncate group-data-[collapsible=icon]:hidden">
-                            <span className="font-semibold">{auth.user.current_streak}</span> day streak
-                        </span>
-                    </div>
-                )}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\FlashesAchievements;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Services\BadgeService;
+use App\Services\LevelService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,12 +16,32 @@ use Inertia\Inertia;
 
 class EnrollmentController extends Controller
 {
+    use FlashesAchievements;
+
+    public function __construct(
+        private readonly BadgeService $badgeService,
+        private readonly LevelService $levelService,
+    ) {}
+
     /**
      * Enroll the current user into a course.
      */
     public function store(Request $request, Course $course): RedirectResponse
     {
         abort_unless($course->is_published, 404);
+
+        if (! $course->isUnlockedFor($request->user())) {
+            $prerequisite = $course->prerequisite;
+
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('You must complete ":course" before enrolling in this course.', [
+                    'course' => $prerequisite?->title ?? 'the prerequisite course',
+                ]),
+            ]);
+
+            return back();
+        }
 
         $enrollment = Enrollment::query()->firstOrCreate(
             [
@@ -29,6 +52,15 @@ class EnrollmentController extends Controller
                 'enrolled_at' => now(),
             ],
         );
+
+        if ($enrollment->wasRecentlyCreated) {
+            $this->checkAndFlashAchievements(
+                $this->badgeService,
+                $this->levelService,
+                $request->user(),
+                'first_enrollment',
+            );
+        }
 
         Inertia::flash('toast', [
             'type' => $enrollment->wasRecentlyCreated ? 'success' : 'info',

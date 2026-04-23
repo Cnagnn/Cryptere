@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,10 @@ use Illuminate\Support\Str;
     'estimated_minutes',
     'sort_order',
     'is_published',
+    'prerequisite_course_id',
+    'category',
+    'difficulty',
+    'path_position',
 ])]
 #[Hidden(['cover_image', 'cover_mime_type'])]
 class Course extends Model
@@ -124,6 +129,16 @@ SVG;
         return 'data:image/svg+xml;utf8,'.rawurlencode($svg);
     }
 
+    public function prerequisite(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'prerequisite_course_id');
+    }
+
+    public function dependents(): HasMany
+    {
+        return $this->hasMany(self::class, 'prerequisite_course_id');
+    }
+
     public function lessons(): HasMany
     {
         return $this->hasMany(Lesson::class)->orderBy('position');
@@ -139,5 +154,22 @@ SVG;
         return $this->belongsToMany(User::class, 'enrollments')
             ->withPivot(['progress_percentage', 'enrolled_at', 'completed_at'])
             ->withTimestamps();
+    }
+
+    /**
+     * Determine if the course is unlocked for a given user.
+     * A course is unlocked when it has no prerequisite, or the prerequisite is completed.
+     */
+    public function isUnlockedFor(User $user): bool
+    {
+        if ($this->prerequisite_course_id === null) {
+            return true;
+        }
+
+        return Enrollment::query()
+            ->where('user_id', $user->id)
+            ->where('course_id', $this->prerequisite_course_id)
+            ->whereNotNull('completed_at')
+            ->exists();
     }
 }

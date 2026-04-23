@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\LevelService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -12,6 +13,10 @@ class LeaderboardController extends Controller
     private const PER_PAGE = 10;
 
     private const PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
+    public function __construct(
+        private readonly LevelService $levelService,
+    ) {}
 
     /**
      * Show global leaderboard.
@@ -24,6 +29,7 @@ class LeaderboardController extends Controller
             : self::PER_PAGE;
 
         $leaders = User::query()
+            ->withCount('badges')
             ->orderByDesc('points')
             ->orderBy('name')
             ->paginate($perPage, ['id', 'name', 'username', 'points', 'avatar_path', 'avatar_image', 'avatar_mime_type'])
@@ -33,6 +39,8 @@ class LeaderboardController extends Controller
 
         $leaders->setCollection(
             $leaders->getCollection()->values()->map(function (User $leader, int $index) use ($offset): array {
+                $levelInfo = $this->levelService->getLevelForPoints($leader->points);
+
                 return [
                     'id' => $leader->id,
                     'rank' => $offset + $index + 1,
@@ -40,6 +48,9 @@ class LeaderboardController extends Controller
                     'username' => $leader->username,
                     'avatar' => $leader->avatar,
                     'points' => $leader->points,
+                    'level' => $levelInfo['level'],
+                    'levelName' => $levelInfo['name'],
+                    'badgeCount' => (int) $leader->badges_count,
                 ];
             })
         );

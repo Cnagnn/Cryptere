@@ -23,7 +23,7 @@ class LessonFactory extends Factory
             'slug' => fake()->slug(),
             'title' => fake()->sentence(4),
             'content' => fake()->paragraphs(4, true),
-            'position' => fake()->numberBetween(1, 12),
+            'position' => fake()->unique()->numberBetween(1, 10000),
             'xp_reward' => fake()->numberBetween(20, 70),
         ];
     }
