@@ -4,13 +4,14 @@ namespace App\Jobs;
 
 use App\Models\LessonTask;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 
-class ConvertLessonDocument implements ShouldQueue
+class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -34,6 +35,24 @@ class ConvertLessonDocument implements ShouldQueue
         public readonly string $storedPath,
         public readonly int $lessonId,
     ) {}
+
+    /**
+     * The unique ID of the job.
+     */
+    public function uniqueId(): string
+    {
+        return "{$this->lessonId}:{$this->storedPath}";
+    }
+
+    /**
+     * Determine the time (in seconds) to wait before retrying the job.
+     *
+     * @return array<int, int>
+     */
+    public function backoff(): array
+    {
+        return [10, 60];
+    }
 
     /**
      * Execute the job.

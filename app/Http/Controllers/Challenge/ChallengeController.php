@@ -1,0 +1,281 @@
+<?php
+
+namespace App\Http\Controllers\Challenge;
+
+use App\Http\Controllers\Controller;
+use App\Models\Challenge;
+use App\Models\ChallengeQuestion;
+use App\Models\ChallengeSubmission;
+use App\Services\ChallengeHelperService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ChallengeController extends Controller
+{
+    public function __construct(
+        private readonly ChallengeHelperService $challengeHelper,
+    ) {}
+
+    /**
+     * Show standalone challenges.
+     */
+    public function index(Request $request): Response
+    {
+        $currentTime = now();
+
+        $challenges = Challenge::query()
+            ->published()
+            ->withCount('questions')
+            ->orderBy('title')
+            ->get();
+
+        $user = $request->user();
+
+        $solvedChallengeIds = ChallengeSubmission::query()
+            ->whereBelongsTo($user)
+            ->where('is_correct', true)
+            ->distinct('challenge_id')
+            ->pluck('challenge_id');
+
+        $bestScores = ChallengeSubmission::query()
+            ->whereBelongsTo($user)
+            ->selectRaw('challenge_id, MAX(score) as best_score')
+            ->groupBy('challenge_id')
+            ->pluck('best_score', 'challenge_id');
+
+        $speedRounds = $this->buildSpeedRounds($challenges);
+
+        return Inertia::render('challenges/index', [
+            'challenges' => $challenges->map(function (Challenge $challenge) use ($solvedChallengeIds, $bestScores, $currentTime): array {
+                return [
+                    'id' => $challenge->id,
+                    'slug' => $challenge->slug,
+                    'title' => $challenge->title,
+                    'prompt' => $challenge->prompt,
+                    'hint' => $challenge->hint,
+                    'timeStart' => optional($challenge->time_start)?->toIso8601String(),
+                    'timeEnd' => optional($challenge->time_end)?->toIso8601String(),
+                    'status' => $this->challengeHelper->resolveAvailabilityStatus($challenge, $currentTime),
+                    'isSolved' => $solvedChallengeIds->contains($challenge->id),
+                    'hasQuestionBank' => $challenge->questions_count > 0,
+                    'questionsCount' => $challenge->questions_count,
+                    'bestScore' => $bestScores->get($challenge->id, 0),
+                ];
+            })->values(),
+            'speedRounds' => $speedRounds,
+        ]);
+    }
+
+    /**
+     * Show standalone challenge details.
+     *
+     * When the challenge has a question bank, generates a quiz session with
+     * random questions. Otherwise falls back to legacy speed-round mode.
+     */
+    public function show(Request $request, Challenge $challenge): Response
+    {
+        abort_unless($challenge->is_published, 404);
+
+        $currentTime = now();
+        $availabilityStatus = $this->challengeHelper->resolveAvailabilityStatus($challenge, $currentTime);
+        $hasQuestionBank = $challenge->hasQuestionBank();
+
+        $solvedChallengeIds = ChallengeSubmission::query()
+            ->whereBelongsTo($request->user())
+            ->where('is_correct', true)
+            ->distinct('challenge_id')
+            ->pluck('challenge_id');
+
+        // Quiz mode: generate session with random questions
+        $quizSession = null;
+        if ($hasQuestionBank) {
+            $quizSession = $this->buildQuizSession($challenge);
+        }
+
+        // Legacy mode: build speed rounds for backward compat
+        $speedRound = null;
+        if (! $hasQuestionBank) {
+            $speedRounds = collect(
+                $this->buildSpeedRounds(
+                    Challenge::query()
+                        ->published()
+                        ->orderBy('title')
+                        ->get()
+                )
+            );
+
+            $speedRound = $speedRounds
+                ->first(fn (array $round): bool => (int) $round['id'] === $challenge->id);
+        }
+
+        $userSubmissions = ChallengeSubmission::query()
+            ->whereBelongsTo($request->user())
+            ->whereBelongsTo($challenge)
+            ->latest('submitted_at')
+            ->take(10)
+            ->get(['id', 'answer', 'is_correct', 'score', 'streak_bonus', 'submitted_at']);
+
+        $attemptCount = $userSubmissions->count();
+        $correctCount = $userSubmissions->where('is_correct', true)->count();
+
+        // Best session score (sum of score + streak_bonus per session)
+        $bestSessionScore = ChallengeSubmission::query()
+            ->whereBelongsTo($request->user())
+            ->whereBelongsTo($challenge)
+            ->whereNotNull('session_id')
+            ->selectRaw('session_id, SUM(score + streak_bonus) as session_total')
+            ->groupBy('session_id')
+            ->orderByDesc('session_total')
+            ->value('session_total');
+
+        $relatedChallenges = Challenge::query()
+            ->published()
+            ->whereKeyNot($challenge->id)
+            ->orderBy('title')
+            ->take(3)
+            ->get(['id', 'slug', 'title']);
+
+        return Inertia::render('challenges/show', [
+            'challenge' => [
+                'id' => $challenge->id,
+                'slug' => $challenge->slug,
+                'title' => $challenge->title,
+                'prompt' => $challenge->prompt,
+                'hint' => $challenge->hint,
+                'timeStart' => optional($challenge->time_start)?->toIso8601String(),
+                'timeEnd' => optional($challenge->time_end)?->toIso8601String(),
+                'status' => $availabilityStatus,
+                'isSolved' => $solvedChallengeIds->contains($challenge->id),
+                'hasQuestionBank' => $hasQuestionBank,
+                'timeLimitSeconds' => $hasQuestionBank
+                    ? $challenge->time_limit_seconds
+                    : (int) ($speedRound['timeLimitSeconds'] ?? $this->challengeHelper->resolveTimeLimitSeconds()),
+                'questionsPerSession' => $challenge->questions_per_session,
+                'maxPointsPerQuestion' => $challenge->max_points_per_question,
+                // Legacy speed-round options (null when quiz mode)
+                'options' => $speedRound['options'] ?? [],
+            ],
+            'quizSession' => $quizSession,
+            'submissionSummary' => [
+                'attemptCount' => $attemptCount,
+                'correctCount' => $correctCount,
+                'bestScore' => (int) ($bestSessionScore ?? $userSubmissions->max('score') ?? 0),
+                'lastSubmittedAt' => optional($userSubmissions->first()?->submitted_at)?->toIso8601String(),
+            ],
+            'recentSubmissions' => $userSubmissions->map(fn (ChallengeSubmission $submission): array => [
+                'id' => $submission->id,
+                'answer' => $submission->answer,
+                'isCorrect' => $submission->is_correct,
+                'score' => $submission->score,
+                'streakBonus' => $submission->streak_bonus,
+                'submittedAt' => optional($submission->submitted_at)?->toIso8601String(),
+                'submittedAtHuman' => optional($submission->submitted_at)?->diffForHumans(),
+            ])->values(),
+            'relatedChallenges' => $relatedChallenges->map(fn (Challenge $related): array => [
+                'id' => $related->id,
+                'slug' => $related->slug,
+                'title' => $related->title,
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * Build a quiz session with random questions from the challenge's question bank.
+     *
+     * @return array{sessionId: string, questions: array<int, array<string, mixed>>}
+     */
+    private function buildQuizSession(Challenge $challenge): array
+    {
+        $sessionId = (string) Str::uuid();
+        $questions = $challenge->getRandomQuestions();
+
+        return [
+            'sessionId' => $sessionId,
+            'questions' => $questions->map(fn (ChallengeQuestion $question, int $index): array => [
+                'id' => $question->id,
+                'index' => $index,
+                'type' => $question->type,
+                'question' => $question->question,
+                'options' => $question->options,
+                // correct_answer is hidden via model attribute — never sent to client
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * Build Quizizz-like speed rounds from published challenges.
+     *
+     * @param  Collection<int, Challenge>  $challenges
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildSpeedRounds(Collection $challenges): array
+    {
+        $fallbackDistractors = collect([
+            'encryption',
+            'decryption',
+            'integrity',
+            'confidentiality',
+            'nonce',
+            'salt',
+            'public key',
+            'private key',
+            'signature',
+            'key exchange',
+            'diffusion',
+            'substitution',
+        ]);
+
+        $allAnswers = $challenges
+            ->map(fn (Challenge $challenge): string => $this->challengeHelper->normalizeAnswer(
+                (string) $challenge->getRawOriginal('expected_answer'),
+            ))
+            ->filter()
+            ->values();
+
+        return $challenges->map(function (Challenge $challenge) use ($allAnswers, $fallbackDistractors): array {
+            $expectedAnswer = $this->challengeHelper->normalizeAnswer((string) $challenge->getRawOriginal('expected_answer'));
+
+            $distractors = $allAnswers
+                ->reject(fn (string $answer): bool => hash_equals($answer, $expectedAnswer))
+                ->unique()
+                ->shuffle()
+                ->take(3)
+                ->values();
+
+            if ($distractors->count() < 3) {
+                $missing = 3 - $distractors->count();
+
+                $fallback = $fallbackDistractors
+                    ->map(fn (string $answer): string => $this->challengeHelper->normalizeAnswer($answer))
+                    ->reject(fn (string $answer): bool => hash_equals($answer, $expectedAnswer) || $distractors->contains($answer))
+                    ->shuffle()
+                    ->take($missing)
+                    ->values();
+
+                $distractors = $distractors->concat($fallback)->values();
+            }
+
+            $options = $distractors
+                ->push($expectedAnswer)
+                ->unique()
+                ->shuffle()
+                ->values()
+                ->map(fn (string $answer): array => [
+                    'label' => Str::of($answer)->headline()->value(),
+                    'value' => $answer,
+                ]);
+
+            return [
+                'id' => $challenge->id,
+                'slug' => $challenge->slug,
+                'title' => $challenge->title,
+                'prompt' => $challenge->prompt,
+                'timeLimitSeconds' => $this->challengeHelper->resolveTimeLimitSeconds(),
+                'options' => $options->values()->all(),
+            ];
+        })->values()->all();
+    }
+}

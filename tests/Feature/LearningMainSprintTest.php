@@ -38,7 +38,11 @@ test('authenticated users can view the course catalog', function () {
 });
 
 test('users must complete lessons in sequence to finish a course', function () {
-    $user = User::factory()->create(['points' => 0]);
+    $user = User::factory()->create([
+        'points' => 0,
+        'last_active_date' => now()->toDateString(),
+        'daily_goal_met_at' => now()->toDateString(),
+    ]);
 
     $course = Course::factory()->create([
         'slug' => 'sequence-course',
@@ -84,7 +88,9 @@ test('users must complete lessons in sequence to finish a course', function () {
     expect($enrollment)->not->toBeNull();
     expect($enrollment?->progress_percentage)->toBe(100);
     expect($enrollment?->completed_at)->not->toBeNull();
-    expect($user->refresh()->points)->toBe(90);
+    // Points = lesson rewards (40+50) + course completion bonus (200) + level-up bonus
+    $completionBonus = (int) config('rewards.course_completion_points');
+    expect($user->refresh()->points)->toBeGreaterThanOrEqual(90 + $completionBonus);
 });
 
 test('enrolled users can reset their course progress', function () {
@@ -608,7 +614,11 @@ test('quick challenge submissions return json and award points once', function (
 });
 
 test('quick challenge scoring gives more points for faster correct answers', function () {
-    $user = User::factory()->create(['points' => 0]);
+    $user = User::factory()->create([
+        'points' => 0,
+        'last_active_date' => now()->toDateString(),
+        'daily_goal_met_at' => now()->toDateString(),
+    ]);
 
     $fastChallenge = Challenge::factory()->create([
         'slug' => 'speed-fast',

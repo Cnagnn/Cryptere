@@ -1,20 +1,23 @@
 <?php
 
-use App\Http\Controllers\Admin\ChallengeManagementController;
-use App\Http\Controllers\Admin\CourseManagementController;
-use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\ChallengeController as AdminChallengeController;
+use App\Http\Controllers\Admin\ChallengeQuestionController as AdminChallengeQuestionController;
+use App\Http\Controllers\Admin\CourseController as AdminCourseController;
+use App\Http\Controllers\Admin\LessonController as AdminLessonController;
+use App\Http\Controllers\Admin\TaskController as AdminTaskController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\SocialAuthController;
-use App\Http\Controllers\BookmarkController;
-use App\Http\Controllers\ChallengeController;
-use App\Http\Controllers\ChallengeSubmissionController;
-use App\Http\Controllers\CourseController;
+use App\Http\Controllers\Bookmark\BookmarkController;
+use App\Http\Controllers\Challenge\ChallengeController;
+use App\Http\Controllers\Challenge\ChallengeSubmissionController;
+use App\Http\Controllers\Course\CourseController;
+use App\Http\Controllers\Course\EnrollmentController;
+use App\Http\Controllers\Course\LessonProgressController;
+use App\Http\Controllers\Course\QuizSubmissionController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\EnrollmentController;
-use App\Http\Controllers\LabsController;
+use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\LeaderboardController;
-use App\Http\Controllers\LessonProgressController;
-use App\Http\Controllers\NoteController;
-use App\Http\Controllers\QuizSubmissionController;
+use App\Http\Controllers\Note\NoteController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -28,7 +31,7 @@ Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
 
 // Username availability check — rate limited to prevent enumeration attacks
-Route::middleware('throttle:30,1')->get('/api/users/check-username', function (Request $request) {
+Route::middleware('throttle:10,1')->get('/api/users/check-username', function (Request $request) {
     $username = $request->string('username')->trim()->toString();
 
     if ($username === '') {
@@ -36,6 +39,9 @@ Route::middleware('throttle:30,1')->get('/api/users/check-username', function (R
     }
 
     $exists = User::where('username', $username)->exists();
+
+    // Consistent timing to prevent enumeration via response time analysis
+    usleep(random_int(50_000, 100_000));
 
     return response()->json(['available' => ! $exists]);
 });
@@ -66,8 +72,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('challenges.session-summary');
 
     Route::get('leaderboard', LeaderboardController::class)->name('leaderboard.index');
-    Route::get('labs', LabsController::class)->name('labs.index');
-    Route::get('labs/{lab}', [LabsController::class, 'show'])->name('labs.show');
+    Route::get('labs', LabController::class)->name('labs.index');
+    Route::get('labs/{lab}', [LabController::class, 'show'])->name('labs.show');
 
     // Bookmarks
     Route::post('bookmarks/toggle', [BookmarkController::class, 'toggle'])->middleware('throttle:60,1')->name('bookmarks.toggle');
@@ -81,32 +87,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
-    Route::patch('users/{user}', [UserManagementController::class, 'update'])->name('users.update');
-    Route::delete('users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
-    Route::get('courses', [CourseManagementController::class, 'index'])->name('courses.index');
-    Route::post('courses', [CourseManagementController::class, 'store'])->name('courses.store');
-    Route::post('courses/reorder', [CourseManagementController::class, 'reorderCourses'])->name('courses.reorder');
-    Route::patch('courses/{course}', [CourseManagementController::class, 'update'])->name('courses.update');
-    Route::delete('courses/{course}', [CourseManagementController::class, 'destroy'])->name('courses.destroy');
-    Route::post('courses/lessons', [CourseManagementController::class, 'storeLesson'])->name('courses.lessons.store');
-    Route::post('courses/lessons/reorder', [CourseManagementController::class, 'reorderLessons'])->name('courses.lessons.reorder');
-    Route::patch('courses/lessons/{lesson}', [CourseManagementController::class, 'updateLesson'])->name('courses.lessons.update');
-    Route::delete('courses/lessons/{lesson}', [CourseManagementController::class, 'destroyLesson'])->name('courses.lessons.destroy');
-    Route::patch('courses/{course}/toggle-publish', [CourseManagementController::class, 'togglePublish'])->name('courses.toggle-publish');
-    Route::post('courses/tasks', [CourseManagementController::class, 'storeTask'])->name('courses.tasks.store');
-    Route::post('courses/tasks/reorder', [CourseManagementController::class, 'reorderTasks'])->name('courses.tasks.reorder');
-    Route::patch('courses/tasks/{task}', [CourseManagementController::class, 'updateTask'])->name('courses.tasks.update');
-    Route::delete('courses/tasks/{task}', [CourseManagementController::class, 'destroyTask'])->name('courses.tasks.destroy');
-    Route::get('challenges', [ChallengeManagementController::class, 'index'])->name('challenges.index');
-    Route::post('challenges', [ChallengeManagementController::class, 'store'])->name('challenges.store');
-    Route::post('challenges/reorder', [ChallengeManagementController::class, 'reorder'])->name('challenges.reorder');
-    Route::patch('challenges/{challenge}', [ChallengeManagementController::class, 'update'])->name('challenges.update');
-    Route::delete('challenges/{challenge}', [ChallengeManagementController::class, 'destroy'])->name('challenges.destroy');
-    Route::post('challenges/{challenge}/questions', [ChallengeManagementController::class, 'storeQuestion'])->name('challenges.questions.store');
-    Route::patch('challenges/{challenge}/questions/{question}', [ChallengeManagementController::class, 'updateQuestion'])->name('challenges.questions.update');
-    Route::delete('challenges/{challenge}/questions/{question}', [ChallengeManagementController::class, 'destroyQuestion'])->name('challenges.questions.destroy');
-    Route::post('challenges/{challenge}/questions/reorder', [ChallengeManagementController::class, 'reorderQuestions'])->name('challenges.questions.reorder');
+    Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::patch('users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+    Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+    // Courses
+    Route::get('courses', [AdminCourseController::class, 'index'])->name('courses.index');
+    Route::post('courses', [AdminCourseController::class, 'store'])->name('courses.store');
+    Route::post('courses/reorder', [AdminCourseController::class, 'reorder'])->name('courses.reorder');
+    Route::patch('courses/{course}', [AdminCourseController::class, 'update'])->name('courses.update');
+    Route::delete('courses/{course}', [AdminCourseController::class, 'destroy'])->name('courses.destroy');
+    Route::patch('courses/{course}/toggle-publish', [AdminCourseController::class, 'togglePublish'])->name('courses.toggle-publish');
+
+    // Lessons
+    Route::post('courses/lessons', [AdminLessonController::class, 'store'])->name('courses.lessons.store');
+    Route::post('courses/lessons/reorder', [AdminLessonController::class, 'reorder'])->name('courses.lessons.reorder');
+    Route::patch('courses/lessons/{lesson}', [AdminLessonController::class, 'update'])->name('courses.lessons.update');
+    Route::delete('courses/lessons/{lesson}', [AdminLessonController::class, 'destroy'])->name('courses.lessons.destroy');
+
+    // Tasks
+    Route::post('courses/tasks', [AdminTaskController::class, 'store'])->name('courses.tasks.store');
+    Route::post('courses/tasks/reorder', [AdminTaskController::class, 'reorder'])->name('courses.tasks.reorder');
+    Route::patch('courses/tasks/{task}', [AdminTaskController::class, 'update'])->name('courses.tasks.update');
+    Route::delete('courses/tasks/{task}', [AdminTaskController::class, 'destroy'])->name('courses.tasks.destroy');
+
+    // Challenges
+    Route::get('challenges', [AdminChallengeController::class, 'index'])->name('challenges.index');
+    Route::post('challenges', [AdminChallengeController::class, 'store'])->name('challenges.store');
+    Route::post('challenges/reorder', [AdminChallengeController::class, 'reorder'])->name('challenges.reorder');
+    Route::patch('challenges/{challenge}', [AdminChallengeController::class, 'update'])->name('challenges.update');
+    Route::delete('challenges/{challenge}', [AdminChallengeController::class, 'destroy'])->name('challenges.destroy');
+
+    // Challenge Questions
+    Route::post('challenges/{challenge}/questions', [AdminChallengeQuestionController::class, 'store'])->name('challenges.questions.store');
+    Route::patch('challenges/{challenge}/questions/{question}', [AdminChallengeQuestionController::class, 'update'])->name('challenges.questions.update');
+    Route::delete('challenges/{challenge}/questions/{question}', [AdminChallengeQuestionController::class, 'destroy'])->name('challenges.questions.destroy');
+    Route::post('challenges/{challenge}/questions/reorder', [AdminChallengeQuestionController::class, 'reorder'])->name('challenges.questions.reorder');
 });
 
 require __DIR__.'/settings.php';

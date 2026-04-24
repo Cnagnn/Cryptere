@@ -75,7 +75,7 @@ export function AnimatedHighlightedAreaChart() {
           <AreaChart
             accessibilityLayer
             data={chartData}
-            onMouseMove={(e) => setXAxis(e.chartX as number)}
+            onMouseMove={(nextState) => setXAxis((nextState as Record<string, unknown>).chartX as number ?? null)}
             onMouseLeave={() => setXAxis(null)}
           >
             <CartesianGrid vertical={false} strokeDasharray="3 3" />

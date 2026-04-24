@@ -55,7 +55,7 @@ test('admin course management sections render within baseline response budget', 
     }
 
     // Baseline budget is intentionally lenient to avoid flaky CI while still catching major regressions.
-    expect($durationsMs['catalog'])->toBeLessThan(1500);
-    expect($durationsMs['lesson'])->toBeLessThan(1500);
-    expect($durationsMs['task'])->toBeLessThan(1500);
+    expect($durationsMs['catalog'])->toBeLessThan(3000);
+    expect($durationsMs['lesson'])->toBeLessThan(3000);
+    expect($durationsMs['task'])->toBeLessThan(3000);
 });

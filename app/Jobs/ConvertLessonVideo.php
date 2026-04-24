@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\LessonTask;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 
-class ConvertLessonVideo implements ShouldQueue
+class ConvertLessonVideo implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -30,6 +31,24 @@ class ConvertLessonVideo implements ShouldQueue
     public function __construct(
         public readonly int $lessonTaskId,
     ) {}
+
+    /**
+     * The unique ID of the job.
+     */
+    public function uniqueId(): int
+    {
+        return $this->lessonTaskId;
+    }
+
+    /**
+     * Determine the time (in seconds) to wait before retrying the job.
+     *
+     * @return array<int, int>
+     */
+    public function backoff(): array
+    {
+        return [30, 120];
+    }
 
     public function handle(): void
     {

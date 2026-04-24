@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import {
     store as coursesStore,
     update as coursesUpdate,
-} from '@/actions/App/Http/Controllers/Admin/CourseManagementController';
+} from '@/actions/App/Http/Controllers/Admin/CourseController';
 import type { CourseFormData, CourseRow } from '@/components/course-types';
 import { Button } from '@/components/ui/button';
 import {

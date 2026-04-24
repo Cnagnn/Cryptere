@@ -1,9 +1,9 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 import {
-    storeLesson,
-    updateLesson,
-} from '@/actions/App/Http/Controllers/Admin/CourseManagementController';
+    store as storeLesson,
+    update as updateLesson,
+} from '@/actions/App/Http/Controllers/Admin/LessonController';
 import type {
     LessonFormData,
     LessonRow,

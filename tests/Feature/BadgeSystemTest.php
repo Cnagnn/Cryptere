@@ -63,7 +63,7 @@ test('badge is awarded after lesson completion', function () {
 });
 
 test('level info is shared in inertia props', function () {
-    $user = User::factory()->create(['points' => 150]);
+    $user = User::factory()->create(['points' => 150, 'xp' => 112, 'last_active_date' => now()->toDateString()]);
 
     $this->actingAs($user)
         ->get(route('dashboard'))

@@ -1,3 +1,4 @@
+import type { FormDataConvertible } from '@inertiajs/core';
 import { router, usePage } from '@inertiajs/react';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -142,16 +143,13 @@ export function QuestionFormDialog({ mode, open, onOpenChange, challengeId, ques
     const handleSubmit = () => {
         setProcessing(true);
 
-        const payload: Record<string, unknown> = {
+        const payload = {
             type: form.type,
             question: form.question,
             correct_answer: form.correct_answer,
             explanation: form.explanation || null,
+            ...(needsOptions || isTrueFalse ? { options: form.options } : {}),
         };
-
-        if (needsOptions || isTrueFalse) {
-            payload.options = form.options;
-        }
 
         if (mode === 'create') {
             router.post(storeQuestion.url(challengeId), payload, {
@@ -165,7 +163,7 @@ export function QuestionFormDialog({ mode, open, onOpenChange, challengeId, ques
         } else if (question) {
             router.patch(
                 updateQuestion.url({ challenge: challengeId, question: question.id }),
-                payload,
+                payload as Record<string, FormDataConvertible>,
                 {
                     preserveScroll: true,
                     onSuccess: () => {

@@ -21,7 +21,7 @@ trait FlashesAchievements
         LevelService $levelService,
         User $user,
         string|array $criteriaTypes,
-        ?int $previousPoints = null,
+        ?int $previousXp = null,
     ): Collection {
         $newBadges = $badgeService->checkAndAward($user, $criteriaTypes);
 
@@ -33,13 +33,20 @@ trait FlashesAchievements
                 'tier' => $badge->tier,
                 'category' => $badge->category,
             ])->values()->all());
-
         }
 
-        if ($previousPoints !== null) {
-            $levelUp = $levelService->checkLevelUp($previousPoints, $user->points);
+        if ($previousXp !== null) {
+            $levelUp = $levelService->checkLevelUp($previousXp, $user->xp);
             if ($levelUp !== null) {
-                Inertia::flash('levelUp', $levelUp);
+                // Award bonus points for leveling up: level × points_per_level
+                $pointsPerLevel = (int) config('rewards.level_up_points_per_level', 50);
+                $levelUpPoints = $levelUp['level'] * $pointsPerLevel;
+                $user->increment('points', $levelUpPoints);
+
+                Inertia::flash('levelUp', [
+                    ...$levelUp,
+                    'bonus_points' => $levelUpPoints,
+                ]);
             }
         }
 

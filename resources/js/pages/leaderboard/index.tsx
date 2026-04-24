@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
@@ -38,6 +39,12 @@ type CurrentUserStanding = {
     points: number;
 };
 
+const TIMEFRAME_LABELS: Record<string, string> = {
+    all: 'All Time',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+};
+
 type Props = {
     leaders: {
         data: LeaderboardEntry[];
@@ -50,9 +57,11 @@ type Props = {
     };
     currentUser: CurrentUserStanding;
     topScore: number;
+    timeframe: string;
+    timeframes: string[];
 };
 
-export default function LeaderboardIndex({ leaders, currentUser, topScore }: Props) {
+export default function LeaderboardIndex({ leaders, currentUser, topScore, timeframe, timeframes }: Props) {
     const getInitials = useInitials();
     const pointsFormatter = useMemo(() => new Intl.NumberFormat('id-ID'), []);
     const [usernameInput, setUsernameInput] = useState('');
@@ -156,10 +165,29 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
         },
     ], [getInitials, pointsFormatter]);
 
+    const handleTimeframeChange = (value: string): void => {
+        router.get(
+            leaderboardIndex.url({
+                query: {
+                    timeframe: value,
+                    page: 1,
+                    per_page: leaders.per_page,
+                },
+            }),
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    };
+
     const handlePageChange = (nextPage: number): void => {
         router.get(
             leaderboardIndex.url({
                 query: {
+                    timeframe,
                     page: nextPage,
                     per_page: leaders.per_page,
                 },
@@ -177,6 +205,7 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
         router.get(
             leaderboardIndex.url({
                 query: {
+                    timeframe,
                     page: 1,
                     per_page: nextPageSize,
                 },
@@ -213,6 +242,16 @@ export default function LeaderboardIndex({ leaders, currentUser, topScore }: Pro
                             />
                         </div>
                     </div>
+
+                    <Tabs value={timeframe} onValueChange={handleTimeframeChange} className="mt-3">
+                        <TabsList>
+                            {timeframes.map((tf) => (
+                                <TabsTrigger key={tf} value={tf}>
+                                    {TIMEFRAME_LABELS[tf] ?? tf}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
 
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                         <Card>

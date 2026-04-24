@@ -64,7 +64,7 @@ import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 
-type LearnerStats = { enrolledCourses: number; completedCourses: number; completedLessons: number; solvedChallenges: number; points: number };
+type LearnerStats = { enrolledCourses: number; completedCourses: number; completedLessons: number; solvedChallenges: number; points: number; xp: number };
 type AcademyHero = { greeting: string; headline: string; description: string; completionRate: number };
 type LearningPathSummary = { name: string; completedModules: number; totalModules: number; progressPercentage: number; currentRank: number };
 type SuccessMetrics = { overallSuccessRate: number; previousSuccessRate: number; targetRate: number; totalEnrollments: number; completedEnrollments: number; inProgressEnrollments: number };
@@ -332,11 +332,13 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { 
                 </Card>
                 <Card>
                     <CardHeader className="pb-3">
-                        <CardDescription>Total XP</CardDescription>
+                        <CardDescription>Total Points</CardDescription>
                         <CardTitle className="text-2xl leading-tight tracking-tight tabular-nums">{formatNumber(stats.points)}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-sm text-muted-foreground">Lifetime points</div>
+                        <div className="text-sm text-muted-foreground">
+                            {formatNumber(stats.xp)} XP{level?.bonus_percent ? ` · +${level.bonus_percent}% bonus` : ''}
+                        </div>
                     </CardContent>
                 </Card>
             </section>
@@ -356,10 +358,12 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { 
                         <ChartContainer config={activityBreakdownConfig} className="mx-auto aspect-square max-h-[250px]">
                             <RadialBarChart
                                 data={[
-                                    { activity: 'xp', percentage: level?.progress ?? 0, fill: 'var(--color-xp)' },
+                                    { activity: 'xp', percentage: level?.progress ?? 0, completed: level?.current_xp ?? 0, total: level?.next_level_xp ?? 0, fill: 'var(--color-xp)' },
                                     ...academy.activityBreakdown.map((item) => ({
                                         activity: item.label.toLowerCase(),
                                         percentage: item.percentage,
+                                        completed: item.completed,
+                                        total: item.total,
                                         fill: `var(--color-${item.label.toLowerCase()})`,
                                     })),
                                 ]}
@@ -368,7 +372,30 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { 
                             >
                                 <ChartTooltip
                                     cursor={false}
-                                    content={<ChartTooltipContent hideLabel nameKey="activity" />}
+                                    content={
+                                        <ChartTooltipContent
+                                            hideLabel
+                                            nameKey="activity"
+                                            formatter={(value, name, item) => {
+                                                const payload = item?.payload;
+                                                const config = activityBreakdownConfig[payload?.activity as keyof typeof activityBreakdownConfig];
+                                                return (
+                                                    <div className="flex w-full items-center gap-2">
+                                                        <div
+                                                            className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                                            style={{ backgroundColor: payload?.fill }}
+                                                        />
+                                                        <div className="flex flex-1 items-center justify-between gap-4">
+                                                            <span className="text-muted-foreground">{config?.label ?? name}</span>
+                                                            <span className="font-mono font-medium tabular-nums text-foreground">
+                                                                {payload?.completed?.toLocaleString()} / {payload?.total?.toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }}
+                                        />
+                                    }
                                 />
                                 <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
                                     <Label

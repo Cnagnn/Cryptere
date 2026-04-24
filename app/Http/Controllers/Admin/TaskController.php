@@ -1,0 +1,188 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ReorderAdminTasksRequest;
+use App\Http\Requests\Admin\StoreAdminLessonTaskRequest;
+use App\Http\Requests\Admin\UpdateAdminLessonTaskRequest;
+use App\Jobs\ConvertLessonDocument;
+use App\Jobs\ConvertLessonVideo;
+use App\Models\Lesson;
+use App\Models\LessonTask;
+use App\Models\QuizQuestion;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+
+class TaskController extends Controller
+{
+    public function store(StoreAdminLessonTaskRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        $lesson = Lesson::query()->findOrFail($validated['lesson_id']);
+        $documentName = null;
+        $conversionStatus = null;
+        $videoProcessingStatus = null;
+
+        if ($validated['type'] === 'video' && ! empty($validated['video_url'])) {
+            $videoProcessingStatus = 'pending';
+        }
+
+        if ($validated['type'] === 'read') {
+            $uploadedDocument = $request->file('document');
+            if ($uploadedDocument !== null) {
+                $storedPath = $uploadedDocument->store('lesson-documents', 'public');
+                $documentName = $uploadedDocument->getClientOriginalName();
+                $conversionStatus = 'pending';
+
+                // Dispatch the PDF conversion job
+                ConvertLessonDocument::dispatch($storedPath, $lesson->id);
+            }
+        }
+
+        $nextOrder = (int) LessonTask::query()->where('lesson_id', $lesson->id)->max('sort_order') + 1;
+
+        $createdTask = DB::transaction(function () use ($validated, $lesson, $documentName, $conversionStatus, $nextOrder, $videoProcessingStatus): LessonTask {
+            $task = LessonTask::query()->create([
+                'lesson_id' => $lesson->id,
+                'title' => $validated['title'],
+                'description' => $validated['description'],
+                'type' => $validated['type'],
+                'minutes' => (int) $validated['minutes'],
+                'video_url' => $validated['type'] === 'video' ? ($validated['video_url'] ?? null) : null,
+                'video_processing_status' => $videoProcessingStatus,
+                'video_mp4_url' => null,
+                'document_name' => $documentName,
+                'conversion_status' => $conversionStatus,
+                'pdf_url' => null,
+                'sort_order' => $nextOrder,
+                'published_at' => null,
+                'published_by' => null,
+            ]);
+
+            if ($validated['type'] === 'quiz') {
+                collect($validated['quiz_questions'] ?? [])
+                    ->values()
+                    ->each(function (array $question, int $index) use ($task): void {
+                        QuizQuestion::query()->create([
+                            'lesson_task_id' => $task->id,
+                            'question' => $question['question'],
+                            'options' => $question['options'],
+                            'correct_option' => (int) $question['correct_option'],
+                            'explanation' => $question['explanation'] ?? null,
+                            'sort_order' => $index + 1,
+                        ]);
+                    });
+            }
+
+            return $task;
+        });
+
+        if ($createdTask->type === 'video' && $createdTask->video_processing_status === 'pending') {
+            ConvertLessonVideo::dispatch($createdTask->id);
+        }
+
+        return back();
+    }
+
+    public function update(UpdateAdminLessonTaskRequest $request, LessonTask $task): RedirectResponse
+    {
+        $validated = $request->validated();
+        $documentName = $task->document_name;
+        $conversionStatus = $task->conversion_status;
+        $pdfUrl = $task->pdf_url;
+        $videoProcessingStatus = $task->video_processing_status;
+        $videoMp4Url = $task->video_mp4_url;
+
+        if ($validated['type'] === 'read') {
+            $uploadedDocument = $request->file('document');
+            if ($uploadedDocument !== null) {
+                $storedPath = $uploadedDocument->store('lesson-documents', 'public');
+                $documentName = $uploadedDocument->getClientOriginalName();
+                $conversionStatus = 'pending';
+                $pdfUrl = null;
+
+                // Dispatch the PDF conversion job
+                ConvertLessonDocument::dispatch($storedPath, $task->lesson_id);
+            }
+        } else {
+            $documentName = null;
+            $conversionStatus = null;
+            $pdfUrl = null;
+        }
+
+        if ($validated['type'] === 'video') {
+            $videoProcessingStatus = ! empty($validated['video_url']) ? 'pending' : null;
+            $videoMp4Url = null;
+        } else {
+            $videoProcessingStatus = null;
+            $videoMp4Url = null;
+        }
+
+        DB::transaction(function () use ($task, $validated, $documentName, $conversionStatus, $pdfUrl, $videoProcessingStatus, $videoMp4Url): void {
+            $task->update([
+                'title' => $validated['title'],
+                'description' => $validated['description'],
+                'type' => $validated['type'],
+                'minutes' => (int) $validated['minutes'],
+                'video_url' => $validated['type'] === 'video' ? ($validated['video_url'] ?? null) : null,
+                'video_processing_status' => $videoProcessingStatus,
+                'video_mp4_url' => $videoMp4Url,
+                'document_name' => $documentName,
+                'conversion_status' => $conversionStatus,
+                'pdf_url' => $pdfUrl,
+            ]);
+
+            $task->quizQuestions()->delete();
+
+            if ($validated['type'] === 'quiz') {
+                collect($validated['quiz_questions'] ?? [])
+                    ->values()
+                    ->each(function (array $question, int $index) use ($task): void {
+                        QuizQuestion::query()->create([
+                            'lesson_task_id' => $task->id,
+                            'question' => $question['question'],
+                            'options' => $question['options'],
+                            'correct_option' => (int) $question['correct_option'],
+                            'explanation' => $question['explanation'] ?? null,
+                            'sort_order' => $index + 1,
+                        ]);
+                    });
+            }
+        });
+
+        if ($task->type === 'video' && $task->video_processing_status === 'pending') {
+            ConvertLessonVideo::dispatch($task->id);
+        }
+
+        return back();
+    }
+
+    public function reorder(ReorderAdminTasksRequest $request): RedirectResponse
+    {
+        $items = collect($request->validated('items'));
+
+        DB::transaction(function () use ($items): void {
+            $items->each(function (array $item): void {
+                LessonTask::query()
+                    ->whereKey((int) $item['id'])
+                    ->update(['sort_order' => (int) $item['sort_order'] + 1000]);
+            });
+
+            $items->each(function (array $item): void {
+                LessonTask::query()
+                    ->whereKey((int) $item['id'])
+                    ->update(['sort_order' => (int) $item['sort_order']]);
+            });
+        });
+
+        return back();
+    }
+
+    public function destroy(LessonTask $task): RedirectResponse
+    {
+        $task->delete();
+
+        return back();
+    }
+}

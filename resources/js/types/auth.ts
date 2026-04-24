@@ -4,6 +4,7 @@ export type UserLevel = {
     current_xp: number;
     next_level_xp: number | null;
     progress: number;
+    bonus_percent: number;
 };
 
 export type User = {
@@ -13,6 +14,7 @@ export type User = {
     email: string;
     avatar?: string;
     points: number;
+    xp: number;
     current_streak: number;
     longest_streak: number;
     is_admin: boolean;

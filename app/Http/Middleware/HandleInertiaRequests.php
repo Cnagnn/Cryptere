@@ -25,8 +25,9 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
+        $streakResult = ['xp' => 0, 'bonuses' => []];
         if ($user !== null) {
-            $this->xpService->updateDailyStreak($user);
+            $streakResult = $this->xpService->updateDailyStreak($user);
         }
 
         return [
@@ -40,12 +41,15 @@ class HandleInertiaRequests extends Middleware
                     'username' => $user->username,
                     'avatar' => $user->avatar,
                     'points' => $user->points,
+                    'xp' => $user->xp,
                     'current_streak' => $user->current_streak,
                     'longest_streak' => $user->longest_streak,
                     'is_admin' => $user->is_admin,
                     'role' => $user->role,
                     'level' => $this->levelService->getUserLevel($user),
                     'badge_count' => $user->badges()->count(),
+                    'daily_xp_earned' => $user->daily_xp_earned ?? 0,
+                    'daily_goal_target' => (int) config('rewards.daily_goal_target_xp', 100),
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
@@ -53,6 +57,7 @@ class HandleInertiaRequests extends Middleware
                 'toast' => fn () => $request->session()->get('toast'),
                 'newBadges' => fn () => $request->session()->get('newBadges'),
                 'levelUp' => fn () => $request->session()->get('levelUp'),
+                'streakBonuses' => fn () => $streakResult['bonuses'],
             ],
         ];
     }

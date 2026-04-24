@@ -91,7 +91,7 @@ class ComprehensiveSeeder extends Seeder
 
         // ── 11. Recalculate points ──
         $this->recalculatePoints($allUsers);
-        $admin->forceFill(['points' => 500])->save();
+        $admin->forceFill(['points' => 500, 'xp' => 50])->save();
 
         // ── 12. Award badges based on real progress ──
         $this->awardBadges($allUsers);
@@ -115,6 +115,7 @@ class ComprehensiveSeeder extends Seeder
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
                 'points' => 350,
+                'xp' => 35,
                 'is_admin' => true,
                 'role' => 'admin',
                 'status' => 'active',
@@ -137,6 +138,7 @@ class ComprehensiveSeeder extends Seeder
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
                 'points' => 0,
+                'xp' => 0,
                 'is_admin' => false,
                 'role' => 'member',
                 'status' => 'active',
@@ -172,6 +174,7 @@ class ComprehensiveSeeder extends Seeder
             ->count($remaining)
             ->sequence(fn (): array => [
                 'points' => fake()->numberBetween(40, 2000),
+                'xp' => fake()->numberBetween(4, 200),
                 'current_streak' => fake()->numberBetween(0, 14),
                 'longest_streak' => fake()->numberBetween(0, 30),
                 'last_active_date' => fake()->dateTimeBetween('-7 days', 'now'),
@@ -1006,7 +1009,7 @@ class ComprehensiveSeeder extends Seeder
                 ->where('is_correct', true)
                 ->sum('score');
 
-            $user->forceFill(['points' => $lessonXp + $challengeScore])->save();
+            $user->forceFill(['points' => $lessonXp + $challengeScore, 'xp' => $lessonXp])->save();
         }
 
         $this->command->info('✓ Points recalculated for '.count($users).' users.');

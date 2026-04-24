@@ -1,9 +1,9 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    storeTask,
-    updateTask,
-} from '@/actions/App/Http/Controllers/Admin/CourseManagementController';
+    store as storeTask,
+    update as updateTask,
+} from '@/actions/App/Http/Controllers/Admin/TaskController';
 import { QuizQuestionsEditor } from '@/components/course-quiz-questions-editor';
 import { SearchableCombobox } from '@/components/course-searchable-combobox';
 import { createEmptyQuizQuestion } from '@/components/course-types';

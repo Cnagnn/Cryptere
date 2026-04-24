@@ -35,7 +35,7 @@ class ManagementSeeder extends Seeder
         $this->seedChallengeSubmissions($learner, $challenges);
 
         // Keep admin points meaningful for management previews.
-        $admin->forceFill(['points' => 500])->save();
+        $admin->forceFill(['points' => 500, 'xp' => 50])->save();
     }
 
     private function seedAdmin(): User
@@ -48,6 +48,7 @@ class ManagementSeeder extends Seeder
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
                 'points' => 350,
+                'xp' => 35,
                 'is_admin' => true,
                 'role' => 'admin',
                 'status' => 'active',
@@ -65,6 +66,7 @@ class ManagementSeeder extends Seeder
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
                 'points' => 240,
+                'xp' => 24,
                 'is_admin' => false,
                 'role' => 'member',
                 'status' => 'active',
@@ -88,7 +90,7 @@ class ManagementSeeder extends Seeder
         if ($remaining > 0) {
             $createdMembers = User::factory()
                 ->count($remaining)
-                ->sequence(fn (): array => ['points' => fake()->numberBetween(40, 800)])
+                ->sequence(fn (): array => ['points' => fake()->numberBetween(40, 800), 'xp' => fake()->numberBetween(4, 80)])
                 ->create([
                     'role' => 'member',
                     'is_admin' => false,

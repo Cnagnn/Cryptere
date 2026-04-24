@@ -179,8 +179,14 @@ test('quiz submit rejects question from different challenge', function () {
 
 // --- Session Summary ---
 
-test('session summary calculates totals and awards points on first session', function () {
-    $user = User::factory()->create(['points' => 0]);
+test('session summary calculates totals and awards points and xp on first session', function () {
+    $user = User::factory()->create([
+        'points' => 0,
+        'xp' => 0,
+        'last_active_date' => now()->toDateString(),
+        'current_streak' => 1,
+        'daily_goal_met_at' => now()->toDateString(),
+    ]);
     $challenge = Challenge::factory()->create(['is_published' => true]);
     $sessionId = (string) Str::uuid();
 
@@ -218,15 +224,19 @@ test('session summary calculates totals and awards points on first session', fun
             'correctCount' => 2,
             'totalQuestions' => 2,
             'isFirstSession' => true,
-            'awardedPoints' => 1800,
         ]);
 
-    // User points should be updated
-    expect($user->fresh()->points)->toBe(1800);
+    // Points include level bonus + perfect score bonus (all 2 correct)
+    $fresh = $user->fresh();
+    expect($fresh->points)->toBeGreaterThanOrEqual(1800);
+    // XP = BASE_CHALLENGE_XP(10) + perfect_score_xp(50) — no streak XP since same day
+    expect($fresh->xp)->toBe(10 + 50);
+    expect($response->json('awardedXp'))->toBe(10 + 50);
+    expect($response->json('isPerfectScore'))->toBeTrue();
 });
 
-test('session summary does not award points on subsequent sessions', function () {
-    $user = User::factory()->create(['points' => 500]);
+test('session summary does not award points or xp on subsequent sessions', function () {
+    $user = User::factory()->create(['points' => 500, 'xp' => 50, 'last_active_date' => now()->toDateString()]);
     $challenge = Challenge::factory()->create(['is_published' => true]);
 
     $firstSessionId = (string) Str::uuid();
@@ -262,67 +272,91 @@ test('session summary does not award points on subsequent sessions', function ()
         ->assertJson([
             'isFirstSession' => false,
             'awardedPoints' => 0,
+            'awardedXp' => 0,
         ]);
 
-    // Points should not change
-    expect($user->fresh()->points)->toBe(500);
+    // Points and XP should not change (last_active_date = today, so no streak XP)
+    $fresh = $user->fresh();
+    expect($fresh->points)->toBe(500);
+    expect($fresh->xp)->toBe(50);
 });
 
 // --- Daily Streak ---
 
-test('daily streak increments on consecutive days', function () {
+test('daily streak increments on consecutive days and awards XP', function () {
     $user = User::factory()->create([
+        'xp' => 0,
         'current_streak' => 3,
         'longest_streak' => 5,
         'last_active_date' => now()->subDay()->toDateString(),
     ]);
 
     $xpService = app(XpService::class);
-    $xpService->updateDailyStreak($user);
+    $result = $xpService->updateDailyStreak($user);
 
-    expect($user->fresh()->current_streak)->toBe(4);
-    expect($user->fresh()->longest_streak)->toBe(5);
+    $fresh = $user->fresh();
+    expect($fresh->current_streak)->toBe(4);
+    expect($fresh->longest_streak)->toBe(5);
+    // New streak = 4 (3-6 tier) → 3 XP
+    expect($result['xp'])->toBe(3);
+    expect($result['bonuses'])->toBeEmpty();
+    expect($fresh->xp)->toBe(3);
 });
 
-test('daily streak resets after gap', function () {
+test('daily streak resets after gap and awards base XP', function () {
     $user = User::factory()->create([
+        'xp' => 100,
         'current_streak' => 5,
         'longest_streak' => 5,
         'last_active_date' => now()->subDays(3)->toDateString(),
     ]);
 
     $xpService = app(XpService::class);
-    $xpService->updateDailyStreak($user);
+    $result = $xpService->updateDailyStreak($user);
 
-    expect($user->fresh()->current_streak)->toBe(1);
-    expect($user->fresh()->longest_streak)->toBe(5);
+    $fresh = $user->fresh();
+    expect($fresh->current_streak)->toBe(1);
+    expect($fresh->longest_streak)->toBe(5);
+    // Reset to streak 1 (0-2 tier) → 2 XP (gap=3 days, below comeback threshold of 7)
+    expect($result['xp'])->toBe(2);
+    expect($result['bonuses'])->toBeEmpty();
+    expect($fresh->xp)->toBe(102);
 });
 
-test('daily streak updates longest streak when surpassed', function () {
+test('daily streak updates longest streak when surpassed and awards XP', function () {
     $user = User::factory()->create([
+        'xp' => 50,
         'current_streak' => 5,
         'longest_streak' => 5,
         'last_active_date' => now()->subDay()->toDateString(),
     ]);
 
     $xpService = app(XpService::class);
-    $xpService->updateDailyStreak($user);
+    $result = $xpService->updateDailyStreak($user);
 
-    expect($user->fresh()->current_streak)->toBe(6);
-    expect($user->fresh()->longest_streak)->toBe(6);
+    $fresh = $user->fresh();
+    expect($fresh->current_streak)->toBe(6);
+    expect($fresh->longest_streak)->toBe(6);
+    // New streak = 6 (3-6 tier) → 3 XP
+    expect($result['xp'])->toBe(3);
+    expect($result['bonuses'])->toBeEmpty();
+    expect($fresh->xp)->toBe(53);
 });
 
-test('daily streak does not double-increment on same day', function () {
+test('daily streak does not double-increment on same day and awards no XP', function () {
     $user = User::factory()->create([
+        'xp' => 20,
         'current_streak' => 3,
         'longest_streak' => 3,
         'last_active_date' => now()->toDateString(),
     ]);
 
     $xpService = app(XpService::class);
-    $xpService->updateDailyStreak($user);
+    $result = $xpService->updateDailyStreak($user);
 
     expect($user->fresh()->current_streak)->toBe(3);
+    expect($result)->toBe(['xp' => 0, 'bonuses' => []]);
+    expect($user->fresh()->xp)->toBe(20);
 });
 
 // --- Backward Compatibility ---

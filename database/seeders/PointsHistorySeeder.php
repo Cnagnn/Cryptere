@@ -312,8 +312,9 @@ class PointsHistorySeeder extends Seeder
             ->sum('score');
 
         $total = (int) $lessonPoints + (int) $challengePoints;
-        $user->forceFill(['points' => $total])->save();
+        $xpTotal = (int) $lessonPoints; // XP comes from lessons only; challenge XP is flat per-challenge
+        $user->forceFill(['points' => $total, 'xp' => $xpTotal])->save();
 
-        $this->command->info("✓ User points recalculated: {$total} total ({$lessonPoints} lessons + {$challengePoints} challenges).");
+        $this->command->info("✓ User points recalculated: {$total} total ({$lessonPoints} lessons + {$challengePoints} challenges), XP: {$xpTotal}.");
     }
 }

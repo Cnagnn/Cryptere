@@ -599,6 +599,7 @@ class DashboardController extends Controller
                 'completedLessons' => $completedLessons,
                 'solvedChallenges' => $solvedChallenges,
                 'points' => $user->points,
+                'xp' => $user->xp,
             ],
             'level' => $levelInfo,
             'recentBadges' => $recentBadges,
@@ -677,6 +678,7 @@ class DashboardController extends Controller
             'analytics' => [
                 'stats' => [
                     'totalPoints' => $user->points,
+                    'totalXp' => $user->xp,
                     'currentStreak' => $user->current_streak,
                     'longestStreak' => $user->longest_streak,
                     'completedCourses' => $completedCourses,

@@ -56,6 +56,7 @@ class MassSeeder extends Seeder
             ->count($needed)
             ->create([
                 'points' => fn () => fake()->numberBetween(0, 5000),
+                'xp' => fn () => fake()->numberBetween(0, 500),
                 'current_streak' => fn () => fake()->numberBetween(0, 30),
                 'longest_streak' => fn () => fake()->numberBetween(0, 60),
                 'last_active_date' => fn () => fake()->dateTimeBetween('-30 days', 'now'),

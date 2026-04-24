@@ -1,4 +1,6 @@
 import { createInertiaApp } from '@inertiajs/react';
+import * as Sentry from '@sentry/react';
+import { ErrorBoundaryFallback } from '@/components/error-boundary-fallback';
 import { DirectionProvider } from '@/components/ui/direction';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -6,6 +8,17 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+
+if (import.meta.env.VITE_SENTRY_DSN) {
+    Sentry.init({
+        dsn: import.meta.env.VITE_SENTRY_DSN,
+        integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
+        tracesSampleRate: 0.2,
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: 1.0,
+        enabled: import.meta.env.PROD,
+    });
+}
 
 const appName =
     (typeof document !== 'undefined'
@@ -35,12 +48,14 @@ createInertiaApp({
     strictMode: true,
     withApp(app) {
         return (
-            <DirectionProvider dir="ltr">
-                <TooltipProvider delayDuration={0}>
-                    {app}
-                    <Toaster />
-                </TooltipProvider>
-            </DirectionProvider>
+            <Sentry.ErrorBoundary fallback={ErrorBoundaryFallback}>
+                <DirectionProvider dir="ltr">
+                    <TooltipProvider delayDuration={0}>
+                        {app}
+                        <Toaster />
+                    </TooltipProvider>
+                </DirectionProvider>
+            </Sentry.ErrorBoundary>
         );
     },
     progress: {
