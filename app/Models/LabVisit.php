@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['user_id', 'lab_slug', 'visit_count', 'first_visited_at', 'last_visited_at'])]
 class LabVisit extends Model
 {
+    use HasFactory;
+
     /**
      * Get the attributes that should be cast.
      *

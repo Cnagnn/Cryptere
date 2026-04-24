@@ -13,6 +13,7 @@ use App\Services\LevelService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,12 +44,21 @@ class DashboardController extends Controller
      */
     private function adminDashboard(): Response
     {
-        $totalUsers = User::count();
-        $totalCourses = Course::count();
-        $totalChallenges = Challenge::count();
-        $totalEnrollments = Enrollment::count();
-        $activeUsers = User::where('last_active_date', '>=', now()->subDays(30))->count();
-        $newUsersThisMonth = User::where('created_at', '>=', now()->startOfMonth())->count();
+        $stats = Cache::remember('admin_dashboard_stats', 300, fn (): array => [
+            'totalUsers' => User::count(),
+            'totalCourses' => Course::count(),
+            'totalChallenges' => Challenge::count(),
+            'totalEnrollments' => Enrollment::count(),
+            'activeUsers' => User::where('last_active_date', '>=', now()->subDays(30))->count(),
+            'newUsersThisMonth' => User::where('created_at', '>=', now()->startOfMonth())->count(),
+        ]);
+
+        $totalUsers = $stats['totalUsers'];
+        $totalCourses = $stats['totalCourses'];
+        $totalChallenges = $stats['totalChallenges'];
+        $totalEnrollments = $stats['totalEnrollments'];
+        $activeUsers = $stats['activeUsers'];
+        $newUsersThisMonth = $stats['newUsersThisMonth'];
 
         $monthsWindowStart = now()->subMonths(5)->startOfMonth();
 
@@ -592,7 +602,26 @@ class DashboardController extends Controller
 
         $learningPathCategories = $pathCourses->pluck('category')->filter()->unique()->values();
 
+        // Point decay warning
+        $decayWarning = null;
+        $decayInactiveDays = (int) config('rewards.decay_inactive_days', 14);
+        $decayMinPoints = (int) config('rewards.decay_min_points', 100);
+
+        if ($user->points > $decayMinPoints && $user->last_active_date !== null) {
+            $daysSinceActive = (int) now()->diffInDays($user->last_active_date);
+            $daysUntilDecay = max(0, $decayInactiveDays - $daysSinceActive);
+
+            if ($daysUntilDecay <= 3 && $daysUntilDecay > 0) {
+                $decayWarning = [
+                    'daysUntilDecay' => $daysUntilDecay,
+                    'currentPoints' => $user->points,
+                    'decayPercent' => (float) config('rewards.decay_percent', 1),
+                ];
+            }
+        }
+
         return Inertia::render('dashboard', [
+            'decayWarning' => $decayWarning,
             'stats' => [
                 'enrolledCourses' => $enrolledCourses,
                 'completedCourses' => $completedCourses,

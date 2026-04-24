@@ -43,6 +43,21 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api-heavy', function (Request $request) {
             return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });
+
+        // Challenge submissions — prevent brute-force answer guessing
+        RateLimiter::for('challenge-submit', function (Request $request) {
+            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Quiz submissions — prevent rapid-fire quiz attempts
+        RateLimiter::for('quiz-submit', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Enrollment actions — prevent enrollment spam
+        RateLimiter::for('enrollment', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
     }
 
     /**

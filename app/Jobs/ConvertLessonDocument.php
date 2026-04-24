@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\LessonTask;
+use App\Services\DocumentConverterService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -57,12 +58,11 @@ class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
     /**
      * Execute the job.
      *
-     * This method should be extended to call a real PDF conversion service
-     * (e.g. LibreOffice, CloudConvert API, etc.).
-     * Currently it marks the document as ready if it's already a PDF,
-     * or sets status to 'failed' if no converter is configured.
+     * Converts uploaded documents to PDF using LibreOffice CLI.
+     * If the file is already a PDF, marks it as converted immediately.
+     * Falls back to 'failed' status if LibreOffice is not available.
      */
-    public function handle(): void
+    public function handle(DocumentConverterService $converter): void
     {
         // Find the lesson task that references this document
         $task = LessonTask::query()
@@ -89,11 +89,28 @@ class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        // TODO: Integrate a real document-to-PDF converter here.
-        // Options: LibreOffice CLI, CloudConvert API, Adobe PDF Services, etc.
-        // For now, mark as failed so the UI shows a clear error state.
+        // Attempt conversion via LibreOffice
+        if (! $converter->isAvailable()) {
+            $task->update(['conversion_status' => 'failed']);
+
+            return;
+        }
+
+        $absoluteInput = Storage::disk('public')->path($this->storedPath);
+        $outputDir = dirname($absoluteInput);
+
+        $pdfPath = $converter->convertToPdf($absoluteInput, $outputDir);
+
+        // Store the PDF path relative to the public disk
+        $relativePdf = str_replace(
+            Storage::disk('public')->path(''),
+            '',
+            $pdfPath,
+        );
+
         $task->update([
-            'conversion_status' => 'failed',
+            'conversion_status' => 'converted',
+            'pdf_url' => Storage::disk('public')->url($relativePdf),
         ]);
     }
 

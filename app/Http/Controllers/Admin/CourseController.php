@@ -12,6 +12,7 @@ use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
+use App\Services\CacheService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -279,6 +280,8 @@ class CourseController extends Controller
             'is_published' => (bool) ($validated['is_published'] ?? true),
         ]);
 
+        CacheService::invalidateCourseCatalog();
+
         return back(fallback: route('admin.courses.index'));
     }
 
@@ -310,6 +313,8 @@ class CourseController extends Controller
             'is_published' => (bool) ($validated['is_published'] ?? true),
         ]);
 
+        CacheService::invalidateCourseCatalog();
+
         return back(fallback: route('admin.courses.index'));
     }
 
@@ -321,6 +326,8 @@ class CourseController extends Controller
         }
 
         $course->delete();
+
+        CacheService::invalidateCourseCatalog();
 
         return back(fallback: route('admin.courses.index'));
     }
@@ -355,6 +362,8 @@ class CourseController extends Controller
         $course->update([
             'is_published' => $isPublished,
         ]);
+
+        CacheService::invalidateCourseCatalog();
 
         return back();
     }

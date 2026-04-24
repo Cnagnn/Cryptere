@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\BadgeEarned;
 use App\Models\Badge;
 use App\Models\ChallengeSubmission;
 use App\Models\Enrollment;
@@ -34,6 +35,8 @@ class BadgeService
             if ($this->isCriteriaMet($user, $badge)) {
                 $user->badges()->attach($badge->id, ['earned_at' => now()]);
                 $newlyAwarded->push($badge);
+
+                BadgeEarned::dispatch($user, $badge);
             }
         }
 

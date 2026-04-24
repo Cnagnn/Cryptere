@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\XpAwarded;
 use App\Models\LessonTask;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -52,6 +53,10 @@ class XpService
 
         if ($awardedPoints > 0) {
             $user->increment('points', $awardedPoints);
+        }
+
+        if ($awardedXp > 0 || $awardedPoints > 0) {
+            XpAwarded::dispatch($user, $awardedXp, $awardedPoints, 'task');
         }
 
         return ['xp' => $awardedXp, 'points' => $awardedPoints];

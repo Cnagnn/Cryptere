@@ -51,22 +51,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('courses', [CourseController::class, 'index'])->name('courses.index');
     Route::get('courses/{course:slug}', [CourseController::class, 'show'])->name('courses.show');
-    Route::post('courses/{course:slug}/enroll', [EnrollmentController::class, 'store'])->name('courses.enroll');
-    Route::post('courses/{course:slug}/reset', [EnrollmentController::class, 'reset'])->name('courses.reset');
+    Route::post('courses/{course:slug}/enroll', [EnrollmentController::class, 'store'])->middleware('throttle:enrollment')->name('courses.enroll');
+    Route::post('courses/{course:slug}/reset', [EnrollmentController::class, 'reset'])->middleware('throttle:enrollment')->name('courses.reset');
     Route::post('courses/{course:slug}/lessons/{lesson}/complete', [LessonProgressController::class, 'store'])
         ->name('courses.lessons.complete');
 
     // Quiz submission — returns JSON, not an Inertia redirect
     Route::post('courses/{course:slug}/lessons/{lesson}/quiz', [QuizSubmissionController::class, 'store'])
+        ->middleware('throttle:quiz-submit')
         ->name('courses.lessons.quiz');
 
     Route::get('challenges', [ChallengeController::class, 'index'])->name('challenges.index');
     Route::get('challenges/{challenge:slug}', [ChallengeController::class, 'show'])->name('challenges.show');
     Route::post('challenges/{challenge:slug}/submit', [ChallengeSubmissionController::class, 'store'])
+        ->middleware('throttle:challenge-submit')
         ->name('challenges.submit');
     Route::post('challenges/{challenge:slug}/quick-submit', [ChallengeSubmissionController::class, 'quickStore'])
+        ->middleware('throttle:challenge-submit')
         ->name('challenges.quick-submit');
     Route::post('challenges/{challenge:slug}/quiz-submit', [ChallengeSubmissionController::class, 'quizSubmit'])
+        ->middleware('throttle:challenge-submit')
         ->name('challenges.quiz-submit');
     Route::post('challenges/{challenge:slug}/session-summary', [ChallengeSubmissionController::class, 'sessionSummary'])
         ->name('challenges.session-summary');

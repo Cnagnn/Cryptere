@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Note;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class NoteController extends Controller
 {
@@ -51,7 +52,7 @@ class NoteController extends Controller
      */
     public function update(Request $request, Note $note): JsonResponse
     {
-        abort_unless($note->user_id === $request->user()->id, 403);
+        Gate::authorize('update', $note);
 
         $validated = $request->validate([
             'content' => ['required', 'string', 'max:5000'],
@@ -67,7 +68,7 @@ class NoteController extends Controller
      */
     public function destroy(Request $request, Note $note): JsonResponse
     {
-        abort_unless($note->user_id === $request->user()->id, 403);
+        Gate::authorize('delete', $note);
 
         $note->delete();
 
