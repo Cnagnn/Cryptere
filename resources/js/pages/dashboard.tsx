@@ -5,45 +5,63 @@ import {
     ArrowUpDown,
     ArrowUpRight,
     BookOpen,
-    CheckCircle2,
     Clock,
     Crown,
     Flame,
     GraduationCap,
-    Lock,
-    MapPin,
     Swords,
     Target,
+    TrendingDown,
     TrendingUp,
     Users,
     Zap,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
     Area,
     AreaChart,
     Bar,
     BarChart,
     CartesianGrid,
+    Label,
+    PolarRadiusAxis,
+    RadialBar,
+    RadialBarChart,
     XAxis,
-    YAxis,
 } from 'recharts';
+
+/* ── EvilCharts-style custom bar shape (gradient fade) ── */
+function GradientBar(props: React.SVGProps<SVGRectElement> & { dataKey?: string; prefix?: string }) {
+    const { fill, x, y, width, height, dataKey, prefix = 'gradient-bar' } = props;
+    const id = `${prefix}-${dataKey}`;
+    return (
+        <>
+            <rect x={x} y={y} width={width} height={height} stroke="none" fill={`url(#${id})`} />
+            <rect x={x} y={y} width={width} height={2} stroke="none" fill={fill} />
+            <defs>
+                <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={fill} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={fill} stopOpacity={0} />
+                </linearGradient>
+            </defs>
+        </>
+    );
+}
 
 import type { Auth, UserLevel } from '@/types/auth';
 
 import { cn } from '@/lib/utils';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { DataTable } from '@/components/ui/data-table';
-import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import { index as coursesIndex, show as coursesShow } from '@/routes/courses';
+import { index as coursesIndex } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 
 type LearnerStats = { enrolledCourses: number; completedCourses: number; completedLessons: number; solvedChallenges: number; points: number };
@@ -51,10 +69,12 @@ type AcademyHero = { greeting: string; headline: string; description: string; co
 type LearningPathSummary = { name: string; completedModules: number; totalModules: number; progressPercentage: number; currentRank: number };
 type SuccessMetrics = { overallSuccessRate: number; previousSuccessRate: number; targetRate: number; totalEnrollments: number; completedEnrollments: number; inProgressEnrollments: number };
 type LeaderboardEntry = { rank: number; name: string; username: string | null; avatar: string | null; points: number; isCurrentUser?: boolean };
-type ActivityBreakdownItem = { label: string; count: number; percentage: number };
+type ActivityBreakdownItem = { label: string; completed: number; total: number; percentage: number };
 type MonthlyProgressEntry = { month: string; lessonsCompleted: number; challengesSolved: number; totalActivity: number };
 type MonthlyProgress = { rangeLabel: string; summaryPercentage: number; deltaFromPrevious: number; series: MonthlyProgressEntry[] };
-type AcademyData = { hero: AcademyHero; learningPath: LearningPathSummary; successMetrics: SuccessMetrics; leaderboardPreview: LeaderboardEntry[]; activityBreakdown: ActivityBreakdownItem[]; monthlyProgress: MonthlyProgress; popularCourses: unknown[]; recentActivity: unknown[] };
+type EarningsHistoryEntry = { label: string; points: number; xp: number };
+type EarningsHistory = { deltaFromPrevious: number; weekly: EarningsHistoryEntry[]; monthly: EarningsHistoryEntry[] };
+type AcademyData = { hero: AcademyHero; learningPath: LearningPathSummary; successMetrics: SuccessMetrics; leaderboardPreview: LeaderboardEntry[]; activityBreakdown: ActivityBreakdownItem[]; monthlyProgress: MonthlyProgress; earningsHistory: EarningsHistory; popularCourses: unknown[]; recentActivity: unknown[] };
 type PathNode = { id: number; slug: string; title: string; summary: string | null; category: string | null; difficulty: string; pathPosition: number; prerequisiteId: number | null; prerequisiteTitle: string | null; lessonCount: number; estimatedMinutes: number | null; cover: string | null; isEnrolled: boolean; progressPercentage: number; isCompleted: boolean; isLocked: boolean };
 type LearningPathData = { nodes: PathNode[]; categories: string[] };
 type StreakCalendarEntry = { date: string; active: boolean; isToday?: boolean; isOutOfRange?: boolean; isFuture?: boolean };
@@ -76,7 +96,14 @@ type Props = {
     admin?: AdminData;
 };
 
-const monthlyProgressConfig: ChartConfig = { lessonsCompleted: { label: 'Lessons', color: 'var(--chart-1)' }, challengesSolved: { label: 'Challenges', color: 'var(--chart-2)' } };
+const earningsHistoryConfig: ChartConfig = { points: { label: 'Points', color: 'var(--chart-1)' }, xp: { label: 'XP', color: 'var(--chart-3)' } };
+const GLOW_WIDTH = 300;
+const activityBreakdownConfig: ChartConfig = {
+    percentage: { label: 'Progress' },
+    xp: { label: 'XP', color: 'oklch(0.696 0.217 163.22)' },
+    courses: { label: 'Courses', color: 'oklch(0.585 0.233 277.117)' },
+    challenges: { label: 'Challenges', color: 'oklch(0.637 0.237 25.331)' },
+};
 const enrollmentTrendsConfig: ChartConfig = { enrollments: { label: 'Enrollments', color: 'var(--chart-1)' } };
 const userGrowthConfig: ChartConfig = { users: { label: 'New Users', color: 'var(--chart-2)' } };
 
@@ -110,15 +137,15 @@ const leaderboardColumns: ColumnDef<LeaderboardEntry>[] = [
     },
     {
         accessorKey: 'name',
-        header: 'User',
+        header: 'Username',
         cell: ({ row }) => (
             <div className="flex items-center gap-2">
                 <Avatar size="sm">
-                    {row.original.avatar && <AvatarImage src={row.original.avatar} alt={row.original.name} />}
+                    <AvatarImage src={row.original.avatar ?? undefined} alt={`@${row.original.username ?? row.original.name}`} />
                     <AvatarFallback>{initials(row.original.username ?? row.original.name)}</AvatarFallback>
                 </Avatar>
                 <span className={cn('truncate text-sm font-medium', row.original.isCurrentUser && 'text-primary')}>
-                    {row.original.username ? `@${row.original.username}` : row.original.name}
+                    @{row.original.username ?? 'unknown'}
                     {row.original.isCurrentUser && <span className="ml-1 text-xs text-muted-foreground">(You)</span>}
                 </span>
             </div>
@@ -130,19 +157,6 @@ const leaderboardColumns: ColumnDef<LeaderboardEntry>[] = [
         cell: ({ row }) => <span className={cn('tabular-nums', row.original.isCurrentUser && 'text-primary')}>{row.original.points.toLocaleString()} pts</span>,
     },
 ];
-
-const difficultyColors: Record<string, string> = {
-    beginner: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    intermediate: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    advanced: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-};
-
-function NodeStatus({ node }: { node: PathNode }) {
-    if (node.isLocked) return <div className="flex items-center gap-1.5 text-sm text-muted-foreground"><Lock className="size-4" /><span>Requires: {node.prerequisiteTitle}</span></div>;
-    if (node.isCompleted) return <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400"><CheckCircle2 className="size-4" /><span>Completed</span></div>;
-    if (node.isEnrolled) return <div className="flex flex-col gap-1"><div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">In Progress</span><span className="font-medium">{node.progressPercentage}%</span></div><Progress value={node.progressPercentage} className="h-2" /></div>;
-    return <div className="flex items-center gap-1.5 text-sm text-muted-foreground"><MapPin className="size-4" /><span>Not started</span></div>;
-}
 
 function StreakCalendar({ data, footer }: { data: StreakCalendarEntry[]; footer?: React.ReactNode }) {
     const emptyCells = (7 - (data.length % 7)) % 7;
@@ -193,26 +207,91 @@ function StreakCalendar({ data, footer }: { data: StreakCalendarEntry[]; footer?
     );
 }
 
+function EarningsChart({ data }: { data: EarningsHistoryEntry[] }) {
+    const [xAxis, setXAxis] = useState<number | null>(null);
+
+    return (
+        <ChartContainer config={earningsHistoryConfig} className="h-72 w-full">
+            <AreaChart
+                accessibilityLayer
+                data={data}
+                onMouseMove={(state) => state.activeCoordinate && setXAxis(state.activeCoordinate.x)}
+                onMouseLeave={() => setXAxis(null)}
+            >
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval={0} tickFormatter={(v: string) => v.slice(0, 3)} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <defs>
+                    <linearGradient id="eh-mask-grad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="transparent" />
+                        <stop offset="50%" stopColor="white" />
+                        <stop offset="100%" stopColor="transparent" />
+                    </linearGradient>
+                    <linearGradient id="eh-fill-points" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-points)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="var(--color-points)" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="eh-fill-xp" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-xp)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="var(--color-xp)" stopOpacity={0} />
+                    </linearGradient>
+                    {xAxis !== null && (
+                        <mask id="eh-hover-mask">
+                            <rect x={xAxis - GLOW_WIDTH / 2} y={0} width={GLOW_WIDTH} height="100%" fill="url(#eh-mask-grad)" />
+                        </mask>
+                    )}
+                </defs>
+                <Area dataKey="xp" type="natural" fill="url(#eh-fill-xp)" fillOpacity={0.4} stroke="var(--color-xp)" strokeWidth={0.8} mask="url(#eh-hover-mask)" />
+                <Area dataKey="points" type="natural" fill="url(#eh-fill-points)" fillOpacity={0.4} stroke="var(--color-points)" strokeWidth={0.8} mask="url(#eh-hover-mask)" />
+            </AreaChart>
+        </ChartContainer>
+    );
+}
+
+const earningsDescriptions = { weekly: 'Last 7 days', monthly: 'Last 12 months' } as const;
+
+function EarningsHistoryChart({ earningsHistory }: { earningsHistory: EarningsHistory }) {
+    const [period, setPeriod] = useState<'weekly' | 'monthly'>('monthly');
+    const delta = earningsHistory.deltaFromPrevious;
+    const isPositive = delta >= 0;
+
+    return (
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as 'weekly' | 'monthly')}>
+            <Card>
+                <CardHeader>
+                    <CardTitle>
+                        Earnings History
+                        <Badge variant="outline" className={cn('ml-2 border-none', isPositive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500')}>
+                            {isPositive ? <TrendingUp /> : <TrendingDown />}
+                            <span>{isPositive ? '+' : ''}{delta}%</span>
+                        </Badge>
+                    </CardTitle>
+                    <CardDescription>{earningsDescriptions[period]}</CardDescription>
+                    <CardAction>
+                        <TabsList>
+                            <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                        </TabsList>
+                    </CardAction>
+                </CardHeader>
+                <CardContent>
+                    <TabsContent value="weekly">
+                        <EarningsChart data={earningsHistory.weekly} />
+                    </TabsContent>
+                    <TabsContent value="monthly">
+                        <EarningsChart data={earningsHistory.monthly} />
+                    </TabsContent>
+                </CardContent>
+            </Card>
+        </Tabs>
+    );
+}
+
 function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { stats: LearnerStats; level?: UserLevel; academy: AcademyData; learningPath?: LearningPathData; analytics?: AnalyticsData }) {
     const { auth } = usePage<{ auth: Auth }>().props;
 
     // Poll leaderboard data every 30 seconds
     usePoll(30_000, { only: ['academy'] });
-
-    // Learning path grouping
-    const grouped = useMemo(() => {
-        if (!learningPath) return {};
-        return learningPath.nodes.reduce<Record<string, PathNode[]>>((acc, node) => {
-            const cat = node.category ?? 'General';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(node);
-            return acc;
-        }, {});
-    }, [learningPath]);
-
-    const totalCourses = learningPath?.nodes.length ?? 0;
-    const completedCourses = learningPath?.nodes.filter((n) => n.isCompleted).length ?? 0;
-    const overallProgress = totalCourses > 0 ? Math.round((completedCourses / totalCourses) * 100) : 0;
 
     return (
         <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
@@ -262,78 +341,56 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { 
                 </Card>
             </section>
 
-            {/* ── Monthly Progress Chart (full width) ── */}
-            <section>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Monthly Progress</CardTitle>
-                        <CardDescription>{academy.monthlyProgress.rangeLabel}</CardDescription>
-                        <CardAction>
-                            <Badge variant="outline">
-                                <TrendingUp data-icon="inline-start" />
-                                {academy.monthlyProgress.deltaFromPrevious > 0 ? '+' : ''}{academy.monthlyProgress.deltaFromPrevious}%
-                            </Badge>
-                        </CardAction>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer config={monthlyProgressConfig} className="h-72 w-full">
-                            <BarChart data={academy.monthlyProgress.series} accessibilityLayer>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                                <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
-                                <ChartTooltip content={<ChartTooltipContent />} />
-                                <ChartLegend content={<ChartLegendContent />} />
-                                <Bar dataKey="lessonsCompleted" fill="var(--color-lessonsCompleted)" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="challengesSolved" fill="var(--color-challengesSolved)" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-            </section>
+            {/* ── Earnings History (Points + XP) ── */}
+            <EarningsHistoryChart earningsHistory={academy.earningsHistory} />
 
             {/* ── Activity Breakdown + Streak & Calendar ── */}
             <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                {/* Activity Breakdown */}
-                <Card>
-                    <CardHeader className="pb-3">
+                {/* Activity Breakdown — Radial Chart */}
+                <Card className="flex flex-col">
+                    <CardHeader className="items-center pb-0">
                         <CardDescription>Activity Breakdown</CardDescription>
-                        <CardTitle className="text-2xl leading-tight tracking-tight">
-                            {level ? `Lv.${level.level} ${level.name}` : 'Getting Started'}
-                        </CardTitle>
+                        <CardTitle>{level ? `Lv.${level.level} ${level.name}` : 'Getting Started'}</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        {level ? (
-                            <div className="mb-4 flex flex-col gap-1.5">
-                                <Progress value={level.progress} className="h-2" />
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span className="tabular-nums">{level.current_xp.toLocaleString()} / {level.next_level_xp ? `${level.next_level_xp.toLocaleString()} XP` : 'Max Level'}</span>
-                                    <span className="tabular-nums font-medium">{level.progress}%</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="mb-4 text-sm text-muted-foreground">Complete activities to level up!</p>
-                        )}
-                        <div className="flex flex-col gap-3">
-                            {academy.activityBreakdown.map((item) => {
-                                const icon = item.label === 'Lessons' ? BookOpen : item.label === 'Challenges' ? Swords : GraduationCap;
-                                const color = item.label === 'Lessons' ? 'text-blue-500' : item.label === 'Challenges' ? 'text-orange-500' : 'text-emerald-500';
-                                const Icon = icon;
-                                return (
-                                    <div key={item.label} className="flex items-center gap-3">
-                                        <div className={cn('flex size-8 shrink-0 items-center justify-center rounded-md bg-muted', color)}>
-                                            <Icon className="size-4" />
-                                        </div>
-                                        <div className="flex flex-1 flex-col gap-1">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium">{item.label}</span>
-                                                <span className="text-sm font-semibold tabular-nums">{item.count}</span>
-                                            </div>
-                                            <Progress value={item.percentage} className="h-1.5" />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                    <CardContent className="flex-1 pb-0">
+                        <ChartContainer config={activityBreakdownConfig} className="mx-auto aspect-square max-h-[250px]">
+                            <RadialBarChart
+                                data={[
+                                    { activity: 'xp', percentage: level?.progress ?? 0, fill: 'var(--color-xp)' },
+                                    ...academy.activityBreakdown.map((item) => ({
+                                        activity: item.label.toLowerCase(),
+                                        percentage: item.percentage,
+                                        fill: `var(--color-${item.label.toLowerCase()})`,
+                                    })),
+                                ]}
+                                innerRadius={30}
+                                outerRadius={110}
+                            >
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel nameKey="activity" />}
+                                />
+                                <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                                    <Label
+                                        content={({ viewBox }) => {
+                                            if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                                                return (
+                                                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                                                        <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) - 14} className="fill-muted-foreground text-[10px]">
+                                                            Level
+                                                        </tspan>
+                                                        <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 10} className="fill-foreground text-2xl font-bold">
+                                                            {level?.level ?? 0}
+                                                        </tspan>
+                                                    </text>
+                                                );
+                                            }
+                                        }}
+                                    />
+                                </PolarRadiusAxis>
+                                <RadialBar dataKey="percentage" background cornerRadius={10} className="drop-shadow-lg" />
+                            </RadialBarChart>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
 
@@ -400,96 +457,7 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { 
                 </Card>
             </section>
 
-            {/* ── Learning Path (full width, collapsible) ── */}
-            {learningPath && learningPath.nodes.length > 0 && (
-                <section>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Learning Path</CardTitle>
-                            <CardDescription>{academy.learningPath.name}</CardDescription>
-                            <CardAction>
-                                <Badge variant="outline">
-                                    {completedCourses} / {totalCourses} completed
-                                </Badge>
-                            </CardAction>
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Overall progress</span>
-                                    <span className="font-semibold tabular-nums">{overallProgress}%</span>
-                                </div>
-                                <Progress value={overallProgress} className="h-2.5" />
-                            </div>
 
-                            <Accordion type="multiple" defaultValue={Object.keys(grouped).slice(0, 1)} className="w-full">
-                                {Object.entries(grouped).map(([category, courseNodes]) => (
-                                    <AccordionItem key={category} value={category}>
-                                        <AccordionTrigger>
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-semibold">{category}</span>
-                                                <Badge variant="secondary">
-                                                    {courseNodes.filter((n) => n.isCompleted).length}/{courseNodes.length}
-                                                </Badge>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent>
-                                            <div className="flex flex-col gap-3">
-                                                {courseNodes.map((node) => (
-                                                    <div
-                                                        key={node.id}
-                                                        className={cn(
-                                                            'rounded-lg border p-4 transition-all',
-                                                            node.isLocked && 'opacity-60',
-                                                            !node.isLocked && 'hover:bg-muted/50',
-                                                        )}
-                                                    >
-                                                        <div className="flex items-start justify-between gap-4">
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="font-medium">
-                                                                    {node.isLocked ? (
-                                                                        <span className="flex items-center gap-2">
-                                                                            <Lock className="size-4 text-muted-foreground" />
-                                                                            {node.title}
-                                                                        </span>
-                                                                    ) : (
-                                                                        <Link href={coursesShow({ course: node.slug })} className="hover:text-primary hover:underline">
-                                                                            {node.title}
-                                                                        </Link>
-                                                                    )}
-                                                                </p>
-                                                                {node.summary && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{node.summary}</p>}
-                                                                <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                                                                    <span className="flex items-center gap-1">
-                                                                        <BookOpen className="size-3.5" />
-                                                                        {node.lessonCount} lessons
-                                                                    </span>
-                                                                    {node.estimatedMinutes && (
-                                                                        <span className="flex items-center gap-1">
-                                                                            <Clock className="size-3.5" />
-                                                                            {node.estimatedMinutes} min
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <Badge variant="outline" className={difficultyColors[node.difficulty] ?? ''}>
-                                                                {node.difficulty}
-                                                            </Badge>
-                                                        </div>
-                                                        <div className="mt-3">
-                                                            <NodeStatus node={node} />
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
-                        </CardContent>
-                    </Card>
-                </section>
-            )}
 
 
         </div>
@@ -538,7 +506,11 @@ function AdminDashboard({ admin }: { admin: AdminData }) {
                     <CardHeader><CardTitle>Enrollment Trends</CardTitle><CardDescription>New enrollments per month (last 6 months)</CardDescription></CardHeader>
                     <CardContent>
                         <ChartContainer config={enrollmentTrendsConfig} className="h-62.5 w-full">
-                            <BarChart data={admin.enrollmentTrends} accessibilityLayer><CartesianGrid vertical={false} /><XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} /><YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="enrollments" fill="var(--color-enrollments)" radius={[4, 4, 0, 0]} /></BarChart>
+                            <BarChart data={admin.enrollmentTrends} accessibilityLayer>
+                                <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(v: string) => v.slice(0, 3)} />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                                <Bar dataKey="enrollments" shape={<GradientBar prefix="enrollment" />} fill="var(--color-enrollments)" />
+                            </BarChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
@@ -547,9 +519,16 @@ function AdminDashboard({ admin }: { admin: AdminData }) {
                     <CardContent>
                         <ChartContainer config={userGrowthConfig} className="h-62.5 w-full">
                             <AreaChart data={admin.userGrowth} accessibilityLayer>
-                                <CartesianGrid vertical={false} /><XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} /><YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} /><ChartTooltip content={<ChartTooltipContent />} />
-                                <defs><linearGradient id="fillUsers" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--color-users)" stopOpacity={0.8} /><stop offset="95%" stopColor="var(--color-users)" stopOpacity={0.1} /></linearGradient></defs>
-                                <Area dataKey="users" type="monotone" fill="url(#fillUsers)" stroke="var(--color-users)" strokeWidth={2} />
+                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(v: string) => v.slice(0, 3)} />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                                <defs>
+                                    <linearGradient id="gradient-user-growth" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="var(--color-users)" stopOpacity={0.5} />
+                                        <stop offset="95%" stopColor="var(--color-users)" stopOpacity={0.1} />
+                                    </linearGradient>
+                                </defs>
+                                <Area dataKey="users" type="monotone" fill="url(#gradient-user-growth)" fillOpacity={0.4} stroke="var(--color-users)" strokeWidth={0.8} strokeDasharray="3 3" />
                             </AreaChart>
                         </ChartContainer>
                     </CardContent>

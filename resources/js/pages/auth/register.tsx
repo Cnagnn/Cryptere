@@ -135,14 +135,7 @@ export default function Register({ status, socialUser }: Props) {
                                 className="h-11 w-auto"
                             />
                         </div>
-                        <CardTitle className="text-2xl">
-                            {isSocialRegistration ? 'Complete Your Registration' : 'Sign Up'}
-                        </CardTitle>
-                        {isSocialRegistration && (
-                            <p className="text-sm text-muted-foreground">
-                                Set your username and password to finish signing up with {capitalizeProvider(socialUser!.provider)}.
-                            </p>
-                        )}
+                        <CardTitle className="text-2xl">Sign Up</CardTitle>
                     </CardHeader>
 
                     <CardContent>

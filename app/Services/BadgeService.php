@@ -47,10 +47,22 @@ class BadgeService
      */
     private function getBadgeDefinitions(): Collection
     {
-        return Cache::remember('badge_definitions', 3600, fn (): Collection => Badge::query()
+        $badges = Cache::remember('badge_definitions', 3600, fn (): Collection => Badge::query()
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get());
+
+        // Guard against corrupted cache (e.g. __PHP_Incomplete_Class)
+        if (! $badges instanceof Collection) {
+            Cache::forget('badge_definitions');
+
+            return Badge::query()
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get();
+        }
+
+        return $badges;
     }
 
     /**

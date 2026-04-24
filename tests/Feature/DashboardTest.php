@@ -81,8 +81,16 @@ test('authenticated users can visit the dashboard', function () {
             ->where('academy.learningPath.totalModules', 1)
             ->where('academy.successMetrics.inProgressEnrollments', 1)
             ->has('academy.leaderboardPreview', 2)
-            ->has('academy.activityBreakdown', 3)
+            ->has('academy.activityBreakdown', 2)
+            ->where('academy.activityBreakdown.0.label', 'Courses')
+            ->has('academy.activityBreakdown.0.completed')
+            ->has('academy.activityBreakdown.0.total')
+            ->has('academy.activityBreakdown.0.percentage')
+            ->where('academy.activityBreakdown.1.label', 'Challenges')
             ->has('academy.monthlyProgress.series', 6)
+            ->has('academy.earningsHistory.weekly', 7)
+            ->has('academy.earningsHistory.monthly', 12)
+            ->has('academy.earningsHistory.deltaFromPrevious')
             ->has('academy.popularCourses')
             ->has('academy.recentActivity')
             ->has('learningPath')
@@ -278,6 +286,41 @@ test('dashboard learning path shows enrollment progress', function () {
         ->where('learningPath.nodes.0.isEnrolled', true)
         ->where('learningPath.nodes.0.progressPercentage', 60)
     );
+});
+
+// ─── Points History ──────────────────────────────────────────────────────────
+
+test('dashboard points history reflects lesson and challenge points', function () {
+    $user = User::factory()->create(['points' => 100]);
+
+    $course = Course::factory()->create(['is_published' => true]);
+
+    $lesson = Lesson::factory()->for($course)->create([
+        'xp_reward' => 50,
+    ]);
+
+    LessonProgress::factory()->for($user)->for($lesson)->create([
+        'completed_at' => now()->subDays(5),
+    ]);
+
+    $challenge = Challenge::factory()->create(['is_published' => true]);
+
+    ChallengeSubmission::factory()->for($user)->for($challenge)->create([
+        'is_correct' => true,
+        'score' => 30,
+        'submitted_at' => now()->subDays(3),
+    ]);
+
+    $response = $this->actingAs($user)->get(route('dashboard'));
+
+    $response->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('academy.earningsHistory.monthly', 12)
+            ->where('academy.earningsHistory.monthly.11.points', 80) // 50 lesson + 30 challenge
+            ->where('academy.earningsHistory.monthly.11.xp', 50) // lesson XP only, no challenge
+            ->has('academy.earningsHistory.weekly', 7)
+            ->has('academy.earningsHistory.deltaFromPrevious')
+        );
 });
 
 // ─── Analytics (merged from AnalyticsTest) ───────────────────────────────────

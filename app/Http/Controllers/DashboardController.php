@@ -242,32 +242,28 @@ class DashboardController extends Controller
                 ->count()
             : 0;
 
-        $activityTotals = [
+        // ── Activity Breakdown (percentage-based for radial chart) ──
+        $totalPublishedCourses = Course::where('is_published', true)->count();
+        $totalPublishedChallenges = Challenge::where('is_published', true)->count();
+
+        $activityBreakdown = [
             [
-                'label' => 'Lessons',
-                'count' => $completedLessons,
+                'label' => 'Courses',
+                'completed' => $completedCourses,
+                'total' => $totalPublishedCourses,
+                'percentage' => $totalPublishedCourses > 0
+                    ? round(($completedCourses / $totalPublishedCourses) * 100, 1)
+                    : 0.0,
             ],
             [
                 'label' => 'Challenges',
-                'count' => $solvedChallenges,
-            ],
-            [
-                'label' => 'Courses',
-                'count' => $completedCourses,
+                'completed' => $solvedChallenges,
+                'total' => $totalPublishedChallenges,
+                'percentage' => $totalPublishedChallenges > 0
+                    ? round(($solvedChallenges / $totalPublishedChallenges) * 100, 1)
+                    : 0.0,
             ],
         ];
-
-        $totalActivityCount = collect($activityTotals)->sum('count');
-
-        $activityBreakdown = collect($activityTotals)->map(function (array $activity) use ($totalActivityCount): array {
-            return [
-                'label' => $activity['label'],
-                'count' => $activity['count'],
-                'percentage' => $totalActivityCount > 0
-                    ? round(($activity['count'] / $totalActivityCount) * 100, 1)
-                    : 0.0,
-            ];
-        })->values();
 
         $monthsWindowStart = now()->subMonths(5)->startOfMonth();
 
@@ -319,6 +315,82 @@ class DashboardController extends Controller
         $monthlyDelta = $previousMonthActivity > 0
             ? round((($currentMonthActivity - $previousMonthActivity) / $previousMonthActivity) * 100, 1)
             : ($currentMonthActivity > 0 ? 100.0 : 0.0);
+
+        // ── Earnings History (weekly / monthly) ──
+
+        // --- Weekly: last 7 days, grouped by date ---
+        $weeklyStart = now()->subDays(6)->startOfDay();
+
+        $lessonPointsByDay = $user->lessonProgress()
+            ->whereNotNull('completed_at')
+            ->where('completed_at', '>=', $weeklyStart)
+            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
+            ->selectRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m-%d') as period, SUM(lessons.xp_reward) as total")
+            ->groupByRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m-%d')")
+            ->pluck('total', 'period');
+
+        $challengePointsByDay = $user->challengeSubmissions()
+            ->where('is_correct', true)
+            ->whereNotNull('submitted_at')
+            ->where('submitted_at', '>=', $weeklyStart)
+            ->selectRaw("DATE_FORMAT(submitted_at, '%Y-%m-%d') as period, SUM(score) as total")
+            ->groupByRaw("DATE_FORMAT(submitted_at, '%Y-%m-%d')")
+            ->pluck('total', 'period');
+
+        $weeklySeries = collect(range(6, 0))->map(function (int $dayOffset) use ($lessonPointsByDay, $challengePointsByDay): array {
+            $day = now()->subDays($dayOffset);
+            $period = $day->format('Y-m-d');
+            $lessonPts = (int) ($lessonPointsByDay[$period] ?? 0);
+            $challengePts = (int) ($challengePointsByDay[$period] ?? 0);
+
+            return [
+                'label' => $day->format('D'),
+                'points' => $lessonPts + $challengePts,
+                'xp' => $lessonPts,
+            ];
+        })->values();
+
+        // --- Monthly: last 12 months ---
+        $monthlyStart = now()->subMonths(11)->startOfMonth();
+
+        $lessonPointsByMonth = $user->lessonProgress()
+            ->whereNotNull('completed_at')
+            ->where('completed_at', '>=', $monthlyStart)
+            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
+            ->selectRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m') as period, SUM(lessons.xp_reward) as total")
+            ->groupByRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m')")
+            ->pluck('total', 'period');
+
+        $challengePointsByMonth = $user->challengeSubmissions()
+            ->where('is_correct', true)
+            ->whereNotNull('submitted_at')
+            ->where('submitted_at', '>=', $monthlyStart)
+            ->selectRaw("DATE_FORMAT(submitted_at, '%Y-%m') as period, SUM(score) as total")
+            ->groupByRaw("DATE_FORMAT(submitted_at, '%Y-%m')")
+            ->pluck('total', 'period');
+
+        $monthlySeries = collect(range(11, 0))->map(function (int $monthOffset) use ($lessonPointsByMonth, $challengePointsByMonth): array {
+            $month = now()->subMonths($monthOffset)->startOfMonth();
+            $period = $month->format('Y-m');
+            $lessonPts = (int) ($lessonPointsByMonth[$period] ?? 0);
+            $challengePts = (int) ($challengePointsByMonth[$period] ?? 0);
+
+            return [
+                'label' => $month->format('M'),
+                'points' => $lessonPts + $challengePts,
+                'xp' => $lessonPts,
+            ];
+        })->values();
+
+        // Delta based on monthly series (current vs previous month)
+        $currentMonthPoints = (int) ($monthlySeries->last()['points'] ?? 0);
+        $previousMonthPoints = $monthlySeries->count() > 1
+            ? (int) ($monthlySeries->get($monthlySeries->count() - 2)['points'] ?? 0)
+            : 0;
+
+        $earningsDelta = $previousMonthPoints > 0
+            ? round((($currentMonthPoints - $previousMonthPoints) / $previousMonthPoints) * 100, 1)
+            : ($currentMonthPoints > 0 ? 100.0 : 0.0);
 
         $popularCourses = Course::query()
             ->where('is_published', true)
@@ -589,6 +661,11 @@ class DashboardController extends Controller
                     'summaryPercentage' => $monthlyActivityScore,
                     'deltaFromPrevious' => $monthlyDelta,
                     'series' => $monthlyProgress,
+                ],
+                'earningsHistory' => [
+                    'deltaFromPrevious' => $earningsDelta,
+                    'weekly' => $weeklySeries,
+                    'monthly' => $monthlySeries,
                 ],
                 'popularCourses' => $popularCoursesPayload,
                 'recentActivity' => $recentActivity,

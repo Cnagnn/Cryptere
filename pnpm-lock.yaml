@@ -178,7 +178,7 @@ importers:
         specifier: ^0.1.3
         version: 0.1.7
       '@playwright/test':
-        specifier: ^1.59.1
+        specifier: 3.8.0
         version: 1.59.1
       '@stylistic/eslint-plugin':
         specifier: ^5.10.0
