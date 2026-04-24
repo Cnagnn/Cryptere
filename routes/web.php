@@ -7,7 +7,6 @@ use App\Http\Controllers\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Admin\TaskController as AdminTaskController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\SocialAuthController;
-use App\Http\Controllers\Bookmark\BookmarkController;
 use App\Http\Controllers\Challenge\ChallengeController;
 use App\Http\Controllers\Challenge\ChallengeSubmissionController;
 use App\Http\Controllers\Course\CourseController;
@@ -17,7 +16,6 @@ use App\Http\Controllers\Course\QuizSubmissionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\LeaderboardController;
-use App\Http\Controllers\Note\NoteController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -79,15 +77,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('labs', LabController::class)->name('labs.index');
     Route::get('labs/{lab}', [LabController::class, 'show'])->name('labs.show');
 
-    // Bookmarks
-    Route::post('bookmarks/toggle', [BookmarkController::class, 'toggle'])->middleware('throttle:60,1')->name('bookmarks.toggle');
-    Route::get('bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
-
-    // Notes
-    Route::get('notes', [NoteController::class, 'index'])->name('notes.index');
-    Route::post('notes', [NoteController::class, 'store'])->middleware('throttle:30,1')->name('notes.store');
-    Route::patch('notes/{note}', [NoteController::class, 'update'])->middleware('throttle:60,1')->name('notes.update');
-    Route::delete('notes/{note}', [NoteController::class, 'destroy'])->middleware('throttle:30,1')->name('notes.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {

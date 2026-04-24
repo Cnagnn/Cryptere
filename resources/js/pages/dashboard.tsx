@@ -355,7 +355,7 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { 
                         <CardTitle>{level ? `Lv.${level.level} ${level.name}` : 'Getting Started'}</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 pb-0">
-                        <ChartContainer config={activityBreakdownConfig} className="mx-auto aspect-square max-h-[250px]">
+                        <ChartContainer config={activityBreakdownConfig} className="mx-auto aspect-square max-h-62.5">
                             <RadialBarChart
                                 data={[
                                     { activity: 'xp', percentage: level?.progress ?? 0, completed: level?.current_xp ?? 0, total: level?.next_level_xp ?? 0, fill: 'var(--color-xp)' },
@@ -464,10 +464,11 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { 
                         {(() => {
                             const top = academy.leaderboardPreview;
                             const myRank = academy.learningPath.currentRank;
-                            const isInTop = top.some((e) => e.rank === myRank);
+                            const myUsername = auth.user.username;
+                            const isInTop = top.some((e) => e.username === myUsername);
                             const data = isInTop
-                                ? top
-                                : [...top, { rank: myRank, name: auth.user.name, username: auth.user.username, avatar: auth.user.avatar ?? null, points: auth.user.points, isCurrentUser: true }];
+                                ? top.map((e) => (e.username === myUsername ? { ...e, isCurrentUser: true } : e))
+                                : [...top, { rank: myRank, name: auth.user.name, username: myUsername, avatar: auth.user.avatar ?? null, points: auth.user.points, isCurrentUser: true }];
                             return (
                                 <DataTable
                                     columns={leaderboardColumns}

@@ -193,20 +193,4 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(LabVisit::class);
     }
-
-    /**
-     * Get the bookmarks for the user.
-     */
-    public function bookmarks(): HasMany
-    {
-        return $this->hasMany(Bookmark::class);
-    }
-
-    /**
-     * Get the notes for the user.
-     */
-    public function notes(): HasMany
-    {
-        return $this->hasMany(Note::class);
-    }
 }

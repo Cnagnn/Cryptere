@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
+use App\Models\QuizSubmission;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -77,9 +78,18 @@ class CourseController extends Controller
             ->whereNotNull('completed_at')
             ->pluck('lesson_id');
 
+        // Load quiz submissions for all tasks in this course (keyed by lesson_task_id)
+        $allTaskIds = $course->lessons->flatMap(fn (Lesson $lesson) => $lesson->tasks->pluck('id'));
+
+        $quizSubmissions = QuizSubmission::query()
+            ->where('user_id', $request->user()->id)
+            ->whereIn('lesson_task_id', $allTaskIds)
+            ->get()
+            ->keyBy('lesson_task_id');
+
         $canUnlockNext = true;
 
-        $lessons = $course->lessons->map(function (Lesson $lesson) use (&$canUnlockNext, $completedLessonIds, $isAdmin): array {
+        $lessons = $course->lessons->map(function (Lesson $lesson) use (&$canUnlockNext, $completedLessonIds, $isAdmin, $quizSubmissions): array {
             $isCompleted = $completedLessonIds->contains($lesson->id);
             $isUnlocked = $canUnlockNext;
 
@@ -118,6 +128,16 @@ class CourseController extends Controller
                             'explanation' => null, // shown only after quiz submission
                         ])->values()->all(),
                         'questionCount' => $task->quizQuestions->count(),
+                        'submission' => $quizSubmissions->has($task->id)
+                            ? [
+                                'answers' => $quizSubmissions[$task->id]->answers,
+                                'score' => $quizSubmissions[$task->id]->score,
+                                'total' => $quizSubmissions[$task->id]->total,
+                                'results' => $quizSubmissions[$task->id]->results,
+                                'xpEarned' => $quizSubmissions[$task->id]->xp_earned,
+                                'pointsEarned' => $quizSubmissions[$task->id]->points_earned,
+                            ]
+                            : null,
                     ])->values()->all()
                     : ($isAdmin ? $this->extractLegacyTaskPayloads($lesson->content) : []),
                 'xpReward' => $lesson->xp_reward,

@@ -61,6 +61,7 @@ type DataTableProps<TData, TValue> = {
     dragHandleActiveRowId?: string | null;
     onRowDrop?: (sourceRowId: string, targetRowId: string) => void;
     onRowDragEnd?: () => void;
+    getRowClassName?: (row: TData) => string | undefined;
 };
 
 function buildPaginationItems(page: number, pageCount: number): Array<number | 'ellipsis'> {
@@ -100,6 +101,7 @@ export function DataTable<TData, TValue>({
     dragHandleActiveRowId,
     onRowDrop,
     onRowDragEnd,
+    getRowClassName,
 }: DataTableProps<TData, TValue>) {
     const defaultSorting = useMemo<SortingState>(() => {
         if (!enableDefaultIdSort) {
@@ -429,6 +431,7 @@ export function DataTable<TData, TValue>({
                                             className={cn(
                                                 'transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
                                                 isDragging && rowId === draggingSourceId && 'opacity-0',
+                                                getRowClassName?.(row.original),
                                             )}
                                             style={rowTransform ? { transform: rowTransform } : undefined}
                                         >

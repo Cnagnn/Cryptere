@@ -40,9 +40,20 @@ function resolvePlayerSource(url: string): PlayerSource {
     }
 }
 
-export function VideoPlayer({ url }: { url: string }) {
+export function VideoPlayer({
+    url,
+    onEnded,
+}: {
+    url: string;
+    onEnded?: () => void;
+}) {
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const onEndedRef = useRef(onEnded);
     const source = useMemo(() => resolvePlayerSource(url), [url]);
+
+    useEffect(() => {
+        onEndedRef.current = onEnded;
+    }, [onEnded]);
 
     useEffect(() => {
         if (!containerRef.current || source.kind === 'unsupported') {
@@ -83,6 +94,10 @@ export function VideoPlayer({ url }: { url: string }) {
                 portrait: false,
                 title: false,
             },
+        });
+
+        player.on('ended', () => {
+            onEndedRef.current?.();
         });
 
         return () => {
