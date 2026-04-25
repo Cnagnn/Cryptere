@@ -82,7 +82,6 @@ export function TaskFormSheet({
         minutes: 10,
         video_url: '',
         document: null,
-        xp_reward: 0,
         quiz_questions: [createEmptyQuizQuestion()],
     });
 
@@ -96,7 +95,6 @@ export function TaskFormSheet({
                 minutes: task.minutes,
                 video_url: task.video_url ?? '',
                 document: null,
-                xp_reward: task.xp_reward ?? 0,
                 quiz_questions:
                     task.quiz_questions.length > 0
                         ? task.quiz_questions
@@ -117,7 +115,6 @@ export function TaskFormSheet({
                 minutes: 10,
                 video_url: '',
                 document: null,
-                xp_reward: 0,
                 quiz_questions: [createEmptyQuizQuestion()],
             });
             form.clearErrors();
@@ -319,26 +316,6 @@ export function TaskFormSheet({
                             className="w-full"
                             onSelect={handleTypeChange}
                         />
-                        </FieldContent>
-                    </Field>
-
-                    <Field>
-                        <FieldLabel htmlFor={`${mode}-task-xp-reward`}>XP Reward</FieldLabel>
-                        <FieldContent>
-                            <Input
-                                id={`${mode}-task-xp-reward`}
-                                type="number"
-                                min={0}
-                                max={10000}
-                                value={form.data.xp_reward}
-                                onChange={(e) =>
-                                    form.setData('xp_reward', Number(e.target.value) || 0)
-                                }
-                            />
-                            <FieldDescription>
-                                XP awarded when this task is completed. 0 = no XP.
-                            </FieldDescription>
-                            <FieldError>{form.errors.xp_reward}</FieldError>
                         </FieldContent>
                     </Field>
 

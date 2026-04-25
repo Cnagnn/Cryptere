@@ -39,7 +39,6 @@ class LessonController extends Controller
             'description' => $validated['description'],
             'content' => '',
             'position' => $nextPosition,
-            'xp_reward' => (int) ($validated['xp_reward'] ?? 50),
         ]);
 
         return back();
@@ -52,7 +51,6 @@ class LessonController extends Controller
         $lesson->update([
             'title' => $validated['title'],
             'description' => $validated['description'],
-            'xp_reward' => (int) ($validated['xp_reward'] ?? $lesson->xp_reward),
         ]);
 
         return back();

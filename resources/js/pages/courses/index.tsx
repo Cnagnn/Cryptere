@@ -79,6 +79,7 @@ type CourseCard = {
     timeEnd?: string | null;
     status?: 'upcoming' | 'active' | 'ended';
     isSolved?: boolean;
+    hasCompletedSession?: boolean;
     hasQuestionBank?: boolean;
     questionsCount?: number;
     bestScore?: number;
@@ -1021,23 +1022,6 @@ export default function CoursesIndex({
                                                     </CardContent>
                                                 ) : isChallengesCatalog ? (
                                                     <CardContent className="flex flex-col gap-4">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            {course.hasQuestionBank && (course.questionsCount ?? 0) > 0 && (
-                                                                <Badge variant="secondary">
-                                                                    {course.questionsCount} questions
-                                                                </Badge>
-                                                            )}
-                                                            {(course.bestScore ?? 0) > 0 && (
-                                                                <Badge variant="outline">
-                                                                    Best: {course.bestScore} pts
-                                                                </Badge>
-                                                            )}
-                                                            {course.isSolved && (
-                                                                <Badge variant="default">
-                                                                    Solved
-                                                                </Badge>
-                                                            )}
-                                                        </div>
                                                         <div className="rounded-md border bg-muted/20 p-3">
                                                             {(() => {
                                                                 const countdown =
@@ -1097,31 +1081,72 @@ export default function CoursesIndex({
                                                             </Link>
                                                         </Button>
                                                     ) : isChallengesCatalog ? (
-                                                        <Button
-                                                            asChild
-                                                            type="button"
-                                                            variant={
-                                                                course.isSolved
-                                                                    ? 'outline'
-                                                                    : 'secondary'
-                                                            }
-                                                            className="w-full"
-                                                        >
-                                                            <Link
-                                                                href={showChallenge(
-                                                                    {
-                                                                        challenge:
-                                                                            course.slug,
-                                                                    },
-                                                                )}
-                                                                prefetch
-                                                            >
-                                                                {course.isSolved
-                                                                    ? 'Review challenge'
-                                                                    : 'Start challenge'}
-                                                                <ArrowRight className="size-4" />
-                                                            </Link>
-                                                        </Button>
+                                                        (() => {
+                                                            const isActive =
+                                                                course.status ===
+                                                                'active';
+                                                            const isUpcoming =
+                                                                course.status ===
+                                                                'upcoming';
+                                                            const isCompleted =
+                                                                course.hasCompletedSession ===
+                                                                true;
+                                                            const label =
+                                                                isCompleted
+                                                                    ? 'View result'
+                                                                    : isActive
+                                                                      ? 'Start challenge'
+                                                                      : isUpcoming
+                                                                        ? 'View details'
+                                                                        : 'View results';
+                                                            const variant =
+                                                                isActive &&
+                                                                !isCompleted
+                                                                    ? 'default'
+                                                                    : 'outline';
+                                                            const href =
+                                                                isActive &&
+                                                                !isCompleted
+                                                                    ? showChallenge(
+                                                                          {
+                                                                              challenge:
+                                                                                  course.slug,
+                                                                          },
+                                                                          {
+                                                                              query: {
+                                                                                  autostart:
+                                                                                      '1',
+                                                                              },
+                                                                          },
+                                                                      )
+                                                                    : showChallenge(
+                                                                          {
+                                                                              challenge:
+                                                                                  course.slug,
+                                                                          },
+                                                                      );
+
+                                                            return (
+                                                                <Button
+                                                                    asChild
+                                                                    type="button"
+                                                                    variant={
+                                                                        variant
+                                                                    }
+                                                                    className="w-full"
+                                                                >
+                                                                    <Link
+                                                                        href={
+                                                                            href
+                                                                        }
+                                                                        prefetch
+                                                                    >
+                                                                        {label}
+                                                                        <ArrowRight className="size-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                            );
+                                                        })()
                                                     ) : course.isEnrolled ? (
                                                         (() => {
                                                             const progressPercentage =

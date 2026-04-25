@@ -7,26 +7,25 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('awardTaskXp grants base XP and points with no streak', function () {
+test('awardTaskXp grants config-based XP and points with no streak', function () {
     $user = User::factory()->create([
         'points' => 0,
         'xp' => 0,
         'current_streak' => 0,
     ]);
 
-    $task = LessonTask::factory()->create([
-        'xp_reward' => 50,
-    ]);
+    $task = LessonTask::factory()->create();
+
+    $quizTaskXp = (int) config('rewards.quiz_task_xp', 20);
 
     $xpService = app(XpService::class);
     $result = $xpService->awardTaskXp($user, $task);
 
     expect($result)->toBeArray()
-        ->xp->toBe(50);
+        ->xp->toBe($quizTaskXp);
 
     $fresh = $user->fresh();
-    expect($fresh->xp)->toBe(50);
-    // Points include level bonus (level 1 = 0.1% → 50 * 1.001 = 50 rounded)
+    expect($fresh->xp)->toBe($quizTaskXp);
     expect($fresh->points)->toBe($result['points']);
 });
 
@@ -37,39 +36,38 @@ test('awardTaskXp applies streak multiplier to XP only, not points', function ()
         'current_streak' => 7, // 1.5× multiplier
     ]);
 
-    $task = LessonTask::factory()->create([
-        'xp_reward' => 40,
-    ]);
+    $task = LessonTask::factory()->create();
+
+    $quizTaskXp = (int) config('rewards.quiz_task_xp', 20);
 
     $xpService = app(XpService::class);
     $result = $xpService->awardTaskXp($user, $task);
 
-    // XP gets streak multiplier: 40 × 1.5 = 60
-    expect($result['xp'])->toBe(60);
-    expect($user->fresh()->xp)->toBe(70); // 10 + 60
+    // XP gets streak multiplier: 20 × 1.5 = 30
+    expect($result['xp'])->toBe((int) round($quizTaskXp * 1.5));
+    expect($user->fresh()->xp)->toBe(10 + $result['xp']);
 
-    // Points use base amount (no streak): applyLevelBonus(40) ≈ 40
-    expect($result['points'])->toBe($xpService->applyLevelBonus($user, 40));
+    // Points use base amount (no streak): applyLevelBonus(20) ≈ 20
+    expect($result['points'])->toBe($xpService->applyLevelBonus($user, $quizTaskXp));
     expect($user->fresh()->points)->toBe(100 + $result['points']);
 });
 
-test('awardTaskXp returns zero for task with zero xp_reward', function () {
+test('awardTaskXp always uses config value regardless of task', function () {
     $user = User::factory()->create([
         'points' => 100,
         'xp' => 50,
-        'current_streak' => 5,
+        'current_streak' => 0,
     ]);
 
-    $task = LessonTask::factory()->create([
-        'xp_reward' => 0,
-    ]);
+    $task = LessonTask::factory()->create();
+
+    $quizTaskXp = (int) config('rewards.quiz_task_xp', 20);
 
     $xpService = app(XpService::class);
     $result = $xpService->awardTaskXp($user, $task);
 
-    expect($result)->toBe(['xp' => 0, 'points' => 0]);
-    expect($user->fresh()->points)->toBe(100);
-    expect($user->fresh()->xp)->toBe(50);
+    expect($result['xp'])->toBe($quizTaskXp);
+    expect($user->fresh()->xp)->toBe(50 + $quizTaskXp);
 });
 
 test('awardTaskXp applies 2x multiplier at 30 day streak to XP only', function () {
@@ -79,19 +77,19 @@ test('awardTaskXp applies 2x multiplier at 30 day streak to XP only', function (
         'current_streak' => 30,
     ]);
 
-    $task = LessonTask::factory()->create([
-        'xp_reward' => 25,
-    ]);
+    $task = LessonTask::factory()->create();
+
+    $quizTaskXp = (int) config('rewards.quiz_task_xp', 20);
 
     $xpService = app(XpService::class);
     $result = $xpService->awardTaskXp($user, $task);
 
-    // XP gets 2× streak: 25 × 2.0 = 50
-    expect($result['xp'])->toBe(50);
-    expect($user->fresh()->xp)->toBe(50);
+    // XP gets 2× streak: 20 × 2.0 = 40
+    expect($result['xp'])->toBe($quizTaskXp * 2);
+    expect($user->fresh()->xp)->toBe($quizTaskXp * 2);
 
-    // Points use base amount (no streak): applyLevelBonus(25) ≈ 25
-    $expectedPoints = $xpService->applyLevelBonus($user, 25);
+    // Points use base amount (no streak): applyLevelBonus(20) ≈ 20
+    $expectedPoints = $xpService->applyLevelBonus($user, $quizTaskXp);
     expect($result['points'])->toBe($expectedPoints);
     expect($user->fresh()->points)->toBe($expectedPoints);
 });
@@ -111,10 +109,10 @@ test('awardXpAndPoints applies streak to XP and level bonus to base points', fun
     expect($result['xp'])->toBe(175);
     expect($user->fresh()->xp)->toBe(175);
 
-    // Points use base (no streak): applyLevelBonus(100) ≈ 100
-    $expectedPoints = $xpService->applyLevelBonus($user, 100);
-    expect($result['points'])->toBe($expectedPoints);
-    expect($user->fresh()->points)->toBe($expectedPoints);
+    // Points use base (no streak) at user's level BEFORE XP award (level 1, 0.2% bonus)
+    // 100 * 1.002 = 100 (rounded)
+    expect($result['points'])->toBe(100);
+    expect($user->fresh()->points)->toBe(100);
 });
 
 test('awardXpAndPoints returns zero for zero base', function () {
@@ -129,13 +127,13 @@ test('awardXpAndPoints returns zero for zero base', function () {
 });
 
 test('applyLevelBonus applies correct multiplier', function () {
-    // Level 10 user (1% bonus)
-    $user = User::factory()->create(['xp' => 277]);
+    // Level 10 user (2% bonus)
+    $user = User::factory()->create(['xp' => 139]);
 
     $xpService = app(XpService::class);
     $boosted = $xpService->applyLevelBonus($user, 100);
 
-    expect($boosted)->toBe(101); // 100 * 1.01 = 101
+    expect($boosted)->toBe(102); // 100 * 1.02 = 102
 });
 
 test('applyLevelBonus at level 1 is nearly unchanged', function () {
@@ -144,6 +142,6 @@ test('applyLevelBonus at level 1 is nearly unchanged', function () {
     $xpService = app(XpService::class);
     $boosted = $xpService->applyLevelBonus($user, 100);
 
-    // Level 1 = 0.1% bonus → 100 * 1.001 = 100 (rounded)
+    // Level 1 = 0.2% bonus → 100 * 1.002 = 100 (rounded)
     expect($boosted)->toBe(100);
 });

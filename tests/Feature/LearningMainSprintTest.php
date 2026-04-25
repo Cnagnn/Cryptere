@@ -51,12 +51,10 @@ test('users must complete lessons in sequence to finish a course', function () {
 
     $lessonOne = Lesson::factory()->for($course)->create([
         'position' => 1,
-        'xp_reward' => 40,
     ]);
 
     $lessonTwo = Lesson::factory()->for($course)->create([
         'position' => 2,
-        'xp_reward' => 50,
     ]);
 
     $this->actingAs($user)
@@ -88,13 +86,14 @@ test('users must complete lessons in sequence to finish a course', function () {
     expect($enrollment)->not->toBeNull();
     expect($enrollment?->progress_percentage)->toBe(100);
     expect($enrollment?->completed_at)->not->toBeNull();
-    // Points = lesson rewards (40+50) + course completion bonus (200) + level-up bonus
+    // Points = 2 × lesson_completion_xp (30) + course completion bonus + level-up bonus
+    $lessonXp = (int) config('rewards.lesson_completion_xp');
     $completionBonus = (int) config('rewards.course_completion_points');
-    expect($user->refresh()->points)->toBeGreaterThanOrEqual(90 + $completionBonus);
+    expect($user->refresh()->points)->toBeGreaterThanOrEqual(($lessonXp * 2) + $completionBonus);
 });
 
 test('enrolled users can reset their course progress', function () {
-    $user = User::factory()->create(['points' => 0]);
+    $user = User::factory()->create(['points' => 0, 'last_active_date' => now()->toDateString()]);
 
     $course = Course::factory()->create([
         'slug' => 'resettable-course',
@@ -103,12 +102,10 @@ test('enrolled users can reset their course progress', function () {
 
     $lessonOne = Lesson::factory()->for($course)->create([
         'position' => 1,
-        'xp_reward' => 40,
     ]);
 
     $lessonTwo = Lesson::factory()->for($course)->create([
         'position' => 2,
-        'xp_reward' => 50,
     ]);
 
     $this->actingAs($user)
@@ -124,8 +121,9 @@ test('enrolled users can reset their course progress', function () {
         ->whereBelongsTo($course)
         ->first();
 
+    $lessonXp = (int) config('rewards.lesson_completion_xp', 30);
     expect($enrollmentBeforeReset?->progress_percentage)->toBe(50);
-    expect($user->refresh()->points)->toBe(40);
+    expect($user->refresh()->points)->toBe($lessonXp);
 
     $this->actingAs($user)
         ->post(route('courses.reset', ['course' => $course->slug]))
@@ -243,7 +241,7 @@ test('course detail payload returns lessons ordered by position', function () {
 });
 
 test('challenge points are only awarded once per challenge', function () {
-    $user = User::factory()->create(['points' => 0]);
+    $user = User::factory()->create(['points' => 0, 'last_active_date' => now()->toDateString()]);
 
     $challenge = Challenge::factory()->create([
         'slug' => 'points-once',
@@ -263,7 +261,7 @@ test('challenge points are only awarded once per challenge', function () {
         ])
         ->assertRedirect();
 
-    expect($user->refresh()->points)->toBe(100);
+    expect($user->refresh()->points)->toBe((int) config('rewards.challenge_base_points'));
 
     expect(ChallengeSubmission::query()
         ->whereBelongsTo($user)
@@ -271,7 +269,7 @@ test('challenge points are only awarded once per challenge', function () {
         ->count())->toBe(2);
 });
 
-test('challenge index includes speed-round payload for quiz mode', function () {
+test('challenge index returns published challenges with metadata', function () {
     $user = User::factory()->create();
 
     Challenge::factory()->create([
@@ -303,11 +301,9 @@ test('challenge index includes speed-round payload for quiz mode', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('challenges/index')
-            ->has('speedRounds', 4)
-            ->where('speedRounds.0.timeLimitSeconds', 30)
-            ->where('speedRounds.0.options', fn ($options): bool => is_countable($options) && count($options) >= 2)
-            ->where('speedRounds.0.options.0.label', fn ($label): bool => is_string($label) && $label !== '')
-            ->where('speedRounds.0.options.0.value', fn ($value): bool => is_string($value) && $value !== ''),
+            ->has('challenges', 4)
+            ->where('challenges.0.title', fn ($title): bool => is_string($title) && $title !== '')
+            ->where('challenges.0.status', fn ($status): bool => in_array($status, ['upcoming', 'active', 'ended'], true)),
         );
 });
 
@@ -576,7 +572,7 @@ test('admin users can delete managed courses', function () {
 });
 
 test('quick challenge submissions return json and award points once', function () {
-    $user = User::factory()->create(['points' => 0]);
+    $user = User::factory()->create(['points' => 0, 'last_active_date' => now()->toDateString()]);
 
     $challenge = Challenge::factory()->create([
         'slug' => 'quick-json-points',
@@ -592,7 +588,7 @@ test('quick challenge submissions return json and award points once', function (
         ->assertOk()
         ->assertJsonPath('isCorrect', true)
         ->assertJsonPath('alreadySolved', false)
-        ->assertJsonPath('awardedPoints', 100)
+        ->assertJsonPath('awardedPoints', (int) config('rewards.challenge_base_points'))
         ->assertJsonPath('correctAnswer', 'hash');
 
     $this->actingAs($user)
@@ -605,7 +601,7 @@ test('quick challenge submissions return json and award points once', function (
         ->assertJsonPath('alreadySolved', true)
         ->assertJsonPath('awardedPoints', 0);
 
-    expect($user->refresh()->points)->toBe(100);
+    expect($user->refresh()->points)->toBe((int) config('rewards.challenge_base_points'));
 
     expect(ChallengeSubmission::query()
         ->whereBelongsTo($user)
@@ -659,16 +655,19 @@ test('leaderboard is sorted by points descending', function () {
     $viewer = User::factory()->create([
         'name' => 'Viewer',
         'points' => 200,
+        'last_active_date' => now()->toDateString(),
     ]);
 
     User::factory()->create([
         'name' => 'Top User',
         'points' => 320,
+        'last_active_date' => now()->toDateString(),
     ]);
 
     User::factory()->create([
         'name' => 'Third User',
         'points' => 120,
+        'last_active_date' => now()->toDateString(),
     ]);
 
     $this->actingAs($viewer)

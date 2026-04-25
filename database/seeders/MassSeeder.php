@@ -107,7 +107,6 @@ class MassSeeder extends Seeder
                     'description' => fake()->paragraph(),
                     'content' => fake()->paragraphs(5, true),
                     'position' => $l + 1,
-                    'xp_reward' => fake()->randomElement([10, 20, 30, 50]),
                 ]);
 
                 // 1-3 tasks per lesson
@@ -121,7 +120,6 @@ class MassSeeder extends Seeder
                         'type' => $taskType,
                         'minutes' => fake()->numberBetween(5, 30),
                         'sort_order' => $t + 1,
-                        'xp_reward' => fake()->randomElement([5, 10, 15, 20]),
                     ]);
 
                     // Quiz tasks get 3-5 questions
@@ -189,7 +187,7 @@ class MassSeeder extends Seeder
                 'is_published' => fake()->boolean(90),
                 'time_limit_seconds' => fake()->randomElement([20, 30, 60, 120, 300, 600]),
                 'questions_per_session' => fake()->randomElement([5, 10, 15]),
-                'max_points_per_question' => fake()->randomElement([100, 500, 1000]),
+                'max_points_per_question' => fake()->randomElement([5, 10, 20]),
             ]);
 
             // 5-10 questions per challenge

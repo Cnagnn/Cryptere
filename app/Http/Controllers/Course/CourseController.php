@@ -140,7 +140,6 @@ class CourseController extends Controller
                             : null,
                     ])->values()->all()
                     : ($isAdmin ? $this->extractLegacyTaskPayloads($lesson->content) : []),
-                'xpReward' => $lesson->xp_reward,
                 'isCompleted' => $isCompleted,
                 'isUnlocked' => $isUnlocked,
             ];

@@ -5,7 +5,6 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
-    Flame,
     Lock,
     Maximize2,
     Minimize2,
@@ -118,7 +117,6 @@ type ServerLesson = {
     position: number;
     content: string;
     tasks: ServerTask[];
-    xpReward: number;
     isCompleted: boolean;
     isUnlocked: boolean;
 };
@@ -228,18 +226,68 @@ export default function CourseShow({
             .filter((lesson) => lesson.isCompleted)
             .map((lesson) => lesson.id),
     );
+    // Restore selected lesson/task from URL hash on initial load
+    const initialFromHash = useMemo(() => {
+        const hash = window.location.hash.slice(1);
+        const params = new URLSearchParams(hash);
+        const lessonId = params.get('lesson');
+        const taskId = params.get('task');
+
+        return {
+            lessonId: lessonId ? Number(lessonId) : null,
+            taskId: taskId ? Number(taskId) : null,
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const getInitialLessonId = () => {
+        if (initialFromHash.lessonId !== null) {
+            const exists = mappedInitialLessons.some(
+                (l) => l.id === initialFromHash.lessonId,
+            );
+            if (exists) return initialFromHash.lessonId;
+        }
+
+        return mappedInitialLessons[0]?.id ?? null;
+    };
+
+    const getInitialTaskId = (lessonId: number | null) => {
+        if (lessonId !== null && initialFromHash.taskId !== null) {
+            const lesson = mappedInitialLessons.find((l) => l.id === lessonId);
+            const exists = lesson?.tasks.some(
+                (t) => t.id === initialFromHash.taskId,
+            );
+            if (exists) return initialFromHash.taskId;
+        }
+
+        const lesson = mappedInitialLessons.find((l) => l.id === lessonId);
+
+        return lesson?.tasks[0]?.id ?? null;
+    };
+
+    const initLessonId = getInitialLessonId();
+
     const [selectedLessonId, setSelectedLessonId] = useState<number | null>(
-        mappedInitialLessons[0]?.id ?? null,
+        initLessonId,
     );
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(
-        mappedInitialLessons[0]?.tasks[0]?.id ?? null,
+        getInitialTaskId(initLessonId),
     );
 
     const [notice, setNotice] = useState<string | null>(null);
 
     const [expandedTopicValue, setExpandedTopicValue] = useState<
         string | undefined
-    >(mappedInitialLessons[0] ? String(mappedInitialLessons[0].id) : undefined);
+    >(initLessonId ? String(initLessonId) : undefined);
+
+    // Sync URL hash when selected lesson/task changes
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (selectedLessonId !== null) params.set('lesson', String(selectedLessonId));
+        if (selectedTaskId !== null) params.set('task', String(selectedTaskId));
+        const hash = params.toString();
+        window.history.replaceState(null, '', `#${hash}`);
+    }, [selectedLessonId, selectedTaskId]);
 
     const resolvedSelectedLessonId = useMemo(() => {
         if (lessons.length === 0) {
@@ -529,13 +577,6 @@ export default function CourseShow({
                                     />
                                 </div>
 
-                                {auth.user.current_streak > 0 ? (
-                                    <Badge variant="secondary" className="w-fit gap-1.5">
-                                        <Flame className="text-orange-500" data-icon />
-                                        {auth.user.current_streak} day streak
-                                    </Badge>
-                                ) : null}
-
                                 {!isAdmin && !isEnrolled ? (
                                     <Button
                                         type="button"
@@ -687,26 +728,25 @@ export default function CourseShow({
                                 )}
                             </CardContent>
                         </Card>
+
+                        {isCourseCompleted ? (
+                            <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-3 dark:bg-emerald-950/20">
+                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+                                    <Trophy className="size-4 text-amber-500" />
+                                </div>
+                                <div className="flex flex-col gap-0">
+                                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                                        Course Completed! 🎉
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        You&apos;ve finished all lessons.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
 
                     <div className="flex flex-col gap-4">
-                        {isCourseCompleted ? (
-                            <Card className="border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20">
-                                <CardContent className="flex items-center gap-4 py-4">
-                                    <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-                                        <Trophy className="size-6 text-amber-500" />
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                        <h3 className="font-semibold text-emerald-700 dark:text-emerald-400">
-                                            Course Completed! 🎉
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Congratulations! You&apos;ve finished all lessons in this course.
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ) : null}
 
                         <Card className="gap-0">
                             <CardContent className="flex flex-col gap-4">
@@ -718,12 +758,6 @@ export default function CourseShow({
                                         <p className="text-sm text-muted-foreground">
                                             {selectedTask.description}
                                         </p>
-                                        {selectedLesson?.summary &&
-                                            selectedLesson.summary !== 'No summary available yet.' ? (
-                                            <p className="mt-1 line-clamp-3 text-xs text-muted-foreground/70">
-                                                {selectedLesson.summary}
-                                            </p>
-                                        ) : null}
                                     </div>
                                 ) : null}
 
@@ -833,40 +867,39 @@ export default function CourseShow({
                                 )}
 
 
+                                {/* Task navigation bar */}
+                                {selectedTask ? (
+                                    <div className="flex items-center justify-between">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={!navContext.prevTask}
+                                            onClick={handlePreviousTask}
+                                            className="gap-1"
+                                        >
+                                            <ChevronLeft data-icon="inline-start" />
+                                            <span className="hidden sm:inline">
+                                                {navContext.prevTask?.title ?? 'Previous'}
+                                            </span>
+                                            <span className="sm:hidden">Previous</span>
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={!navContext.nextTask}
+                                            onClick={handleNextTask}
+                                            className="gap-1"
+                                        >
+                                            <span className="hidden sm:inline">
+                                                {navContext.nextTask?.title ?? 'Next'}
+                                            </span>
+                                            <span className="sm:hidden">Next</span>
+                                            <ChevronRight data-icon="inline-end" />
+                                        </Button>
+                                    </div>
+                                ) : null}
                             </CardContent>
                         </Card>
-
-                        {/* Task navigation bar */}
-                        {selectedTask ? (
-                            <div className="flex items-center justify-between">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={!navContext.prevTask}
-                                    onClick={handlePreviousTask}
-                                    className="gap-1"
-                                >
-                                    <ChevronLeft data-icon="inline-start" />
-                                    <span className="hidden sm:inline">
-                                        {navContext.prevTask?.title ?? 'Previous'}
-                                    </span>
-                                    <span className="sm:hidden">Previous</span>
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={!navContext.nextTask}
-                                    onClick={handleNextTask}
-                                    className="gap-1"
-                                >
-                                    <span className="hidden sm:inline">
-                                        {navContext.nextTask?.title ?? 'Next'}
-                                    </span>
-                                    <span className="sm:hidden">Next</span>
-                                    <ChevronRight data-icon="inline-end" />
-                                </Button>
-                            </div>
-                        ) : null}
                     </div>
                 </section>
             </div>

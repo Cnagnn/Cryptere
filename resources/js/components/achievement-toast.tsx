@@ -13,7 +13,6 @@ type BadgeFlash = {
 
 type LevelUpFlash = {
     level: number;
-    name: string;
 };
 
 const tierColors: Record<string, string> = {
@@ -54,7 +53,7 @@ export function AchievementToast() {
 
         if (flash?.levelUp) {
             toast.success('Level Up!', {
-                description: `You reached Level ${flash.levelUp.level} — ${flash.levelUp.name}`,
+                description: `You reached Level ${flash.levelUp.level}!`,
                 icon: <Shield className="size-5 text-primary" />,
                 duration: 6000,
             });

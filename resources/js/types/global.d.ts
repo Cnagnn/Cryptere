@@ -10,7 +10,6 @@ type FlashBadge = {
 
 type FlashLevelUp = {
     level: number;
-    name: string;
 };
 
 type FlashToast = {

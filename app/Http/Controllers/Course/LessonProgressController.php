@@ -86,7 +86,7 @@ class LessonProgressController extends Controller
             $progress->save();
 
             if (! $alreadyCompleted) {
-                $this->xpService->awardXpAndPoints($user, $lesson->xp_reward ?? 0);
+                $this->xpService->awardXpAndPoints($user, (int) config('rewards.lesson_completion_xp', 30));
             }
 
             $lessonIds = Lesson::query()->whereBelongsTo($course)->pluck('id');

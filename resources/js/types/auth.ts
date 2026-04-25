@@ -1,6 +1,5 @@
 export type UserLevel = {
     level: number;
-    name: string;
     current_xp: number;
     next_level_xp: number | null;
     progress: number;

@@ -14,14 +14,15 @@ test.describe('Smoke Tests — Public Pages', () => {
 
     test('login page loads', async ({ page }) => {
         await page.goto('/login');
-        await expect(page.getByRole('heading', { name: /log in/i })).toBeVisible();
-        await expect(page.getByLabel(/email/i)).toBeVisible();
-        await expect(page.getByLabel(/password/i)).toBeVisible();
+        await expect(page.getByLabel('Email or Username')).toBeVisible();
+        await expect(page.locator('#password')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible();
     });
 
     test('register page loads', async ({ page }) => {
         await page.goto('/register');
-        await expect(page.getByRole('heading', { name: /register|sign up|create/i })).toBeVisible();
+        await expect(page.getByLabel('Username')).toBeVisible();
+        await expect(page.getByLabel('Email')).toBeVisible();
     });
 });
 

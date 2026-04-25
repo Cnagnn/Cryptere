@@ -295,9 +295,7 @@ test('dashboard points history reflects lesson and challenge points', function (
 
     $course = Course::factory()->create(['is_published' => true]);
 
-    $lesson = Lesson::factory()->for($course)->create([
-        'xp_reward' => 50,
-    ]);
+    $lesson = Lesson::factory()->for($course)->create();
 
     LessonProgress::factory()->for($user)->for($lesson)->create([
         'completed_at' => now()->subDays(5),
@@ -316,8 +314,8 @@ test('dashboard points history reflects lesson and challenge points', function (
     $response->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->has('academy.earningsHistory.monthly', 12)
-            ->where('academy.earningsHistory.monthly.11.points', 80) // 50 lesson + 30 challenge
-            ->where('academy.earningsHistory.monthly.11.xp', 50) // lesson XP only, no challenge
+            ->where('academy.earningsHistory.monthly.11.points', (int) config('rewards.lesson_completion_xp') + 30) // lesson_completion_xp + 30 challenge
+            ->where('academy.earningsHistory.monthly.11.xp', (int) config('rewards.lesson_completion_xp')) // lesson XP only, no challenge
             ->has('academy.earningsHistory.weekly', 7)
             ->has('academy.earningsHistory.deltaFromPrevious')
         );

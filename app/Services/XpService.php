@@ -14,8 +14,9 @@ class XpService
     ) {}
 
     /**
-     * Award XP and points for completing a lesson task.
+     * Award XP and points for completing a lesson task (quiz).
      *
+     * Uses the centralized config value instead of per-task xp_reward.
      * XP is boosted by streak multiplier. Points use the raw base amount
      * with level bonus only — streak does NOT inflate points.
      *
@@ -23,7 +24,7 @@ class XpService
      */
     public function awardTaskXp(User $user, LessonTask $task): array
     {
-        return $this->awardXpAndPoints($user, $task->xp_reward ?? 0);
+        return $this->awardXpAndPoints($user, (int) config('rewards.quiz_task_xp', 20));
     }
 
     /**

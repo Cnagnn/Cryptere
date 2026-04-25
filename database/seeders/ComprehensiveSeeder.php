@@ -208,22 +208,22 @@ class ComprehensiveSeeder extends Seeder
                 'path_position' => 1,
                 'prerequisite_slug' => null,
                 'lessons' => [
-                    ['slug' => 'why-cryptography-matters', 'title' => 'Why Cryptography Matters', 'description' => 'Understand why data protection is essential in the digital age.', 'xp_reward' => 25, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: Why Data Needs Protection', 'minutes' => 12, 'video_url' => 'https://youtu.be/GSIDS_lvRv4', 'xp_reward' => 10],
-                        ['type' => 'quiz', 'title' => 'Quiz: Security Goals', 'minutes' => 8, 'xp_reward' => 15, 'questions' => [
+                    ['slug' => 'why-cryptography-matters', 'title' => 'Why Cryptography Matters', 'description' => 'Understand why data protection is essential in the digital age.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: Why Data Needs Protection', 'minutes' => 12, 'video_url' => 'https://youtu.be/GSIDS_lvRv4'],
+                        ['type' => 'quiz', 'title' => 'Quiz: Security Goals', 'minutes' => 8, 'questions' => [
                             ['question' => 'Which of the following is NOT part of the CIA triad?', 'options' => ['Confidentiality', 'Integrity', 'Authentication', 'Availability'], 'correct_option' => 2, 'explanation' => 'The CIA triad consists of Confidentiality, Integrity, and Availability.'],
                             ['question' => 'What does encryption primarily protect?', 'options' => ['Availability', 'Confidentiality', 'Integrity', 'Non-repudiation'], 'correct_option' => 1, 'explanation' => 'Encryption ensures data confidentiality by making it unreadable without the key.'],
                         ]],
                     ]],
-                    ['slug' => 'confidentiality-vs-integrity', 'title' => 'Confidentiality vs Integrity', 'description' => 'Learn the difference between keeping data secret and keeping it accurate.', 'xp_reward' => 30, 'tasks' => [
-                        ['type' => 'read', 'title' => 'Reading: CIA Triad Notes', 'minutes' => 7, 'document_name' => 'cia-triad-notes.pdf', 'conversion_status' => 'done', 'xp_reward' => 15],
-                        ['type' => 'quiz', 'title' => 'Quiz: CIA Triad', 'minutes' => 5, 'xp_reward' => 15, 'questions' => [
+                    ['slug' => 'confidentiality-vs-integrity', 'title' => 'Confidentiality vs Integrity', 'description' => 'Learn the difference between keeping data secret and keeping it accurate.', 'tasks' => [
+                        ['type' => 'read', 'title' => 'Reading: CIA Triad Notes', 'minutes' => 7, 'document_name' => 'cia-triad-notes.pdf', 'conversion_status' => 'done'],
+                        ['type' => 'quiz', 'title' => 'Quiz: CIA Triad', 'minutes' => 5, 'questions' => [
                             ['question' => 'Integrity ensures data has not been...', 'options' => ['Encrypted', 'Tampered with', 'Compressed', 'Backed up'], 'correct_option' => 1, 'explanation' => 'Integrity means data has not been altered or tampered with.'],
                         ]],
                     ]],
-                    ['slug' => 'threat-modeling-basics', 'title' => 'Threat Modeling Basics', 'description' => 'Identify and categorize potential security threats.', 'xp_reward' => 40, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: Basic Threat Model', 'minutes' => 10, 'video_url' => 'https://youtu.be/2g2fV5G9R4w', 'xp_reward' => 20],
-                        ['type' => 'read', 'title' => 'Reading: STRIDE Framework', 'minutes' => 8, 'xp_reward' => 20],
+                    ['slug' => 'threat-modeling-basics', 'title' => 'Threat Modeling Basics', 'description' => 'Identify and categorize potential security threats.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: Basic Threat Model', 'minutes' => 10, 'video_url' => 'https://youtu.be/2g2fV5G9R4w'],
+                        ['type' => 'read', 'title' => 'Reading: STRIDE Framework', 'minutes' => 8],
                     ]],
                 ],
             ],
@@ -238,20 +238,20 @@ class ComprehensiveSeeder extends Seeder
                 'path_position' => 2,
                 'prerequisite_slug' => 'crypto-foundations',
                 'lessons' => [
-                    ['slug' => 'caesar-cipher-warmup', 'title' => 'Caesar Cipher Warmup', 'description' => 'Learn the simplest substitution cipher and its weaknesses.', 'xp_reward' => 28, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: Caesar Cipher in Practice', 'minutes' => 10, 'video_url' => 'https://youtu.be/sMOZf4GN3oc', 'xp_reward' => 12],
-                        ['type' => 'quiz', 'title' => 'Quiz: Caesar Basics', 'minutes' => 6, 'xp_reward' => 16, 'questions' => [
+                    ['slug' => 'caesar-cipher-warmup', 'title' => 'Caesar Cipher Warmup', 'description' => 'Learn the simplest substitution cipher and its weaknesses.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: Caesar Cipher in Practice', 'minutes' => 10, 'video_url' => 'https://youtu.be/sMOZf4GN3oc'],
+                        ['type' => 'quiz', 'title' => 'Quiz: Caesar Basics', 'minutes' => 6, 'questions' => [
                             ['question' => 'How many possible shifts does a Caesar cipher have?', 'options' => ['24', '25', '26', '52'], 'correct_option' => 1, 'explanation' => 'There are 25 non-trivial shifts (shift 0 is identity).'],
                             ['question' => 'What attack easily breaks a Caesar cipher?', 'options' => ['Brute force', 'Man-in-the-middle', 'SQL injection', 'Buffer overflow'], 'correct_option' => 0, 'explanation' => 'With only 25 possible keys, brute force is trivial.'],
                         ]],
                     ]],
-                    ['slug' => 'vigenere-with-repeating-keys', 'title' => 'Vigenere with Repeating Keys', 'description' => 'Explore polyalphabetic substitution and key length estimation.', 'xp_reward' => 42, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: Key Length Estimation', 'minutes' => 12, 'video_url' => 'https://youtu.be/LaWp_Kq0cKs', 'xp_reward' => 20],
-                        ['type' => 'read', 'title' => 'Reading: Kasiski Examination', 'minutes' => 10, 'xp_reward' => 22],
+                    ['slug' => 'vigenere-with-repeating-keys', 'title' => 'Vigenere with Repeating Keys', 'description' => 'Explore polyalphabetic substitution and key length estimation.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: Key Length Estimation', 'minutes' => 12, 'video_url' => 'https://youtu.be/LaWp_Kq0cKs'],
+                        ['type' => 'read', 'title' => 'Reading: Kasiski Examination', 'minutes' => 10],
                     ]],
-                    ['slug' => 'frequency-analysis', 'title' => 'Frequency Analysis', 'description' => 'Use letter frequency to crack monoalphabetic ciphers.', 'xp_reward' => 35, 'tasks' => [
-                        ['type' => 'read', 'title' => 'Reading: English Letter Frequencies', 'minutes' => 8, 'xp_reward' => 15],
-                        ['type' => 'quiz', 'title' => 'Quiz: Frequency Analysis', 'minutes' => 7, 'xp_reward' => 20, 'questions' => [
+                    ['slug' => 'frequency-analysis', 'title' => 'Frequency Analysis', 'description' => 'Use letter frequency to crack monoalphabetic ciphers.', 'tasks' => [
+                        ['type' => 'read', 'title' => 'Reading: English Letter Frequencies', 'minutes' => 8],
+                        ['type' => 'quiz', 'title' => 'Quiz: Frequency Analysis', 'minutes' => 7, 'questions' => [
                             ['question' => 'What is the most common letter in English?', 'options' => ['T', 'A', 'E', 'S'], 'correct_option' => 2, 'explanation' => 'E is the most frequently used letter in English.'],
                         ]],
                     ]],
@@ -270,22 +270,22 @@ class ComprehensiveSeeder extends Seeder
                 'path_position' => 3,
                 'prerequisite_slug' => 'applied-classical-ciphers',
                 'lessons' => [
-                    ['slug' => 'hash-functions-and-digest-properties', 'title' => 'Hash Functions and Digest Properties', 'description' => 'Understand one-way functions, collision resistance, and the avalanche effect.', 'xp_reward' => 35, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: Hash Properties Explained', 'minutes' => 12, 'video_url' => 'https://youtu.be/b4b8ktEV4Bg', 'xp_reward' => 15],
-                        ['type' => 'quiz', 'title' => 'Quiz: Hash Properties', 'minutes' => 8, 'xp_reward' => 20, 'questions' => [
+                    ['slug' => 'hash-functions-and-digest-properties', 'title' => 'Hash Functions and Digest Properties', 'description' => 'Understand one-way functions, collision resistance, and the avalanche effect.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: Hash Properties Explained', 'minutes' => 12, 'video_url' => 'https://youtu.be/b4b8ktEV4Bg'],
+                        ['type' => 'quiz', 'title' => 'Quiz: Hash Properties', 'minutes' => 8, 'questions' => [
                             ['question' => 'What is the output size of SHA-256?', 'options' => ['128 bits', '160 bits', '256 bits', '512 bits'], 'correct_option' => 2, 'explanation' => 'SHA-256 produces a 256-bit digest.'],
                             ['question' => 'Which property means finding two inputs with the same hash is hard?', 'options' => ['Preimage resistance', 'Collision resistance', 'Avalanche effect', 'Key derivation'], 'correct_option' => 1, 'explanation' => 'Collision resistance prevents finding two inputs with the same hash.'],
                         ]],
                     ]],
-                    ['slug' => 'symmetric-vs-asymmetric-encryption', 'title' => 'Symmetric vs Asymmetric Encryption', 'description' => 'Compare AES and RSA, and learn when to use each.', 'xp_reward' => 48, 'tasks' => [
-                        ['type' => 'quiz', 'title' => 'Quiz: Encryption Strategy', 'minutes' => 9, 'xp_reward' => 25, 'questions' => [
+                    ['slug' => 'symmetric-vs-asymmetric-encryption', 'title' => 'Symmetric vs Asymmetric Encryption', 'description' => 'Compare AES and RSA, and learn when to use each.', 'tasks' => [
+                        ['type' => 'quiz', 'title' => 'Quiz: Encryption Strategy', 'minutes' => 9, 'questions' => [
                             ['question' => 'Which algorithm is symmetric?', 'options' => ['RSA', 'AES', 'ECC', 'DSA'], 'correct_option' => 1, 'explanation' => 'AES is a symmetric encryption algorithm.'],
                             ['question' => 'Asymmetric encryption uses how many keys?', 'options' => ['1', '2', '3', '4'], 'correct_option' => 1, 'explanation' => 'Asymmetric encryption uses a public and private key pair.'],
                         ]],
                     ]],
-                    ['slug' => 'digital-signatures-intro', 'title' => 'Digital Signatures Introduction', 'description' => 'Learn how digital signatures provide authentication and non-repudiation.', 'xp_reward' => 50, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: How Digital Signatures Work', 'minutes' => 14, 'xp_reward' => 25],
-                        ['type' => 'read', 'title' => 'Reading: RSA vs ECDSA Signatures', 'minutes' => 10, 'xp_reward' => 25],
+                    ['slug' => 'digital-signatures-intro', 'title' => 'Digital Signatures Introduction', 'description' => 'Learn how digital signatures provide authentication and non-repudiation.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: How Digital Signatures Work', 'minutes' => 14],
+                        ['type' => 'read', 'title' => 'Reading: RSA vs ECDSA Signatures', 'minutes' => 10],
                     ]],
                 ],
             ],
@@ -300,19 +300,19 @@ class ComprehensiveSeeder extends Seeder
                 'path_position' => 4,
                 'prerequisite_slug' => 'modern-crypto-principles',
                 'lessons' => [
-                    ['slug' => 'merkle-trees', 'title' => 'Merkle Trees', 'description' => 'Learn how hash trees verify data integrity in distributed systems.', 'xp_reward' => 40, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: Merkle Trees Explained', 'minutes' => 11, 'xp_reward' => 20],
-                        ['type' => 'quiz', 'title' => 'Quiz: Merkle Trees', 'minutes' => 7, 'xp_reward' => 20, 'questions' => [
+                    ['slug' => 'merkle-trees', 'title' => 'Merkle Trees', 'description' => 'Learn how hash trees verify data integrity in distributed systems.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: Merkle Trees Explained', 'minutes' => 11],
+                        ['type' => 'quiz', 'title' => 'Quiz: Merkle Trees', 'minutes' => 7, 'questions' => [
                             ['question' => 'What is the root of a Merkle tree?', 'options' => ['A leaf hash', 'The combined hash of all data', 'A random nonce', 'The block header'], 'correct_option' => 1, 'explanation' => 'The Merkle root is the hash that summarizes all transactions.'],
                         ]],
                     ]],
-                    ['slug' => 'proof-of-work', 'title' => 'Proof of Work', 'description' => 'Understand the mining puzzle and its role in consensus.', 'xp_reward' => 45, 'tasks' => [
-                        ['type' => 'read', 'title' => 'Reading: PoW vs PoS', 'minutes' => 12, 'xp_reward' => 20],
-                        ['type' => 'video', 'title' => 'Video: Mining a Block', 'minutes' => 15, 'xp_reward' => 25],
+                    ['slug' => 'proof-of-work', 'title' => 'Proof of Work', 'description' => 'Understand the mining puzzle and its role in consensus.', 'tasks' => [
+                        ['type' => 'read', 'title' => 'Reading: PoW vs PoS', 'minutes' => 12],
+                        ['type' => 'video', 'title' => 'Video: Mining a Block', 'minutes' => 15],
                     ]],
-                    ['slug' => 'elliptic-curve-basics', 'title' => 'Elliptic Curve Basics', 'description' => 'Introduction to ECC and its use in Bitcoin and Ethereum.', 'xp_reward' => 55, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: ECC for Beginners', 'minutes' => 16, 'xp_reward' => 25],
-                        ['type' => 'quiz', 'title' => 'Quiz: ECC Fundamentals', 'minutes' => 8, 'xp_reward' => 30, 'questions' => [
+                    ['slug' => 'elliptic-curve-basics', 'title' => 'Elliptic Curve Basics', 'description' => 'Introduction to ECC and its use in Bitcoin and Ethereum.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: ECC for Beginners', 'minutes' => 16],
+                        ['type' => 'quiz', 'title' => 'Quiz: ECC Fundamentals', 'minutes' => 8, 'questions' => [
                             ['question' => 'Which curve does Bitcoin use?', 'options' => ['secp256k1', 'Curve25519', 'P-256', 'Ed25519'], 'correct_option' => 0, 'explanation' => 'Bitcoin uses the secp256k1 elliptic curve.'],
                             ['question' => 'ECC provides equivalent security to RSA with...', 'options' => ['Larger keys', 'Smaller keys', 'Same size keys', 'No keys'], 'correct_option' => 1, 'explanation' => 'ECC achieves equivalent security with much smaller key sizes.'],
                         ]],
@@ -332,20 +332,20 @@ class ComprehensiveSeeder extends Seeder
                 'path_position' => 5,
                 'prerequisite_slug' => 'blockchain-cryptography',
                 'lessons' => [
-                    ['slug' => 'tls-handshake', 'title' => 'TLS Handshake Deep Dive', 'description' => 'Step through the TLS 1.3 handshake process.', 'xp_reward' => 60, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: TLS 1.3 Handshake', 'minutes' => 18, 'xp_reward' => 30],
-                        ['type' => 'read', 'title' => 'Reading: Certificate Chains', 'minutes' => 12, 'xp_reward' => 30],
+                    ['slug' => 'tls-handshake', 'title' => 'TLS Handshake Deep Dive', 'description' => 'Step through the TLS 1.3 handshake process.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: TLS 1.3 Handshake', 'minutes' => 18],
+                        ['type' => 'read', 'title' => 'Reading: Certificate Chains', 'minutes' => 12],
                     ]],
-                    ['slug' => 'certificate-authorities', 'title' => 'Certificate Authorities', 'description' => 'How CAs issue, revoke, and manage digital certificates.', 'xp_reward' => 50, 'tasks' => [
-                        ['type' => 'read', 'title' => 'Reading: X.509 Certificates', 'minutes' => 10, 'xp_reward' => 25],
-                        ['type' => 'quiz', 'title' => 'Quiz: PKI & CAs', 'minutes' => 8, 'xp_reward' => 25, 'questions' => [
+                    ['slug' => 'certificate-authorities', 'title' => 'Certificate Authorities', 'description' => 'How CAs issue, revoke, and manage digital certificates.', 'tasks' => [
+                        ['type' => 'read', 'title' => 'Reading: X.509 Certificates', 'minutes' => 10],
+                        ['type' => 'quiz', 'title' => 'Quiz: PKI & CAs', 'minutes' => 8, 'questions' => [
                             ['question' => 'What does a CA sign?', 'options' => ['Private keys', 'Certificates', 'Passwords', 'Tokens'], 'correct_option' => 1, 'explanation' => 'A Certificate Authority signs digital certificates.'],
                             ['question' => 'What is a CRL?', 'options' => ['Certificate Revocation List', 'Crypto Resource Library', 'Central Root Ledger', 'Cipher Rotation Log'], 'correct_option' => 0, 'explanation' => 'CRL is a list of revoked certificates published by the CA.'],
                         ]],
                     ]],
-                    ['slug' => 'zero-knowledge-proofs', 'title' => 'Zero Knowledge Proofs', 'description' => 'Prove knowledge without revealing the secret itself.', 'xp_reward' => 70, 'tasks' => [
-                        ['type' => 'video', 'title' => 'Video: ZKP Explained Simply', 'minutes' => 20, 'xp_reward' => 35],
-                        ['type' => 'quiz', 'title' => 'Quiz: ZKP Concepts', 'minutes' => 10, 'xp_reward' => 35, 'questions' => [
+                    ['slug' => 'zero-knowledge-proofs', 'title' => 'Zero Knowledge Proofs', 'description' => 'Prove knowledge without revealing the secret itself.', 'tasks' => [
+                        ['type' => 'video', 'title' => 'Video: ZKP Explained Simply', 'minutes' => 20],
+                        ['type' => 'quiz', 'title' => 'Quiz: ZKP Concepts', 'minutes' => 10, 'questions' => [
                             ['question' => 'In a ZKP, the prover reveals...', 'options' => ['The secret', 'Nothing about the secret', 'Half the secret', 'An encrypted secret'], 'correct_option' => 1, 'explanation' => 'Zero knowledge means the verifier learns nothing beyond the validity of the statement.'],
                         ]],
                     ]],
@@ -386,7 +386,6 @@ class ComprehensiveSeeder extends Seeder
                         'description' => $lessonBp['description'] ?? null,
                         'content' => ($lessonBp['description'] ?? $lessonBp['title']).' — detailed lesson content.',
                         'position' => $li + 1,
-                        'xp_reward' => $lessonBp['xp_reward'],
                     ],
                 );
 
@@ -400,7 +399,6 @@ class ComprehensiveSeeder extends Seeder
                             'video_url' => $taskBp['video_url'] ?? null,
                             'document_name' => $taskBp['document_name'] ?? null,
                             'conversion_status' => $taskBp['conversion_status'] ?? null,
-                            'xp_reward' => $taskBp['xp_reward'] ?? fake()->numberBetween(10, 30),
                             'published_at' => now()->subDays(fake()->numberBetween(1, 30)),
                         ],
                     );
@@ -455,7 +453,7 @@ class ComprehensiveSeeder extends Seeder
                 'time_end' => now()->addDays(20),
                 'time_limit_seconds' => 15,
                 'questions_per_session' => 5,
-                'max_points_per_question' => 1000,
+                'max_points_per_question' => 10,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'What is the Caesar cipher shift for FUBSWHU → CRYPTER?', 'options' => ['1', '2', '3', '4'], 'correct_answer' => '3', 'explanation' => 'Each letter is shifted 3 positions backward.'],
                     ['type' => 'true_false', 'question' => 'The Caesar cipher is a substitution cipher.', 'correct_answer' => 'True', 'explanation' => 'It substitutes each letter with another letter a fixed number of positions away.'],
@@ -480,7 +478,7 @@ class ComprehensiveSeeder extends Seeder
                 'time_end' => now()->addDays(15),
                 'time_limit_seconds' => 20,
                 'questions_per_session' => 5,
-                'max_points_per_question' => 1000,
+                'max_points_per_question' => 10,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'The Vigenere cipher is classified as which type?', 'options' => ['Monoalphabetic', 'Polyalphabetic', 'Transposition', 'Stream'], 'correct_answer' => 'Polyalphabetic', 'explanation' => 'It uses multiple substitution alphabets.'],
                     ['type' => 'true_false', 'question' => 'The Vigenere cipher uses a keyword to determine shifts.', 'correct_answer' => 'True', 'explanation' => 'Each letter of the keyword determines the shift.'],
@@ -503,7 +501,7 @@ class ComprehensiveSeeder extends Seeder
                 'time_end' => now()->addDays(30),
                 'time_limit_seconds' => 20,
                 'questions_per_session' => 5,
-                'max_points_per_question' => 1000,
+                'max_points_per_question' => 10,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'What is the output size of SHA-256?', 'options' => ['128 bits', '160 bits', '256 bits', '512 bits'], 'correct_answer' => '256 bits', 'explanation' => 'SHA-256 produces a 256-bit digest.'],
                     ['type' => 'true_false', 'question' => 'SHA-256 is a member of the SHA-2 family.', 'correct_answer' => 'True', 'explanation' => 'SHA-2 includes SHA-224, SHA-256, SHA-384, and SHA-512.'],
@@ -526,7 +524,7 @@ class ComprehensiveSeeder extends Seeder
                 'time_end' => now()->addDays(40),
                 'time_limit_seconds' => 25,
                 'questions_per_session' => 5,
-                'max_points_per_question' => 1000,
+                'max_points_per_question' => 10,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'What is the recommended RSA padding scheme for encryption?', 'options' => ['PKCS#1 v1.5', 'OAEP', 'PSS', 'No padding'], 'correct_answer' => 'OAEP', 'explanation' => 'OAEP is recommended for RSA encryption.'],
                     ['type' => 'true_false', 'question' => 'RSA is an asymmetric encryption algorithm.', 'correct_answer' => 'True', 'explanation' => 'RSA uses a public/private key pair.'],
@@ -550,7 +548,7 @@ class ComprehensiveSeeder extends Seeder
                 'time_end' => now()->endOfDay(),
                 'time_limit_seconds' => 30,
                 'questions_per_session' => 3,
-                'max_points_per_question' => 500,
+                'max_points_per_question' => 5,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'What is the process of converting plaintext to ciphertext?', 'options' => ['Decryption', 'Encryption', 'Hashing', 'Encoding'], 'correct_answer' => 'Encryption', 'explanation' => 'Encryption converts plaintext to ciphertext using a key.'],
                     ['type' => 'true_false', 'question' => 'AES is a symmetric encryption algorithm.', 'correct_answer' => 'True', 'explanation' => 'AES uses the same key for encryption and decryption.'],
@@ -1000,10 +998,11 @@ class ComprehensiveSeeder extends Seeder
         $this->command->info('Recalculating user points...');
 
         foreach ($users as $user) {
-            $lessonXp = (int) $user->lessonProgress()
+            $completedCount = (int) $user->lessonProgress()
                 ->whereNotNull('completed_at')
-                ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-                ->sum('lessons.xp_reward');
+                ->count();
+
+            $lessonXp = $completedCount * (int) config('rewards.lesson_completion_xp', 30);
 
             $challengeScore = (int) $user->challengeSubmissions()
                 ->where('is_correct', true)

@@ -64,7 +64,6 @@ class LeaderboardController extends Controller
                     'avatar' => $leader->avatar,
                     'points' => $timeframe === 'all' ? $leader->points : (int) ($leader->period_points ?? 0),
                     'level' => $levelInfo['level'],
-                    'levelName' => $levelInfo['name'],
                     'longestStreak' => $leader->longest_streak ?? 0,
                     'currentStreak' => $leader->current_streak ?? 0,
                     'rankChange' => $this->computeRankChange($rank, $previousRank),
@@ -86,7 +85,7 @@ class LeaderboardController extends Controller
 
         $currentUserRank = $currentUserPoints > 0
             ? ($timeframe === 'all'
-                ? (User::query()->where('points', '>', $currentUserPoints)->count() + 1)
+                ? $this->getAllTimeRank($currentUser)
                 : $this->getUserTimeframeRank($currentUser, $timeframe))
             : 0;
 
@@ -135,9 +134,9 @@ class LeaderboardController extends Controller
             ->where('submitted_at', '>=', $since)
             ->groupBy('user_id');
 
+        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
         $lessonPoints = DB::table('lesson_progress')
-            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-            ->select('lesson_progress.user_id', DB::raw('SUM(COALESCE(lessons.xp_reward, 0)) as total'))
+            ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
             ->whereNotNull('lesson_progress.completed_at')
             ->where('lesson_progress.completed_at', '>=', $since)
             ->groupBy('lesson_progress.user_id');
@@ -186,14 +185,27 @@ class LeaderboardController extends Controller
             ->where('submitted_at', '>=', $since)
             ->sum(DB::raw('score + COALESCE(streak_bonus, 0)'));
 
-        $lessonPoints = (int) DB::table('lesson_progress')
-            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
+        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
+        $completedLessonCount = (int) DB::table('lesson_progress')
             ->where('lesson_progress.user_id', $user->id)
             ->whereNotNull('lesson_progress.completed_at')
             ->where('lesson_progress.completed_at', '>=', $since)
-            ->sum('lessons.xp_reward');
+            ->count();
+        $lessonPoints = $completedLessonCount * $lessonXpPerLesson;
 
         return $challengePoints + $lessonPoints;
+    }
+
+    /**
+     * Get a user's all-time rank (ordered by points desc).
+     */
+    private function getAllTimeRank(User $user): int
+    {
+        $higherCount = User::query()
+            ->where('points', '>', $user->points)
+            ->count();
+
+        return $higherCount + 1;
     }
 
     /**
@@ -246,9 +258,9 @@ class LeaderboardController extends Controller
                 ->where('submitted_at', '>=', $since)
                 ->groupBy('user_id');
 
+            $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
             $lessonPoints = DB::table('lesson_progress')
-                ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-                ->select('lesson_progress.user_id', DB::raw('SUM(COALESCE(lessons.xp_reward, 0)) as total'))
+                ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
                 ->whereNotNull('lesson_progress.completed_at')
                 ->where('lesson_progress.completed_at', '>=', $since)
                 ->groupBy('lesson_progress.user_id');
@@ -277,7 +289,6 @@ class LeaderboardController extends Controller
                 'avatar' => $user->avatar,
                 'points' => $timeframe === 'all' ? $user->points : (int) ($user->period_points ?? 0),
                 'level' => $levelInfo['level'],
-                'levelName' => $levelInfo['name'],
                 'longestStreak' => $user->longest_streak ?? 0,
                 'currentStreak' => $user->current_streak ?? 0,
                 'rankChange' => $this->computeRankChange($rank, $previousRank),
@@ -310,9 +321,9 @@ class LeaderboardController extends Controller
             ->where('submitted_at', '>=', $since)
             ->groupBy('user_id');
 
+        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
         $lessonPoints = DB::table('lesson_progress')
-            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-            ->select('lesson_progress.user_id', DB::raw('SUM(COALESCE(lessons.xp_reward, 0)) as total'))
+            ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
             ->whereNotNull('lesson_progress.completed_at')
             ->where('lesson_progress.completed_at', '>=', $since)
             ->groupBy('lesson_progress.user_id');

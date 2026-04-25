@@ -8,19 +8,19 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 test('level bonus multiplier increases points earned', function () {
-    // Level 10 user (1% bonus) with 277 XP
-    $user = User::factory()->create(['xp' => 277, 'points' => 0]);
+    // Level 10 user (2% bonus) with 139 XP
+    $user = User::factory()->create(['xp' => 139, 'points' => 0]);
 
     $xpService = app(XpService::class);
     $boostedPoints = $xpService->applyLevelBonus($user, 100);
 
-    // 100 * 1.01 = 101
-    expect($boostedPoints)->toBe(101);
+    // 100 * 1.02 = 102
+    expect($boostedPoints)->toBe(102);
 });
 
 test('high level user gets significant point bonus', function () {
-    // Level 50 user (5% bonus) with 25694 XP
-    $user = User::factory()->create(['xp' => 25694, 'points' => 0]);
+    // Level 25 user (5% bonus) with 758 XP
+    $user = User::factory()->create(['xp' => 758, 'points' => 0]);
 
     $xpService = app(XpService::class);
     $boostedPoints = $xpService->applyLevelBonus($user, 100);
@@ -30,8 +30,8 @@ test('high level user gets significant point bonus', function () {
 });
 
 test('max level user gets 10% point bonus', function () {
-    // Level 100 user (10% bonus)
-    $user = User::factory()->create(['xp' => 7425476, 'points' => 0]);
+    // Level 50 user (10% bonus)
+    $user = User::factory()->create(['xp' => 12873, 'points' => 0]);
 
     $xpService = app(XpService::class);
     $boostedPoints = $xpService->applyLevelBonus($user, 100);
@@ -60,26 +60,25 @@ test('level is determined by xp not points', function () {
     $level = $levelService->getUserLevel($user);
 
     expect($level['level'])->toBe(1);
-    expect($level['bonus_percent'])->toBe(0.1);
+    expect($level['bonus_percent'])->toBe(0.2);
 });
 
 test('level up detection uses xp column', function () {
     $levelService = app(LevelService::class);
 
-    // XP went from 100 (level 1) to 120 (level 2 at 112)
-    $result = $levelService->checkLevelUp(100, 120);
+    // XP went from 50 (level 1) to 60 (level 2 at 56)
+    $result = $levelService->checkLevelUp(50, 60);
 
     expect($result)->not->toBeNull()
         ->level->toBe(2)
-        ->bonus_percent->toBe(0.2);
+        ->bonus_percent->toBe(0.4);
 });
 
 test('bonus percent scales linearly with level', function () {
     $levelService = app(LevelService::class);
 
-    expect($levelService->getBonusPercent(1))->toBe(0.1);
-    expect($levelService->getBonusPercent(25))->toBe(2.5);
-    expect($levelService->getBonusPercent(50))->toBe(5.0);
-    expect($levelService->getBonusPercent(75))->toBe(7.5);
-    expect($levelService->getBonusPercent(100))->toBe(10.0);
+    expect($levelService->getBonusPercent(1))->toBe(0.2);
+    expect($levelService->getBonusPercent(10))->toBe(2.0);
+    expect($levelService->getBonusPercent(25))->toBe(5.0);
+    expect($levelService->getBonusPercent(50))->toBe(10.0);
 });

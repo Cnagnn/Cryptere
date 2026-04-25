@@ -224,7 +224,7 @@ class DashboardController extends Controller
             ->select(['id', 'name', 'username', 'points'])
             ->orderByDesc('points')
             ->orderBy('name')
-            ->take(4)
+            ->take(5)
             ->get();
 
         $currentUserRank = User::query()
@@ -331,11 +331,11 @@ class DashboardController extends Controller
         // --- Weekly: last 7 days, grouped by date ---
         $weeklyStart = now()->subDays(6)->startOfDay();
 
+        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
         $lessonPointsByDay = $user->lessonProgress()
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $weeklyStart)
-            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-            ->selectRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m-%d') as period, SUM(lessons.xp_reward) as total")
+            ->selectRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m-%d') as period, COUNT(*) * {$lessonXpPerLesson} as total")
             ->groupByRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m-%d')")
             ->pluck('total', 'period');
 
@@ -366,8 +366,7 @@ class DashboardController extends Controller
         $lessonPointsByMonth = $user->lessonProgress()
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $monthlyStart)
-            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-            ->selectRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m') as period, SUM(lessons.xp_reward) as total")
+            ->selectRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m') as period, COUNT(*) * {$lessonXpPerLesson} as total")
             ->groupByRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m')")
             ->pluck('total', 'period');
 
@@ -860,11 +859,11 @@ class DashboardController extends Controller
             $weekStart = now()->subWeeks($i)->startOfWeek();
             $weekEnd = now()->subWeeks($i)->endOfWeek();
 
+            $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
             $lessonPoints = LessonProgress::query()
                 ->where('user_id', $userId)
                 ->whereBetween('completed_at', [$weekStart, $weekEnd])
-                ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-                ->sum('lessons.xp_reward');
+                ->count() * $lessonXpPerLesson;
 
             $challengePoints = ChallengeSubmission::query()
                 ->where('user_id', $userId)

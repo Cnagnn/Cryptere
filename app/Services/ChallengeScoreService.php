@@ -24,17 +24,19 @@ class ChallengeScoreService
     /**
      * Calculate streak bonus based on consecutive correct answers.
      *
-     * 0-1 correct → 0, 2 → 100, 3 → 200, 4 → 300, 5+ → 500
+     * Values are read from config('rewards.challenge_streak_bonus').
+     * Index = consecutive correct count; last value repeats for higher streaks.
      */
     public function calculateStreakBonus(int $consecutiveCorrect): int
     {
-        return match (true) {
-            $consecutiveCorrect >= 5 => 500,
-            $consecutiveCorrect === 4 => 300,
-            $consecutiveCorrect === 3 => 200,
-            $consecutiveCorrect === 2 => 100,
-            default => 0,
-        };
+        /** @var array<int, int> $table */
+        $table = config('rewards.challenge_streak_bonus', [0, 0, 2, 4, 6, 10]);
+
+        if ($consecutiveCorrect >= count($table)) {
+            return (int) end($table);
+        }
+
+        return (int) ($table[$consecutiveCorrect] ?? 0);
     }
 
     /**

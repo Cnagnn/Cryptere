@@ -40,16 +40,20 @@ class ChallengeController extends Controller
             ->distinct('challenge_id')
             ->pluck('challenge_id');
 
+        $completedSessionChallengeIds = ChallengeSubmission::query()
+            ->whereBelongsTo($user)
+            ->whereNotNull('session_id')
+            ->distinct('challenge_id')
+            ->pluck('challenge_id');
+
         $bestScores = ChallengeSubmission::query()
             ->whereBelongsTo($user)
             ->selectRaw('challenge_id, MAX(score) as best_score')
             ->groupBy('challenge_id')
             ->pluck('best_score', 'challenge_id');
 
-        $speedRounds = $this->buildSpeedRounds($challenges);
-
         return Inertia::render('challenges/index', [
-            'challenges' => $challenges->map(function (Challenge $challenge) use ($solvedChallengeIds, $bestScores, $currentTime): array {
+            'challenges' => $challenges->map(function (Challenge $challenge) use ($solvedChallengeIds, $completedSessionChallengeIds, $bestScores, $currentTime): array {
                 return [
                     'id' => $challenge->id,
                     'slug' => $challenge->slug,
@@ -60,12 +64,12 @@ class ChallengeController extends Controller
                     'timeEnd' => optional($challenge->time_end)?->toIso8601String(),
                     'status' => $this->challengeHelper->resolveAvailabilityStatus($challenge, $currentTime),
                     'isSolved' => $solvedChallengeIds->contains($challenge->id),
+                    'hasCompletedSession' => $completedSessionChallengeIds->contains($challenge->id),
                     'hasQuestionBank' => $challenge->questions_count > 0,
                     'questionsCount' => $challenge->questions_count,
                     'bestScore' => $bestScores->get($challenge->id, 0),
                 ];
             })->values(),
-            'speedRounds' => $speedRounds,
         ]);
     }
 
@@ -89,9 +93,16 @@ class ChallengeController extends Controller
             ->distinct('challenge_id')
             ->pluck('challenge_id');
 
-        // Quiz mode: generate session with random questions
+        // Check if user already completed a quiz session for this challenge
+        $hasCompletedSession = $hasQuestionBank && ChallengeSubmission::query()
+            ->whereBelongsTo($request->user())
+            ->whereBelongsTo($challenge)
+            ->whereNotNull('session_id')
+            ->exists();
+
+        // Quiz mode: generate session with random questions (only if not already completed)
         $quizSession = null;
-        if ($hasQuestionBank) {
+        if ($hasQuestionBank && ! $hasCompletedSession) {
             $quizSession = $this->buildQuizSession($challenge);
         }
 
@@ -149,6 +160,7 @@ class ChallengeController extends Controller
                 'timeEnd' => optional($challenge->time_end)?->toIso8601String(),
                 'status' => $availabilityStatus,
                 'isSolved' => $solvedChallengeIds->contains($challenge->id),
+                'hasCompletedSession' => $hasCompletedSession,
                 'hasQuestionBank' => $hasQuestionBank,
                 'timeLimitSeconds' => $hasQuestionBank
                     ? $challenge->time_limit_seconds

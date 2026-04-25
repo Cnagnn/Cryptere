@@ -7,7 +7,6 @@ import { DateRangePickerField } from './DateRangePickerField';
 export type ChallengeFormData = {
     title: string;
     prompt: string;
-    thumbnail_name: string;
     hint: string;
     time_start: string;
     time_end: string;
@@ -21,7 +20,6 @@ export type ChallengeFormData = {
 export const defaultChallengeForm: ChallengeFormData = {
     title: '',
     prompt: '',
-    thumbnail_name: '',
     hint: '',
     time_start: '',
     time_end: '',
@@ -54,22 +52,6 @@ export function ChallengeFormFields({ form, setForm }: ChallengeFormFieldsProps)
                     value={form.prompt}
                     onChange={(e) => setForm((prev) => ({ ...prev, prompt: e.target.value }))}
                 />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-                <Label>Upload Thumbnail</Label>
-                <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                        const nextFile = e.target.files?.[0];
-
-                        setForm((prev) => ({ ...prev, thumbnail_name: nextFile?.name ?? '' }));
-                    }}
-                />
-                <p className="text-xs text-muted-foreground">
-                    Placeholder upload for challenge thumbnail.
-                </p>
             </div>
 
             <DateRangePickerField
@@ -105,11 +87,11 @@ export function ChallengeFormFields({ form, setForm }: ChallengeFormFieldsProps)
                         <Label className="text-xs text-muted-foreground">Max Pts/Question</Label>
                         <Input
                             type="number"
-                            min={100}
-                            max={5000}
-                            step={100}
+                            min={1}
+                            max={100}
+                            step={1}
                             value={form.max_points_per_question}
-                            onChange={(e) => setForm((prev) => ({ ...prev, max_points_per_question: Number(e.target.value) || 1000 }))}
+                            onChange={(e) => setForm((prev) => ({ ...prev, max_points_per_question: Number(e.target.value) || 10 }))}
                         />
                     </div>
                 </div>

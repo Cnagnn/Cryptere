@@ -32,7 +32,7 @@ return [
     |
     */
     'course_completion_xp' => 100,
-    'course_completion_points' => 200,
+    'course_completion_points' => 20,
 
     /*
     |--------------------------------------------------------------------------
@@ -44,7 +44,7 @@ return [
     |
     */
     'perfect_score_xp' => 50,
-    'perfect_score_points' => 150,
+    'perfect_score_points' => 15,
 
     /*
     |--------------------------------------------------------------------------
@@ -88,7 +88,7 @@ return [
     | Formula: new_level × level_up_points_per_level
     |
     */
-    'level_up_points_per_level' => 50,
+    'level_up_points_per_level' => 5,
 
     /*
     |--------------------------------------------------------------------------
@@ -112,6 +112,64 @@ return [
     */
     'decay_inactive_days' => 14,
     'decay_percent' => 1,
-    'decay_min_points' => 100,
+    'decay_min_points' => 10,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lesson Completion XP
+    |--------------------------------------------------------------------------
+    |
+    | XP awarded when a user completes a single lesson (replaces per-lesson
+    | xp_reward column — every lesson now awards the same flat amount).
+    |
+    */
+    'lesson_completion_xp' => 30,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Quiz Task XP
+    |--------------------------------------------------------------------------
+    |
+    | XP awarded when a user completes a quiz-type lesson task.
+    |
+    */
+    'quiz_task_xp' => 20,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Challenge Rewards
+    |--------------------------------------------------------------------------
+    |
+    | Base points and XP for standalone / speed-round challenges.
+    |
+    */
+    'challenge_base_points' => 15,
+    'challenge_base_xp' => 15,
+    'challenge_first_blood_xp' => 10,
+    'challenge_speed_min_points' => 3,
+    'challenge_speed_floor_ratio' => 0.25,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Challenge Quiz Session
+    |--------------------------------------------------------------------------
+    |
+    | XP awarded for completing a quiz-mode challenge session, and the
+    | default max points per question when the DB column is null.
+    |
+    */
+    'challenge_quiz_session_xp' => 20,
+    'challenge_quiz_max_points_per_question' => 10,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Challenge Streak Bonus
+    |--------------------------------------------------------------------------
+    |
+    | Bonus points added per consecutive correct answer in quiz mode.
+    | Index = consecutive correct count (0-1 → 0, 2 → 2, 3 → 4, 4 → 6, 5+ → 10).
+    |
+    */
+    'challenge_streak_bonus' => [0, 0, 2, 4, 6, 10],
 
 ];

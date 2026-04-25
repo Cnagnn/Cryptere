@@ -103,7 +103,6 @@ class PointsHistorySeeder extends Seeder
                     'description' => fake()->paragraph(),
                     'content' => fake()->paragraphs(3, true),
                     'position' => $l + 1,
-                    'xp_reward' => fake()->randomElement([10, 20, 30, 50, 75, 100]),
                 ]);
 
                 LessonTask::create([
@@ -113,7 +112,6 @@ class PointsHistorySeeder extends Seeder
                     'type' => 'read',
                     'minutes' => fake()->numberBetween(5, 20),
                     'sort_order' => 1,
-                    'xp_reward' => fake()->randomElement([5, 10, 15]),
                 ]);
             }
 
@@ -160,7 +158,7 @@ class PointsHistorySeeder extends Seeder
                 'is_published' => true,
                 'time_limit_seconds' => fake()->randomElement([30, 60, 120]),
                 'questions_per_session' => 5,
-                'max_points_per_question' => 100,
+                'max_points_per_question' => 10,
             ]);
 
             // 5 questions per challenge
@@ -302,10 +300,11 @@ class PointsHistorySeeder extends Seeder
      */
     private function recalculateUserPoints(User $user): void
     {
-        $lessonPoints = $user->lessonProgress()
+        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
+        $completedLessonCount = $user->lessonProgress()
             ->whereNotNull('completed_at')
-            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-            ->sum('lessons.xp_reward');
+            ->count();
+        $lessonPoints = $completedLessonCount * $lessonXpPerLesson;
 
         $challengePoints = $user->challengeSubmissions()
             ->where('is_correct', true)

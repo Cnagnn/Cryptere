@@ -114,7 +114,6 @@ class CourseController extends Controller
                     'title' => $lesson->title,
                     'description' => (string) ($lesson->description ?? ''),
                     'position' => $lesson->position,
-                    'xp_reward' => $lesson->xp_reward,
                     'tasks_count' => (int) $lesson->tasks_count > 0
                         ? (int) $lesson->tasks_count
                         : count($legacyTasks),

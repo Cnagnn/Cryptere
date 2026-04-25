@@ -23,25 +23,21 @@ test('admin can create update and delete lesson and task from management', funct
             'course_id' => $course->id,
             'title' => 'Encryption Basics',
             'description' => 'Intro topic about encryption concepts.',
-            'xp_reward' => 90,
         ])
         ->assertRedirect();
 
     $lesson = Lesson::query()->where('course_id', $course->id)->where('title', 'Encryption Basics')->first();
 
     expect($lesson)->not->toBeNull();
-    expect($lesson?->xp_reward)->toBe(90);
 
     $this->actingAs($admin)
         ->patch(route('admin.courses.lessons.update', ['lesson' => $lesson?->id]), [
             'title' => 'Encryption Basics Updated',
             'description' => 'Updated topic description.',
-            'xp_reward' => 110,
         ])
         ->assertRedirect();
 
     expect($lesson?->fresh()?->title)->toBe('Encryption Basics Updated');
-    expect($lesson?->fresh()?->xp_reward)->toBe(110);
 
     $this->actingAs($admin)
         ->post(route('admin.courses.tasks.store'), [

@@ -128,7 +128,6 @@ test('course completion bonus awards XP and points when course reaches 100%', fu
     $lesson = Lesson::factory()->create([
         'course_id' => $course->id,
         'position' => 1,
-        'xp_reward' => 25,
     ]);
 
     $enrollment = Enrollment::factory()->create([
@@ -187,8 +186,9 @@ test('perfect score bonus awards extra XP and points on all-correct quiz session
     $perfectXp = (int) config('rewards.perfect_score_xp');
     $perfectPoints = (int) config('rewards.perfect_score_points');
 
-    // awardedXp should include BASE_CHALLENGE_XP + perfect_score_xp
-    expect($response->json('awardedXp'))->toBe(10 + $perfectXp);
+    // awardedXp should include challenge_quiz_session_xp + perfect_score_xp
+    $sessionXp = (int) config('rewards.challenge_quiz_session_xp');
+    expect($response->json('awardedXp'))->toBe($sessionXp + $perfectXp);
     expect($response->json('awardedPoints'))->toBeGreaterThanOrEqual($perfectPoints);
 });
 
@@ -230,8 +230,9 @@ test('perfect score bonus is not awarded when some answers are wrong', function 
 
     $response->assertOk();
     expect($response->json('isPerfectScore'))->toBeFalse();
-    // Only BASE_CHALLENGE_XP, no perfect bonus
-    expect($response->json('awardedXp'))->toBe(10);
+    // Only challenge_quiz_session_xp, no perfect bonus
+    $sessionXp = (int) config('rewards.challenge_quiz_session_xp');
+    expect($response->json('awardedXp'))->toBe($sessionXp);
 });
 
 // --- First Blood Bonus ---
@@ -255,18 +256,19 @@ test('first blood bonus adds extra XP on first correct challenge answer', functi
     $response->assertOk();
     expect($response->json('isCorrect'))->toBeTrue();
 
-    $firstBloodXp = (int) config('rewards.first_blood_xp');
-    // User XP should be BASE_CHALLENGE_XP(10) + first_blood_xp(25) = 35
-    expect($user->fresh()->xp)->toBe(10 + $firstBloodXp);
+    $baseXp = (int) config('rewards.challenge_base_xp');
+    $firstBloodXp = (int) config('rewards.challenge_first_blood_xp');
+    // User XP should be challenge_base_xp + challenge_first_blood_xp
+    expect($user->fresh()->xp)->toBe($baseXp + $firstBloodXp);
 });
 
 // --- Level-Up Points Reward ---
 
 test('level up awards bonus points based on new level', function () {
-    // Level 2 requires 112 XP. Set user just below threshold.
+    // Level 2 requires 56 XP. Set user just below threshold.
     $user = User::factory()->create([
         'points' => 0,
-        'xp' => 110,
+        'xp' => 54,
         'current_streak' => 0,
         'last_active_date' => now()->toDateString(),
     ]);
@@ -275,7 +277,7 @@ test('level up awards bonus points based on new level', function () {
 
     // Award enough XP to cross level 2 threshold
     $xpService = app(XpService::class);
-    $xpService->awardXp($user, 5); // Now at 115 XP → level 2
+    $xpService->awardXp($user, 5); // Now at 59 XP → level 2
 
     $user->refresh();
 
@@ -291,5 +293,5 @@ test('level up awards bonus points based on new level', function () {
     $user->increment('points', $expectedBonus);
 
     expect($user->fresh()->points)->toBe($expectedBonus);
-    expect($expectedBonus)->toBe(2 * 50); // Level 2 × 50 = 100 points
+    expect($expectedBonus)->toBe(2 * 5); // Level 2 × 5 = 10 points
 });

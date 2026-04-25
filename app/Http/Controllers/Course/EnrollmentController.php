@@ -111,9 +111,8 @@ class EnrollmentController extends Controller
                 ->whereNotNull('completed_at')
                 ->pluck('lesson_id');
 
-            $pointsToRevert = $completedLessonIds->isNotEmpty()
-                ? (int) Lesson::query()->whereIn('id', $completedLessonIds)->sum('xp_reward')
-                : 0;
+            $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
+            $pointsToRevert = $completedLessonIds->count() * $lessonXpPerLesson;
 
             LessonProgress::query()
                 ->whereBelongsTo($user)

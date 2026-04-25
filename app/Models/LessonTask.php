@@ -21,7 +21,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'conversion_status',
     'pdf_url',
     'sort_order',
-    'xp_reward',
     'published_at',
     'published_by',
 ])]
@@ -39,7 +38,6 @@ class LessonTask extends Model
         return [
             'minutes' => 'integer',
             'sort_order' => 'integer',
-            'xp_reward' => 'integer',
             'published_at' => 'datetime',
             'published_by' => 'integer',
         ];

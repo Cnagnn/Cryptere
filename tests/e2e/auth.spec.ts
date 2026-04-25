@@ -4,9 +4,9 @@ test.describe('Authentication Flow', () => {
     test('login with invalid credentials shows error', async ({ page }) => {
         await page.goto('/login');
 
-        await page.getByLabel(/email/i).fill('invalid@example.com');
-        await page.getByLabel(/password/i).fill('wrongpassword');
-        await page.getByRole('button', { name: /log in/i }).click();
+        await page.getByLabel('Email or Username').fill('invalid@example.com');
+        await page.locator('#password').fill('wrongpassword');
+        await page.getByRole('button', { name: 'Sign In' }).click();
 
         // Should stay on login page with an error
         await expect(page).toHaveURL(/login/);
@@ -15,7 +15,7 @@ test.describe('Authentication Flow', () => {
     test('login form validates required fields', async ({ page }) => {
         await page.goto('/login');
 
-        await page.getByRole('button', { name: /log in/i }).click();
+        await page.getByRole('button', { name: 'Sign In' }).click();
 
         // Should stay on login page (HTML5 validation or server-side)
         await expect(page).toHaveURL(/login/);
@@ -24,12 +24,12 @@ test.describe('Authentication Flow', () => {
     test('register form is accessible', async ({ page }) => {
         await page.goto('/register');
 
-        await expect(page.getByLabel(/name/i)).toBeVisible();
-        await expect(page.getByLabel(/email/i)).toBeVisible();
+        await expect(page.getByLabel('Username')).toBeVisible();
+        await expect(page.getByLabel('Email')).toBeVisible();
     });
 
     test('forgot password page loads', async ({ page }) => {
         await page.goto('/forgot-password');
-        await expect(page.getByLabel(/email/i)).toBeVisible();
+        await expect(page.getByLabel('Email')).toBeVisible();
     });
 });

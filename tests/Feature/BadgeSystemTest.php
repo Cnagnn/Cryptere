@@ -47,11 +47,11 @@ test('badge is awarded after lesson completion', function () {
 
     // Create 5 lessons and complete them sequentially
     $lessons = Lesson::factory()->for($course)->count(5)->sequence(
-        ['position' => 1, 'xp_reward' => 10],
-        ['position' => 2, 'xp_reward' => 10],
-        ['position' => 3, 'xp_reward' => 10],
-        ['position' => 4, 'xp_reward' => 10],
-        ['position' => 5, 'xp_reward' => 10],
+        ['position' => 1],
+        ['position' => 2],
+        ['position' => 3],
+        ['position' => 4],
+        ['position' => 5],
     )->create();
 
     foreach ($lessons as $lesson) {
@@ -63,7 +63,7 @@ test('badge is awarded after lesson completion', function () {
 });
 
 test('level info is shared in inertia props', function () {
-    $user = User::factory()->create(['points' => 150, 'xp' => 112, 'last_active_date' => now()->toDateString()]);
+    $user = User::factory()->create(['points' => 150, 'xp' => 56, 'last_active_date' => now()->toDateString()]);
 
     $this->actingAs($user)
         ->get(route('dashboard'))
@@ -71,7 +71,7 @@ test('level info is shared in inertia props', function () {
         ->assertInertia(fn ($page) => $page
             ->has('auth.user.level')
             ->where('auth.user.level.level', 2)
-            ->where('auth.user.level.name', 'Cipher Initiate')
+            ->missing('auth.user.level.name')
         );
 });
 

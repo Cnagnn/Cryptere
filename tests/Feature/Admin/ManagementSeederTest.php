@@ -54,13 +54,8 @@ test('management seeder creates question banks for challenges', function () {
     expect($allTypes)->toContain('true_false');
 });
 
-test('management seeder assigns xp_reward to lesson tasks', function () {
+test('management seeder creates lesson tasks', function () {
     $this->seed(ManagementSeeder::class);
 
-    $tasksWithXp = LessonTask::query()
-        ->whereNotNull('xp_reward')
-        ->where('xp_reward', '>', 0)
-        ->count();
-
-    expect($tasksWithXp)->toBeGreaterThan(0);
+    expect(LessonTask::query()->count())->toBeGreaterThan(0);
 });

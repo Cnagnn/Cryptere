@@ -24,14 +24,6 @@ class ChallengeSubmissionController extends Controller
 {
     use FlashesAchievements;
 
-    private const BASE_CHALLENGE_POINTS = 100;
-
-    private const BASE_CHALLENGE_XP = 10;
-
-    private const SPEED_SCORE_FLOOR_RATIO = 0.25;
-
-    private const SPEED_SCORE_MINIMUM = 10;
-
     public function __construct(
         private readonly ChallengeScoreService $scoreService,
         private readonly BadgeService $badgeService,
@@ -165,13 +157,28 @@ class ChallengeSubmissionController extends Controller
 
         /** @var User $user */
         $user = $request->user();
+
+        // Block submission if user already completed a session for this challenge
+        $hasCompletedSession = ChallengeSubmission::query()
+            ->whereBelongsTo($user)
+            ->whereBelongsTo($challenge)
+            ->whereNotNull('session_id')
+            ->where('session_id', '!=', $validated['session_id'])
+            ->exists();
+
+        if ($hasCompletedSession) {
+            return response()->json([
+                'message' => __('You have already completed this challenge.'),
+            ], 422);
+        }
+
         $question = ChallengeQuestion::findOrFail($validated['challenge_question_id']);
 
         abort_unless($question->challenge_id === $challenge->id, 422);
 
         $isCorrect = $question->isCorrect($validated['answer']);
         $timeLimitMs = ($challenge->time_limit_seconds ?? 20) * 1000;
-        $maxPoints = $challenge->max_points_per_question ?? 1000;
+        $maxPoints = $challenge->max_points_per_question ?? 10;
 
         $questionScore = $isCorrect
             ? $this->scoreService->calculateQuestionScore($validated['elapsed_ms'], $timeLimitMs, $maxPoints)
@@ -264,7 +271,7 @@ class ChallengeSubmissionController extends Controller
         $previousXp = $user->xp;
         if (! $hasEarlierSession && $totalPoints > 0) {
             $awardedPoints = $this->xpService->applyLevelBonus($user, $totalPoints);
-            $awardedXp = self::BASE_CHALLENGE_XP;
+            $awardedXp = (int) config('rewards.challenge_quiz_session_xp', 20);
             $user->increment('points', $awardedPoints);
             $user->increment('xp', $awardedXp);
 
@@ -332,14 +339,16 @@ class ChallengeSubmissionController extends Controller
             ->where('is_correct', true)
             ->exists();
 
+        $baseChallengePoints = (int) config('rewards.challenge_base_points', 15);
         $basePoints = $isCorrect && ! $alreadySolved
             ? ($speedBased
-                ? $this->resolveSpeedAwardedPoints($safeElapsedMilliseconds, $timeLimitMilliseconds)
-                : self::BASE_CHALLENGE_POINTS)
+                ? $this->resolveSpeedAwardedPoints($safeElapsedMilliseconds, $timeLimitMilliseconds, $baseChallengePoints)
+                : $baseChallengePoints)
             : 0;
 
-        $firstBloodXp = (int) config('rewards.first_blood_xp', 25);
-        $baseXp = $isCorrect && ! $alreadySolved ? (self::BASE_CHALLENGE_XP + $firstBloodXp) : 0;
+        $baseChallengeXp = (int) config('rewards.challenge_base_xp', 15);
+        $firstBloodXp = (int) config('rewards.challenge_first_blood_xp', 10);
+        $baseXp = $isCorrect && ! $alreadySolved ? ($baseChallengeXp + $firstBloodXp) : 0;
         $previousXp = $user->xp;
 
         DB::transaction(function () use ($challenge, $user, $answer, $isCorrect, $basePoints, $baseXp): void {
@@ -382,11 +391,13 @@ class ChallengeSubmissionController extends Controller
     private function resolveSpeedAwardedPoints(
         int $elapsedMilliseconds,
         int $timeLimitMilliseconds,
+        int $maximumPoints = 15,
     ): int {
-        $maximumPoints = self::BASE_CHALLENGE_POINTS;
+        $speedMinPoints = (int) config('rewards.challenge_speed_min_points', 3);
+        $speedFloorRatio = (float) config('rewards.challenge_speed_floor_ratio', 0.25);
         $minimumPoints = min(
             $maximumPoints,
-            max(self::SPEED_SCORE_MINIMUM, (int) round($maximumPoints * self::SPEED_SCORE_FLOOR_RATIO))
+            max($speedMinPoints, (int) round($maximumPoints * $speedFloorRatio))
         );
 
         if ($timeLimitMilliseconds <= 0) {

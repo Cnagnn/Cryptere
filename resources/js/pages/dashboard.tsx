@@ -352,7 +352,7 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics }: { 
                 <Card className="flex flex-col">
                     <CardHeader className="items-center pb-0">
                         <CardDescription>Activity Breakdown</CardDescription>
-                        <CardTitle>{level ? `Lv.${level.level} ${level.name}` : 'Getting Started'}</CardTitle>
+                        <CardTitle>{level ? `Lv.${level.level}` : 'Getting Started'}</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 pb-0">
                         <ChartContainer config={activityBreakdownConfig} className="mx-auto aspect-square max-h-62.5">

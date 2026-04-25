@@ -45,7 +45,6 @@ function getInitialFormState(mode: Props['mode'], challenge?: Challenge): Challe
         return {
             title: challenge.title,
             prompt: challenge.prompt,
-            thumbnail_name: '',
             hint: challenge.hint ?? '',
             time_start: challenge.time_start ?? '',
             time_end: challenge.time_end ?? '',
@@ -80,13 +79,10 @@ export function ChallengeFormDialog({
     const handleSubmit = () => {
         setProcessing(true);
 
-        const { thumbnail_name, ...payload } = form;
-        void thumbnail_name;
-
         const data = {
-            ...payload,
-            time_start: payload.time_start || null,
-            time_end: payload.time_end || null,
+            ...form,
+            time_start: form.time_start || null,
+            time_end: form.time_end || null,
         };
 
         if (mode === 'create') {

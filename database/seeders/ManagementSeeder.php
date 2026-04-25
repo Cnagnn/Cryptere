@@ -119,7 +119,6 @@ class ManagementSeeder extends Seeder
                     [
                         'slug' => 'why-cryptography-matters',
                         'title' => 'Why Cryptography Matters',
-                        'xp_reward' => 25,
                         'tasks' => [
                             ['type' => 'video', 'title' => 'Video: Why Data Needs Protection', 'minutes' => 12, 'video_url' => 'https://youtu.be/GSIDS_lvRv4'],
                             ['type' => 'quiz', 'title' => 'Quiz: Security Goals', 'minutes' => 8],
@@ -128,7 +127,6 @@ class ManagementSeeder extends Seeder
                     [
                         'slug' => 'confidentiality-vs-integrity',
                         'title' => 'Confidentiality vs Integrity',
-                        'xp_reward' => 30,
                         'tasks' => [
                             ['type' => 'read', 'title' => 'Reading: CIA Triad Notes', 'minutes' => 7, 'document_name' => 'cia-triad-notes.pdf', 'conversion_status' => 'done'],
                         ],
@@ -136,7 +134,6 @@ class ManagementSeeder extends Seeder
                     [
                         'slug' => 'threat-modeling-basics',
                         'title' => 'Threat Modeling Basics',
-                        'xp_reward' => 40,
                         'tasks' => [
                             ['type' => 'video', 'title' => 'Video: Basic Threat Model', 'minutes' => 10, 'video_url' => 'https://youtu.be/2g2fV5G9R4w'],
                         ],
@@ -153,7 +150,6 @@ class ManagementSeeder extends Seeder
                     [
                         'slug' => 'caesar-cipher-warmup',
                         'title' => 'Caesar Cipher Warmup',
-                        'xp_reward' => 28,
                         'tasks' => [
                             ['type' => 'video', 'title' => 'Video: Caesar Cipher in Practice', 'minutes' => 10, 'video_url' => 'https://youtu.be/sMOZf4GN3oc'],
                             ['type' => 'quiz', 'title' => 'Quiz: Caesar Basics', 'minutes' => 6],
@@ -162,7 +158,6 @@ class ManagementSeeder extends Seeder
                     [
                         'slug' => 'vigenere-with-repeating-keys',
                         'title' => 'Vigenere with Repeating Keys',
-                        'xp_reward' => 42,
                         'tasks' => [
                             ['type' => 'video', 'title' => 'Video: Key Length Estimation', 'minutes' => 12, 'video_url' => 'https://youtu.be/LaWp_Kq0cKs'],
                         ],
@@ -179,7 +174,6 @@ class ManagementSeeder extends Seeder
                     [
                         'slug' => 'hash-functions-and-digest-properties',
                         'title' => 'Hash Functions and Digest Properties',
-                        'xp_reward' => 35,
                         'tasks' => [
                             ['type' => 'video', 'title' => 'Video: Hash Properties Explained', 'minutes' => 12, 'video_url' => 'https://youtu.be/b4b8ktEV4Bg'],
                         ],
@@ -187,7 +181,6 @@ class ManagementSeeder extends Seeder
                     [
                         'slug' => 'symmetric-vs-asymmetric-encryption',
                         'title' => 'Symmetric vs Asymmetric Encryption',
-                        'xp_reward' => 48,
                         'tasks' => [
                             ['type' => 'quiz', 'title' => 'Quiz: Encryption Strategy', 'minutes' => 9],
                         ],
@@ -219,7 +212,6 @@ class ManagementSeeder extends Seeder
                             'title' => $lessonBlueprint['title'],
                             'content' => $lessonBlueprint['title'].' content summary.',
                             'position' => $lessonIndex + 1,
-                            'xp_reward' => $lessonBlueprint['xp_reward'],
                         ],
                     );
 
@@ -237,7 +229,7 @@ class ManagementSeeder extends Seeder
                                 'document_name' => $taskBlueprint['document_name'] ?? null,
                                 'conversion_status' => $taskBlueprint['conversion_status'] ?? null,
                                 'pdf_url' => null,
-                                'xp_reward' => $taskBlueprint['xp_reward'] ?? fake()->numberBetween(10, 50),
+
                             ],
                         );
 
@@ -280,7 +272,7 @@ class ManagementSeeder extends Seeder
                 'time_end' => now()->addDays(20),
                 'time_limit_seconds' => 15,
                 'questions_per_session' => 5,
-                'max_points_per_question' => 1000,
+                'max_points_per_question' => 10,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'What is the Caesar cipher shift for FUBSWHU → CRYPTER?', 'options' => ['1', '2', '3', '4'], 'correct_answer' => '3', 'explanation' => 'Each letter is shifted 3 positions backward.'],
                     ['type' => 'true_false', 'question' => 'The Caesar cipher is a substitution cipher.', 'correct_answer' => 'True', 'explanation' => 'It substitutes each letter with another letter a fixed number of positions away.'],
@@ -303,7 +295,7 @@ class ManagementSeeder extends Seeder
                 'time_end' => now()->addDays(15),
                 'time_limit_seconds' => 20,
                 'questions_per_session' => 5,
-                'max_points_per_question' => 1000,
+                'max_points_per_question' => 10,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'The Vigenere cipher is classified as which type?', 'options' => ['Monoalphabetic', 'Polyalphabetic', 'Transposition', 'Stream'], 'correct_answer' => 'Polyalphabetic', 'explanation' => 'It uses multiple substitution alphabets.'],
                     ['type' => 'true_false', 'question' => 'The Vigenere cipher uses a keyword to determine shifts.', 'correct_answer' => 'True', 'explanation' => 'Each letter of the keyword determines the shift for the corresponding plaintext letter.'],
@@ -328,7 +320,7 @@ class ManagementSeeder extends Seeder
                 'time_end' => now()->addDays(30),
                 'time_limit_seconds' => 20,
                 'questions_per_session' => 5,
-                'max_points_per_question' => 1000,
+                'max_points_per_question' => 10,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'What is the output size of SHA-256?', 'options' => ['128 bits', '160 bits', '256 bits', '512 bits'], 'correct_answer' => '256 bits', 'explanation' => 'SHA-256 produces a 256-bit (32-byte) digest.'],
                     ['type' => 'true_false', 'question' => 'SHA-256 is a member of the SHA-2 family.', 'correct_answer' => 'True', 'explanation' => 'SHA-2 includes SHA-224, SHA-256, SHA-384, and SHA-512.'],
@@ -353,7 +345,7 @@ class ManagementSeeder extends Seeder
                 'time_end' => now()->addDays(40),
                 'time_limit_seconds' => 25,
                 'questions_per_session' => 5,
-                'max_points_per_question' => 1000,
+                'max_points_per_question' => 10,
                 'questions' => [
                     ['type' => 'mcq', 'question' => 'What is the recommended RSA padding scheme for encryption?', 'options' => ['PKCS#1 v1.5', 'OAEP', 'PSS', 'No padding'], 'correct_answer' => 'OAEP', 'explanation' => 'OAEP (Optimal Asymmetric Encryption Padding) is recommended for RSA encryption.'],
                     ['type' => 'true_false', 'question' => 'RSA is an asymmetric encryption algorithm.', 'correct_answer' => 'True', 'explanation' => 'RSA uses a public/private key pair.'],
@@ -384,7 +376,7 @@ class ManagementSeeder extends Seeder
                         'time_end' => $blueprint['time_end'],
                         'time_limit_seconds' => $blueprint['time_limit_seconds'] ?? 20,
                         'questions_per_session' => $blueprint['questions_per_session'] ?? 5,
-                        'max_points_per_question' => $blueprint['max_points_per_question'] ?? 1000,
+                        'max_points_per_question' => $blueprint['max_points_per_question'] ?? 10,
                     ],
                 );
 

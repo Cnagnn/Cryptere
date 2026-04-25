@@ -9,7 +9,7 @@ class LevelService
     /**
      * Get the level thresholds from config, cached for the request lifetime.
      *
-     * @return array<int, array{min_xp: int, name: string, bonus_percent: float}>
+     * @return array<int, array{min_xp: int, bonus_percent: float}>
      */
     private function thresholds(): array
     {
@@ -19,18 +19,16 @@ class LevelService
     /**
      * Calculate the level info for a given XP total.
      *
-     * @return array{level: int, name: string, current_xp: int, next_level_xp: int|null, progress: float, bonus_percent: float}
+     * @return array{level: int, current_xp: int, next_level_xp: int|null, progress: float, bonus_percent: float}
      */
     public function getLevelForXp(int $xp): array
     {
         $thresholds = $this->thresholds();
         $currentLevel = 1;
-        $currentName = $thresholds[1]['name'];
 
         foreach ($thresholds as $level => $data) {
             if ($xp >= $data['min_xp']) {
                 $currentLevel = $level;
-                $currentName = $data['name'];
             }
         }
 
@@ -50,7 +48,6 @@ class LevelService
 
         return [
             'level' => $currentLevel,
-            'name' => $currentName,
             'current_xp' => $xp,
             'next_level_xp' => $nextLevelXp,
             'progress' => min($progress, 100.0),
@@ -61,7 +58,7 @@ class LevelService
     /**
      * Check if a user leveled up after an XP change.
      *
-     * @return array{level: int, name: string, bonus_percent: float}|null
+     * @return array{level: int, bonus_percent: float}|null
      */
     public function checkLevelUp(int $previousXp, int $currentXp): ?array
     {
@@ -71,7 +68,6 @@ class LevelService
         if ($currentLevel['level'] > $previousLevel['level']) {
             return [
                 'level' => $currentLevel['level'],
-                'name' => $currentLevel['name'],
                 'bonus_percent' => $currentLevel['bonus_percent'],
             ];
         }
@@ -82,7 +78,7 @@ class LevelService
     /**
      * Get the level info for a user (uses XP column).
      *
-     * @return array{level: int, name: string, current_xp: int, next_level_xp: int|null, progress: float, bonus_percent: float}
+     * @return array{level: int, current_xp: int, next_level_xp: int|null, progress: float, bonus_percent: float}
      */
     public function getUserLevel(User $user): array
     {
@@ -92,7 +88,7 @@ class LevelService
     /**
      * Get the bonus percentage for a given level.
      *
-     * Each level grants 0.1% bonus: level 10 → 1%, level 50 → 5%, level 100 → 10%.
+     * Each level grants 0.2% bonus: level 10 → 2%, level 25 → 5%, level 50 → 10%.
      */
     public function getBonusPercent(int $level): float
     {
@@ -104,7 +100,7 @@ class LevelService
     /**
      * Get the point bonus multiplier for a user based on their current level.
      *
-     * Returns a multiplier like 1.01 (level 10, 1% bonus) or 1.10 (level 100, 10% bonus).
+     * Returns a multiplier like 1.02 (level 10, 2% bonus) or 1.10 (level 50, 10% bonus).
      */
     public function getPointBonusMultiplier(User $user): float
     {

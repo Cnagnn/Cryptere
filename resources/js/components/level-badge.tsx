@@ -25,7 +25,7 @@ export function LevelBadge({ level, variant = 'compact', className }: LevelBadge
                         </span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="text-center">
-                        <p className="font-semibold">{level.name}</p>
+                        <p className="font-semibold">Level {level.level}</p>
                         <p className="text-xs text-muted-foreground">
                             {level.next_level_xp ? `${level.current_xp} / ${level.next_level_xp} XP` : 'Max Level'}
                         </p>
@@ -40,7 +40,7 @@ export function LevelBadge({ level, variant = 'compact', className }: LevelBadge
             <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold">
                     <Shield className="size-4 text-primary" />
-                    Lv.{level.level} — {level.name}
+                    Lv.{level.level}
                 </span>
                 <span className="text-xs text-muted-foreground">
                     {level.next_level_xp ? `${level.current_xp} / ${level.next_level_xp} XP` : 'Max Level'}

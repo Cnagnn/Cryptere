@@ -48,7 +48,6 @@ export function LessonFormSheet({
         course_id: selectedCourseId > 0 ? selectedCourseId : 0,
         title: '',
         description: '',
-        xp_reward: 50,
     });
 
     useEffect(() => {
@@ -57,7 +56,6 @@ export function LessonFormSheet({
                 course_id: lesson.course_id,
                 title: lesson.title,
                 description: lesson.description,
-                xp_reward: lesson.xp_reward,
             });
             form.clearErrors();
         }
@@ -67,7 +65,6 @@ export function LessonFormSheet({
                 course_id: selectedCourseId > 0 ? selectedCourseId : 0,
                 title: '',
                 description: '',
-                xp_reward: 50,
             });
             form.clearErrors();
         }

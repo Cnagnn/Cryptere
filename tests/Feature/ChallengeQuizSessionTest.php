@@ -149,11 +149,11 @@ test('quiz submit includes streak bonus for consecutive correct', function () {
             'answer' => 'AES',
             'elapsed_ms' => 5000,
             'question_index' => 2,
-            'consecutive_correct' => 2, // will become 3 → 200 bonus
+            'consecutive_correct' => 2, // will become 3 → 4 bonus
         ]);
 
     $response->assertOk();
-    expect($response->json('streakBonus'))->toBe(200);
+    expect($response->json('streakBonus'))->toBe(4);
 });
 
 test('quiz submit rejects question from different challenge', function () {
@@ -229,9 +229,11 @@ test('session summary calculates totals and awards points and xp on first sessio
     // Points include level bonus + perfect score bonus (all 2 correct)
     $fresh = $user->fresh();
     expect($fresh->points)->toBeGreaterThanOrEqual(1800);
-    // XP = BASE_CHALLENGE_XP(10) + perfect_score_xp(50) — no streak XP since same day
-    expect($fresh->xp)->toBe(10 + 50);
-    expect($response->json('awardedXp'))->toBe(10 + 50);
+    // XP = challenge_quiz_session_xp(20) + perfect_score_xp(50) — no streak XP since same day
+    $sessionXp = (int) config('rewards.challenge_quiz_session_xp');
+    $perfectXp = (int) config('rewards.perfect_score_xp');
+    expect($fresh->xp)->toBe($sessionXp + $perfectXp);
+    expect($response->json('awardedXp'))->toBe($sessionXp + $perfectXp);
     expect($response->json('isPerfectScore'))->toBeTrue();
 });
 

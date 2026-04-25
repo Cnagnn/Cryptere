@@ -20,7 +20,6 @@ export type LessonRow = {
     title: string;
     description: string;
     position: number;
-    xp_reward: number;
     tasks_count: number;
 };
 
@@ -42,7 +41,6 @@ export type TaskRow = {
     pdf_url?: string | null;
     is_published?: boolean;
     published_at?: string | null;
-    xp_reward: number;
     quiz_questions: QuizQuestionForm[];
 };
 
@@ -80,7 +78,6 @@ export type LessonFormData = {
     course_id: number;
     title: string;
     description: string;
-    xp_reward: number;
 };
 
 export type TaskFormData = {
@@ -91,7 +88,6 @@ export type TaskFormData = {
     minutes: number;
     video_url: string;
     document: File | null;
-    xp_reward: number;
     quiz_questions: QuizQuestionForm[];
 };
 

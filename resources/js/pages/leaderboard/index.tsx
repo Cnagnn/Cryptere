@@ -29,7 +29,6 @@ import { Input } from '@/components/ui/input';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
@@ -45,7 +44,6 @@ type LeaderboardEntry = {
     avatar: string | null;
     points: number;
     level: number;
-    levelName: string;
     longestStreak: number;
     currentStreak: number;
     rankChange: 'up' | 'down' | 'same' | null;
@@ -197,16 +195,9 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
             accessorKey: 'level',
             header: 'Level',
             cell: ({ row }) => (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <span className="text-sm font-medium">
-                                Lv.{row.original.level}
-                            </span>
-                        </TooltipTrigger>
-                        <TooltipContent>{row.original.levelName}</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                <span className="text-sm font-medium">
+                    Lv.{row.original.level}
+                </span>
             ),
         },
         {
@@ -458,8 +449,10 @@ function PodiumSection({ top3, pointsFormatter }: { top3: LeaderboardEntry[]; po
         return null;
     }
 
+    const gridCols = ordered.length === 1 ? 'grid-cols-1 max-w-48 mx-auto' : ordered.length === 2 ? 'grid-cols-2 max-w-sm mx-auto' : 'grid-cols-3';
+
     return (
-        <div className="grid grid-cols-3 items-end gap-3">
+        <div className={cn('grid items-end gap-3', gridCols)}>
             {ordered.map((entry) => {
                 const rankIndex = entry.rank - 1; // 0-based for color arrays
                 const isFirst = entry.rank === 1;

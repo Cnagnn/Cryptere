@@ -17,26 +17,11 @@ use Inertia\Response;
 
 class ChallengeController extends Controller
 {
-    private const SECTION_CATALOG = 'catalog';
-
-    private const SECTION_QUESTION = 'question';
-
-    private const ALLOWED_SECTIONS = [
-        self::SECTION_CATALOG,
-        self::SECTION_QUESTION,
-    ];
-
     /**
      * Display challenges management listing.
      */
     public function index(Request $request): Response
     {
-        $section = (string) $request->input('section', self::SECTION_CATALOG);
-
-        if (! in_array($section, self::ALLOWED_SECTIONS, true)) {
-            $section = self::SECTION_CATALOG;
-        }
-
         $search = trim((string) $request->input('search', ''));
         $perPage = (int) $request->integer('per_page', 10);
         $perPage = max(10, min($perPage, 100));
@@ -63,7 +48,6 @@ class ChallengeController extends Controller
         }
 
         return Inertia::render('admin/challenges/index', [
-            'section' => $section,
             'challenges' => $challenges,
             'questions' => $questions,
             'selectedChallengeId' => $selectedChallengeId,
@@ -93,7 +77,7 @@ class ChallengeController extends Controller
             'is_published' => (bool) ($validated['is_published'] ?? true),
             'time_limit_seconds' => $validated['time_limit_seconds'] ?? 20,
             'questions_per_session' => $validated['questions_per_session'] ?? 10,
-            'max_points_per_question' => $validated['max_points_per_question'] ?? 1000,
+            'max_points_per_question' => $validated['max_points_per_question'] ?? 10,
         ]);
 
         return back()->with('success', 'Challenge created.');

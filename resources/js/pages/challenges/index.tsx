@@ -12,6 +12,7 @@ type ChallengeItem = {
     timeEnd: string | null;
     status: 'upcoming' | 'active' | 'ended';
     isSolved: boolean;
+    hasCompletedSession: boolean;
     hasQuestionBank: boolean;
     questionsCount: number;
     bestScore: number;
@@ -37,6 +38,7 @@ export default function ChallengesIndex({ challenges }: Props) {
         timeEnd: challenge.timeEnd,
         status: challenge.status,
         isSolved: challenge.isSolved,
+        hasCompletedSession: challenge.hasCompletedSession,
         hasQuestionBank: challenge.hasQuestionBank,
         questionsCount: challenge.questionsCount,
         bestScore: challenge.bestScore,

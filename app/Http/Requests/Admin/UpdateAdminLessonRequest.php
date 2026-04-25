@@ -25,7 +25,6 @@ class UpdateAdminLessonRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
-            'xp_reward' => ['nullable', 'integer', 'min:0', 'max:1000'],
         ];
     }
 }

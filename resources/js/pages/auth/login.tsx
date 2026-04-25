@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { AtSign, LoaderCircle, Lock } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import PasswordInput from '@/components/password-input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -35,18 +35,6 @@ export default function Login({
     const failedSignInMessage = 'Sign in failed. Check credentials or reset password.';
     const [identifier, setIdentifier] = useState('');
 
-    const identifierHint = useMemo(() => {
-        if (identifier.includes('@')) {
-            return 'Detected email format. Use your full email address.';
-        }
-
-        if (identifier.length > 0) {
-            return 'Detected username format. You can use @username or plain username.';
-        }
-
-        return 'Use your work email or username.';
-    }, [identifier]);
-
     return (
         <>
             <Head title="Sign In" />
@@ -54,7 +42,7 @@ export default function Login({
             <div className="flex min-h-screen items-center justify-center bg-background px-4 py-4 lg:h-screen">
                 <Card className="mx-auto w-full max-w-sm">
                     <CardHeader>
-                        <div className="mb-2">
+                        <div>
                             <img
                                 src="/images/Logo/Logomark.svg"
                                 alt="Crypter"
@@ -135,7 +123,7 @@ export default function Login({
                                     </div>
 
                                     <Field data-invalid={Boolean(authFailureError ? undefined : errors.email)}>
-                                        <FieldLabel htmlFor="email">Email or Username</FieldLabel>
+                                        <FieldLabel htmlFor="email">Email or Username <span className="ml-1 text-destructive">*</span></FieldLabel>
                                         <div className="relative">
                                             <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                                             <Input
@@ -153,13 +141,12 @@ export default function Login({
                                                 onChange={(event) => setIdentifier(event.target.value)}
                                             />
                                         </div>
-                                        <p className="text-sm text-muted-foreground">{identifierHint}</p>
                                         {authFailureError ? null : (errors.email && <p className="text-sm text-destructive">{errors.email}</p>)}
                                     </Field>
 
                                     <Field data-invalid={Boolean(errors.password)}>
                                         <div className="flex flex-wrap items-center justify-between gap-1">
-                                            <FieldLabel htmlFor="password">Password</FieldLabel>
+                                            <FieldLabel htmlFor="password">Password <span className="ml-1 text-destructive">*</span></FieldLabel>
                                             {canResetPassword && (
                                                 <Link
                                                     href={request()}
@@ -176,6 +163,7 @@ export default function Login({
                                             required
                                             tabIndex={2}
                                             autoComplete="current-password"
+                                            placeholder="Enter your password"
                                             aria-invalid={Boolean(errors.password) || undefined}
                                             icon={<Lock className="size-4" />}
                                         />
@@ -198,7 +186,7 @@ export default function Login({
 
                                     {authFailureError && <p className="-mt-1 text-sm text-destructive">{authFailureError}</p>}
 
-                                    <div className="flex flex-col gap-3 mt-4">
+                                    <div className="flex flex-col gap-3">
                                         <Button
                                             type="submit"
                                             className="w-full"
@@ -214,7 +202,7 @@ export default function Login({
                                     </div>
 
                                     {canRegister && (
-                                        <div className="mt-4 text-center text-sm">
+                                        <div className="text-center text-sm">
                                             Don't have an account?{' '}
                                             <Link
                                                 href={register()}

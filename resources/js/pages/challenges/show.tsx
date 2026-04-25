@@ -1,7 +1,6 @@
-﻿import { Head, Link } from '@inertiajs/react';
+﻿import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import {
     AlertCircle,
-    ArrowLeft,
     CheckCircle2,
     Clock3,
     Flame,
@@ -16,16 +15,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import {
@@ -63,6 +56,7 @@ type ChallengePayload = {
     timeEnd: string | null;
     status: 'upcoming' | 'active' | 'ended';
     isSolved: boolean;
+    hasCompletedSession: boolean;
     hasQuestionBank: boolean;
     timeLimitSeconds: number;
     questionsPerSession: number;
@@ -127,12 +121,6 @@ type QuizPhase = 'pre' | 'playing' | 'feedback' | 'summary';
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-function availabilityLabel(status: ChallengePayload['status']): string {
-    if (status === 'upcoming') return 'Upcoming';
-    if (status === 'ended') return 'Ended';
-    return 'Active';
-}
-
 function getCsrfToken(): string {
     return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 }
@@ -164,15 +152,48 @@ export default function ChallengesShow({
     recentSubmissions,
     relatedChallenges,
 }: Props) {
-    const isQuizMode = challenge.hasQuestionBank && quizSession !== null;
+    setLayoutProps({
+        breadcrumbs: [
+            { title: 'Home', href: dashboard() },
+            { title: 'Challenges', href: challengesIndex() },
+            { title: challenge.title, href: challengeShow.url({ challenge: challenge.slug }) },
+        ],
+    });
 
-    if (isQuizMode) {
+    // Read ?autostart=1 from URL and clean it up
+    const autoStart = useMemo(() => {
+        const params = new URLSearchParams(window.location.search);
+        const value = params.get('autostart') === '1';
+        if (value) {
+            params.delete('autostart');
+            const cleanUrl =
+                window.location.pathname +
+                (params.toString() ? `?${params.toString()}` : '') +
+                window.location.hash;
+            window.history.replaceState({}, '', cleanUrl);
+        }
+        return value;
+    }, []);
+
+    const isQuizMode = challenge.hasQuestionBank;
+
+    // Challenge already completed — show result view
+    if (isQuizMode && challenge.hasCompletedSession) {
+        return (
+            <CompletedChallengeView
+                challenge={challenge}
+                submissionSummary={submissionSummary}
+            />
+        );
+    }
+
+    if (isQuizMode && quizSession !== null) {
         return (
             <QuizModeView
                 challenge={challenge}
                 quizSession={quizSession}
                 submissionSummary={submissionSummary}
-                relatedChallenges={relatedChallenges}
+                autoStart={autoStart}
             />
         );
     }
@@ -193,18 +214,17 @@ function QuizModeView({
     challenge,
     quizSession,
     submissionSummary,
-    relatedChallenges,
+    autoStart = false,
 }: {
     challenge: ChallengePayload;
     quizSession: QuizSession;
     submissionSummary: SubmissionSummary;
-    relatedChallenges: RelatedChallenge[];
+    autoStart?: boolean;
 }) {
     const [phase, setPhase] = useState<QuizPhase>('pre');
     const [currentIndex, setCurrentIndex] = useState(0);
     const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
     const [sessionScore, setSessionScore] = useState(0);
-    const [sessionCorrect, setSessionCorrect] = useState(0);
     const [lastResult, setLastResult] = useState<QuestionResult | null>(null);
     const [summaryResult, setSummaryResult] = useState<SessionResult | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -265,12 +285,19 @@ function QuizModeView({
         setCurrentIndex(0);
         setConsecutiveCorrect(0);
         setSessionScore(0);
-        setSessionCorrect(0);
         setLastResult(null);
         setSummaryResult(null);
         setError(null);
         startTimer();
     };
+
+    // Auto-start quiz when navigated with ?autostart=1
+    useEffect(() => {
+        if (autoStart && canPlay && phase === 'pre') {
+            startQuiz();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSubmitAnswer = async (answer: string) => {
         if (!currentQuestion || isSubmitting) return;
@@ -297,7 +324,6 @@ function QuizModeView({
 
             if (result.isCorrect) {
                 setConsecutiveCorrect((prev) => prev + 1);
-                setSessionCorrect((prev) => prev + 1);
             } else {
                 setConsecutiveCorrect(0);
             }
@@ -356,62 +382,61 @@ function QuizModeView({
             <Head title={challenge.title} />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-                <div className="flex items-center justify-between gap-2">
-                    <Button variant="ghost" size="sm" asChild>
-                        <Link href={challengesIndex()} prefetch>
-                            <ArrowLeft data-icon="inline-start" />
-                            Back to challenges
-                        </Link>
-                    </Button>
-                    <Badge variant="outline">{availabilityLabel(challenge.status)}</Badge>
-                </div>
+                <section className="flex flex-col gap-0">
+                    <TypographyH1>{challenge.title}</TypographyH1>
+                    <TypographyMuted className="max-w-3xl text-sm/6">
+                        {challenge.prompt}
+                    </TypographyMuted>
+                </section>
 
-                {error && (
-                    <Alert variant="destructive">
-                        <AlertCircle />
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
+                <Card>
+                    <CardContent className="flex flex-col gap-6">
+                        {error && (
+                            <Alert variant="destructive">
+                                <AlertCircle />
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
 
-                {/* Pre-quiz screen */}
-                {phase === 'pre' && (
-                    <PreQuizScreen
-                        challenge={challenge}
-                        submissionSummary={submissionSummary}
-                        totalQuestions={totalQuestions}
-                        canPlay={canPlay}
-                        onStart={startQuiz}
-                    />
-                )}
+                        {/* Pre-quiz screen */}
+                        {phase === 'pre' && (
+                            <PreQuizScreen
+                                challenge={challenge}
+                                submissionSummary={submissionSummary}
+                                totalQuestions={totalQuestions}
+                                canPlay={canPlay}
+                                onStart={startQuiz}
+                            />
+                        )}
 
-                {/* Quiz playing + feedback */}
-                {(phase === 'playing' || phase === 'feedback') && currentQuestion && (
-                    <QuizPlayingScreen
-                        question={currentQuestion}
-                        currentIndex={currentIndex}
-                        totalQuestions={totalQuestions}
-                        consecutiveCorrect={consecutiveCorrect}
-                        sessionScore={sessionScore}
-                        timerPercent={timerPercent}
-                        timerColor={timerColor}
-                        msLeft={msLeft}
-                        isSubmitting={isSubmitting}
-                        phase={phase}
-                        lastResult={lastResult}
-                        onSubmit={handleSubmitAnswer}
-                        onAdvance={advanceToNext}
-                    />
-                )}
+                        {/* Quiz playing + feedback */}
+                        {(phase === 'playing' || phase === 'feedback') && currentQuestion && (
+                            <QuizPlayingScreen
+                                question={currentQuestion}
+                                currentIndex={currentIndex}
+                                totalQuestions={totalQuestions}
+                                consecutiveCorrect={consecutiveCorrect}
+                                sessionScore={sessionScore}
+                                timerPercent={timerPercent}
+                                timerColor={timerColor}
+                                msLeft={msLeft}
+                                isSubmitting={isSubmitting}
+                                phase={phase}
+                                lastResult={lastResult}
+                                onSubmit={handleSubmitAnswer}
+                                onAdvance={advanceToNext}
+                            />
+                        )}
 
-                {/* Post-quiz summary */}
-                {phase === 'summary' && (
-                    <PostQuizSummary
-                        challenge={challenge}
-                        summaryResult={summaryResult}
-                        relatedChallenges={relatedChallenges}
-                    />
-                )}
+                        {/* Post-quiz summary */}
+                        {phase === 'summary' && (
+                            <PostQuizSummary
+                                summaryResult={summaryResult}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </>
     );
@@ -433,60 +458,52 @@ function PreQuizScreen({
     onStart: () => void;
 }) {
     return (
-        <Card className="mx-auto w-full max-w-2xl">
-            <CardHeader className="gap-3 text-center">
-                <CardTitle className="text-2xl tracking-tight">{challenge.title}</CardTitle>
-                <CardDescription className="text-base leading-relaxed">
-                    {challenge.prompt}
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-6">
-                <div className="flex flex-wrap justify-center gap-3">
-                    <Badge variant="secondary">
-                        <Clock3 />
-                        {challenge.timeLimitSeconds}s per question
-                    </Badge>
-                    <Badge variant="secondary">
-                        {totalQuestions} questions
-                    </Badge>
-                    <Badge variant="secondary">
-                        <Trophy />
-                        Max {challenge.maxPointsPerQuestion} pts/question
-                    </Badge>
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap gap-3">
+                <Badge variant="secondary">
+                    <Clock3 />
+                    {challenge.timeLimitSeconds}s per question
+                </Badge>
+                <Badge variant="secondary">
+                    {totalQuestions} questions
+                </Badge>
+                <Badge variant="secondary">
+                    <Trophy />
+                    Max {challenge.maxPointsPerQuestion} pts/question
+                </Badge>
+            </div>
+
+            {submissionSummary.bestScore > 0 && (
+                <div className="text-sm text-muted-foreground">
+                    Your best score: <span className="font-semibold text-foreground">{submissionSummary.bestScore} pts</span>
                 </div>
+            )}
 
-                {submissionSummary.bestScore > 0 && (
-                    <div className="text-center text-sm text-muted-foreground">
-                        Your best score: <span className="font-semibold text-foreground">{submissionSummary.bestScore} pts</span>
-                    </div>
-                )}
+            {challenge.hint && (
+                <Alert>
+                    <Lightbulb />
+                    <AlertTitle>Hint</AlertTitle>
+                    <AlertDescription>{challenge.hint}</AlertDescription>
+                </Alert>
+            )}
 
-                {challenge.hint && (
-                    <Alert>
-                        <Lightbulb />
-                        <AlertTitle>Hint</AlertTitle>
-                        <AlertDescription>{challenge.hint}</AlertDescription>
-                    </Alert>
-                )}
-
-                {!canPlay ? (
-                    <Alert>
-                        <AlertCircle />
-                        <AlertTitle>Challenge is not playable now</AlertTitle>
-                        <AlertDescription>
-                            {challenge.status === 'upcoming'
-                                ? 'The challenge has not started yet.'
-                                : 'The challenge window has ended.'}
-                        </AlertDescription>
-                    </Alert>
-                ) : (
-                    <Button size="lg" onClick={onStart} className="gap-2">
-                        <Play data-icon="inline-start" />
-                        Start Quiz
-                    </Button>
-                )}
-            </CardContent>
-        </Card>
+            {!canPlay ? (
+                <Alert>
+                    <AlertCircle />
+                    <AlertTitle>Challenge is not playable now</AlertTitle>
+                    <AlertDescription>
+                        {challenge.status === 'upcoming'
+                            ? 'The challenge has not started yet.'
+                            : 'The challenge window has ended.'}
+                    </AlertDescription>
+                </Alert>
+            ) : (
+                <Button size="lg" onClick={onStart} className="gap-2">
+                    <Play data-icon="inline-start" />
+                    Start Quiz
+                </Button>
+            )}
+        </div>
     );
 }
 
@@ -530,7 +547,7 @@ function QuizPlayingScreen({
     }, [currentIndex]);
 
     return (
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+        <div className="flex flex-col gap-4">
             {/* Header bar */}
             <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">
@@ -558,9 +575,9 @@ function QuizPlayingScreen({
                 {Math.ceil(msLeft / 1000)}s
             </div>
 
-            {/* Question card */}
-            <Card>
-                <CardContent className="flex flex-col gap-6 pt-6">
+            {/* Question */}
+            <div className="rounded-lg border bg-muted/20 p-6">
+                <div className="flex flex-col gap-6">
                     <p className="text-center text-lg font-medium leading-relaxed">
                         {question.question}
                     </p>
@@ -581,8 +598,8 @@ function QuizPlayingScreen({
                             onAdvance={onAdvance}
                         />
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 }
@@ -741,21 +758,15 @@ function FeedbackArea({
 // â”€â”€â”€ Post-Quiz Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function PostQuizSummary({
-    challenge,
     summaryResult,
-    relatedChallenges,
 }: {
-    challenge: ChallengePayload;
     summaryResult: SessionResult | null;
-    relatedChallenges: RelatedChallenge[];
 }) {
     if (!summaryResult) {
         return (
-            <Card className="mx-auto w-full max-w-2xl">
-                <CardContent className="flex items-center justify-center py-12">
-                    <LoaderCircle className="size-8 animate-spin text-muted-foreground" />
-                </CardContent>
-            </Card>
+            <div className="flex items-center justify-center py-12">
+                <LoaderCircle className="size-8 animate-spin text-muted-foreground" />
+            </div>
         );
     }
 
@@ -764,15 +775,12 @@ function PostQuizSummary({
         : 0;
 
     return (
-        <Card className="mx-auto w-full max-w-2xl">
-            <CardHeader className="gap-3 text-center">
-                <Trophy className="mx-auto size-12 text-yellow-500" />
-                <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
-                <CardDescription>{challenge.title}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-6">
-                {/* Score */}
-                <div className="text-center">
+        <div className="grid gap-6 sm:grid-cols-2">
+            {/* Left — Score */}
+            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border bg-muted/20 p-6 text-center">
+                <Trophy className="size-12 text-yellow-500" />
+                <h2 className="text-2xl font-semibold tracking-tight">Quiz Complete!</h2>
+                <div>
                     <p className="text-4xl font-bold">{summaryResult.totalPoints}</p>
                     <p className="text-sm text-muted-foreground">Total Points</p>
                 </div>
@@ -789,73 +797,110 @@ function PostQuizSummary({
                     </p>
                 )}
 
-                <Separator />
-
-                {/* Stats grid */}
-                <div className="grid w-full max-w-sm grid-cols-2 gap-4 text-center">
-                    <div>
-                        <p className="text-2xl font-semibold">{summaryResult.correctCount}/{summaryResult.totalQuestions}</p>
-                        <p className="text-xs text-muted-foreground">Correct</p>
-                    </div>
-                    <div>
-                        <p className="text-2xl font-semibold">{accuracy}%</p>
-                        <p className="text-xs text-muted-foreground">Accuracy</p>
-                    </div>
-                    <div>
-                        <p className="text-2xl font-semibold">{(summaryResult.averageElapsedMs / 1000).toFixed(1)}s</p>
-                        <p className="text-xs text-muted-foreground">Avg Time</p>
-                    </div>
-                    <div>
-                        <p className="text-2xl font-semibold">{summaryResult.bestStreak}</p>
-                        <p className="text-xs text-muted-foreground">Best Streak ðŸ”¥</p>
-                    </div>
-                </div>
-
                 {summaryResult.totalStreakBonus > 0 && (
                     <p className="text-sm text-muted-foreground">
                         Streak bonuses: <span className="font-medium text-orange-500">+{summaryResult.totalStreakBonus} pts</span>
                     </p>
                 )}
+            </div>
 
-                <Separator />
-
-                {/* Actions */}
-                <div className="flex flex-wrap justify-center gap-3">
-                    <Button asChild>
-                        <Link href={challengeShow.url({ challenge: challenge.slug })}>
-                            <RotateCcw data-icon="inline-start" />
-                            Play Again
-                        </Link>
-                    </Button>
-                    <Button variant="outline" asChild>
-                        <Link href={challengesIndex()} prefetch>
-                            <ArrowLeft data-icon="inline-start" />
-                            All Challenges
-                        </Link>
-                    </Button>
+            {/* Right — Stats + Actions */}
+            <div className="flex flex-col justify-center gap-6">
+                <div className="grid grid-cols-2 gap-4 text-center">
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                        <p className="text-2xl font-semibold">{summaryResult.correctCount}/{summaryResult.totalQuestions}</p>
+                        <p className="text-xs text-muted-foreground">Correct</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                        <p className="text-2xl font-semibold">{accuracy}%</p>
+                        <p className="text-xs text-muted-foreground">Accuracy</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                        <p className="text-2xl font-semibold">{(summaryResult.averageElapsedMs / 1000).toFixed(1)}s</p>
+                        <p className="text-xs text-muted-foreground">Avg Time</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                        <p className="text-2xl font-semibold">{summaryResult.bestStreak}</p>
+                        <p className="text-xs text-muted-foreground">Best Streak ðŸ”¥</p>
+                    </div>
                 </div>
 
-                {/* Related challenges */}
-                {relatedChallenges.length > 0 && (
-                    <div className="flex w-full flex-col gap-2">
-                        <p className="text-center text-sm font-medium">Try another challenge</p>
-                        <div className="flex flex-col gap-2">
-                            {relatedChallenges.map((related) => (
-                                <Button key={related.id} variant="outline" className="justify-start" asChild>
-                                    <Link href={challengeShow.url({ challenge: related.slug })} prefetch>
-                                        <span className="truncate">{related.title}</span>
-                                    </Link>
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }
 
 // â”€â”€â”€ Legacy Speed Round View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+// --- Completed Challenge View ------------------------------------------------
+
+function CompletedChallengeView({
+    challenge,
+    submissionSummary,
+}: {
+    challenge: ChallengePayload;
+    submissionSummary: SubmissionSummary;
+}) {
+    return (
+        <>
+            <Head title={challenge.title} />
+
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
+                <section className="flex flex-col gap-0">
+                    <TypographyH1>{challenge.title}</TypographyH1>
+                    <TypographyMuted className="max-w-3xl text-sm/6">
+                        {challenge.prompt}
+                    </TypographyMuted>
+                </section>
+
+                <Card>
+                    <CardContent className="flex flex-col gap-6">
+                        <div className="grid gap-6 sm:grid-cols-2">
+                            {/* Left - Result */}
+                            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border bg-muted/20 p-6 text-center">
+                                <CheckCircle2 className="size-12 text-emerald-500" />
+                                <h2 className="text-2xl font-semibold tracking-tight">Challenge Completed</h2>
+                                <div>
+                                    <p className="text-4xl font-bold">{submissionSummary.bestScore}</p>
+                                    <p className="text-sm text-muted-foreground">Best Score</p>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    You have already completed this challenge.
+                                </p>
+                            </div>
+
+                            {/* Right - Stats */}
+                            <div className="flex flex-col justify-center gap-6">
+                                <div className="grid grid-cols-2 gap-4 text-center">
+                                    <div className="rounded-lg border bg-muted/20 p-3">
+                                        <p className="text-2xl font-semibold">{submissionSummary.correctCount}/{submissionSummary.attemptCount}</p>
+                                        <p className="text-xs text-muted-foreground">Correct</p>
+                                    </div>
+                                    <div className="rounded-lg border bg-muted/20 p-3">
+                                        <p className="text-2xl font-semibold">
+                                            {submissionSummary.attemptCount > 0
+                                                ? Math.round((submissionSummary.correctCount / submissionSummary.attemptCount) * 100)
+                                                : 0}%
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">Accuracy</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3">
+                                    <Button variant="outline" asChild>
+                                        <Link href={challengesIndex()} prefetch>
+                                            All Challenges
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </>
+    );
+}
 
 function LegacySpeedRoundView({
     challenge,
@@ -978,31 +1023,21 @@ function LegacySpeedRoundView({
             <Head title={challenge.title} />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-                <div className="flex items-center justify-between gap-2">
-                    <Button variant="ghost" size="sm" asChild>
-                        <Link href={challengesIndex()} prefetch>
-                            <ArrowLeft data-icon="inline-start" />
-                            Back to challenges
-                        </Link>
-                    </Button>
-                    <Badge variant="outline">{availabilityLabel(challenge.status)}</Badge>
-                </div>
+                <section className="flex flex-col gap-0">
+                    <TypographyH1>{challenge.title}</TypographyH1>
+                    <TypographyMuted className="max-w-3xl text-sm/6">
+                        {challenge.prompt}
+                    </TypographyMuted>
+                </section>
 
-                <section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-                    <Card>
-                        <CardHeader className="gap-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="outline">
-                                    <Clock3 />
-                                    {challenge.timeLimitSeconds}s round
-                                </Badge>
-                            </div>
-                            <CardTitle className="text-2xl tracking-tight">{challenge.title}</CardTitle>
-                            <CardDescription className="text-base leading-relaxed">
-                                {challenge.prompt}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-4">
+                <Card>
+                    <CardContent className="flex flex-col gap-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary">
+                                <Clock3 />
+                                {challenge.timeLimitSeconds}s round
+                            </Badge>
+                        </div>
                             {challenge.hint && (
                                 <div className="flex flex-col gap-2">
                                     <Button
@@ -1081,67 +1116,43 @@ function LegacySpeedRoundView({
                                     Restart round
                                 </Button>
                             )}
-                        </CardContent>
-                    </Card>
 
-                    <div className="flex flex-col gap-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Your challenge stats</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
-                                <p>Attempts: <span className="font-medium text-foreground">{submissionSummary.attemptCount}</span></p>
-                                <p>Correct attempts: <span className="font-medium text-foreground">{submissionSummary.correctCount}</span></p>
-                                <p>Best score: <span className="font-medium text-foreground">{submissionSummary.bestScore}</span></p>
-                                <p>
-                                    Last submitted:{' '}
-                                    <span className="font-medium text-foreground">
-                                        {submissionSummary.lastSubmittedAt
-                                            ? new Date(submissionSummary.lastSubmittedAt).toLocaleString('en-US')
-                                            : 'Never'}
-                                    </span>
-                                </p>
+                            {/* Stats */}
+                            <div className="rounded-lg border bg-muted/20 p-3">
+                                <p className="mb-2 text-sm font-medium">Your Stats</p>
+                                <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground sm:grid-cols-4">
+                                    <div>
+                                        <span className="text-xs">Attempts</span>
+                                        <p className="font-medium text-foreground">{submissionSummary.attemptCount}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs">Correct</span>
+                                        <p className="font-medium text-foreground">{submissionSummary.correctCount}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs">Best Score</span>
+                                        <p className="font-medium text-foreground">{submissionSummary.bestScore}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs">Last Submitted</span>
+                                        <p className="font-medium text-foreground">
+                                            {submissionSummary.lastSubmittedAt
+                                                ? new Date(submissionSummary.lastSubmittedAt).toLocaleDateString('en-US')
+                                                : 'Never'}
+                                        </p>
+                                    </div>
+                                </div>
                                 {totalPoints !== null && (
-                                    <p>
-                                        Your total points: <span className="font-medium text-foreground">{totalPoints}</span>
+                                    <p className="mt-2 text-sm text-muted-foreground">
+                                        Total points: <span className="font-medium text-foreground">{totalPoints}</span>
                                     </p>
                                 )}
-                            </CardContent>
-                        </Card>
+                            </div>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Related challenges</CardTitle>
-                                <CardDescription>Continue with more challenge rounds.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-2">
-                                {relatedChallenges.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">No related challenge available yet.</p>
-                                ) : (
-                                    relatedChallenges.map((related) => (
-                                        <Button key={related.id} variant="outline" className="justify-start" asChild>
-                                            <Link href={challengeShow.url({ challenge: related.slug })} prefetch>
-                                                <span className="truncate">{related.title}</span>
-                                            </Link>
-                                        </Button>
-                                    ))
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </section>
-
-                <section>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Recent submissions</CardTitle>
-                            <CardDescription>Your latest attempts for this challenge.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {recentSubmissions.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No submission yet. Start your first timed attempt.</p>
-                            ) : (
+                            {/* Recent submissions */}
+                            {recentSubmissions.length > 0 && (
                                 <div className="flex flex-col gap-2">
+                                    <p className="text-sm font-medium">Recent Submissions</p>
                                     {recentSubmissions.map((submission) => (
                                         <div key={submission.id} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
                                             <div className="min-w-0">
@@ -1158,23 +1169,25 @@ function LegacySpeedRoundView({
                                     ))}
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
-                </section>
+
+                            {/* Related challenges */}
+                            {relatedChallenges.length > 0 && (
+                                <div className="flex flex-col gap-2">
+                                    <p className="text-sm font-medium">Related Challenges</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {relatedChallenges.map((related) => (
+                                            <Button key={related.id} variant="outline" size="sm" asChild>
+                                                <Link href={challengeShow.url({ challenge: related.slug })} prefetch>
+                                                    <span className="truncate">{related.title}</span>
+                                                </Link>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                    </CardContent>
+                </Card>
             </div>
         </>
     );
 }
-
-ChallengesShow.layout = {
-    breadcrumbs: [
-        {
-            title: 'Home',
-            href: dashboard(),
-        },
-        {
-            title: 'Challenges',
-            href: challengesIndex(),
-        },
-    ],
-};

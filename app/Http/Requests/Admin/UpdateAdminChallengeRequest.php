@@ -32,7 +32,7 @@ class UpdateAdminChallengeRequest extends FormRequest
             'time_end' => ['nullable', 'date', 'after_or_equal:time_start'],
             'time_limit_seconds' => ['nullable', 'integer', 'min:5', 'max:300'],
             'questions_per_session' => ['nullable', 'integer', 'min:1', 'max:50'],
-            'max_points_per_question' => ['nullable', 'integer', 'min:100', 'max:5000'],
+            'max_points_per_question' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }

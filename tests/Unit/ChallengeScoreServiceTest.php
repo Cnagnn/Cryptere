@@ -1,6 +1,9 @@
 <?php
 
 use App\Services\ChallengeScoreService;
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 beforeEach(function () {
     $this->service = new ChallengeScoreService;
@@ -45,21 +48,21 @@ test('streak bonus is zero for 0 or 1 consecutive correct', function () {
     expect($this->service->calculateStreakBonus(1))->toBe(0);
 });
 
-test('streak bonus is 100 for 2 consecutive correct', function () {
-    expect($this->service->calculateStreakBonus(2))->toBe(100);
+test('streak bonus is 2 for 2 consecutive correct', function () {
+    expect($this->service->calculateStreakBonus(2))->toBe(2);
 });
 
-test('streak bonus is 200 for 3 consecutive correct', function () {
-    expect($this->service->calculateStreakBonus(3))->toBe(200);
+test('streak bonus is 4 for 3 consecutive correct', function () {
+    expect($this->service->calculateStreakBonus(3))->toBe(4);
 });
 
-test('streak bonus is 300 for 4 consecutive correct', function () {
-    expect($this->service->calculateStreakBonus(4))->toBe(300);
+test('streak bonus is 6 for 4 consecutive correct', function () {
+    expect($this->service->calculateStreakBonus(4))->toBe(6);
 });
 
-test('streak bonus caps at 500 for 5+ consecutive correct', function () {
-    expect($this->service->calculateStreakBonus(5))->toBe(500);
-    expect($this->service->calculateStreakBonus(10))->toBe(500);
+test('streak bonus caps at 10 for 5+ consecutive correct', function () {
+    expect($this->service->calculateStreakBonus(5))->toBe(10);
+    expect($this->service->calculateStreakBonus(10))->toBe(10);
 });
 
 // --- calculateSessionTotal ---

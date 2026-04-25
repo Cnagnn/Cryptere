@@ -24,7 +24,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
             <div className="flex min-h-screen items-center justify-center bg-background py-4 lg:h-screen">
                 <Card className="mx-auto w-full max-w-sm">
                     <CardHeader>
-                        <div className="mb-2">
+                        <div>
                             <img
                                 src="/images/Logo/Logomark.svg"
                                 alt="Crypter"
