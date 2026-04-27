@@ -5,14 +5,22 @@ import {
     AlertTriangle,
     ArrowUpDown,
     ArrowUpRight,
+    Award,
     BookOpen,
+    ClipboardCheck,
     Flame,
+    FlaskConical,
     GraduationCap,
-    Play,
+    Link2,
+
+    Shield,
     Swords,
+    Trophy,
     TrendingUp,
+    UserCheck,
     Users,
     X,
+    Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -50,6 +58,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { DataTable } from '@/components/ui/data-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -83,7 +94,7 @@ type AdminCoursePerformance = { title: string; enrollments: number; completionRa
 type AdminChallengePerformance = { title: string; submissions: number; successRate: number };
 type AdminRecentUser = { id: number; name: string; username: string | null; email: string; role: string; createdAt: string };
 type AdminData = { stats: AdminStats; enrollmentTrends: AdminEnrollmentTrend[]; userGrowth: AdminUserGrowth[]; coursePerformance: AdminCoursePerformance[]; challengePerformance: AdminChallengePerformance[]; recentUsers: AdminRecentUser[] };
-type RecentCourse = { id: number | null; slug: string | null; title: string | null; progressPercentage: number };
+type RecentCourse = { id: number | null; slug: string | null; title: string | null; summary: string | null; lessonCount: number | null; progressPercentage: number };
 type DecayWarning = { daysUntilDecay: number; currentPoints: number; decayPercent: number };
 
 type Props = {
@@ -121,10 +132,16 @@ function getTimeGreeting(name: string): { text: string; emoji: string; subtitle:
     return { text: `Good night, ${name}`, emoji: '🌙', subtitle: 'A little late-night learning?' };
 }
 
-const ACTIVITY_TAG_CONFIG: Record<string, { icon: typeof BookOpen; color: string; bg: string }> = {
-    Lesson: { icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    Challenge: { icon: Swords, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    Course: { icon: GraduationCap, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+const ACTIVITY_TAG_CONFIG: Record<string, { icon: typeof BookOpen; label: string }> = {
+    Lesson: { icon: BookOpen, label: 'Lesson' },
+    Challenge: { icon: Swords, label: 'Challenge' },
+    Course: { icon: GraduationCap, label: 'Course' },
+    Badge: { icon: Award, label: 'Badge' },
+    Quiz: { icon: ClipboardCheck, label: 'Quiz' },
+    Lab: { icon: FlaskConical, label: 'Lab' },
+    Account: { icon: UserCheck, label: 'Account' },
+    Security: { icon: Shield, label: 'Security' },
+    Social: { icon: Link2, label: 'Social' },
 };
 const DEFAULT_ACTIVITY_TAG = ACTIVITY_TAG_CONFIG.Lesson;
 
@@ -147,21 +164,21 @@ function DecayWarningBanner({ warning, onDismiss }: { warning: DecayWarning; onD
     );
 }
 
-/* ── Continue Learning Section ── */
+/* ── Continue Learning Section (stacked progress cards) ── */
 function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
-    const displayCourses = courses.slice(0, 2);
+    const inProgress = courses.filter((c) => c.progressPercentage > 0 && c.progressPercentage < 100);
 
-    if (displayCourses.length === 0) {
+    if (inProgress.length === 0) {
         return (
-            <Card>
+            <Card className="col-span-2 md:col-span-3 lg:col-span-4">
                 <CardHeader>
-                    <CardTitle className="text-base">Continue Learning</CardTitle>
+                    <CardTitle>Continue Learning</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
                     <GraduationCap className="size-10 text-muted-foreground/40" />
-                    <p className="text-sm text-muted-foreground">No courses in progress yet.</p>
-                    <Button asChild size="sm">
-                        <Link href={coursesIndex.url()}>Browse Courses</Link>
+                    <p className="text-sm text-muted-foreground">No courses in progress. Start one!</p>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={coursesIndex.url()}>Browse Courses<ArrowUpRight data-icon="inline-end" /></Link>
                     </Button>
                 </CardContent>
             </Card>
@@ -169,47 +186,73 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base">Continue Learning</CardTitle>
+        <Card className="col-span-2 md:col-span-3 lg:col-span-4">
+            <CardHeader className="gap-1">
+                <CardTitle>Continue Learning</CardTitle>
+                <CardDescription>{inProgress.length} {inProgress.length === 1 ? 'course' : 'courses'} in progress</CardDescription>
                 <CardAction>
-                    <Button variant="link" size="sm" className="text-xs" asChild>
-                        <Link href={coursesIndex.url()}>View all</Link>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href={coursesIndex.url()}>View All<ArrowUpRight data-icon="inline-end" /></Link>
                     </Button>
                 </CardAction>
             </CardHeader>
-            <CardContent className="space-y-4">
-                {displayCourses.map((course) => (
-                    <div key={course.id ?? course.title} className="space-y-2 rounded-md p-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted/50">
-                        <div className="flex items-center justify-between gap-2">
-                            <p className="truncate text-sm font-medium">{course.title ?? 'Untitled Course'}</p>
-                            <span className="shrink-0 text-xs text-muted-foreground">{Math.round(course.progressPercentage)}%</span>
-                        </div>
-                        <Progress value={course.progressPercentage} className="h-1.5" />
-                        {course.slug && (
-                            <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2 text-xs" asChild>
-                                <Link href={courseShow.url({ course: course.slug })}>
-                                    <Play className="size-3" />
-                                    Continue
-                                </Link>
-                            </Button>
-                        )}
+            <CardContent className="p-0">
+                <ScrollArea className={cn(inProgress.length > 3 && 'h-[13.5rem]')}>
+                    <div className="flex flex-col gap-2 px-6 pb-6">
+                        {inProgress.map((course) => (
+                            <Link
+                                key={course.id}
+                                href={courseShow.url({ course: course.slug! })}
+                                className="group relative overflow-hidden rounded-lg border bg-card transition-colors hover:bg-muted/50"
+                            >
+                                {/* Progress background fill */}
+                                <div
+                                    className="absolute inset-y-0 left-0 bg-primary/5 transition-all"
+                                    style={{ width: `${course.progressPercentage}%` }}
+                                />
+                                <div className="relative flex items-center gap-3 p-3">
+                                    {/* Circular progress indicator */}
+                                    <div className="relative flex size-10 shrink-0 items-center justify-center">
+                                        <svg className="size-10 -rotate-90" viewBox="0 0 36 36">
+                                            <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-muted" strokeWidth="2.5" />
+                                            <circle
+                                                cx="18" cy="18" r="15.5" fill="none"
+                                                className="stroke-primary transition-all"
+                                                strokeWidth="2.5"
+                                                strokeLinecap="round"
+                                                strokeDasharray={`${(course.progressPercentage / 100) * 97.4} 97.4`}
+                                            />
+                                        </svg>
+                                        <span className="absolute text-[10px] font-bold tabular-nums">{Math.round(course.progressPercentage)}%</span>
+                                    </div>
+                                    {/* Course info */}
+                                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                        <p className="truncate text-sm font-medium">{course.title}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {course.lessonCount} {course.lessonCount === 1 ? 'lesson' : 'lessons'}
+                                        </p>
+                                    </div>
+                                    {/* Continue arrow */}
+                                    <ArrowUpRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                                </div>
+                            </Link>
+                        ))}
                     </div>
-                ))}
+                </ScrollArea>
             </CardContent>
         </Card>
     );
 }
 
-/* ── Activity Feed Timeline ── */
+/* ── Activity Feed ── */
 function ActivityFeedTimeline({ activities }: { activities: RecentActivityItem[] }) {
     if (activities.length === 0) {
         return (
-            <Card>
+            <Card className="col-span-2 md:col-span-3 lg:col-span-4">
                 <CardHeader>
-                    <CardTitle className="text-base">Recent Activity</CardTitle>
+                    <CardTitle>Recent Activity</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+                <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
                     <Activity className="size-10 text-muted-foreground/40" />
                     <p className="text-sm text-muted-foreground">No recent activity yet. Start learning!</p>
                 </CardContent>
@@ -218,30 +261,48 @@ function ActivityFeedTimeline({ activities }: { activities: RecentActivityItem[]
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base">Recent Activity</CardTitle>
+        <Card className="col-span-2 flex flex-col md:col-span-3 lg:col-span-4">
+            <CardHeader className="gap-1">
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>Your latest actions</CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="relative space-y-4" role="list" aria-label="Recent activity feed">
-                    {/* Vertical timeline line */}
-                    <div className="absolute top-2 bottom-2 left-3.5 w-px bg-border" />
-                    {activities.slice(0, 6).map((item, idx) => {
-                        const config = ACTIVITY_TAG_CONFIG[item.tag] ?? DEFAULT_ACTIVITY_TAG;
-                        const Icon = config.icon;
-                        return (
-                            <div key={item.id ?? idx} className="relative flex gap-3 pl-0 rounded-md transition-colors duration-150 hover:bg-muted/50" role="listitem">
-                                <div className={cn('relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full', config.bg)}>
-                                    <Icon className={cn('size-3.5', config.color)} />
-                                </div>
-                                <div className="min-w-0 flex-1 pt-0.5">
-                                    <p className="truncate text-sm">{item.title}</p>
-                                    <p className="text-xs text-muted-foreground">{item.timestamp}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+            <CardContent className="min-h-0 flex-1 p-0">
+                <ScrollArea className="h-full max-h-56">
+                    <div className="flex flex-col px-6 pb-6" role="list" aria-label="Recent activity feed">
+                        {/* Timeline */}
+                        <div className="relative flex flex-col">
+                            {/* Vertical timeline line */}
+                            <div className="absolute top-1 bottom-1 left-1.75 w-px bg-border" aria-hidden="true" />
+
+                            {activities.map((item, idx) => {
+                                const config = ACTIVITY_TAG_CONFIG[item.tag] ?? DEFAULT_ACTIVITY_TAG;
+                                const Icon = config.icon;
+                                const isLast = idx === activities.length - 1;
+                                return (
+                                    <div
+                                        key={item.id ?? idx}
+                                        className={cn(
+                                            'group relative flex gap-3 pb-3',
+                                            isLast && 'pb-0',
+                                        )}
+                                        role="listitem"
+                                    >
+                                        {/* Timeline dot */}
+                                        <div className="relative z-10 flex size-3.75 shrink-0 items-center justify-center rounded-full bg-muted ring-2 ring-background">
+                                            <Icon className="size-2.5 text-muted-foreground" />
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-px">
+                                            <p className="truncate text-sm leading-tight">{item.title}</p>
+                                            <span className="text-xs text-muted-foreground">{item.timestamp}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </ScrollArea>
             </CardContent>
         </Card>
     );
@@ -253,14 +314,8 @@ const leaderboardColumns: ColumnDef<LeaderboardEntry>[] = [
         header: '#',
         cell: ({ row }) => {
             const rank = row.original.rank;
-            const isCurrent = row.original.isCurrentUser;
-            if (isCurrent) {
-                return <span className="font-bold text-primary">#{rank}</span>;
-            }
-            if (rank <= 3) {
-                return <span className={cn('font-bold', rank === 1 ? 'text-amber-400' : rank === 2 ? 'text-slate-300' : 'text-amber-600')}>#{rank}</span>;
-            }
-            return <span className="text-muted-foreground">#{rank}</span>;
+            const color = rank === 1 ? 'text-amber-400' : rank === 2 ? 'text-slate-300' : rank === 3 ? 'text-amber-600' : 'text-foreground';
+            return <span className={cn('font-bold', color)}>#{rank}</span>;
         },
     },
     {
@@ -347,7 +402,7 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics, deca
     const greeting = getTimeGreeting(auth.user.name);
 
     return (
-        <div className="relative flex flex-col gap-6 px-4 pt-3 pb-6">
+        <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-6">
             {/* ── Decay Warning Banner ── */}
             {decayWarning && showDecayWarning && (
                 <div className="animate-fade-in-up relative">
@@ -356,7 +411,7 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics, deca
             )}
 
             {/* ── Greeting ── */}
-            <section className="animate-fade-in-up relative flex flex-col">
+            <section className="animate-fade-in-up relative flex flex-col gap-1">
                 <TypographyH1>
                     {greeting.text} {greeting.emoji}
                 </TypographyH1>
@@ -367,15 +422,65 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics, deca
                 </TypographyMuted>
             </section>
 
-            {/* ── Area Chart Interactive + Streak & Calendar (weighted 2-col) ── */}
-            <section className="animate-fade-in-up grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]" style={{ animationDelay: '150ms' }}>
-                <ChartAreaInteractive weekly={academy.earningsHistory.weekly} monthly={academy.earningsHistory.monthly} />
+            {/* ── Bento Grid: Unified grid with KPI + charts + cards ── */}
+            <section className="animate-fade-in-up grid grid-cols-2 gap-3 md:grid-cols-6 lg:grid-cols-12" style={{ animationDelay: '100ms' }}>
+                {/* Row 1: KPI Cards — 2×2 on mobile, 4 across on md+lg */}
+                <Card className="md:col-span-3 lg:col-span-3">
+                    <CardHeader className="gap-1">
+                        <CardTitle>Total Points</CardTitle>
+                        <CardDescription>Keep earning to climb up!</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold tabular-nums">{formatNumber(stats.points)} <span className="text-sm font-medium text-muted-foreground">pts</span></p>
+                    </CardContent>
+                </Card>
+                <Card className="md:col-span-3 lg:col-span-3">
+                    <CardHeader className="gap-1">
+                        <CardTitle>Current Level & XP</CardTitle>
+                        <CardDescription>You're doing great!</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-start gap-4">
+                            <p className="shrink-0 text-2xl font-semibold tabular-nums">Level {level?.level ?? 1}</p>
+                            {level && level.next_level_xp && (
+                                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                                    <Progress value={level.progress} className="h-1.5" />
+                                    <div className="text-xs text-muted-foreground">
+                                        <span>{formatNumber(level.current_xp)} / {formatNumber(level.next_level_xp)} XP</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="md:col-span-3 lg:col-span-3">
+                    <CardHeader className="gap-1">
+                        <CardTitle>Courses Completed</CardTitle>
+                        <CardDescription>One step at a time</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold tabular-nums">{stats.completedCourses} <span className="text-base font-normal text-muted-foreground">courses</span></p>
+                    </CardContent>
+                </Card>
+                <Card className="md:col-span-3 lg:col-span-3">
+                    <CardHeader className="gap-1">
+                        <CardTitle>Your Rank</CardTitle>
+                        <CardDescription>Keep it up!</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold tabular-nums">Rank #{academy.learningPath.currentRank}</p>
+                    </CardContent>
+                </Card>
 
-                {/* Streak & Calendar — compact sidebar */}
-                <Card className="flex flex-col">
+                {/* Row 2: Area Chart (8 cols) + Streak Calendar (4 cols) */}
+                <div className="col-span-2 flex md:col-span-4 lg:col-span-8 *:flex-1">
+                    <ChartAreaInteractive weekly={academy.earningsHistory.weekly} monthly={academy.earningsHistory.monthly} />
+                </div>
+
+                <Card className="col-span-2 flex flex-col md:col-span-2 lg:col-span-4">
                     <CardHeader>
                         <div className="flex items-start justify-between gap-4">
-                            <div className="space-y-1">
+                            <div className="flex flex-col gap-1">
                                 <CardTitle>Streak & Calendar</CardTitle>
                                 <CardDescription>Activity overview</CardDescription>
                             </div>
@@ -398,19 +503,13 @@ function LearnerDashboard({ stats, level, academy, learningPath, analytics, deca
                         </Deferred>
                     </CardContent>
                 </Card>
-            </section>
 
-            {/* ── Continue Learning + Activity Feed + Leaderboard (2-col bento) ── */}
-            <section className="animate-fade-in-up grid grid-cols-1 gap-4 lg:grid-cols-2" style={{ animationDelay: '250ms', contentVisibility: 'auto', containIntrinsicSize: 'auto 500px' } as React.CSSProperties}>
-                {/* Left column: Continue Learning + Activity Feed stacked */}
-                <div className="flex flex-col gap-4">
-                    <ContinueLearningSection courses={recentCourses ?? []} />
-                    <ActivityFeedTimeline activities={academy.recentActivity ?? []} />
-                </div>
+                {/* Row 3: Continue Learning (4 cols) + Recent Activity (4 cols) + Leaderboard (4 cols) */}
+                <ContinueLearningSection courses={recentCourses ?? []} />
+                <ActivityFeedTimeline activities={academy.recentActivity ?? []} />
 
-                {/* Right column: Leaderboard */}
-                <Card>
-                    <CardHeader>
+                <Card className="col-span-2 flex flex-col md:col-span-6 lg:col-span-4">
+                    <CardHeader className="gap-1">
                         <CardTitle>Leaderboard</CardTitle>
                         <CardDescription>Top learners this month</CardDescription>
                         <CardAction>
@@ -478,13 +577,13 @@ function AdminDashboard({ admin }: { admin: AdminData }) {
     ];
 
     return (
-        <div className="relative flex flex-col gap-6 px-4 pt-3 pb-6">
-            <section className="animate-fade-in-up relative flex flex-col gap-2"><TypographyH1>Analytics Dashboard</TypographyH1><TypographyMuted>Platform overview and performance metrics.</TypographyMuted></section>
+        <div className="relative flex flex-col gap-4 px-4 py-4 lg:gap-6 lg:py-6">
+            <section className="animate-fade-in-up relative flex flex-col gap-1"><TypographyH1>Analytics Dashboard</TypographyH1><TypographyMuted>Platform overview and performance metrics.</TypographyMuted></section>
 
             <section className="animate-fade-in-up grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6" style={{ animationDelay: '50ms' }}>
                 {statCards.map((s) => (
                     <Card key={s.label}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+                        <CardHeader className="flex flex-row items-center justify-between gap-0 pb-1">
                             <CardDescription className="text-sm font-medium">{s.label}</CardDescription>
                             <s.icon className="size-4 text-muted-foreground" />
                         </CardHeader>

@@ -101,18 +101,15 @@ importers:
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      concurrently:
-        specifier: ^9.0.1
-        version: 9.2.1
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      embla-carousel-autoplay:
+        specifier: ^8.6.0
+        version: 8.6.0(embla-carousel@8.6.0)
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.2.5)
-      globals:
-        specifier: ^15.14.0
-        version: 15.15.0
       input-otp:
         specifier: ^1.4.2
         version: 1.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -161,15 +158,9 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      vite:
-        specifier: ^8.0.0
-        version: 8.0.8(@types/node@22.19.17)(jiti@2.6.1)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -192,6 +183,9 @@ importers:
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
+      concurrently:
+        specifier: ^9.0.1
+        version: 9.2.1
       eslint:
         specifier: ^9.17.0
         version: 9.39.4(jiti@2.6.1)
@@ -210,6 +204,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^7.0.0
         version: 7.0.1(eslint@9.39.4(jiti@2.6.1))
+      globals:
+        specifier: ^15.14.0
+        version: 15.15.0
       prettier:
         specifier: ^3.4.2
         version: 3.8.2
@@ -219,9 +216,15 @@ importers:
       shadcn:
         specifier: ^4.2.0
         version: 4.2.0(@types/node@22.19.17)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
       typescript-eslint:
         specifier: ^8.23.0
         version: 8.58.1(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^8.0.0
+        version: 8.0.8(@types/node@22.19.17)(jiti@2.6.1)
     optionalDependencies:
       '@rollup/rollup-linux-x64-gnu':
         specifier: 4.9.5
@@ -2443,6 +2446,11 @@ packages:
 
   electron-to-chromium@1.5.335:
     resolution: {integrity: sha512-q9n5T4BR4Xwa2cwbrwcsDJtHD/enpQ5S1xF1IAtdqf5AAgqDFmR/aakqH3ChFdqd/QXJhS3rnnXFtexU7rax6Q==}
+
+  embla-carousel-autoplay@8.6.0:
+    resolution: {integrity: sha512-OBu5G3nwaSXkZCo1A6LTaFMZ8EpkYbwIaH+bPqdBnDGQ2fh4+NbzjXjs2SktoPNKCtflfVMc75njaDHOYXcrsA==}
+    peerDependencies:
+      embla-carousel: 8.6.0
 
   embla-carousel-react@8.6.0:
     resolution: {integrity: sha512-0/PjqU7geVmo6F734pmPqpyHqiM99olvyecY7zdweCw+6tKEXnrE90pBiBbMMU8s5tICemzpQ3hi5EpxzGW+JA==}
@@ -6671,6 +6679,10 @@ snapshots:
   ee-first@1.1.1: {}
 
   electron-to-chromium@1.5.335: {}
+
+  embla-carousel-autoplay@8.6.0(embla-carousel@8.6.0):
+    dependencies:
+      embla-carousel: 8.6.0
 
   embla-carousel-react@8.6.0(react@19.2.5):
     dependencies:

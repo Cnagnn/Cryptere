@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Badge;
 use App\Models\Challenge;
 use App\Models\ChallengeSubmission;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LabVisit;
 use App\Models\LessonProgress;
+use App\Models\QuizSubmission;
 use App\Models\User;
 use App\Services\DailyChallengeService;
 use App\Services\LevelService;
@@ -172,7 +175,10 @@ class DashboardController extends Controller
 
         $enrollments = Enrollment::query()
             ->whereBelongsTo($user)
-            ->with('course:id,slug,title')
+            ->with(['course' => function ($query): void {
+                $query->select('id', 'slug', 'title', 'summary')
+                    ->withCount('lessons');
+            }])
             ->latest('updated_at')
             ->take(4)
             ->get();
@@ -186,7 +192,7 @@ class DashboardController extends Controller
             ->orderBy('sort_order')
             ->orderBy('title')
             ->take(3)
-            ->get(['id', 'slug', 'title', 'estimated_minutes']);
+            ->get(['id', 'slug', 'title', 'summary', 'difficulty', 'estimated_minutes']);
 
         $cachedStats = Cache::remember("learner_dashboard_stats:{$user->id}", 60, function () use ($enrollmentQuery, $user): array {
             $enrolledCourses = (clone $enrollmentQuery)->count();
@@ -510,12 +516,111 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Badge earned activities
+        $badgeActivities = $user->badges()
+            ->latest('user_badges.earned_at')
+            ->take(5)
+            ->get()
+            ->map(function (Badge $badge): array {
+                $earnedAt = $badge->pivot->earned_at ? Carbon::parse($badge->pivot->earned_at) : $badge->pivot->created_at;
+
+                return [
+                    'id' => 'badge-'.$badge->id,
+                    'title' => 'Earned badge "'.$badge->name.'"',
+                    'tag' => 'Badge',
+                    'timestamp' => $earnedAt?->diffForHumans(),
+                    'isoDate' => $earnedAt?->toIso8601String(),
+                ];
+            });
+
+        // Quiz submission activities
+        $quizActivities = QuizSubmission::query()
+            ->where('user_id', $user->id)
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->take(5)
+            ->get()
+            ->map(function (QuizSubmission $quiz): array {
+                return [
+                    'id' => 'quiz-'.$quiz->id,
+                    'title' => 'Completed quiz — scored '.$quiz->score.'/'.$quiz->total,
+                    'tag' => 'Quiz',
+                    'timestamp' => $quiz->submitted_at?->diffForHumans(),
+                    'isoDate' => $quiz->submitted_at?->toIso8601String(),
+                ];
+            });
+
+        // Lab visit activities
+        $labActivities = $user->labVisits()
+            ->latest('last_visited_at')
+            ->take(5)
+            ->get()
+            ->map(function (LabVisit $visit): array {
+                return [
+                    'id' => 'lab-'.$visit->id,
+                    'title' => 'Visited lab "'.Str::of($visit->lab_slug)->replace('-', ' ')->title().'"',
+                    'tag' => 'Lab',
+                    'timestamp' => $visit->last_visited_at?->diffForHumans(),
+                    'isoDate' => $visit->last_visited_at?->toIso8601String(),
+                ];
+            });
+
+        // Account activities (profile/security events)
+        $accountActivities = collect();
+
+        if ($user->email_verified_at) {
+            $accountActivities->push([
+                'id' => 'account-email-verified',
+                'title' => 'Verified email address',
+                'tag' => 'Account',
+                'timestamp' => $user->email_verified_at->diffForHumans(),
+                'isoDate' => $user->email_verified_at->toIso8601String(),
+            ]);
+        }
+
+        if ($user->two_factor_confirmed_at) {
+            $accountActivities->push([
+                'id' => 'account-2fa-enabled',
+                'title' => 'Enabled two-factor authentication',
+                'tag' => 'Security',
+                'timestamp' => $user->two_factor_confirmed_at->diffForHumans(),
+                'isoDate' => $user->two_factor_confirmed_at->toIso8601String(),
+            ]);
+        }
+
+        $accountActivities->push([
+            'id' => 'account-created',
+            'title' => 'Joined Crypter',
+            'tag' => 'Account',
+            'timestamp' => $user->created_at?->diffForHumans(),
+            'isoDate' => $user->created_at?->toIso8601String(),
+        ]);
+
+        // Social account linked activities
+        $socialActivities = $user->socialAccounts()
+            ->latest('created_at')
+            ->get()
+            ->map(function ($social): array {
+                return [
+                    'id' => 'social-'.$social->id,
+                    'title' => 'Linked '.Str::of($social->provider)->title().' account',
+                    'tag' => 'Account',
+                    'timestamp' => $social->created_at?->diffForHumans(),
+                    'isoDate' => $social->created_at?->toIso8601String(),
+                ];
+            });
+
         $recentActivity = collect($lessonActivities->all())
             ->merge($challengeActivities->all())
             ->merge($enrollmentActivities->all())
+            ->merge($badgeActivities->all())
+            ->merge($quizActivities->all())
+            ->merge($labActivities->all())
+            ->merge($accountActivities->all())
+            ->merge($socialActivities->all())
             ->filter(fn (array $activity): bool => ! empty($activity['isoDate']))
             ->sortByDesc('isoDate')
-            ->take(6)
+            ->take(15)
             ->values();
 
         $firstName = Str::of($user->name)->trim()->before(' ')->toString();
@@ -647,6 +752,8 @@ class DashboardController extends Controller
                     'id' => $enrollment->course?->id,
                     'slug' => $enrollment->course?->slug,
                     'title' => $enrollment->course?->title,
+                    'summary' => $enrollment->course?->summary,
+                    'lessonCount' => $enrollment->course?->lessons_count,
                     'progressPercentage' => $enrollment->progress_percentage,
                 ];
             })->values(),
@@ -655,6 +762,8 @@ class DashboardController extends Controller
                     'id' => $course->id,
                     'slug' => $course->slug,
                     'title' => $course->title,
+                    'summary' => $course->summary,
+                    'difficulty' => $course->difficulty,
                     'estimatedMinutes' => $course->estimated_minutes,
                     'lessonCount' => $course->lessons_count,
                 ];

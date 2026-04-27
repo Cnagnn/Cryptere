@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Badge;
-use App\Models\Bookmark;
 use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
@@ -13,7 +12,6 @@ use App\Models\LabVisit;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\LessonTask;
-use App\Models\Note;
 use App\Models\QuizQuestion;
 use App\Models\User;
 use App\Services\BadgeService;
@@ -47,8 +45,6 @@ class ComprehensiveSeeder extends Seeder
      *  - badges (via BadgeSeeder)
      *  - user_badges (earned badges based on real progress)
      *  - lab_visits (interactive lab tracking)
-     *  - bookmarks (polymorphic on courses + lessons)
-     *  - notes (user notes on lessons)
      */
     public function run(): void
     {
@@ -83,17 +79,14 @@ class ComprehensiveSeeder extends Seeder
         // ── 8. Lab visits ──
         $this->seedLabVisits($learner, $members);
 
-        // ── 9. Bookmarks ──
-        $this->seedBookmarks($learner, $members, $courses);
+        // ── 9. Recent daily activity (last 7 days for weekly chart) ──
+        $this->seedRecentDailyActivity($learner, $courses, $challenges);
 
-        // ── 10. Notes ──
-        $this->seedNotes($learner, $members, $courses);
-
-        // ── 11. Recalculate points ──
+        // ── 10. Recalculate points ──
         $this->recalculatePoints($allUsers);
         $admin->forceFill(['points' => 500, 'xp' => 50])->save();
 
-        // ── 12. Award badges based on real progress ──
+        // ── 11. Award badges based on real progress ──
         $this->awardBadges($allUsers);
 
         $this->command->info('🎉 Comprehensive seed complete!');
@@ -142,8 +135,8 @@ class ComprehensiveSeeder extends Seeder
                 'is_admin' => false,
                 'role' => 'member',
                 'status' => 'active',
-                'current_streak' => 7,
-                'longest_streak' => 21,
+                'current_streak' => 14,
+                'longest_streak' => 42,
                 'last_active_date' => now()->toDateString(),
             ],
         );
@@ -880,110 +873,80 @@ class ComprehensiveSeeder extends Seeder
     }
 
     // ─────────────────────────────────────────────────────────
-    //  Bookmarks (polymorphic)
+    //  Recent Daily Activity (last 7 days for weekly chart)
     // ─────────────────────────────────────────────────────────
 
     /**
-     * @param  Collection<int, User>  $members
+     * Seed additional lesson completions and challenge submissions
+     * in the last 7 days so the weekly earnings chart has data.
+     *
      * @param  Collection<int, Course>  $courses
+     * @param  Collection<int, Challenge>  $challenges
      */
-    private function seedBookmarks(User $learner, Collection $members, Collection $courses): void
+    private function seedRecentDailyActivity(User $learner, Collection $courses, Collection $challenges): void
     {
-        $this->command->info('Seeding bookmarks...');
+        $this->command->info('Seeding recent daily activity (last 7 days)...');
 
-        $lessons = Lesson::query()
-            ->whereIn('course_id', $courses->pluck('id'))
+        // ── Lesson completions ──
+        // The lesson_progress table has a unique (user_id, lesson_id) constraint,
+        // so we can't insert duplicates. Instead, we UPDATE existing completions
+        // to move some of them into the last 7 days so the weekly chart has data.
+        $existingProgress = LessonProgress::query()
+            ->where('user_id', $learner->id)
             ->inRandomOrder()
-            ->limit(20)
+            ->limit(10)
             ->get();
 
-        // Learner bookmarks 3 courses and 5 lessons
-        $courses->take(3)->each(function (Course $course) use ($learner): void {
-            Bookmark::query()->updateOrCreate([
-                'user_id' => $learner->id,
-                'bookmarkable_type' => Course::class,
-                'bookmarkable_id' => $course->id,
+        $lessonUpdated = 0;
+
+        foreach ($existingProgress as $idx => $progress) {
+            $dayOffset = 6 - ($idx % 7); // spread across 7 days
+            $day = now()->subDays($dayOffset);
+            $endTime = $dayOffset === 0 ? now()->subMinutes(5) : $day->copy()->endOfDay();
+
+            $progress->update([
+                'completed_at' => fake()->dateTimeBetween(
+                    $day->copy()->startOfDay(),
+                    $endTime,
+                ),
             ]);
-        });
+            $lessonUpdated++;
+        }
 
-        $lessons->take(5)->each(function (Lesson $lesson) use ($learner): void {
-            Bookmark::query()->updateOrCreate([
-                'user_id' => $learner->id,
-                'bookmarkable_type' => Lesson::class,
-                'bookmarkable_id' => $lesson->id,
-            ]);
-        });
+        // ── Challenge submissions ──
+        // No unique constraint on (user_id, challenge_id), so we can insert freely.
+        $publishedIds = $challenges->where('is_published', true)->pluck('id')->all();
+        $challengeRows = [];
 
-        // Some members bookmark courses/lessons
-        $members->take(10)->each(function (User $member) use ($courses, $lessons): void {
-            $courses->shuffle()->take(fake()->numberBetween(0, 2))->each(function (Course $course) use ($member): void {
-                Bookmark::query()->updateOrCreate([
-                    'user_id' => $member->id,
-                    'bookmarkable_type' => Course::class,
-                    'bookmarkable_id' => $course->id,
-                ]);
-            });
+        if (count($publishedIds) > 0) {
+            for ($dayOffset = 6; $dayOffset >= 0; $dayOffset--) {
+                $day = now()->subDays($dayOffset);
+                $endTime = $dayOffset === 0 ? now()->subMinutes(5) : $day->copy()->endOfDay();
+                $count = fake()->numberBetween(1, 3);
 
-            $lessons->shuffle()->take(fake()->numberBetween(0, 3))->each(function (Lesson $lesson) use ($member): void {
-                Bookmark::query()->updateOrCreate([
-                    'user_id' => $member->id,
-                    'bookmarkable_type' => Lesson::class,
-                    'bookmarkable_id' => $lesson->id,
-                ]);
-            });
-        });
+                for ($i = 0; $i < $count; $i++) {
+                    $isCorrect = fake()->boolean(80);
+                    $challengeRows[] = [
+                        'user_id' => $learner->id,
+                        'challenge_id' => fake()->randomElement($publishedIds),
+                        'session_id' => Str::uuid()->toString(),
+                        'answer' => fake()->word(),
+                        'is_correct' => $isCorrect,
+                        'score' => $isCorrect ? fake()->numberBetween(30, 50) : 0,
+                        'submitted_at' => fake()->dateTimeBetween(
+                            $day->copy()->startOfDay(),
+                            $endTime,
+                        ),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
 
-        $this->command->info('✓ Bookmarks created.');
-    }
+            ChallengeSubmission::insert($challengeRows);
+        }
 
-    // ─────────────────────────────────────────────────────────
-    //  Notes
-    // ─────────────────────────────────────────────────────────
-
-    /**
-     * @param  Collection<int, User>  $members
-     * @param  Collection<int, Course>  $courses
-     */
-    private function seedNotes(User $learner, Collection $members, Collection $courses): void
-    {
-        $this->command->info('Seeding notes...');
-
-        $lessons = Lesson::query()
-            ->whereIn('course_id', $courses->pluck('id'))
-            ->get();
-
-        $noteContents = [
-            'Remember: CIA triad = Confidentiality, Integrity, Availability.',
-            'Caesar cipher shift of 3 is the classic example. ROT13 is shift 13.',
-            'Kasiski examination helps find the key length of a Vigenere cipher.',
-            'SHA-256 output is always 256 bits (32 bytes) regardless of input size.',
-            'RSA key size minimum: 2048 bits. OAEP padding for encryption, PSS for signatures.',
-            'Merkle trees allow efficient verification of data integrity in blockchains.',
-            'TLS 1.3 reduced the handshake to 1-RTT (or 0-RTT for resumption).',
-            'ECC provides equivalent security to RSA with much smaller key sizes.',
-            'The avalanche effect: changing 1 bit of input changes ~50% of hash output.',
-            'Zero knowledge proofs: prove you know something without revealing it.',
-        ];
-
-        // Learner writes notes on several lessons
-        $lessons->shuffle()->take(8)->each(function (Lesson $lesson, int $i) use ($learner, $noteContents): void {
-            Note::query()->updateOrCreate(
-                ['user_id' => $learner->id, 'lesson_id' => $lesson->id],
-                ['content' => $noteContents[$i % count($noteContents)]],
-            );
-        });
-
-        // Some members write notes
-        $members->take(8)->each(function (User $member) use ($lessons): void {
-            $lessons->shuffle()->take(fake()->numberBetween(1, 3))->each(function (Lesson $lesson) use ($member): void {
-                Note::query()->updateOrCreate(
-                    ['user_id' => $member->id, 'lesson_id' => $lesson->id],
-                    ['content' => fake()->paragraph()],
-                );
-            });
-        });
-
-        $this->command->info('✓ Notes created.');
+        $this->command->info('✓ '.$lessonUpdated.' lesson completions moved to last 7 days + '.count($challengeRows).' challenge submissions added.');
     }
 
     // ─────────────────────────────────────────────────────────

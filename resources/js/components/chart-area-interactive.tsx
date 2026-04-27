@@ -58,7 +58,7 @@ export function ChartAreaInteractive({ weekly, monthly }: ChartAreaInteractivePr
 
   return (
     <Card className="pt-0">
-      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+      <CardHeader className="flex items-center gap-2 border-b py-5 sm:flex-row">
         <div className="grid flex-1 gap-1">
           <CardTitle>Earnings History</CardTitle>
           <CardDescription>
@@ -89,7 +89,7 @@ export function ChartAreaInteractive({ weekly, monthly }: ChartAreaInteractivePr
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <AreaChart data={data}>
+          <AreaChart data={data} margin={{ left: 12, right: 12 }}>
             <defs>
               <linearGradient id="fillPoints" x1="0" y1="0" x2="0" y2="1">
                 <stop
@@ -122,7 +122,7 @@ export function ChartAreaInteractive({ weekly, monthly }: ChartAreaInteractivePr
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              minTickGap={32}
+              interval={0}
             />
             <ChartTooltip
               cursor={false}
