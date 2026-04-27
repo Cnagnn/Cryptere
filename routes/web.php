@@ -52,6 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('courses/{course:slug}/enroll', [EnrollmentController::class, 'store'])->middleware('throttle:enrollment')->name('courses.enroll');
     Route::post('courses/{course:slug}/reset', [EnrollmentController::class, 'reset'])->middleware('throttle:enrollment')->name('courses.reset');
     Route::post('courses/{course:slug}/lessons/{lesson}/complete', [LessonProgressController::class, 'store'])
+        ->middleware('throttle:lesson-complete')
         ->name('courses.lessons.complete');
 
     // Quiz submission — returns JSON, not an Inertia redirect
@@ -71,6 +72,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:challenge-submit')
         ->name('challenges.quiz-submit');
     Route::post('challenges/{challenge:slug}/session-summary', [ChallengeSubmissionController::class, 'sessionSummary'])
+        ->middleware('throttle:challenge-submit')
         ->name('challenges.session-summary');
 
     Route::get('leaderboard', LeaderboardController::class)->name('leaderboard.index');

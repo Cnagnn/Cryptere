@@ -81,7 +81,7 @@ class ChallengeController extends Controller
      */
     public function show(Request $request, Challenge $challenge): Response
     {
-        abort_unless($challenge->is_published, 404);
+        $this->authorize('view', $challenge);
 
         $currentTime = now();
         $availabilityStatus = $this->challengeHelper->resolveAvailabilityStatus($challenge, $currentTime);

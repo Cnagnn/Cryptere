@@ -58,7 +58,7 @@ class CourseController extends Controller
      */
     public function show(Request $request, Course $course): Response
     {
-        abort_unless($course->is_published, 404);
+        $this->authorize('view', $course);
         $isAdmin = (bool) $request->user()?->isAdmin();
 
         $course->load([

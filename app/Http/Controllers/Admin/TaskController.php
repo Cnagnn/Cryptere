@@ -181,6 +181,8 @@ class TaskController extends Controller
 
     public function destroy(LessonTask $task): RedirectResponse
     {
+        $this->authorize('delete', $task->lesson->course);
+
         $task->delete();
 
         return back();

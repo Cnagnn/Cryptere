@@ -65,6 +65,10 @@ class Course extends Model
     /**
      * Return the cover image as a URL string.
      * Prefers file-system path (faster, CDN-friendly), falls back to binary blob (legacy).
+     *
+     * TODO: The `cover_image` LONGBLOB column is legacy. New uploads use `cover_path` (file-system).
+     *       Once all existing courses have been migrated to `cover_path`, drop the `cover_image` column
+     *       and remove the binary fallback logic below.
      */
     public function getCoverAttribute(): ?string
     {

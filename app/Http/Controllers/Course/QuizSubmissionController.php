@@ -26,7 +26,7 @@ class QuizSubmissionController extends Controller
      */
     public function store(Request $request, Course $course, Lesson $lesson): JsonResponse
     {
-        abort_unless($course->is_published, 404);
+        $this->authorize('view', $course);
         abort_if($lesson->course_id !== $course->id, 404);
 
         $validated = $request->validate([

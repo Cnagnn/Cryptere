@@ -319,6 +319,8 @@ class CourseController extends Controller
 
     public function destroy(Course $course): RedirectResponse
     {
+        $this->authorize('delete', $course);
+
         // Clean up cover file from disk
         if ($course->cover_path !== null && Storage::disk('public')->exists($course->cover_path)) {
             Storage::disk('public')->delete($course->cover_path);

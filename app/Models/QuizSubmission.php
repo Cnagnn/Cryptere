@@ -2,23 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable([
+    'user_id',
+    'lesson_task_id',
+    'answers',
+    'score',
+    'total',
+    'results',
+    'xp_earned',
+    'points_earned',
+    'submitted_at',
+])]
 class QuizSubmission extends Model
 {
-    /** @var list<string> */
-    protected $fillable = [
-        'user_id',
-        'lesson_task_id',
-        'answers',
-        'score',
-        'total',
-        'results',
-        'xp_earned',
-        'points_earned',
-        'submitted_at',
-    ];
+    use HasFactory;
 
     /**
      * @return array<string, string>

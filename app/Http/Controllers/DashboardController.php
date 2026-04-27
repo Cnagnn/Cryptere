@@ -188,17 +188,27 @@ class DashboardController extends Controller
             ->take(3)
             ->get(['id', 'slug', 'title', 'estimated_minutes']);
 
-        $enrolledCourses = (clone $enrollmentQuery)->count();
-        $completedCourses = (clone $enrollmentQuery)->whereNotNull('completed_at')->count();
-        $inProgressCourses = (clone $enrollmentQuery)
-            ->whereNull('completed_at')
-            ->where('progress_percentage', '>', 0)
-            ->count();
-        $completedLessons = $user->lessonProgress()->whereNotNull('completed_at')->count();
-        $solvedChallenges = $user->challengeSubmissions()
-            ->where('is_correct', true)
-            ->distinct('challenge_id')
-            ->count('challenge_id');
+        $cachedStats = Cache::remember("learner_dashboard_stats:{$user->id}", 60, function () use ($enrollmentQuery, $user): array {
+            $enrolledCourses = (clone $enrollmentQuery)->count();
+            $completedCourses = (clone $enrollmentQuery)->whereNotNull('completed_at')->count();
+            $inProgressCourses = (clone $enrollmentQuery)
+                ->whereNull('completed_at')
+                ->where('progress_percentage', '>', 0)
+                ->count();
+            $completedLessons = $user->lessonProgress()->whereNotNull('completed_at')->count();
+            $solvedChallenges = $user->challengeSubmissions()
+                ->where('is_correct', true)
+                ->distinct('challenge_id')
+                ->count('challenge_id');
+
+            return compact('enrolledCourses', 'completedCourses', 'inProgressCourses', 'completedLessons', 'solvedChallenges');
+        });
+
+        $enrolledCourses = $cachedStats['enrolledCourses'];
+        $completedCourses = $cachedStats['completedCourses'];
+        $inProgressCourses = $cachedStats['inProgressCourses'];
+        $completedLessons = $cachedStats['completedLessons'];
+        $solvedChallenges = $cachedStats['solvedChallenges'];
 
         $overallSuccessRate = $enrolledCourses > 0
             ? round(($completedCourses / $enrolledCourses) * 100, 1)
@@ -221,7 +231,7 @@ class DashboardController extends Controller
             : 0.0;
 
         $topLearners = User::query()
-            ->select(['id', 'name', 'username', 'points'])
+            ->select(['id', 'name', 'username', 'points', 'avatar_path', 'avatar_image', 'avatar_mime_type'])
             ->orderByDesc('points')
             ->orderBy('name')
             ->take(5)
@@ -335,17 +345,17 @@ class DashboardController extends Controller
         $lessonPointsByDay = $user->lessonProgress()
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $weeklyStart)
-            ->selectRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m-%d') as period, COUNT(*) * {$lessonXpPerLesson} as total")
-            ->groupByRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m-%d')")
-            ->pluck('total', 'period');
+            ->get(['completed_at'])
+            ->groupBy(fn ($p): string => $p->completed_at->format('Y-m-d'))
+            ->map(fn ($rows): int => $rows->count() * $lessonXpPerLesson);
 
         $challengePointsByDay = $user->challengeSubmissions()
             ->where('is_correct', true)
             ->whereNotNull('submitted_at')
             ->where('submitted_at', '>=', $weeklyStart)
-            ->selectRaw("DATE_FORMAT(submitted_at, '%Y-%m-%d') as period, SUM(score) as total")
-            ->groupByRaw("DATE_FORMAT(submitted_at, '%Y-%m-%d')")
-            ->pluck('total', 'period');
+            ->get(['submitted_at', 'score'])
+            ->groupBy(fn ($s): string => $s->submitted_at->format('Y-m-d'))
+            ->map(fn ($rows): int => (int) $rows->sum('score'));
 
         $weeklySeries = collect(range(6, 0))->map(function (int $dayOffset) use ($lessonPointsByDay, $challengePointsByDay): array {
             $day = now()->subDays($dayOffset);
@@ -366,17 +376,17 @@ class DashboardController extends Controller
         $lessonPointsByMonth = $user->lessonProgress()
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $monthlyStart)
-            ->selectRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m') as period, COUNT(*) * {$lessonXpPerLesson} as total")
-            ->groupByRaw("DATE_FORMAT(lesson_progress.completed_at, '%Y-%m')")
-            ->pluck('total', 'period');
+            ->get(['completed_at'])
+            ->groupBy(fn ($p): string => $p->completed_at->format('Y-m'))
+            ->map(fn ($rows): int => $rows->count() * $lessonXpPerLesson);
 
         $challengePointsByMonth = $user->challengeSubmissions()
             ->where('is_correct', true)
             ->whereNotNull('submitted_at')
             ->where('submitted_at', '>=', $monthlyStart)
-            ->selectRaw("DATE_FORMAT(submitted_at, '%Y-%m') as period, SUM(score) as total")
-            ->groupByRaw("DATE_FORMAT(submitted_at, '%Y-%m')")
-            ->pluck('total', 'period');
+            ->get(['submitted_at', 'score'])
+            ->groupBy(fn ($s): string => $s->submitted_at->format('Y-m'))
+            ->map(fn ($rows): int => (int) $rows->sum('score'));
 
         $monthlySeries = collect(range(11, 0))->map(function (int $monthOffset) use ($lessonPointsByMonth, $challengePointsByMonth): array {
             $month = now()->subMonths($monthOffset)->startOfMonth();
@@ -792,11 +802,11 @@ class DashboardController extends Controller
         $user = User::find($userId);
         $today = now()->startOfDay();
 
-        // Find the Sunday that starts the current week (Indonesian week starts Sunday)
-        $currentWeekSunday = $today->copy()->startOfWeek(Carbon::SUNDAY);
+        // Find the Monday that starts the current week
+        $currentWeekMonday = $today->copy()->startOfWeek(Carbon::MONDAY);
 
         // 5 weeks total, today's week in the middle (week 3) → start 2 weeks before
-        $calendarStart = $currentWeekSunday->copy()->subWeeks(2);
+        $calendarStart = $currentWeekMonday->copy()->subWeeks(2);
         $calendarEnd = $calendarStart->copy()->addWeeks(5)->subDay(); // 35 days total
 
         // Query activity from calendar start (past dates only)

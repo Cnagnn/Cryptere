@@ -59,14 +59,14 @@ const taskTypeIcon: Record<TaskType, React.ComponentType> = {
 
 type TaskType = 'video' | 'read' | 'quiz';
 
-type MockQuizQuestion = {
+type LessonQuizQuestion = {
     question: string;
     options: [string, string, string, string];
     correctIndex: number;
     explanation: string;
 };
 
-type MockTask = {
+type LessonTask = {
     id: number;
     type: TaskType;
     title: string;
@@ -77,15 +77,15 @@ type MockTask = {
     pdfName: string | null;
     isPublished: boolean;
     publishedAt: string | null;
-    quizQuestions: MockQuizQuestion[];
+    quizQuestions: LessonQuizQuestion[];
     submission?: QuizSubmission | null;
 };
 
-type MockLesson = {
+type LessonData = {
     id: number;
     title: string;
     summary: string;
-    tasks: MockTask[];
+    tasks: LessonTask[];
 };
 
 type ServerTaskQuestion = {
@@ -157,9 +157,9 @@ function normalizeTaskTitle(title: string): string {
     return title.replace(/^(video|quiz|read)\s*:\s*/i, '').trim();
 }
 
-function mapServerLessonsToMockLessons(
+function mapServerLessonsToLessonData(
     serverLessons: ServerLesson[],
-): MockLesson[] {
+): LessonData[] {
     return serverLessons.map((lesson) => ({
         id: lesson.id,
         title: lesson.title,
@@ -203,7 +203,7 @@ export default function CourseShow({
     const isAdmin = auth.user.is_admin || auth.user.role === 'admin';
 
     const mappedInitialLessons = useMemo(
-        () => mapServerLessonsToMockLessons(serverLessons),
+        () => mapServerLessonsToLessonData(serverLessons),
         [serverLessons],
     );
     const mappedInitialCourse = useMemo(

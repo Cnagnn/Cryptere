@@ -114,6 +114,8 @@ class ChallengeController extends Controller
      */
     public function destroy(Challenge $challenge): RedirectResponse
     {
+        $this->authorize('delete', $challenge);
+
         $challenge->delete();
 
         return back()->with('success', 'Challenge deleted.');

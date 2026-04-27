@@ -2,6 +2,7 @@
 
 namespace App\Concerns;
 
+use App\Events\XpAwarded;
 use App\Models\User;
 use App\Services\BadgeService;
 use App\Services\LevelService;
@@ -42,6 +43,7 @@ trait FlashesAchievements
                 $pointsPerLevel = (int) config('rewards.level_up_points_per_level', 50);
                 $levelUpPoints = $levelUp['level'] * $pointsPerLevel;
                 $user->increment('points', $levelUpPoints);
+                XpAwarded::dispatch($user, 0, $levelUpPoints, 'level_up');
 
                 Inertia::flash('levelUp', [
                     ...$levelUp,

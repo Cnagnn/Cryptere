@@ -40,6 +40,10 @@ class BadgeService
             }
         }
 
+        if ($newlyAwarded->isNotEmpty()) {
+            Cache::forget("user:{$user->id}:badge_count");
+        }
+
         return $newlyAwarded;
     }
 

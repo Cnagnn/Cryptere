@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Course;
 
 use App\Concerns\FlashesAchievements;
+use App\Events\CourseCompleted;
+use App\Events\LessonCompleted;
+use App\Events\XpAwarded;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Enrollment;
@@ -87,6 +90,7 @@ class LessonProgressController extends Controller
 
             if (! $alreadyCompleted) {
                 $this->xpService->awardXpAndPoints($user, (int) config('rewards.lesson_completion_xp', 30));
+                LessonCompleted::dispatch($user, $lesson);
             }
 
             $lessonIds = Lesson::query()->whereBelongsTo($course)->pluck('id');
@@ -109,9 +113,13 @@ class LessonProgressController extends Controller
             if ($progressPercentage === 100 && ! $alreadyCompleted) {
                 $completionXp = (int) config('rewards.course_completion_xp', 100);
                 $completionPoints = (int) config('rewards.course_completion_points', 200);
+                $awardedCompletionPoints = $this->xpService->applyLevelBonus($user, $completionPoints);
 
                 $this->xpService->awardXp($user, $completionXp);
-                $user->increment('points', $completionPoints);
+                $user->increment('points', $awardedCompletionPoints);
+
+                XpAwarded::dispatch($user, $completionXp, $awardedCompletionPoints, 'course_completion');
+                CourseCompleted::dispatch($user, $course);
             }
 
             return ! $alreadyCompleted;

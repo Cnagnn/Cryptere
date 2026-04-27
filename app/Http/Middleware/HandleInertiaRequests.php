@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Services\LevelService;
 use App\Services\XpService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -28,6 +29,7 @@ class HandleInertiaRequests extends Middleware
         $streakResult = ['xp' => 0, 'bonuses' => []];
         if ($user !== null) {
             $streakResult = $this->xpService->updateDailyStreak($user);
+            $user->refresh();
         }
 
         return [
@@ -47,7 +49,7 @@ class HandleInertiaRequests extends Middleware
                     'is_admin' => $user->is_admin,
                     'role' => $user->role,
                     'level' => $this->levelService->getUserLevel($user),
-                    'badge_count' => $user->badges()->count(),
+                    'badge_count' => Cache::remember("user:{$user->id}:badge_count", 300, fn () => $user->badges()->count()),
                     'daily_xp_earned' => $user->daily_xp_earned ?? 0,
                     'daily_goal_target' => (int) config('rewards.daily_goal_target_xp', 100),
                 ] : null,

@@ -329,7 +329,7 @@ test('published challenge detail can be viewed by learners', function () {
         );
 });
 
-test('unpublished challenge detail returns not found', function () {
+test('unpublished challenge detail returns forbidden for non-admin', function () {
     $user = User::factory()->create();
 
     $challenge = Challenge::factory()->create([
@@ -339,7 +339,7 @@ test('unpublished challenge detail returns not found', function () {
 
     $this->actingAs($user)
         ->get(route('challenges.show', ['challenge' => $challenge->slug]))
-        ->assertNotFound();
+        ->assertForbidden();
 });
 
 test('non-admin users cannot update managed user access', function () {

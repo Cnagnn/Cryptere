@@ -3,34 +3,11 @@
 namespace App\Services;
 
 use App\Models\Course;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 class CacheService
 {
-    /**
-     * Cache TTL constants (in seconds).
-     */
-    private const TTL_SHORT = 60;        // 1 minute
-
-    private const TTL_MEDIUM = 300;      // 5 minutes
-
-    private const TTL_LONG = 3600;       // 1 hour
-
-    /**
-     * Get published course catalog with counts, cached for 5 minutes.
-     *
-     * @return Collection<int, Course>
-     */
-    public function getPublishedCourses(): Collection
-    {
-        return Cache::remember('catalog:published_courses', self::TTL_MEDIUM, fn (): Collection => Course::query()
-            ->published()
-            ->withCount(['lessons', 'enrollments'])
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->get());
-    }
+    private const TTL_MEDIUM = 300; // 5 minutes
 
     /**
      * Get total published course count, cached for 5 minutes.
@@ -49,7 +26,6 @@ class CacheService
      */
     public static function invalidateCourseCatalog(): void
     {
-        Cache::forget('catalog:published_courses');
         Cache::forget('stats:published_courses_count');
     }
 

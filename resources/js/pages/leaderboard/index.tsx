@@ -204,10 +204,10 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
             accessorKey: 'longestStreak',
             header: 'Streak',
             cell: ({ row }) => (
-                <Badge variant="outline" className="gap-1">
-                    <Flame className="size-3 text-orange-500" data-icon />
-                    {row.original.longestStreak}d
-                </Badge>
+                <span className="inline-flex items-center gap-1 text-sm">
+                    <Flame className="size-3.5 fill-orange-500 text-orange-500" />
+                    <span className="font-medium tabular-nums">{row.original.longestStreak}d</span>
+                </span>
             ),
         },
         {
@@ -469,8 +469,9 @@ function PodiumSection({ top3, pointsFormatter }: { top3: LeaderboardEntry[]; po
                                 PODIUM_RING_COLORS[rankIndex],
                             )}>
                                 <AvatarImage
-                                    src={entry.avatar ?? undefined}
+                                    src={entry.avatar || undefined}
                                     alt={entry.username ? `@${entry.username}` : entry.name}
+                                    onError={e => { e.currentTarget.style.display = 'none'; }}
                                 />
                                 <AvatarFallback className={cn(isFirst && 'text-lg')}>
                                     {getInitials(entry.username ?? entry.name)}

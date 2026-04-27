@@ -54,6 +54,11 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Lesson completion — prevent rapid-fire completion spam
+        RateLimiter::for('lesson-complete', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
+        });
+
         // Enrollment actions — prevent enrollment spam
         RateLimiter::for('enrollment', function (Request $request) {
             return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());

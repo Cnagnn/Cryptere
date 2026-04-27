@@ -29,7 +29,7 @@ class EnrollmentController extends Controller
      */
     public function store(Request $request, Course $course): RedirectResponse
     {
-        abort_unless($course->is_published, 404);
+        $this->authorize('enroll', $course);
 
         if (! $course->isUnlockedFor($request->user())) {
             $prerequisite = $course->prerequisite;
@@ -78,18 +78,14 @@ class EnrollmentController extends Controller
      */
     public function reset(Request $request, Course $course): RedirectResponse
     {
-        abort_unless($course->is_published, 404);
-
         $user = $request->user();
 
         $enrollment = Enrollment::query()
             ->whereBelongsTo($user)
             ->whereBelongsTo($course)
-            ->first();
+            ->firstOrFail();
 
-        if ($enrollment === null) {
-            abort(403);
-        }
+        $this->authorize('reset', $enrollment);
 
         if ((int) $enrollment->progress_percentage === 0) {
             Inertia::flash('toast', [

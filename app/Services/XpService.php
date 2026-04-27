@@ -6,6 +6,7 @@ use App\Events\XpAwarded;
 use App\Models\LessonTask;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 class XpService
 {
@@ -47,14 +48,16 @@ class XpService
         $awardedXp = (int) round($baseXp * $streakMultiplier);
         $awardedPoints = $this->applyLevelBonus($user, $baseXp);
 
-        if ($awardedXp > 0) {
-            $user->increment('xp', $awardedXp);
-            $this->trackDailyGoal($user, $awardedXp);
-        }
+        DB::transaction(function () use ($user, $awardedXp, $awardedPoints): void {
+            if ($awardedXp > 0) {
+                $user->increment('xp', $awardedXp);
+                $this->trackDailyGoal($user, $awardedXp);
+            }
 
-        if ($awardedPoints > 0) {
-            $user->increment('points', $awardedPoints);
-        }
+            if ($awardedPoints > 0) {
+                $user->increment('points', $awardedPoints);
+            }
+        });
 
         if ($awardedXp > 0 || $awardedPoints > 0) {
             XpAwarded::dispatch($user, $awardedXp, $awardedPoints, 'task');
@@ -141,16 +144,21 @@ class XpService
         }
 
         $target = (int) config('rewards.daily_goal_target_xp', 100);
-        $previousDaily = $user->daily_xp_earned ?? 0;
+
+        // Use atomic update to prevent race conditions on daily_xp_earned
+        $freshUser = User::query()->lockForUpdate()->find($user->id);
+        $previousDaily = $freshUser->daily_xp_earned ?? 0;
         $newDaily = $previousDaily + $xpEarned;
 
-        $user->update(['daily_xp_earned' => $newDaily]);
+        $freshUser->update(['daily_xp_earned' => $newDaily]);
+        $user->daily_xp_earned = $newDaily;
 
         // Award bonus only on the first crossing of the target today
-        if ($previousDaily < $target && $newDaily >= $target && $user->daily_goal_met_at === null) {
+        if ($previousDaily < $target && $newDaily >= $target && $freshUser->daily_goal_met_at === null) {
             $bonus = (int) config('rewards.daily_goal_bonus_xp', 20);
-            $user->increment('xp', $bonus);
-            $user->update(['daily_goal_met_at' => CarbonImmutable::today()]);
+            $freshUser->increment('xp', $bonus);
+            $freshUser->update(['daily_goal_met_at' => CarbonImmutable::today()]);
+            $user->daily_goal_met_at = CarbonImmutable::today();
 
             return $bonus;
         }

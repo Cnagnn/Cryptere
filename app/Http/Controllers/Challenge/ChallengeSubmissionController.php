@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Challenge;
 
 use App\Concerns\FlashesAchievements;
+use App\Events\ChallengeSolved;
+use App\Events\XpAwarded;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SubmitChallengeRequest;
 use App\Models\Challenge;
@@ -37,7 +39,7 @@ class ChallengeSubmissionController extends Controller
      */
     public function store(SubmitChallengeRequest $request, Challenge $challenge): RedirectResponse
     {
-        abort_unless($challenge->is_published, 404);
+        $this->authorize('submit', $challenge);
 
         $availabilityError = $this->challengeHelper->resolveChallengeAvailabilityError($challenge);
 
@@ -94,7 +96,7 @@ class ChallengeSubmissionController extends Controller
      */
     public function quickStore(SubmitChallengeRequest $request, Challenge $challenge): JsonResponse
     {
-        abort_unless($challenge->is_published, 404);
+        $this->authorize('submit', $challenge);
 
         $availabilityError = $this->challengeHelper->resolveChallengeAvailabilityError($challenge);
 
@@ -144,7 +146,7 @@ class ChallengeSubmissionController extends Controller
      */
     public function quizSubmit(Request $request, Challenge $challenge): JsonResponse
     {
-        abort_unless($challenge->is_published, 404);
+        $this->authorize('submit', $challenge);
 
         $validated = $request->validate([
             'session_id' => ['required', 'string', 'max:36'],
@@ -188,19 +190,23 @@ class ChallengeSubmissionController extends Controller
             ? $this->scoreService->calculateStreakBonus($validated['consecutive_correct'] + 1)
             : 0;
 
-        ChallengeSubmission::query()->create([
-            'user_id' => $user->id,
-            'challenge_id' => $challenge->id,
-            'session_id' => $validated['session_id'],
-            'challenge_question_id' => $question->id,
-            'answer' => $validated['answer'],
-            'is_correct' => $isCorrect,
-            'score' => $questionScore,
-            'elapsed_ms' => $validated['elapsed_ms'],
-            'streak_bonus' => $streakBonus,
-            'question_index' => $validated['question_index'],
-            'submitted_at' => now(),
-        ]);
+        ChallengeSubmission::query()->updateOrCreate(
+            [
+                'session_id' => $validated['session_id'],
+                'challenge_question_id' => $question->id,
+            ],
+            [
+                'user_id' => $user->id,
+                'challenge_id' => $challenge->id,
+                'answer' => $validated['answer'],
+                'is_correct' => $isCorrect,
+                'score' => $questionScore,
+                'elapsed_ms' => $validated['elapsed_ms'],
+                'streak_bonus' => $streakBonus,
+                'question_index' => $validated['question_index'],
+                'submitted_at' => now(),
+            ],
+        );
 
         return response()->json([
             'isCorrect' => $isCorrect,
@@ -217,7 +223,7 @@ class ChallengeSubmissionController extends Controller
      */
     public function sessionSummary(Request $request, Challenge $challenge): JsonResponse
     {
-        abort_unless($challenge->is_published, 404);
+        $this->authorize('submit', $challenge);
 
         $validated = $request->validate([
             'session_id' => ['required', 'string', 'max:36'],
@@ -272,18 +278,19 @@ class ChallengeSubmissionController extends Controller
         if (! $hasEarlierSession && $totalPoints > 0) {
             $awardedPoints = $this->xpService->applyLevelBonus($user, $totalPoints);
             $awardedXp = (int) config('rewards.challenge_quiz_session_xp', 20);
-            $user->increment('points', $awardedPoints);
-            $user->increment('xp', $awardedXp);
 
             // Perfect Score Bonus — all questions correct on first session
             if ($isPerfectScore) {
-                $perfectXp = (int) config('rewards.perfect_score_xp', 50);
-                $perfectPoints = (int) config('rewards.perfect_score_points', 150);
-                $awardedXp += $perfectXp;
-                $awardedPoints += $perfectPoints;
-                $user->increment('xp', $perfectXp);
-                $user->increment('points', $perfectPoints);
+                $awardedXp += (int) config('rewards.perfect_score_xp', 50);
+                $awardedPoints += (int) config('rewards.perfect_score_points', 150);
             }
+
+            DB::transaction(function () use ($user, $awardedXp, $awardedPoints): void {
+                $user->increment('xp', $awardedXp);
+                $user->increment('points', $awardedPoints);
+            });
+
+            XpAwarded::dispatch($user, $awardedXp, $awardedPoints, 'challenge_session');
         }
 
         $user->refresh();
@@ -351,7 +358,7 @@ class ChallengeSubmissionController extends Controller
         $baseXp = $isCorrect && ! $alreadySolved ? ($baseChallengeXp + $firstBloodXp) : 0;
         $previousXp = $user->xp;
 
-        DB::transaction(function () use ($challenge, $user, $answer, $isCorrect, $basePoints, $baseXp): void {
+        DB::transaction(function () use ($challenge, $user, $answer, $isCorrect, $alreadySolved, $basePoints, $baseXp): void {
             ChallengeSubmission::query()->create([
                 'user_id' => $user->id,
                 'challenge_id' => $challenge->id,
@@ -368,6 +375,10 @@ class ChallengeSubmissionController extends Controller
 
             if ($baseXp > 0) {
                 $user->increment('xp', $baseXp);
+            }
+
+            if ($isCorrect && ! $alreadySolved) {
+                ChallengeSolved::dispatch($user, $challenge, $basePoints);
             }
         });
 
