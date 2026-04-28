@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\DailyChallengeService;
 use App\Services\LevelService;
 use App\Services\MasteryService;
-use App\Services\StoryService;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -23,7 +22,6 @@ class LearnerDashboardBuilder
         private readonly AcademyDataBuilder $academyBuilder,
         private readonly LearningPathBuilder $learningPathBuilder,
         private readonly AnalyticsBuilder $analyticsBuilder,
-        private readonly StoryService $storyService,
     ) {}
 
     /**
@@ -56,7 +54,6 @@ class LearnerDashboardBuilder
             'academy' => $this->academyBuilder->build($user, $stats, $successRates),
             'learningPath' => $this->learningPathBuilder->build($user),
             'analytics' => $this->buildAnalytics($user, $stats),
-            'storyProgress' => Inertia::defer(fn () => $this->storyService->getProgressSummary($user)),
         ];
     }
 

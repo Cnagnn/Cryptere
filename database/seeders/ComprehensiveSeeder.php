@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Database\Seeders;
 
@@ -7,8 +7,6 @@ use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
 use App\Models\Course;
-use App\Models\CtfEvent;
-use App\Models\CtfFlag;
 use App\Models\Enrollment;
 use App\Models\LabVisit;
 use App\Models\Lesson;
@@ -50,59 +48,53 @@ class ComprehensiveSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('🚀 Starting comprehensive seed...');
+        $this->command->info('ðŸš€ Starting comprehensive seed...');
 
-        // ── 1. Badges (delegate to existing seeder) ──
+        // â”€â”€ 1. Badges (delegate to existing seeder) â”€â”€
         $this->call(BadgeSeeder::class);
 
-        // ── 1b. Story chapters (delegate to existing seeder) ──
-        $this->call(StoryChapterSeeder::class);
-
-        // ── 2. Users ──
+        // â”€â”€ 2. Users â”€â”€
         $admin = $this->seedAdmin();
         $learner = $this->seedLearner();
         $members = $this->seedMembers();
         $allUsers = $members->prepend($learner);
 
-        // ── 3. Courses with learning path ──
+        // â”€â”€ 3. Courses with learning path â”€â”€
         $courses = $this->seedCourses();
 
-        // ── 4. Challenges ──
+        // â”€â”€ 4. Challenges â”€â”€
         $challenges = $this->seedChallenges();
 
-        // ── 5. Enrollments ──
+        // â”€â”€ 5. Enrollments â”€â”€
         $this->seedEnrollments($learner, $members, $courses);
 
-        // ── 6. Lesson progress (12-month spread for learner) ──
+        // â”€â”€ 6. Lesson progress (12-month spread for learner) â”€â”€
         $this->seedLessonProgress($learner, $courses);
         $this->seedMemberLessonProgress($members, $courses);
 
-        // ── 7. Challenge submissions (12-month spread for learner) ──
+        // â”€â”€ 7. Challenge submissions (12-month spread for learner) â”€â”€
         $this->seedChallengeSubmissions($learner, $challenges);
         $this->seedMemberChallengeSubmissions($members, $challenges);
 
-        // ── 8. Lab visits ──
+        // â”€â”€ 8. Lab visits â”€â”€
         $this->seedLabVisits($learner, $members);
 
-        // ── 8b. CTF Events ──
-        $this->seedCtfEvents();
-
-        // ── 9. Recent daily activity (last 7 days for weekly chart) ──
+        // â”€â”€ 9. Recent daily activity (last 7 days for weekly chart) â”€â”€
         $this->seedRecentDailyActivity($learner, $courses, $challenges);
 
-        // ── 10. Recalculate points ──
+        // â”€â”€ 10. Recalculate points â”€â”€
         $this->recalculatePoints($allUsers);
         $admin->forceFill(['points' => 500, 'xp' => 50])->save();
 
-        // ── 11. Award badges based on real progress ──
+        // â”€â”€ 11. Award badges based on real progress â”€â”€
         $this->awardBadges($allUsers);
 
-        $this->command->info('🎉 Comprehensive seed complete!');
+        $this->command->info('ðŸŽ‰ Comprehensive seed complete!');
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Users
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private function seedAdmin(): User
     {
@@ -164,7 +156,7 @@ class ComprehensiveSeeder extends Seeder
         $remaining = max(self::MEMBER_COUNT - $existing->count(), 0);
 
         if ($remaining <= 0) {
-            $this->command->info("⏭ Members already exist ({$existing->count()}).");
+            $this->command->info("â­ Members already exist ({$existing->count()}).");
 
             return $existing;
         }
@@ -185,9 +177,9 @@ class ComprehensiveSeeder extends Seeder
         return $existing->concat($created);
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Courses (learning path with prerequisites)
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * @return Collection<int, Course>
@@ -197,7 +189,7 @@ class ComprehensiveSeeder extends Seeder
         $this->command->info('Seeding courses with learning path...');
 
         $blueprints = [
-            // ── Path 1: Classical Cryptography (beginner → intermediate) ──
+            // â”€â”€ Path 1: Classical Cryptography (beginner â†’ intermediate) â”€â”€
             [
                 'slug' => 'crypto-foundations',
                 'title' => 'Crypto Foundations',
@@ -228,9 +220,9 @@ class ComprehensiveSeeder extends Seeder
                             ['question' => 'Integrity ensures data has not been...', 'options' => ['Encrypted', 'Tampered with', 'Compressed', 'Backed up'], 'correct_option' => 1, 'explanation' => 'Integrity means data has not been altered or tampered with.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.2],
                             ['question' => 'Which mechanism is commonly used to verify data integrity?', 'options' => ['Encryption', 'Hashing', 'Compression', 'Tokenization'], 'correct_option' => 1, 'explanation' => 'Hash functions produce a fixed-size digest that changes if the data is modified.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.4],
                             ['question' => 'Confidentiality is best achieved through...', 'options' => ['Access control lists', 'Encryption', 'Backups', 'Logging'], 'correct_option' => 1, 'explanation' => 'Encryption transforms data so only authorized parties with the key can read it.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
-                            ['question' => 'Which scenario is a confidentiality breach?', 'options' => ['Server goes offline', 'Database records are modified', 'Sensitive emails are leaked', 'Backup fails'], 'correct_option' => 2, 'explanation' => 'Leaked sensitive data is a confidentiality breach — unauthorized access to private information.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
+                            ['question' => 'Which scenario is a confidentiality breach?', 'options' => ['Server goes offline', 'Database records are modified', 'Sensitive emails are leaked', 'Backup fails'], 'correct_option' => 2, 'explanation' => 'Leaked sensitive data is a confidentiality breach â€” unauthorized access to private information.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
                             ['question' => 'A RAID system primarily supports which security goal?', 'options' => ['Confidentiality', 'Integrity', 'Availability', 'Non-repudiation'], 'correct_option' => 2, 'explanation' => 'RAID provides redundancy to ensure data remains available even if a disk fails.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
-                            ['question' => 'Which of the following is an integrity attack?', 'options' => ['Eavesdropping on network traffic', 'Modifying a financial transaction in transit', 'Flooding a server with requests', 'Guessing a password'], 'correct_option' => 1, 'explanation' => 'Modifying data in transit is an integrity attack — the data is tampered with.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
+                            ['question' => 'Which of the following is an integrity attack?', 'options' => ['Eavesdropping on network traffic', 'Modifying a financial transaction in transit', 'Flooding a server with requests', 'Guessing a password'], 'correct_option' => 1, 'explanation' => 'Modifying data in transit is an integrity attack â€” the data is tampered with.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
                         ]],
                     ]],
                     ['slug' => 'threat-modeling-basics', 'title' => 'Threat Modeling Basics', 'description' => 'Identify and categorize potential security threats.', 'tasks' => [
@@ -256,11 +248,11 @@ class ComprehensiveSeeder extends Seeder
                             ['question' => 'How many possible shifts does a Caesar cipher have?', 'options' => ['24', '25', '26', '52'], 'correct_option' => 1, 'explanation' => 'There are 25 non-trivial shifts (shift 0 is identity).', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
                             ['question' => 'What attack easily breaks a Caesar cipher?', 'options' => ['Brute force', 'Man-in-the-middle', 'SQL injection', 'Buffer overflow'], 'correct_option' => 0, 'explanation' => 'With only 25 possible keys, brute force is trivial.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.2],
                             ['question' => 'The Caesar cipher is an example of which cipher type?', 'options' => ['Transposition', 'Substitution', 'Stream', 'Block'], 'correct_option' => 1, 'explanation' => 'The Caesar cipher substitutes each letter with another letter a fixed number of positions away.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.2],
-                            ['question' => 'If you encrypt "HELLO" with a Caesar shift of 3, what is the result?', 'options' => ['KHOOR', 'JGNNQ', 'IFMMP', 'LIPPS'], 'correct_option' => 0, 'explanation' => 'H→K, E→H, L→O, L→O, O→R gives KHOOR.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
+                            ['question' => 'If you encrypt "HELLO" with a Caesar shift of 3, what is the result?', 'options' => ['KHOOR', 'JGNNQ', 'IFMMP', 'LIPPS'], 'correct_option' => 0, 'explanation' => 'Hâ†’K, Eâ†’H, Lâ†’O, Lâ†’O, Oâ†’R gives KHOOR.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
                             ['question' => 'ROT13 is a special case of Caesar cipher with shift...', 'options' => ['7', '10', '13', '26'], 'correct_option' => 2, 'explanation' => 'ROT13 uses a shift of 13, which is its own inverse since 13+13=26.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.4],
                             ['question' => 'Which Roman leader is the Caesar cipher named after?', 'options' => ['Augustus', 'Julius Caesar', 'Nero', 'Marcus Aurelius'], 'correct_option' => 1, 'explanation' => 'Julius Caesar used this cipher to communicate with his generals.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.15],
                             ['question' => 'Why is the Caesar cipher considered insecure by modern standards?', 'options' => ['It uses too many keys', 'The key space is too small (only 25 keys)', 'It requires a computer to break', 'It only works with English'], 'correct_option' => 1, 'explanation' => 'With only 25 possible keys, any attacker can try all of them in seconds.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.35],
-                            ['question' => 'What is the Caesar cipher shift value if A maps to D?', 'options' => ['1', '2', '3', '4'], 'correct_option' => 2, 'explanation' => 'A(0) → D(3) means a shift of 3.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.3],
+                            ['question' => 'What is the Caesar cipher shift value if A maps to D?', 'options' => ['1', '2', '3', '4'], 'correct_option' => 2, 'explanation' => 'A(0) â†’ D(3) means a shift of 3.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.3],
                         ]],
                     ]],
                     ['slug' => 'vigenere-with-repeating-keys', 'title' => 'Vigenere with Repeating Keys', 'description' => 'Explore polyalphabetic substitution and key length estimation.', 'tasks' => [
@@ -281,7 +273,7 @@ class ComprehensiveSeeder extends Seeder
                 ],
             ],
 
-            // ── Path 2: Modern Cryptography (intermediate → advanced) ──
+            // â”€â”€ Path 2: Modern Cryptography (intermediate â†’ advanced) â”€â”€
             [
                 'slug' => 'modern-crypto-principles',
                 'title' => 'Modern Crypto Principles',
@@ -303,7 +295,7 @@ class ComprehensiveSeeder extends Seeder
                             ['question' => 'Which hash algorithm is considered broken and should not be used for security?', 'options' => ['SHA-256', 'SHA-3', 'MD5', 'BLAKE2'], 'correct_option' => 2, 'explanation' => 'MD5 has known collision vulnerabilities and is considered cryptographically broken.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.3],
                             ['question' => 'Hash functions are deterministic, meaning...', 'options' => ['They produce random output', 'The same input always produces the same output', 'They require a key', 'Output length varies'], 'correct_option' => 1, 'explanation' => 'A deterministic function always produces the same output for the same input.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.2],
                             ['question' => 'What is a common use of hash functions in password storage?', 'options' => ['Encrypting passwords reversibly', 'Storing password hashes with salt', 'Compressing passwords', 'Converting passwords to binary'], 'correct_option' => 1, 'explanation' => 'Passwords are hashed with a salt so the original password cannot be recovered from the stored value.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.6],
-                            ['question' => 'SHA-3 is based on which construction?', 'options' => ['Merkle-Damgård', 'Sponge construction', 'Feistel network', 'Substitution-permutation'], 'correct_option' => 1, 'explanation' => 'SHA-3 uses the Keccak sponge construction, unlike SHA-2 which uses Merkle-Damgård.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.75],
+                            ['question' => 'SHA-3 is based on which construction?', 'options' => ['Merkle-DamgÃ¥rd', 'Sponge construction', 'Feistel network', 'Substitution-permutation'], 'correct_option' => 1, 'explanation' => 'SHA-3 uses the Keccak sponge construction, unlike SHA-2 which uses Merkle-DamgÃ¥rd.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.75],
                         ]],
                     ]],
                     ['slug' => 'symmetric-vs-asymmetric-encryption', 'title' => 'Symmetric vs Asymmetric Encryption', 'description' => 'Compare AES and RSA, and learn when to use each.', 'tasks' => [
@@ -341,7 +333,7 @@ class ComprehensiveSeeder extends Seeder
                             ['question' => 'What is the root of a Merkle tree?', 'options' => ['A leaf hash', 'The combined hash of all data', 'A random nonce', 'The block header'], 'correct_option' => 1, 'explanation' => 'The Merkle root is the hash that summarizes all transactions.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
                             ['question' => 'What is the main advantage of a Merkle tree for data verification?', 'options' => ['It encrypts data', 'It allows efficient proof of inclusion', 'It compresses data', 'It speeds up mining'], 'correct_option' => 1, 'explanation' => 'Merkle trees allow verifying that a specific piece of data is included without downloading the entire dataset.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
                             ['question' => 'In a Merkle tree with 8 leaves, how many levels does the tree have?', 'options' => ['2', '3', '4', '8'], 'correct_option' => 2, 'explanation' => 'A binary Merkle tree with 8 leaves has log2(8)+1 = 4 levels (including root and leaves).', 'difficulty_level' => 'hard', 'difficulty_score' => 0.7],
-                            ['question' => 'A Merkle proof for one transaction requires how many hashes?', 'options' => ['All hashes in the tree', 'Only the sibling hashes along the path to root', 'Just the root hash', 'Half of all hashes'], 'correct_option' => 1, 'explanation' => 'A Merkle proof only needs the sibling hashes along the path from the leaf to the root — O(log n) hashes.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
+                            ['question' => 'A Merkle proof for one transaction requires how many hashes?', 'options' => ['All hashes in the tree', 'Only the sibling hashes along the path to root', 'Just the root hash', 'Half of all hashes'], 'correct_option' => 1, 'explanation' => 'A Merkle proof only needs the sibling hashes along the path from the leaf to the root â€” O(log n) hashes.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
                             ['question' => 'If one leaf in a Merkle tree changes, which hashes are affected?', 'options' => ['Only the leaf hash', 'All hashes in the tree', 'The leaf hash and all ancestors up to the root', 'No hashes change'], 'correct_option' => 2, 'explanation' => 'Changing a leaf affects its hash and all parent hashes up to the root.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
                             ['question' => 'Merkle trees are used in Bitcoin to...', 'options' => ['Mine new coins', 'Verify transactions efficiently', 'Generate private keys', 'Encrypt wallet data'], 'correct_option' => 1, 'explanation' => 'Bitcoin uses Merkle trees in block headers to efficiently verify transaction inclusion.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.3],
                         ]],
@@ -366,7 +358,7 @@ class ComprehensiveSeeder extends Seeder
                 ],
             ],
 
-            // ── Path 3: Applied Security (advanced) ──
+            // â”€â”€ Path 3: Applied Security (advanced) â”€â”€
             [
                 'slug' => 'network-security-essentials',
                 'title' => 'Network Security Essentials',
@@ -387,7 +379,7 @@ class ComprehensiveSeeder extends Seeder
                         ['type' => 'quiz', 'title' => 'Quiz: PKI & CAs', 'minutes' => 8, 'questions' => [
                             ['question' => 'What does a CA sign?', 'options' => ['Private keys', 'Certificates', 'Passwords', 'Tokens'], 'correct_option' => 1, 'explanation' => 'A Certificate Authority signs digital certificates.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.2],
                             ['question' => 'What is a CRL?', 'options' => ['Certificate Revocation List', 'Crypto Resource Library', 'Central Root Ledger', 'Cipher Rotation Log'], 'correct_option' => 0, 'explanation' => 'CRL is a list of revoked certificates published by the CA.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.4],
-                            ['question' => 'What is the purpose of a root CA?', 'options' => ['Encrypt all web traffic', 'Serve as the trust anchor in a certificate chain', 'Generate private keys for users', 'Monitor network traffic'], 'correct_option' => 1, 'explanation' => 'The root CA is the ultimate trust anchor — all certificates in the chain trace back to it.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
+                            ['question' => 'What is the purpose of a root CA?', 'options' => ['Encrypt all web traffic', 'Serve as the trust anchor in a certificate chain', 'Generate private keys for users', 'Monitor network traffic'], 'correct_option' => 1, 'explanation' => 'The root CA is the ultimate trust anchor â€” all certificates in the chain trace back to it.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
                             ['question' => 'What format are most web certificates in?', 'options' => ['PGP', 'X.509', 'JSON Web Token', 'PKCS#7'], 'correct_option' => 1, 'explanation' => 'X.509 is the standard format for public key certificates used in TLS/SSL.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
                             ['question' => 'OCSP is an alternative to CRL for...', 'options' => ['Encrypting certificates', 'Checking certificate revocation status in real-time', 'Generating new certificates', 'Compressing certificate chains'], 'correct_option' => 1, 'explanation' => 'OCSP (Online Certificate Status Protocol) provides real-time certificate revocation checking.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
                             ['question' => 'What happens when a CA is compromised?', 'options' => ['Nothing changes', 'All certificates it issued become untrusted', 'Only expired certificates are affected', 'The private keys are automatically rotated'], 'correct_option' => 1, 'explanation' => 'A compromised CA means all certificates it issued can no longer be trusted.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
@@ -409,7 +401,7 @@ class ComprehensiveSeeder extends Seeder
                 ],
             ],
 
-            // ── Path 4: Post-Quantum Cryptography (advanced) ──
+            // â”€â”€ Path 4: Post-Quantum Cryptography (advanced) â”€â”€
             [
                 'slug' => 'post-quantum-cryptography',
                 'title' => 'Post-Quantum Cryptography',
@@ -434,14 +426,14 @@ class ComprehensiveSeeder extends Seeder
                             ['question' => 'How many initial submissions did NIST receive for the PQC standardization process?', 'options' => ['26', '52', '69', '82'], 'correct_option' => 3, 'explanation' => 'NIST received 82 initial submissions in 2016, which were narrowed down through multiple evaluation rounds.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.8],
                         ]],
                     ]],
-                    ['slug' => 'lattice-based-cryptography', 'title' => 'Lattice-Based Cryptography', 'description' => 'Learn about LWE, CRYSTALS-Kyber, and CRYSTALS-Dilithium — the core NIST PQC standards.', 'tasks' => [
+                    ['slug' => 'lattice-based-cryptography', 'title' => 'Lattice-Based Cryptography', 'description' => 'Learn about LWE, CRYSTALS-Kyber, and CRYSTALS-Dilithium â€” the core NIST PQC standards.', 'tasks' => [
                         ['type' => 'read', 'title' => 'Reading: Lattice Problems and NIST Standards', 'minutes' => 20],
                         ['type' => 'quiz', 'title' => 'Quiz: Lattice-Based Cryptography', 'minutes' => 10, 'questions' => [
                             ['question' => 'What does LWE stand for?', 'options' => ['Linear Weight Encryption', 'Learning With Errors', 'Lattice Width Estimation', 'Logarithmic Witness Extraction'], 'correct_option' => 1, 'explanation' => 'Learning With Errors (LWE) is the foundational hard problem for lattice-based cryptography, introduced by Oded Regev in 2005.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.2],
-                            ['question' => 'CRYSTALS-Kyber (FIPS 203) is used for which purpose?', 'options' => ['Digital signatures', 'Key Encapsulation Mechanism (KEM)', 'Hash-based signatures', 'Password hashing'], 'correct_option' => 1, 'explanation' => 'Kyber is a KEM — it securely establishes a shared secret between two parties, replacing RSA/ECDH key exchange.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
+                            ['question' => 'CRYSTALS-Kyber (FIPS 203) is used for which purpose?', 'options' => ['Digital signatures', 'Key Encapsulation Mechanism (KEM)', 'Hash-based signatures', 'Password hashing'], 'correct_option' => 1, 'explanation' => 'Kyber is a KEM â€” it securely establishes a shared secret between two parties, replacing RSA/ECDH key exchange.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
                             ['question' => 'CRYSTALS-Dilithium (FIPS 204) is used for which purpose?', 'options' => ['Key encapsulation', 'Symmetric encryption', 'Digital signatures', 'Hash computation'], 'correct_option' => 2, 'explanation' => 'Dilithium is a digital signature scheme that replaces RSA signatures and ECDSA with quantum-resistant alternatives.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
                             ['question' => 'What makes the LWE problem hard to solve?', 'options' => ['Large prime numbers', 'The addition of small random errors to linear equations', 'Elliptic curve operations', 'Hash function collisions'], 'correct_option' => 1, 'explanation' => 'Without errors, LWE would be simple linear algebra. The small error terms make it computationally hard, believed equivalent to worst-case lattice problems.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
-                            ['question' => 'What is the approximate public key size of Kyber-768 (NIST Level 3)?', 'options' => ['64 bytes', '256 bytes', '1,184 bytes', '261,120 bytes'], 'correct_option' => 2, 'explanation' => 'Kyber-768 has a public key of 1,184 bytes — larger than RSA-2048 (256 bytes) but still practical for most applications.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.7],
+                            ['question' => 'What is the approximate public key size of Kyber-768 (NIST Level 3)?', 'options' => ['64 bytes', '256 bytes', '1,184 bytes', '261,120 bytes'], 'correct_option' => 2, 'explanation' => 'Kyber-768 has a public key of 1,184 bytes â€” larger than RSA-2048 (256 bytes) but still practical for most applications.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.7],
                             ['question' => 'Module-LWE (used by Kyber and Dilithium) is a variant that...', 'options' => ['Uses random matrices only', 'Uses small matrices of polynomial ring elements', 'Eliminates the error term', 'Requires quantum computers to compute'], 'correct_option' => 1, 'explanation' => 'Module-LWE uses small matrices of ring elements, providing a balance between the efficiency of Ring-LWE and the security of standard LWE.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.75],
                             ['question' => 'Compared to RSA key exchange, Kyber is...', 'options' => ['Slower but has smaller keys', 'Faster with larger keys', 'Slower with larger keys', 'Faster with smaller keys'], 'correct_option' => 1, 'explanation' => 'Kyber is orders of magnitude faster than RSA for key exchange, though its public keys are larger (1,184 bytes vs 256 bytes for RSA-2048).', 'difficulty_level' => 'medium', 'difficulty_score' => 0.55],
                             ['question' => 'Which NIST security level does Kyber-768 target?', 'options' => ['Level 1 (AES-128 equivalent)', 'Level 3 (AES-192 equivalent)', 'Level 5 (AES-256 equivalent)', 'Level 2 (SHA-256 equivalent)'], 'correct_option' => 1, 'explanation' => 'Kyber-768 targets NIST Security Level 3, providing security equivalent to AES-192.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
@@ -451,17 +443,17 @@ class ComprehensiveSeeder extends Seeder
                         ['type' => 'read', 'title' => 'Reading: Alternative PQC Families', 'minutes' => 18],
                         ['type' => 'quiz', 'title' => 'Quiz: Hash-Based and Code-Based Crypto', 'minutes' => 8, 'questions' => [
                             ['question' => 'SPHINCS+ (FIPS 205) is what type of signature scheme?', 'options' => ['Lattice-based', 'Code-based', 'Hash-based stateless', 'Multivariate'], 'correct_option' => 2, 'explanation' => 'SPHINCS+ is a stateless hash-based digital signature scheme, relying only on the security of hash functions.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
-                            ['question' => 'What is the key advantage of stateless over stateful signature schemes?', 'options' => ['Smaller signatures', 'No risk of catastrophic key reuse', 'Faster signing', 'Smaller public keys'], 'correct_option' => 1, 'explanation' => 'Stateful schemes like XMSS require tracking used keys — reusing a one-time key completely breaks security. Stateless SPHINCS+ eliminates this risk.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
-                            ['question' => 'What is the primary drawback of the McEliece cryptosystem?', 'options' => ['Slow encryption', 'Small key sizes', 'Enormous public keys (~261 KB)', 'Vulnerability to quantum attacks'], 'correct_option' => 2, 'explanation' => 'McEliece public keys are approximately 261 KB — impractically large for many protocols like TLS.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
-                            ['question' => 'SPHINCS+ public keys are approximately...', 'options' => ['32-64 bytes', '1,184 bytes', '261,120 bytes', '4,096 bytes'], 'correct_option' => 0, 'explanation' => 'SPHINCS+ has remarkably small public keys (32-64 bytes) — the smallest of any PQC signature scheme. The trade-off is large signatures (7-30 KB).', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
+                            ['question' => 'What is the key advantage of stateless over stateful signature schemes?', 'options' => ['Smaller signatures', 'No risk of catastrophic key reuse', 'Faster signing', 'Smaller public keys'], 'correct_option' => 1, 'explanation' => 'Stateful schemes like XMSS require tracking used keys â€” reusing a one-time key completely breaks security. Stateless SPHINCS+ eliminates this risk.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
+                            ['question' => 'What is the primary drawback of the McEliece cryptosystem?', 'options' => ['Slow encryption', 'Small key sizes', 'Enormous public keys (~261 KB)', 'Vulnerability to quantum attacks'], 'correct_option' => 2, 'explanation' => 'McEliece public keys are approximately 261 KB â€” impractically large for many protocols like TLS.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
+                            ['question' => 'SPHINCS+ public keys are approximately...', 'options' => ['32-64 bytes', '1,184 bytes', '261,120 bytes', '4,096 bytes'], 'correct_option' => 0, 'explanation' => 'SPHINCS+ has remarkably small public keys (32-64 bytes) â€” the smallest of any PQC signature scheme. The trade-off is large signatures (7-30 KB).', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
                             ['question' => 'The McEliece cryptosystem has resisted attacks for how many years?', 'options' => ['10 years', '25 years', '35 years', 'Over 45 years (since 1978)'], 'correct_option' => 3, 'explanation' => 'McEliece was proposed in 1978 and has withstood over 45 years of classical and quantum cryptanalysis.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
-                            ['question' => 'Why is SPHINCS+ considered a critical backup to lattice-based schemes?', 'options' => ['It is faster than Dilithium', 'It has smaller signatures', 'Its security relies on different assumptions (hash functions only)', 'It was standardized first'], 'correct_option' => 2, 'explanation' => 'SPHINCS+ relies only on hash function security — if lattice assumptions are ever broken, SPHINCS+ provides an independent fallback.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.7],
+                            ['question' => 'Why is SPHINCS+ considered a critical backup to lattice-based schemes?', 'options' => ['It is faster than Dilithium', 'It has smaller signatures', 'Its security relies on different assumptions (hash functions only)', 'It was standardized first'], 'correct_option' => 2, 'explanation' => 'SPHINCS+ relies only on hash function security â€” if lattice assumptions are ever broken, SPHINCS+ provides an independent fallback.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.7],
                         ]],
                     ]],
                     ['slug' => 'migrating-to-post-quantum', 'title' => 'Migrating to Post-Quantum Security', 'description' => 'Learn practical strategies for transitioning to quantum-resistant cryptography.', 'tasks' => [
                         ['type' => 'video', 'title' => 'Video: PQC Migration in Practice', 'minutes' => 16],
                         ['type' => 'quiz', 'title' => 'Quiz: PQC Migration Strategies', 'minutes' => 8, 'questions' => [
-                            ['question' => 'What is the primary benefit of hybrid encryption (classical + PQC)?', 'options' => ['Faster performance', 'Security holds if either algorithm is secure', 'Smaller key sizes', 'Simpler implementation'], 'correct_option' => 1, 'explanation' => 'Hybrid encryption combines classical and PQC algorithms so the system remains secure even if one is broken — defense in depth.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.3],
+                            ['question' => 'What is the primary benefit of hybrid encryption (classical + PQC)?', 'options' => ['Faster performance', 'Security holds if either algorithm is secure', 'Smaller key sizes', 'Simpler implementation'], 'correct_option' => 1, 'explanation' => 'Hybrid encryption combines classical and PQC algorithms so the system remains secure even if one is broken â€” defense in depth.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.3],
                             ['question' => 'What is "crypto agility"?', 'options' => ['Using the fastest available algorithm', 'The ability to switch cryptographic algorithms without architectural changes', 'A quantum computing technique', 'Encrypting data multiple times'], 'correct_option' => 1, 'explanation' => 'Crypto agility means designing systems that can swap algorithms via configuration, essential for adapting to evolving PQC standards.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
                             ['question' => 'Which company deployed hybrid PQC key exchange (X25519+Kyber) in its messaging app in 2023?', 'options' => ['WhatsApp', 'Signal', 'Telegram', 'Discord'], 'correct_option' => 1, 'explanation' => 'Signal integrated PQXDH (Post-Quantum Extended Diffie-Hellman) combining X25519 with CRYSTALS-Kyber in September 2023.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
                             ['question' => 'In a hybrid TLS 1.3 key exchange, the shared secret is derived from...', 'options' => ['Only the PQC algorithm', 'Only the classical algorithm', 'Both classical and PQC shared secrets combined', 'A pre-shared key'], 'correct_option' => 2, 'explanation' => 'Hybrid key exchange combines both shared secrets (e.g., X25519 + Kyber) through a KDF, ensuring security if either algorithm holds.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
@@ -506,7 +498,7 @@ class ComprehensiveSeeder extends Seeder
                     [
                         'title' => $lessonBp['title'],
                         'description' => $lessonBp['description'] ?? null,
-                        'content' => $lessonContent['content'] ?? (($lessonBp['description'] ?? $lessonBp['title']).' — detailed lesson content.'),
+                        'content' => $lessonContent['content'] ?? (($lessonBp['description'] ?? $lessonBp['title']).' â€” detailed lesson content.'),
                         'learning_objectives' => $lessonContent['learning_objectives'] ?? null,
                         'key_concepts' => $lessonContent['key_concepts'] ?? null,
                         'position' => $li + 1,
@@ -549,14 +541,14 @@ class ComprehensiveSeeder extends Seeder
             return $course;
         })->values();
 
-        $this->command->info('✓ '.count($blueprints).' courses with learning path created.');
+        $this->command->info('âœ“ '.count($blueprints).' courses with learning path created.');
 
         return $courses;
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Challenges
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * @return Collection<int, Challenge>
@@ -569,7 +561,7 @@ class ComprehensiveSeeder extends Seeder
             [
                 'slug' => 'caesar-warmup',
                 'title' => 'Caesar Warmup',
-                'prompt' => 'Test your knowledge of the Caesar cipher — shifts, decryption, and history.',
+                'prompt' => 'Test your knowledge of the Caesar cipher â€” shifts, decryption, and history.',
                 'hint' => 'Shift each letter three steps backward.',
                 'expected_answer' => 'crypter',
                 'difficulty' => 'beginner',
@@ -581,13 +573,13 @@ class ComprehensiveSeeder extends Seeder
                 'questions_per_session' => 5,
                 'max_points_per_question' => 10,
                 'questions' => [
-                    ['type' => 'mcq', 'question' => 'What is the Caesar cipher shift for FUBSWHU → CRYPTER?', 'options' => ['1', '2', '3', '4'], 'correct_answer' => '3', 'explanation' => 'Each letter is shifted 3 positions backward.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
+                    ['type' => 'mcq', 'question' => 'What is the Caesar cipher shift for FUBSWHU â†’ CRYPTER?', 'options' => ['1', '2', '3', '4'], 'correct_answer' => '3', 'explanation' => 'Each letter is shifted 3 positions backward.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
                     ['type' => 'true_false', 'question' => 'The Caesar cipher is a substitution cipher.', 'correct_answer' => 'True', 'explanation' => 'It substitutes each letter with another letter a fixed number of positions away.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.2],
                     ['type' => 'mcq', 'question' => 'How many possible shifts does a Caesar cipher have (English)?', 'options' => ['24', '25', '26', '52'], 'correct_answer' => '25', 'explanation' => 'There are 25 non-trivial shifts.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
                     ['type' => 'fill_blank', 'question' => 'Caesar cipher is also known as a _____ cipher.', 'correct_answer' => 'shift', 'explanation' => 'It shifts each letter by a fixed amount.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.3],
                     ['type' => 'mcq', 'question' => 'Which Roman leader famously used the Caesar cipher?', 'options' => ['Augustus', 'Julius Caesar', 'Nero', 'Marcus Aurelius'], 'correct_answer' => 'Julius Caesar', 'explanation' => 'Julius Caesar used it to communicate with his generals.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.2],
                     ['type' => 'true_false', 'question' => 'A Caesar cipher with shift 13 is called ROT13.', 'correct_answer' => 'True', 'explanation' => 'ROT13 is a special case of Caesar cipher with shift 13.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.4],
-                    ['type' => 'text', 'question' => 'Decrypt "KHOOR" with shift 3.', 'correct_answer' => 'HELLO', 'explanation' => 'K→H, H→E, O→L, O→L, R→O = HELLO.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.55],
+                    ['type' => 'text', 'question' => 'Decrypt "KHOOR" with shift 3.', 'correct_answer' => 'HELLO', 'explanation' => 'Kâ†’H, Hâ†’E, Oâ†’L, Oâ†’L, Râ†’O = HELLO.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.55],
                     ['type' => 'mcq', 'question' => 'What attack easily breaks a Caesar cipher?', 'options' => ['Brute force', 'Man-in-the-middle', 'SQL injection', 'Buffer overflow'], 'correct_answer' => 'Brute force', 'explanation' => 'With only 25 possible keys, brute force is trivial.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
                 ],
             ],
@@ -609,7 +601,7 @@ class ComprehensiveSeeder extends Seeder
                     ['type' => 'mcq', 'question' => 'The Vigenere cipher is classified as which type?', 'options' => ['Monoalphabetic', 'Polyalphabetic', 'Transposition', 'Stream'], 'correct_answer' => 'Polyalphabetic', 'explanation' => 'It uses multiple substitution alphabets.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.4],
                     ['type' => 'true_false', 'question' => 'The Vigenere cipher uses a keyword to determine shifts.', 'correct_answer' => 'True', 'explanation' => 'Each letter of the keyword determines the shift.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
                     ['type' => 'mcq', 'question' => 'Which method can break the Vigenere cipher?', 'options' => ['Kasiski examination', 'Rainbow tables', 'Padding oracle', 'Side-channel'], 'correct_answer' => 'Kasiski examination', 'explanation' => 'Kasiski examination finds repeated sequences to determine key length.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.75],
-                    ['type' => 'fill_blank', 'question' => 'The Vigenere cipher was considered "le chiffre _____".', 'correct_answer' => 'indéchiffrable', 'explanation' => 'It was called "le chiffre indéchiffrable" for centuries.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.85],
+                    ['type' => 'fill_blank', 'question' => 'The Vigenere cipher was considered "le chiffre _____".', 'correct_answer' => 'indÃ©chiffrable', 'explanation' => 'It was called "le chiffre indÃ©chiffrable" for centuries.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.85],
                     ['type' => 'mcq', 'question' => 'If the key is "KEY" and plaintext is "HELLO", what is the first encrypted letter?', 'options' => ['R', 'S', 'T', 'U'], 'correct_answer' => 'R', 'explanation' => 'H(7) + K(10) = R(17).', 'difficulty_level' => 'hard', 'difficulty_score' => 0.7],
                     ['type' => 'text', 'question' => 'What technique analyzes letter frequency to break Vigenere?', 'correct_answer' => 'frequency analysis', 'explanation' => 'After determining key length, frequency analysis breaks each Caesar cipher independently.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.55],
                 ],
@@ -659,7 +651,7 @@ class ComprehensiveSeeder extends Seeder
                     ['type' => 'text', 'question' => 'What is the minimum recommended RSA key size in bits?', 'correct_answer' => '2048', 'explanation' => 'NIST recommends 2048-bit RSA keys as the minimum.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.8],
                 ],
             ],
-            // ── Daily challenge ──
+            // â”€â”€ Daily challenge â”€â”€
             [
                 'slug' => 'daily-crypto-trivia',
                 'title' => 'Daily Crypto Trivia',
@@ -681,7 +673,7 @@ class ComprehensiveSeeder extends Seeder
                     ['type' => 'mcq', 'question' => 'Which key size is NOT valid for AES?', 'options' => ['128', '192', '256', '512'], 'correct_answer' => '512', 'explanation' => 'AES supports 128, 192, and 256-bit keys only.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
                 ],
             ],
-            // ── PQC Challenge ──
+            // â”€â”€ PQC Challenge â”€â”€
             [
                 'slug' => 'pqc-readiness-check',
                 'title' => 'PQC Readiness Check',
@@ -701,9 +693,9 @@ class ComprehensiveSeeder extends Seeder
                     ['type' => 'true_false', 'question' => 'Grover\'s algorithm provides an exponential speedup for brute-force search.', 'correct_answer' => 'False', 'explanation' => 'Grover\'s algorithm provides a quadratic (not exponential) speedup, reducing n-bit security to n/2 bits.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
                     ['type' => 'mcq', 'question' => 'CRYSTALS-Kyber (FIPS 203) is designed for which cryptographic function?', 'options' => ['Digital signatures', 'Key Encapsulation Mechanism (KEM)', 'Hash-based signatures', 'Symmetric encryption'], 'correct_answer' => 'Key Encapsulation Mechanism (KEM)', 'explanation' => 'Kyber is a KEM that securely establishes shared secrets between parties, replacing RSA and ECDH key exchange.', 'difficulty_level' => 'medium', 'difficulty_score' => 0.45],
                     ['type' => 'fill_blank', 'question' => 'CRYSTALS-Dilithium (FIPS 204) is a post-quantum _____ scheme.', 'correct_answer' => 'digital signature', 'explanation' => 'Dilithium is a lattice-based digital signature algorithm standardized as FIPS 204 (ML-DSA).', 'difficulty_level' => 'medium', 'difficulty_score' => 0.5],
-                    ['type' => 'mcq', 'question' => 'What is the primary advantage of SPHINCS+ over lattice-based signatures?', 'options' => ['Smaller signatures', 'Faster signing speed', 'Security relies only on hash function properties', 'Smaller public keys'], 'correct_answer' => 'Security relies only on hash function properties', 'explanation' => 'SPHINCS+ derives security entirely from hash functions — the most conservative and well-understood assumption in post-quantum cryptography.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.7],
+                    ['type' => 'mcq', 'question' => 'What is the primary advantage of SPHINCS+ over lattice-based signatures?', 'options' => ['Smaller signatures', 'Faster signing speed', 'Security relies only on hash function properties', 'Smaller public keys'], 'correct_answer' => 'Security relies only on hash function properties', 'explanation' => 'SPHINCS+ derives security entirely from hash functions â€” the most conservative and well-understood assumption in post-quantum cryptography.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.7],
                     ['type' => 'true_false', 'question' => 'Hybrid encryption combines classical and post-quantum algorithms for defense in depth.', 'correct_answer' => 'True', 'explanation' => 'Hybrid encryption ensures security holds if either the classical or PQC algorithm remains secure, providing a safe migration path.', 'difficulty_level' => 'easy', 'difficulty_score' => 0.25],
-                    ['type' => 'mcq', 'question' => 'Compared to RSA-2048, Kyber-768 public keys are approximately...', 'options' => ['Half the size', 'The same size', '4-5 times larger', '1000 times larger'], 'correct_answer' => '4-5 times larger', 'explanation' => 'Kyber-768 public keys are ~1,184 bytes vs RSA-2048 at ~256 bytes — about 4.6× larger, but still practical.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.75],
+                    ['type' => 'mcq', 'question' => 'Compared to RSA-2048, Kyber-768 public keys are approximately...', 'options' => ['Half the size', 'The same size', '4-5 times larger', '1000 times larger'], 'correct_answer' => '4-5 times larger', 'explanation' => 'Kyber-768 public keys are ~1,184 bytes vs RSA-2048 at ~256 bytes â€” about 4.6Ã— larger, but still practical.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.75],
                     ['type' => 'text', 'question' => 'In what year did NIST publish the final PQC standards FIPS 203, 204, and 205?', 'correct_answer' => '2024', 'explanation' => 'NIST published FIPS 203 (ML-KEM/Kyber), FIPS 204 (ML-DSA/Dilithium), and FIPS 205 (SLH-DSA/SPHINCS+) in August 2024.', 'difficulty_level' => 'hard', 'difficulty_score' => 0.65],
                 ],
             ],
@@ -739,14 +731,14 @@ class ComprehensiveSeeder extends Seeder
             return $challenge;
         })->values();
 
-        $this->command->info('✓ '.count($blueprints).' challenges created.');
+        $this->command->info('âœ“ '.count($blueprints).' challenges created.');
 
         return $challenges;
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Enrollments
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * @param  Collection<int, User>  $members
@@ -784,12 +776,12 @@ class ComprehensiveSeeder extends Seeder
             });
         });
 
-        $this->command->info('✓ Enrollments created.');
+        $this->command->info('âœ“ Enrollments created.');
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Lesson Progress (12-month spread for learner)
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * @param  Collection<int, Course>  $courses
@@ -828,7 +820,7 @@ class ComprehensiveSeeder extends Seeder
         }
 
         LessonProgress::insert($rows);
-        $this->command->info("✓ {$idx} lesson completions spread across 12 months.");
+        $this->command->info("âœ“ {$idx} lesson completions spread across 12 months.");
     }
 
     /**
@@ -891,12 +883,12 @@ class ComprehensiveSeeder extends Seeder
             LessonProgress::insert($chunk);
         }
 
-        $this->command->info('✓ '.count($rows).' member lesson progress records created.');
+        $this->command->info('âœ“ '.count($rows).' member lesson progress records created.');
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Challenge Submissions (12-month spread for learner)
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * @param  Collection<int, Challenge>  $challenges
@@ -939,7 +931,7 @@ class ComprehensiveSeeder extends Seeder
         }
 
         ChallengeSubmission::insert($rows);
-        $this->command->info('✓ '.count($rows).' learner challenge submissions spread across 12 months.');
+        $this->command->info('âœ“ '.count($rows).' learner challenge submissions spread across 12 months.');
     }
 
     /**
@@ -982,12 +974,12 @@ class ComprehensiveSeeder extends Seeder
             ChallengeSubmission::insert($chunk);
         }
 
-        $this->command->info('✓ '.count($rows).' member challenge submissions created.');
+        $this->command->info('âœ“ '.count($rows).' member challenge submissions created.');
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Lab Visits
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * @param  Collection<int, User>  $members
@@ -1030,12 +1022,12 @@ class ComprehensiveSeeder extends Seeder
             }
         });
 
-        $this->command->info('✓ Lab visits created.');
+        $this->command->info('âœ“ Lab visits created.');
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Recent Daily Activity (last 7 days for weekly chart)
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Seed additional lesson completions and challenge submissions
@@ -1048,7 +1040,7 @@ class ComprehensiveSeeder extends Seeder
     {
         $this->command->info('Seeding recent daily activity (last 7 days)...');
 
-        // ── Lesson completions ──
+        // â”€â”€ Lesson completions â”€â”€
         // The lesson_progress table has a unique (user_id, lesson_id) constraint,
         // so we can't insert duplicates. Instead, we UPDATE existing completions
         // to move some of them into the last 7 days so the weekly chart has data.
@@ -1074,7 +1066,7 @@ class ComprehensiveSeeder extends Seeder
             $lessonUpdated++;
         }
 
-        // ── Challenge submissions ──
+        // â”€â”€ Challenge submissions â”€â”€
         // No unique constraint on (user_id, challenge_id), so we can insert freely.
         $publishedIds = $challenges->where('is_published', true)->pluck('id')->all();
         $challengeRows = [];
@@ -1107,12 +1099,12 @@ class ComprehensiveSeeder extends Seeder
             ChallengeSubmission::insert($challengeRows);
         }
 
-        $this->command->info('✓ '.$lessonUpdated.' lesson completions moved to last 7 days + '.count($challengeRows).' challenge submissions added.');
+        $this->command->info('âœ“ '.$lessonUpdated.' lesson completions moved to last 7 days + '.count($challengeRows).' challenge submissions added.');
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Points Recalculation
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * @param  Collection<int, User>  $users
@@ -1135,12 +1127,12 @@ class ComprehensiveSeeder extends Seeder
             $user->forceFill(['points' => $lessonXp + $challengeScore, 'xp' => $lessonXp])->save();
         }
 
-        $this->command->info('✓ Points recalculated for '.count($users).' users.');
+        $this->command->info('âœ“ Points recalculated for '.count($users).' users.');
     }
 
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     //  Badge Awarding
-    // ─────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * @param  Collection<int, User>  $users
@@ -1162,135 +1154,7 @@ class ComprehensiveSeeder extends Seeder
             $totalAwarded += $awarded->count();
         }
 
-        $this->command->info("✓ {$totalAwarded} badges awarded across ".count($users).' users.');
-    }
-
-    // ─────────────────────────────────────────────────────────
-    //  CTF Events
-    // ─────────────────────────────────────────────────────────
-
-    private function seedCtfEvents(): void
-    {
-        $this->command->info('Seeding CTF events...');
-
-        // Active CTF event
-        $activeEvent = CtfEvent::create([
-            'slug' => 'crypto-ctf-spring-2026',
-            'title' => 'Crypto CTF: Spring 2026',
-            'description' => 'Test your cryptography skills in this timed capture-the-flag event! Solve crypto puzzles, decode messages, and capture flags to climb the leaderboard.',
-            'rules' => "1. Each flag is worth points based on difficulty.\n2. You can attempt each flag unlimited times.\n3. First correct submission earns full points.\n4. Event runs for 7 days.\n5. Top 3 participants earn bonus XP and a special badge.",
-            'starts_at' => now()->subDays(1),
-            'ends_at' => now()->addDays(6),
-            'is_published' => true,
-            'bonus_xp' => 200,
-        ]);
-
-        $flags = [
-            [
-                'title' => 'The Caesar Challenge',
-                'description' => 'Decrypt this message encrypted with a Caesar cipher (shift 3): "FUBSWRJUDSKB LV IXQ". The flag format is CTF{decrypted_message_lowercase_no_spaces}.',
-                'hint' => 'Try shifting each letter back by 3 positions in the alphabet.',
-                'flag_value' => 'CTF{cryptographyisfun}',
-                'points' => 50,
-                'difficulty' => 'beginner',
-                'category' => 'classical',
-                'sort_order' => 1,
-            ],
-            [
-                'title' => 'Hash Detective',
-                'description' => 'This SHA-256 hash represents a very common password: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8. Find the original word. Flag format: CTF{word}.',
-                'hint' => 'It\'s literally one of the most common passwords in the world. Think simple.',
-                'flag_value' => 'CTF{password}',
-                'points' => 100,
-                'difficulty' => 'intermediate',
-                'category' => 'hashing',
-                'sort_order' => 2,
-            ],
-            [
-                'title' => 'Base64 Layers',
-                'description' => 'This message has been Base64 encoded THREE times: "UTBaR1pITnljSFJ2". Decode all three layers to find the flag.',
-                'hint' => 'Decode it three times using Base64. The result is a common crypto term.',
-                'flag_value' => 'CTF{crypto}',
-                'points' => 75,
-                'difficulty' => 'beginner',
-                'category' => 'encoding',
-                'sort_order' => 3,
-            ],
-            [
-                'title' => 'RSA Small Primes',
-                'description' => 'Given RSA parameters: p=61, q=53, e=17, and ciphertext c=2790. Find the plaintext m. Flag format: CTF{m_value}.',
-                'hint' => 'Calculate n=p*q, φ(n)=(p-1)(q-1), find d such that e*d ≡ 1 mod φ(n), then m = c^d mod n.',
-                'flag_value' => 'CTF{65}',
-                'points' => 150,
-                'difficulty' => 'intermediate',
-                'category' => 'asymmetric',
-                'sort_order' => 4,
-            ],
-            [
-                'title' => 'Vigenere Breaker',
-                'description' => 'The following ciphertext was encrypted with a Vigenere cipher using the key "KEY": "KXRKGIKXBKAL". Find the plaintext. Flag format: CTF{plaintext_uppercase}.',
-                'hint' => 'Use the Vigenere decryption formula: plaintext = (ciphertext - key) mod 26 for each letter.',
-                'flag_value' => 'CTF{ATTACKATDAWN}',
-                'points' => 125,
-                'difficulty' => 'intermediate',
-                'category' => 'classical',
-                'sort_order' => 5,
-            ],
-            [
-                'title' => 'XOR Master',
-                'description' => 'A message was XORed with the repeating key "KEY". The hex-encoded result is: "080a1a". Find the original 3-character plaintext (ASCII). Flag format: CTF{plaintext}.',
-                'hint' => 'XOR each byte of the result with the corresponding byte of the key. K=0x4B, E=0x45, Y=0x59.',
-                'flag_value' => 'CTF{CAT}',
-                'points' => 100,
-                'difficulty' => 'intermediate',
-                'category' => 'symmetric',
-                'sort_order' => 6,
-            ],
-        ];
-
-        foreach ($flags as $flagData) {
-            CtfFlag::create(array_merge($flagData, [
-                'ctf_event_id' => $activeEvent->id,
-            ]));
-        }
-
-        // Upcoming CTF event
-        CtfEvent::create([
-            'slug' => 'advanced-crypto-ctf-summer-2026',
-            'title' => 'Advanced Crypto CTF: Summer 2026',
-            'description' => 'An advanced-level CTF event focusing on modern cryptographic protocols, side-channel attacks, and post-quantum challenges.',
-            'rules' => "1. Advanced difficulty — recommended for experienced participants.\n2. Each flag is worth 100-300 points.\n3. Event runs for 48 hours.\n4. Limited to 100 participants.",
-            'starts_at' => now()->addDays(30),
-            'ends_at' => now()->addDays(32),
-            'is_published' => true,
-            'max_participants' => 100,
-            'bonus_xp' => 500,
-        ]);
-
-        // Past CTF event
-        $pastEvent = CtfEvent::create([
-            'slug' => 'intro-ctf-winter-2025',
-            'title' => 'Intro CTF: Winter 2025',
-            'description' => 'A beginner-friendly CTF event to introduce new learners to cryptography challenges.',
-            'rules' => "1. Beginner-friendly challenges.\n2. Unlimited attempts.\n3. Event ran for 14 days.",
-            'starts_at' => now()->subDays(60),
-            'ends_at' => now()->subDays(46),
-            'is_published' => true,
-            'bonus_xp' => 100,
-        ]);
-
-        CtfFlag::create([
-            'ctf_event_id' => $pastEvent->id,
-            'title' => 'Hello World',
-            'description' => 'The flag is literally CTF{hello_world}. Submit it to test the system!',
-            'hint' => 'Read the description carefully.',
-            'flag_value' => 'CTF{hello_world}',
-            'points' => 10,
-            'difficulty' => 'beginner',
-            'category' => 'intro',
-            'sort_order' => 1,
-        ]);
-
-        $this->command->info('✓ CTF events seeded (3 events, '.count($flags).' active flags).');
+        $this->command->info("âœ“ {$totalAwarded} badges awarded across ".count($users).' users.');
     }
 }
+

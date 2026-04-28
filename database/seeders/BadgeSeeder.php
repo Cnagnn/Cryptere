@@ -306,19 +306,6 @@ class BadgeSeeder extends Seeder
                 'criteria_value' => 1,
                 'sort_order' => 42,
             ],
-
-            // CTF badges
-            [
-                'slug' => 'ctf-participant',
-                'name' => 'CTF Warrior',
-                'description' => 'Capture your first flag in a CTF event.',
-                'icon' => 'flag',
-                'category' => Badge::CATEGORY_SPECIAL,
-                'tier' => Badge::TIER_SILVER,
-                'criteria_type' => 'ctf_flag_captured',
-                'criteria_value' => 1,
-                'sort_order' => 43,
-            ],
         ];
 
         foreach ($badges as $badge) {

@@ -207,14 +207,6 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get the story progress entries for the user.
-     */
-    public function storyProgress(): HasMany
-    {
-        return $this->hasMany(UserStoryProgress::class);
-    }
-
-    /**
      * Get the discussions created by the user.
      */
     public function discussions(): HasMany
@@ -228,16 +220,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function discussionReplies(): HasMany
     {
         return $this->hasMany(DiscussionReply::class);
-    }
-
-    /**
-     * Get the story chapters unlocked by the user.
-     */
-    public function unlockedChapters(): BelongsToMany
-    {
-        return $this->belongsToMany(StoryChapter::class, 'user_story_progress')
-            ->withPivot(['unlocked_at', 'read_at'])
-            ->withTimestamps();
     }
 
     private function resolveAvatarBinary(): ?string

@@ -9,7 +9,11 @@ export function SkipToContent({ targetId = 'main-content' }: { targetId?: string
     return (
         <a
             href={`#${targetId}`}
-            className="fixed top-2 left-2 z-[100] -translate-y-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className={
+                // Hidden visually by default for sighted users, becomes visible and positioned when focused
+                // Uses Tailwind's `sr-only` + `focus:not-sr-only` pattern so keyboard users see the link
+                "sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:transition-transform focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            }
         >
             Skip to main content
         </a>
@@ -51,15 +55,21 @@ export function RouteAnnouncer() {
 
 /**
  * Focus management hook — WCAG 2.1 AA 2.4.3 (Focus Order)
- * Moves focus to main content after route changes.
+ * Moves focus to main content after route changes and resets scroll
+ * position to the top so every page starts at the beginning.
  */
 export function useFocusOnNavigate(targetId = 'main-content') {
     useEffect(() => {
         const removeListener = router.on('navigate', () => {
             requestAnimationFrame(() => {
+                // Reset scroll to top on every navigation
+                window.scrollTo({ top: 0, left: 0 });
+
                 const target = document.getElementById(targetId);
                 if (target) {
-                    target.focus({ preventScroll: false });
+                    // Use preventScroll so focus doesn't cause an
+                    // unwanted scroll jump to the element's position
+                    target.focus({ preventScroll: true });
                 }
             });
         });

@@ -15,7 +15,6 @@ use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Course\EnrollmentController;
 use App\Http\Controllers\Course\LessonProgressController;
 use App\Http\Controllers\Course\QuizSubmissionController;
-use App\Http\Controllers\CtfController;
 use App\Http\Controllers\DailyRewardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscussionController;
@@ -27,7 +26,6 @@ use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\StoryController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -126,8 +124,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('certificates', [CertificateController::class, 'store'])->name('certificates.store');
     Route::get('certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
 
-    Route::get('story', StoryController::class)->name('story');
-    Route::post('story/{chapter}/read', [StoryController::class, 'markAsRead'])->name('story.read');
 
     // Discussions
     Route::get('discussions', [DiscussionController::class, 'index'])->name('discussions.index');
@@ -138,12 +134,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('discussions/{discussion}/pin', [DiscussionController::class, 'togglePin'])->middleware('admin')->name('discussions.pin');
     Route::delete('discussions/{discussion}', [DiscussionController::class, 'destroy'])->name('discussions.destroy');
 
-    // CTF Events
-    Route::get('ctf', [CtfController::class, 'index'])->name('ctf.index');
-    Route::get('ctf/{event:slug}', [CtfController::class, 'show'])->name('ctf.show');
-    Route::post('ctf/{event:slug}/register', [CtfController::class, 'register'])->middleware('throttle:5,1')->name('ctf.register');
-    Route::post('ctf/{event:slug}/flags/{flag}/submit', [CtfController::class, 'submitFlag'])->middleware('throttle:challenge-submit')->name('ctf.submit');
-    Route::get('ctf/{event:slug}/leaderboard', [CtfController::class, 'leaderboard'])->name('ctf.leaderboard');
+    // Story and CTF removed
 
 });
 
