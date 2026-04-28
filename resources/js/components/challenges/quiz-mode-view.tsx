@@ -239,14 +239,6 @@ function FeedbackArea({
                 </div>
             )}
 
-            {!result.isCorrect && (
-                <p className="text-sm text-muted-foreground">
-                    Correct answer:{' '}
-                    <span className="font-medium text-foreground">
-                        {result.correctAnswer}
-                    </span>
-                </p>
-            )}
 
             {result.explanation && (
                 <p className="max-w-md text-center text-sm text-muted-foreground">
@@ -456,6 +448,62 @@ function PostQuizSummary({
                     </div>
                 </div>
             </div>
+
+            {/* Question Review — correct answers revealed after session */}
+            {summaryResult.questionDetails &&
+                summaryResult.questionDetails.length > 0 && (
+                    <div className="col-span-full flex flex-col gap-3">
+                        <h3 className="text-lg font-semibold">
+                            Question Review
+                        </h3>
+                        <div className="flex flex-col gap-2">
+                            {summaryResult.questionDetails.map((detail, i) => (
+                                <div
+                                    key={i}
+                                    className={cn(
+                                        'rounded-lg border p-4',
+                                        detail.isCorrect
+                                            ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20'
+                                            : 'border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20',
+                                    )}
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <p className="text-sm font-medium">
+                                            {detail.questionIndex + 1}.{' '}
+                                            {detail.question}
+                                        </p>
+                                        {detail.isCorrect ? (
+                                            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                                        ) : (
+                                            <XCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
+                                        )}
+                                    </div>
+                                    <div className="mt-2 space-y-1 text-sm">
+                                        <p className="text-muted-foreground">
+                                            Your answer:{' '}
+                                            <span className="font-medium text-foreground">
+                                                {detail.userAnswer}
+                                            </span>
+                                        </p>
+                                        {!detail.isCorrect && (
+                                            <p className="text-muted-foreground">
+                                                Correct answer:{' '}
+                                                <span className="font-medium text-emerald-600">
+                                                    {detail.correctAnswer}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {detail.explanation && (
+                                            <p className="mt-1 text-xs text-muted-foreground italic">
+                                                {detail.explanation}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
         </div>
     );
 }

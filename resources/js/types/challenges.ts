@@ -58,11 +58,22 @@ export type RelatedChallenge = {
 
 export type QuestionResult = {
     isCorrect: boolean;
-    correctAnswer: string;
     explanation: string | null;
     questionScore: number;
     streakBonus: number;
     totalQuestionPoints: number;
+};
+
+export type QuestionDetail = {
+    questionIndex: number;
+    question: string;
+    userAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+    explanation: string | null;
+    score: number;
+    streakBonus: number;
+    elapsedMs: number;
 };
 
 export type SessionResult = {
@@ -76,6 +87,7 @@ export type SessionResult = {
     awardedPoints: number;
     isFirstSession: boolean;
     userTotalPoints: number;
+    questionDetails: QuestionDetail[];
 };
 
 export type QuizPhase = 'pre' | 'playing' | 'feedback' | 'summary';

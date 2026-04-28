@@ -112,7 +112,6 @@ export function LegacySpeedRoundView({
                 isCorrect?: boolean;
                 alreadySolved?: boolean;
                 awardedPoints?: number;
-                correctAnswer?: string;
                 totalPoints?: number;
                 message?: string;
             }>(quickSubmit.url({ challenge: challenge.slug }), {
@@ -126,7 +125,7 @@ export function LegacySpeedRoundView({
                 setFeedback({
                     variant: 'destructive',
                     title: 'Incorrect answer',
-                    message: `Correct keyword: ${payload.correctAnswer ?? 'not available'}. Restart to try again.`,
+                    message: 'Not quite right. Restart to try again.',
                 });
                 setSecondsLeft(0);
 

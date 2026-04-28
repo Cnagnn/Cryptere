@@ -34,6 +34,12 @@ Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
+Route::post('locale', function (Request $request) {
+    $locale = $request->validate(['locale' => 'required|in:en,id'])['locale'];
+
+    return back()->withCookie(cookie('locale', $locale, 60 * 24 * 365));
+})->name('locale.switch');
+
 Route::get('/health', HealthCheckController::class)->name('health');
 
 Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
@@ -80,10 +86,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:challenge-submit')
         ->name('challenges.quick-submit');
     Route::post('challenges/{challenge:slug}/quiz-submit', [ChallengeSubmissionController::class, 'quizSubmit'])
-        ->middleware('throttle:challenge-submit')
+        ->middleware('throttle:quiz-submit')
         ->name('challenges.quiz-submit');
     Route::post('challenges/{challenge:slug}/session-summary', [ChallengeSubmissionController::class, 'sessionSummary'])
-        ->middleware('throttle:challenge-submit')
+        ->middleware('throttle:session-summary')
         ->name('challenges.session-summary');
 
     Route::get('leaderboard', LeaderboardController::class)->name('leaderboard.index');
@@ -97,7 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     Route::get('daily-rewards', [DailyRewardController::class, 'index'])->name('daily-rewards.index');
-    Route::post('daily-rewards/claim', [DailyRewardController::class, 'claim'])->middleware('throttle:5,1')->name('daily-rewards.claim');
+    Route::post('daily-rewards/claim', [DailyRewardController::class, 'claim'])->middleware('throttle:daily-reward')->name('daily-rewards.claim');
 
     Route::get('learning-path', LearningPathController::class)->name('learning-path');
 
@@ -122,7 +128,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Public certificate verification — no auth required
 Route::get('verify/{code}', [CertificateController::class, 'verify'])->name('certificates.verify');
 
-Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
     Route::patch('users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');

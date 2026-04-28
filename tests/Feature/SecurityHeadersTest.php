@@ -31,6 +31,7 @@ test('CSP header blocks framing and restricts sources', function () {
 
     expect($csp)
         ->toContain("default-src 'self'")
+        ->toContain("object-src 'none'")
         ->toContain("frame-ancestors 'none'")
         ->toContain("script-src 'self'");
 });

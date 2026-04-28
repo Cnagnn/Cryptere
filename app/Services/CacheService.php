@@ -57,11 +57,58 @@ class CacheService
      */
     public static function invalidateLeaderboard(): void
     {
+        // Top score caches
         Cache::forget('leaderboard_top_weekly');
         Cache::forget('leaderboard_top_monthly');
         Cache::forget('leaderboard_top3_all');
         Cache::forget('leaderboard_top3_weekly');
         Cache::forget('leaderboard_top3_monthly');
+
+        // Timeframe leaderboard page caches (clear first 10 pages for each timeframe/perPage combo)
+        foreach (['weekly', 'monthly'] as $timeframe) {
+            foreach ([10, 25, 50, 100] as $perPage) {
+                for ($page = 1; $page <= 10; $page++) {
+                    Cache::forget("leaderboard_timeframe_{$timeframe}_page_{$page}_perpage_{$perPage}");
+                }
+            }
+        }
+
+        // User rank caches — use pattern-based clearing if available, otherwise
+        // individual keys are cleared when they naturally expire (2 min TTL).
+        // We clear known keys via a tag-less approach for common user IDs.
+        self::clearLeaderboardRankCaches();
+    }
+
+    /**
+     * Clear cached user rank entries for timeframe leaderboards.
+     *
+     * Since we cannot use cache tags with all drivers, we store tracked user IDs
+     * in a dedicated cache key and clear them individually.
+     */
+    private static function clearLeaderboardRankCaches(): void
+    {
+        $trackedUserIds = Cache::get('leaderboard_rank_tracked_users', []);
+
+        foreach (['weekly', 'monthly'] as $timeframe) {
+            foreach ($trackedUserIds as $userId) {
+                Cache::forget("leaderboard_rank_{$timeframe}_user_{$userId}");
+            }
+        }
+
+        Cache::forget('leaderboard_rank_tracked_users');
+    }
+
+    /**
+     * Track a user ID for leaderboard rank cache invalidation.
+     */
+    public static function trackLeaderboardRankUser(int $userId): void
+    {
+        $tracked = Cache::get('leaderboard_rank_tracked_users', []);
+
+        if (! in_array($userId, $tracked, true)) {
+            $tracked[] = $userId;
+            Cache::put('leaderboard_rank_tracked_users', $tracked, 86400);
+        }
     }
 
     /**
@@ -82,12 +129,23 @@ class CacheService
     }
 
     /**
+     * Invalidate admin analytics caches (cohort, funnel, economy).
+     */
+    public static function invalidateAdminAnalytics(): void
+    {
+        Cache::forget('admin:cohort_retention');
+        Cache::forget('admin:gamification_funnel');
+        Cache::forget('admin:economy_health');
+    }
+
+    /**
      * Invalidate all application caches.
      */
     public static function invalidateAll(): void
     {
         self::invalidateCourseCatalog();
         self::invalidateAdminDashboard();
+        self::invalidateAdminAnalytics();
         self::invalidateLeaderboard();
         self::invalidateChallengeCatalog();
         BadgeService::clearCache();

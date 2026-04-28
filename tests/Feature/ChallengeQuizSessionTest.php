@@ -92,8 +92,8 @@ test('quiz submit scores correct answer with Kahoot formula', function () {
     $response->assertOk()
         ->assertJson([
             'isCorrect' => true,
-            'correctAnswer' => 'AES',
-        ]);
+        ])
+        ->assertJsonMissing(['correctAnswer']);
 
     // Score should be > 0 for fast correct answer
     expect($response->json('questionScore'))->toBeGreaterThan(0);
@@ -133,27 +133,80 @@ test('quiz submit returns zero score for wrong answer', function () {
         ]);
 });
 
-test('quiz submit includes streak bonus for consecutive correct', function () {
+test('quiz submit includes streak bonus for consecutive correct (server-side)', function () {
     $user = User::factory()->create();
     $challenge = Challenge::factory()->create(['is_published' => true]);
+    $sessionId = (string) Str::uuid();
+
+    // Create 3 questions for the challenge
+    $questions = ChallengeQuestion::factory()->count(3)->create([
+        'challenge_id' => $challenge->id,
+        'correct_answer' => 'AES',
+    ]);
+
+    // Pre-seed 2 correct submissions in the same session (server-side streak = 2)
+    ChallengeSubmission::factory()->create([
+        'user_id' => $user->id,
+        'challenge_id' => $challenge->id,
+        'session_id' => $sessionId,
+        'challenge_question_id' => $questions[0]->id,
+        'is_correct' => true,
+        'score' => 500,
+        'streak_bonus' => 0,
+        'question_index' => 0,
+    ]);
+
+    ChallengeSubmission::factory()->create([
+        'user_id' => $user->id,
+        'challenge_id' => $challenge->id,
+        'session_id' => $sessionId,
+        'challenge_question_id' => $questions[1]->id,
+        'is_correct' => true,
+        'score' => 500,
+        'streak_bonus' => 2,
+        'question_index' => 1,
+    ]);
+
+    // Submit 3rd correct answer — server calculates consecutive = 2 prior + 1 current = 3
+    $response = $this->actingAs($user)
+        ->postJson(route('challenges.quiz-submit', $challenge->slug), [
+            'session_id' => $sessionId,
+            'challenge_question_id' => $questions[2]->id,
+            'answer' => 'AES',
+            'elapsed_ms' => 5000,
+            'question_index' => 2,
+        ]);
+
+    $response->assertOk();
+    // Streak of 3 → bonus = 4 (from config: [0, 0, 2, 4, 6, 10])
+    expect($response->json('streakBonus'))->toBe(4);
+});
+
+test('quiz submit ignores manipulated client consecutive_correct value', function () {
+    $user = User::factory()->create();
+    $challenge = Challenge::factory()->create(['is_published' => true]);
+    $sessionId = (string) Str::uuid();
 
     $question = ChallengeQuestion::factory()->create([
         'challenge_id' => $challenge->id,
         'correct_answer' => 'AES',
     ]);
 
+    // No prior submissions — server streak = 0, so current streak = 1
+    // Client sends consecutive_correct: 999 (manipulated) — should be ignored
     $response = $this->actingAs($user)
         ->postJson(route('challenges.quiz-submit', $challenge->slug), [
-            'session_id' => (string) Str::uuid(),
+            'session_id' => $sessionId,
             'challenge_question_id' => $question->id,
             'answer' => 'AES',
             'elapsed_ms' => 5000,
-            'question_index' => 2,
-            'consecutive_correct' => 2, // will become 3 → 4 bonus
+            'question_index' => 0,
+            'consecutive_correct' => 999, // manipulated — should be ignored
         ]);
 
     $response->assertOk();
-    expect($response->json('streakBonus'))->toBe(4);
+    // Server calculates streak = 1 (first correct, no prior) → bonus = 0
+    expect($response->json('streakBonus'))->toBe(0);
 });
 
 test('quiz submit rejects question from different challenge', function () {

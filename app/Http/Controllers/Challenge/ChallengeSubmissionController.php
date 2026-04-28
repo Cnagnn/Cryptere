@@ -131,7 +131,6 @@ class ChallengeSubmissionController extends Controller
             'isCorrect' => $result['isCorrect'],
             'alreadySolved' => $result['alreadySolved'],
             'awardedPoints' => $result['awardedPoints'],
-            'correctAnswer' => $result['correctAnswer'],
             'elapsedMs' => $result['elapsedMs'],
             'timeLimitSeconds' => $result['timeLimitSeconds'],
             'totalPoints' => $request->user()->fresh()->points,
@@ -141,8 +140,8 @@ class ChallengeSubmissionController extends Controller
     /**
      * Submit a single quiz question answer (new quiz mode).
      *
-     * Accepts session_id, challenge_question_id, answer, elapsed_ms, question_index,
-     * and consecutive_correct (client-tracked streak). Returns score + feedback.
+     * Accepts session_id, challenge_question_id, answer, elapsed_ms, and question_index.
+     * Streak bonus is calculated server-side from existing session submissions.
      */
     public function quizSubmit(Request $request, Challenge $challenge): JsonResponse
     {
@@ -154,7 +153,7 @@ class ChallengeSubmissionController extends Controller
             'answer' => ['required', 'string', 'max:500'],
             'elapsed_ms' => ['required', 'integer', 'min:0', 'max:120000'],
             'question_index' => ['required', 'integer', 'min:0'],
-            'consecutive_correct' => ['required', 'integer', 'min:0'],
+            'consecutive_correct' => ['sometimes', 'integer', 'min:0'], // deprecated — ignored, kept for backward compat
         ]);
 
         /** @var User $user */
@@ -187,8 +186,15 @@ class ChallengeSubmissionController extends Controller
             ? $this->scoreService->calculateQuestionScore($validated['elapsed_ms'], $timeLimitMs, $maxPoints)
             : 0;
 
+        // R01: Server-side streak calculation — ignore client-sent consecutive_correct
+        $serverConsecutive = $this->scoreService->getSessionConsecutiveCorrect(
+            $user->id,
+            $challenge->id,
+            $validated['session_id'],
+        );
+        $currentStreak = $isCorrect ? $serverConsecutive + 1 : 0;
         $streakBonus = $isCorrect
-            ? $this->scoreService->calculateStreakBonus($validated['consecutive_correct'] + 1)
+            ? $this->scoreService->calculateStreakBonus($currentStreak)
             : 0;
 
         ChallengeSubmission::query()->updateOrCreate(
@@ -211,7 +217,6 @@ class ChallengeSubmissionController extends Controller
 
         return response()->json([
             'isCorrect' => $isCorrect,
-            'correctAnswer' => $question->correct_answer,
             'explanation' => $question->explanation,
             'questionScore' => $questionScore,
             'streakBonus' => $streakBonus,
@@ -243,6 +248,13 @@ class ChallengeSubmissionController extends Controller
         if ($submissions->isEmpty()) {
             return response()->json(['message' => 'No submissions found for this session.'], 404);
         }
+
+        // Eager-load the related questions for per-question details (correct answers + explanations)
+        $questionIds = $submissions->pluck('challenge_question_id')->filter()->unique();
+        $questions = ChallengeQuestion::query()
+            ->whereIn('id', $questionIds)
+            ->get()
+            ->keyBy('id');
 
         $totalScore = $submissions->sum('score');
         $totalStreakBonus = $submissions->sum('streak_bonus');
@@ -303,6 +315,23 @@ class ChallengeSubmissionController extends Controller
             $previousXp,
         );
 
+        // Build per-question details with correct answers (only revealed after session is finalized)
+        $questionDetails = $submissions->sortBy('question_index')->values()->map(function ($submission) use ($questions) {
+            $question = $questions->get($submission->challenge_question_id);
+
+            return [
+                'questionIndex' => $submission->question_index,
+                'question' => $question?->question,
+                'userAnswer' => $submission->answer,
+                'correctAnswer' => $question?->correct_answer,
+                'isCorrect' => (bool) $submission->is_correct,
+                'explanation' => $question?->explanation,
+                'score' => $submission->score,
+                'streakBonus' => $submission->streak_bonus,
+                'elapsedMs' => $submission->elapsed_ms,
+            ];
+        });
+
         return response()->json([
             'sessionId' => $sessionId,
             'totalScore' => $totalScore,
@@ -317,13 +346,14 @@ class ChallengeSubmissionController extends Controller
             'isPerfectScore' => $isPerfectScore,
             'isFirstSession' => ! $hasEarlierSession,
             'userTotalPoints' => $user->fresh()->points,
+            'questionDetails' => $questionDetails,
         ]);
     }
 
     /**
      * Persist challenge submission and award points + XP once per challenge.
      *
-     * @return array{isCorrect: bool, alreadySolved: bool, awardedPoints: int, awardedXp: int, previousXp: int, correctAnswer: string, elapsedMs: int, timeLimitSeconds: int}
+     * @return array{isCorrect: bool, alreadySolved: bool, awardedPoints: int, awardedXp: int, previousXp: int, elapsedMs: int, timeLimitSeconds: int}
      */
     private function recordSubmission(
         User $user,
@@ -337,7 +367,6 @@ class ChallengeSubmissionController extends Controller
             ?? $this->challengeHelper->hashAnswer($this->challengeHelper->normalizeAnswer((string) $challenge->getRawOriginal('expected_answer')));
 
         $isCorrect = $normalizedAnswer !== '' && hash_equals($expectedHash, $this->challengeHelper->hashAnswer($normalizedAnswer));
-        $correctAnswer = (string) $challenge->getRawOriginal('expected_answer');
         $timeLimitSeconds = $this->challengeHelper->resolveTimeLimitSeconds();
         $timeLimitMilliseconds = $timeLimitSeconds * 1000;
         $safeElapsedMilliseconds = $elapsedMilliseconds === null
@@ -394,7 +423,6 @@ class ChallengeSubmissionController extends Controller
             'awardedPoints' => $awardedPoints,
             'awardedXp' => $baseXp,
             'previousXp' => $previousXp,
-            'correctAnswer' => $correctAnswer,
             'elapsedMs' => $safeElapsedMilliseconds,
             'timeLimitSeconds' => $timeLimitSeconds,
         ];

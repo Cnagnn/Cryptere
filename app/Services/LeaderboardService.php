@@ -8,6 +8,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Sentry\SentrySdk;
+use Sentry\Tracing\SpanContext;
 
 class LeaderboardService
 {
@@ -51,33 +53,39 @@ class LeaderboardService
 
     /**
      * Timeframe-based leaderboard using aggregated points from recent activity.
+     * Results are cached for 5 minutes keyed by timeframe and page number.
      */
     public function timeframeLeaders(string $timeframe, int $perPage): LengthAwarePaginator
     {
-        $since = $this->resolveSinceDate($timeframe);
+        $page = request()->input('page', 1);
+        $cacheKey = "leaderboard_timeframe_{$timeframe}_page_{$page}_perpage_{$perPage}";
 
-        $challengePoints = DB::table('challenge_submissions')
-            ->select('user_id', DB::raw('SUM(score + COALESCE(streak_bonus, 0)) as total'))
-            ->where('is_correct', true)
-            ->where('submitted_at', '>=', $since)
-            ->groupBy('user_id');
+        return Cache::remember($cacheKey, 300, function () use ($timeframe, $perPage) {
+            $since = $this->resolveSinceDate($timeframe);
 
-        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
-        $lessonPoints = DB::table('lesson_progress')
-            ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
-            ->whereNotNull('lesson_progress.completed_at')
-            ->where('lesson_progress.completed_at', '>=', $since)
-            ->groupBy('lesson_progress.user_id');
+            $challengePoints = DB::table('challenge_submissions')
+                ->select('user_id', DB::raw('SUM(score + COALESCE(streak_bonus, 0)) as total'))
+                ->where('is_correct', true)
+                ->where('submitted_at', '>=', $since)
+                ->groupBy('user_id');
 
-        return User::query()
-            ->leftJoinSub($challengePoints, 'cp', 'users.id', '=', 'cp.user_id')
-            ->leftJoinSub($lessonPoints, 'lp', 'users.id', '=', 'lp.user_id')
-            ->selectRaw('users.*, (COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) as period_points')
-            ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > 0')
-            ->orderByDesc('period_points')
-            ->orderBy('name')
-            ->paginate($perPage, ['users.*'])
-            ->withQueryString();
+            $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
+            $lessonPoints = DB::table('lesson_progress')
+                ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
+                ->whereNotNull('lesson_progress.completed_at')
+                ->where('lesson_progress.completed_at', '>=', $since)
+                ->groupBy('lesson_progress.user_id');
+
+            return User::query()
+                ->leftJoinSub($challengePoints, 'cp', 'users.id', '=', 'cp.user_id')
+                ->leftJoinSub($lessonPoints, 'lp', 'users.id', '=', 'lp.user_id')
+                ->selectRaw('users.*, (COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) as period_points')
+                ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > 0')
+                ->orderByDesc('period_points')
+                ->orderBy('name')
+                ->paginate($perPage, ['users.*'])
+                ->withQueryString();
+        });
     }
 
     /**
@@ -85,9 +93,11 @@ class LeaderboardService
      */
     public function getLeaders(string $timeframe, int $perPage): LengthAwarePaginator
     {
-        return $timeframe === 'all'
-            ? $this->allTimeLeaders($perPage)
-            : $this->timeframeLeaders($timeframe, $perPage);
+        return $this->traceSpan('leaderboard.get_leaders', "Get leaders ({$timeframe})", function () use ($timeframe, $perPage) {
+            return $timeframe === 'all'
+                ? $this->allTimeLeaders($perPage)
+                : $this->timeframeLeaders($timeframe, $perPage);
+        });
     }
 
     /**
@@ -143,6 +153,7 @@ class LeaderboardService
 
     /**
      * Get a user's rank for a given timeframe.
+     * Timeframe-based ranks are cached for 2 minutes.
      */
     public function getUserRank(User $user, string $timeframe): int
     {
@@ -156,27 +167,32 @@ class LeaderboardService
             return User::query()->where('points', '>', $user->points)->count() + 1;
         }
 
-        $since = $this->resolveSinceDate($timeframe);
-        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
+        $cacheKey = "leaderboard_rank_{$timeframe}_user_{$user->id}";
+        CacheService::trackLeaderboardRankUser($user->id);
 
-        $challengePoints = DB::table('challenge_submissions')
-            ->select('user_id', DB::raw('SUM(score + COALESCE(streak_bonus, 0)) as total'))
-            ->where('is_correct', true)
-            ->where('submitted_at', '>=', $since)
-            ->groupBy('user_id');
+        return (int) Cache::remember($cacheKey, 120, function () use ($user, $timeframe, $userPoints) {
+            $since = $this->resolveSinceDate($timeframe);
+            $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
 
-        $lessonPoints = DB::table('lesson_progress')
-            ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
-            ->whereNotNull('lesson_progress.completed_at')
-            ->where('lesson_progress.completed_at', '>=', $since)
-            ->groupBy('lesson_progress.user_id');
+            $challengePoints = DB::table('challenge_submissions')
+                ->select('user_id', DB::raw('SUM(score + COALESCE(streak_bonus, 0)) as total'))
+                ->where('is_correct', true)
+                ->where('submitted_at', '>=', $since)
+                ->groupBy('user_id');
 
-        return (int) User::query()
-            ->leftJoinSub($challengePoints, 'cp', 'users.id', '=', 'cp.user_id')
-            ->leftJoinSub($lessonPoints, 'lp', 'users.id', '=', 'lp.user_id')
-            ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > ?', [$userPoints])
-            ->where('users.id', '!=', $user->id)
-            ->count() + 1;
+            $lessonPoints = DB::table('lesson_progress')
+                ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
+                ->whereNotNull('lesson_progress.completed_at')
+                ->where('lesson_progress.completed_at', '>=', $since)
+                ->groupBy('lesson_progress.user_id');
+
+            return (int) User::query()
+                ->leftJoinSub($challengePoints, 'cp', 'users.id', '=', 'cp.user_id')
+                ->leftJoinSub($lessonPoints, 'lp', 'users.id', '=', 'lp.user_id')
+                ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > ?', [$userPoints])
+                ->where('users.id', '!=', $user->id)
+                ->count() + 1;
+        });
     }
 
     /**
@@ -185,6 +201,16 @@ class LeaderboardService
      * @return Collection<int, User>
      */
     public function getTop3Users(string $timeframe): Collection
+    {
+        return $this->traceSpan('leaderboard.get_top3', "Get top 3 ({$timeframe})", function () use ($timeframe) {
+            return $this->fetchTop3Users($timeframe);
+        });
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function fetchTop3Users(string $timeframe): Collection
     {
         if ($timeframe === 'all') {
             return User::query()
@@ -324,5 +350,38 @@ class LeaderboardService
             'monthly' => CarbonImmutable::now()->subDays(30)->startOfDay(),
             default => CarbonImmutable::createFromTimestamp(0),
         };
+    }
+
+    /**
+     * Execute a callback within a Sentry performance span.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private function traceSpan(string $op, string $description, callable $callback): mixed
+    {
+        $parentSpan = SentrySdk::getCurrentHub()->getSpan();
+
+        if ($parentSpan === null) {
+            return $callback();
+        }
+
+        $context = new SpanContext;
+        $context->setOp($op);
+        $context->setDescription($description);
+
+        $span = $parentSpan->startChild($context);
+        SentrySdk::getCurrentHub()->setSpan($span);
+
+        try {
+            $result = $callback();
+        } finally {
+            $span->finish();
+            SentrySdk::getCurrentHub()->setSpan($parentSpan);
+        }
+
+        return $result;
     }
 }

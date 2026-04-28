@@ -2,11 +2,15 @@
 
 namespace App\Http\Middleware;
 
+use App\Features\GamificationRewardVariant;
+use App\Features\IndonesianLocale;
+use App\Features\RealtimeLeaderboard;
 use App\Services\LevelService;
 use App\Services\XpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
+use Laravel\Pennant\Feature;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -55,6 +59,15 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'locale' => app()->getLocale(),
+            'availableLocales' => ['en', 'id'],
+            'features' => [
+                'realtimeLeaderboard' => Feature::active(RealtimeLeaderboard::class),
+                'indonesianLocale' => Feature::active(IndonesianLocale::class),
+            ],
+            'experiments' => $user ? [
+                'gamificationReward' => Feature::for($user)->value(GamificationRewardVariant::class),
+            ] : [],
             'flash' => [
                 'toast' => fn () => $request->session()->get('toast'),
                 'newBadges' => fn () => $request->session()->get('newBadges'),

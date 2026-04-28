@@ -96,9 +96,20 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Get the public URL for a locally stored profile avatar.
+     *
+     * Prefers filesystem path (avatar_path). Falls back to BLOB (avatar_image)
+     * for backward compatibility during migration. After running
+     * `php artisan avatars:migrate-blobs` and the drop-column migration,
+     * only avatar_path will be used.
      */
     public function getAvatarAttribute(): ?string
     {
+        // Prefer filesystem-based avatar
+        if (is_string($this->avatar_path) && $this->avatar_path !== '') {
+            return Storage::disk('public')->url($this->avatar_path);
+        }
+
+        // Backward compat: BLOB fallback (removed after migration)
         $avatarBinary = $this->resolveAvatarBinary();
 
         if (is_string($avatarBinary) && $avatarBinary !== '') {
@@ -107,11 +118,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return 'data:'.$mime.';base64,'.base64_encode($avatarBinary);
         }
 
-        if (! is_string($this->avatar_path) || $this->avatar_path === '') {
-            return null;
-        }
-
-        return Storage::disk('public')->url($this->avatar_path);
+        return null;
     }
 
     /**

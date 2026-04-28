@@ -4,12 +4,16 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class SocialAvatarService
 {
     /**
-     * Download and persist social avatar image locally for a user.
+     * Download and persist social avatar image to filesystem for a user.
+     *
+     * Previously stored as BLOB in the users table — now uses filesystem storage
+     * for better performance and scalability.
      */
     public function syncUserAvatarFromUrl(User $user, ?string $avatarUrl): void
     {
@@ -29,10 +33,13 @@ class SocialAvatarService
                 $avatarUrl,
             );
 
+            $extension = $this->mimeToExtension($mimeType);
+            $filename = "avatars/{$user->id}/avatar.{$extension}";
+
+            Storage::disk('public')->put($filename, $response->body());
+
             $user->forceFill([
-                'avatar_image' => $response->body(),
-                'avatar_mime_type' => $mimeType,
-                'avatar_path' => null,
+                'avatar_path' => $filename,
             ])->save();
         } catch (\Throwable) {
             // Social login must continue even if avatar download fails.
@@ -63,5 +70,16 @@ class SocialAvatarService
         }
 
         return 'image/jpeg';
+    }
+
+    private function mimeToExtension(string $mimeType): string
+    {
+        return match ($mimeType) {
+            'image/jpeg' => 'jpg',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+            'image/svg+xml' => 'svg',
+            default => 'png',
+        };
     }
 }

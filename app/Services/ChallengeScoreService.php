@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\ChallengeSubmission;
+
 class ChallengeScoreService
 {
     /**
@@ -27,6 +29,33 @@ class ChallengeScoreService
      * Values are read from config('rewards.challenge_streak_bonus').
      * Index = consecutive correct count; last value repeats for higher streaks.
      */
+    /**
+     * Calculate the current consecutive correct answers from existing session submissions.
+     *
+     * Counts backward from the latest submitted question to find the unbroken streak.
+     * This replaces the client-sent consecutive_correct value for tamper-proof scoring.
+     */
+    public function getSessionConsecutiveCorrect(int $userId, int $challengeId, string $sessionId): int
+    {
+        $submissions = ChallengeSubmission::query()
+            ->where('user_id', $userId)
+            ->where('challenge_id', $challengeId)
+            ->where('session_id', $sessionId)
+            ->orderByDesc('question_index')
+            ->pluck('is_correct');
+
+        $streak = 0;
+        foreach ($submissions as $isCorrect) {
+            if ($isCorrect) {
+                $streak++;
+            } else {
+                break;
+            }
+        }
+
+        return $streak;
+    }
+
     public function calculateStreakBonus(int $consecutiveCorrect): int
     {
         /** @var array<int, int> $table */

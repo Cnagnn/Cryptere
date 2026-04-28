@@ -589,7 +589,7 @@ test('quick challenge submissions return json and award points once', function (
         ->assertJsonPath('isCorrect', true)
         ->assertJsonPath('alreadySolved', false)
         ->assertJsonPath('awardedPoints', (int) config('rewards.challenge_base_points'))
-        ->assertJsonPath('correctAnswer', 'hash');
+        ->assertJsonMissing(['correctAnswer']);
 
     $this->actingAs($user)
         ->postJson(route('challenges.quick-submit', ['challenge' => $challenge->slug]), [

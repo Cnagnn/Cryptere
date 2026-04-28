@@ -10,9 +10,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "dedoc/scramble": "^0.13.22",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/fortify": "^1.34",
         "laravel/framework": "^13.0",
+        "laravel/pennant": "^1.23",
+        "laravel/reverb": "^1.10",
         "laravel/socialite": "^5.26",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
