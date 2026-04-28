@@ -16,7 +16,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'password', 'points', 'xp', 'current_streak', 'longest_streak', 'last_active_date', 'daily_xp_earned', 'daily_goal_met_at', 'is_admin', 'role', 'status', 'onboarding_completed_at'])]
+#[Fillable(['name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'password', 'points', 'xp', 'current_streak', 'longest_streak', 'last_active_date', 'daily_xp_earned', 'daily_goal_met_at', 'ability_estimate', 'is_admin', 'role', 'status', 'onboarding_completed_at'])]
 #[Hidden(['password', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -49,6 +49,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_active_date' => 'date',
             'daily_xp_earned' => 'integer',
             'daily_goal_met_at' => 'date',
+            'ability_estimate' => 'float',
             'is_admin' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
             'onboarding_completed_at' => 'datetime',
@@ -203,6 +204,24 @@ class User extends Authenticatable implements MustVerifyEmail
     public function certificates(): HasMany
     {
         return $this->hasMany(Certificate::class);
+    }
+
+    /**
+     * Get the story progress entries for the user.
+     */
+    public function storyProgress(): HasMany
+    {
+        return $this->hasMany(UserStoryProgress::class);
+    }
+
+    /**
+     * Get the story chapters unlocked by the user.
+     */
+    public function unlockedChapters(): BelongsToMany
+    {
+        return $this->belongsToMany(StoryChapter::class, 'user_story_progress')
+            ->withPivot(['unlocked_at', 'read_at'])
+            ->withTimestamps();
     }
 
     private function resolveAvatarBinary(): ?string

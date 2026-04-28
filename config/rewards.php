@@ -191,4 +191,17 @@ return [
         7 => ['xp' => 100, 'points' => 25],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Quiz Retry Settings
+    |--------------------------------------------------------------------------
+    |
+    | Number of questions shown per quiz attempt (randomly selected from pool)
+    | and XP multipliers for subsequent attempts. Index 0 = attempt 1, etc.
+    | The last value is used for all attempts beyond the array length.
+    |
+    */
+    'quiz_questions_per_attempt' => 4,
+    'quiz_retry_xp_multipliers' => [1.0, 0.5, 0.25, 0.1],
+
 ];

@@ -214,6 +214,11 @@ export function normalizeInputForSimulation(
         return { value: trimmed, error: null };
     }
 
+    if (labSlug === 'lattice-cipher-lab') {
+        // Lattice lab accepts raw numeric input directly
+        return { value: rawInput.trim(), error: null };
+    }
+
     return normalizeInputToText(rawInput, inputFormat);
 }
 
@@ -258,6 +263,10 @@ export function recommendedInputFormatByLab(
         return 'decimal';
     }
 
+    if (slug === 'lattice-cipher-lab') {
+        return 'decimal';
+    }
+
     return 'ascii';
 }
 
@@ -277,11 +286,15 @@ export function recommendedOutputFormatByLab(
         return 'hex';
     }
 
+    if (slug === 'lattice-cipher-lab') {
+        return 'decimal';
+    }
+
     return 'ascii';
 }
 
 export function canFormatOutput(labSlug: string): boolean {
-    return !['rsa-lab', 'sha-lab', 'digital-signature-lab'].includes(labSlug);
+    return !['rsa-lab', 'sha-lab', 'digital-signature-lab', 'lattice-cipher-lab'].includes(labSlug);
 }
 
 export function formatLabel(value: FormatValue): string {
@@ -343,6 +356,16 @@ export function conceptLensByLab(
                     'Hashing maps variable-length input to fixed-length digest.',
                     'Digest comparison is used for integrity, not decryption.',
                     'Small input changes should produce large digest differences.',
+                ],
+            };
+        case 'lattice-cipher-lab':
+            return {
+                title: mode === 'encrypt' ? 'LWE Encryption' : 'LWE Decryption',
+                points: [
+                    'Security is based on the Learning With Errors (LWE) problem.',
+                    'A public matrix A and vector b = A·s + e form the public key.',
+                    'Small random errors make the system hard to solve, even for quantum computers.',
+                    'This lab uses tiny parameters (n=3, q=97) for educational visibility.',
                 ],
             };
         default:
@@ -480,6 +503,82 @@ export function visualizationLensByLab(
                     result: pseudoSha256(
                         `${normalizedInput.slice(0, 19)}*`,
                     ).slice(0, 16),
+                },
+            ],
+        };
+    }
+
+    if (slug === 'lattice-cipher-lab') {
+        const q = 97;
+        const n = 3;
+        // Parse the secret key from keyInput or use default
+        const secretVec = parseLatticeKey(keyInput);
+        // Generate a deterministic public matrix from the key
+        const A = generatePublicMatrix(secretVec, q);
+
+        if (mode === 'encrypt') {
+            const msgVal = parseMessageValue(normalizedInput, q);
+            const e = generateErrorVector(msgVal, n);
+            const b = matVecMulMod(A, secretVec, q);
+
+            return {
+                title: 'LWE Encryption Matrix View',
+                description:
+                    'Observe how the public matrix A, secret s, and error e produce the public vector b.',
+                headers: ['Component', 'Operation', 'Value'],
+                rows: [
+                    {
+                        source: 'Message (m)',
+                        operation: 'Input value',
+                        result: String(msgVal),
+                    },
+                    {
+                        source: 'Secret key (s)',
+                        operation: `[${secretVec.join(', ')}]`,
+                        result: `n=${n} vector`,
+                    },
+                    {
+                        source: 'Error (e)',
+                        operation: `[${e.join(', ')}]`,
+                        result: 'Small random noise',
+                    },
+                    {
+                        source: 'b = A·s + e',
+                        operation: `mod ${q}`,
+                        result: `[${b.map((v, i) => posMod(v + e[i], q)).join(', ')}]`,
+                    },
+                ],
+            };
+        }
+
+        // Decrypt mode
+        const cipherVals = normalizedInput.trim().split(/\s+/).filter(Boolean).map(Number);
+
+        return {
+            title: 'LWE Decryption View',
+            description:
+                'Observe how the secret key removes noise to recover the message.',
+            headers: ['Component', 'Operation', 'Value'],
+            rows: [
+                {
+                    source: 'Ciphertext',
+                    operation: 'Input values',
+                    result: cipherVals.slice(0, 6).join(', '),
+                },
+                {
+                    source: 'Secret key (s)',
+                    operation: `[${secretVec.join(', ')}]`,
+                    result: 'Used for decryption',
+                },
+                {
+                    source: 'Decryption',
+                    operation: `v - s^T·u mod ${q}`,
+                    result: 'Recover noisy message',
+                },
+                {
+                    source: 'Rounding',
+                    operation: `Nearest to 0 or ⌊${q}/2⌋=${Math.floor(q / 2)}`,
+                    result: 'Remove noise → original bit',
                 },
             ],
         };
@@ -849,6 +948,190 @@ function runSignatureLab(
     };
 }
 
+// ── Lattice (LWE) helpers ──
+
+function posMod(value: number, modulus: number): number {
+    return ((value % modulus) + modulus) % modulus;
+}
+
+function parseLatticeKey(keyInput: string): number[] {
+    // Try to parse comma or space separated numbers
+    const parts = keyInput.replace(/[[\]]/g, '').trim().split(/[\s,]+/).filter(Boolean);
+    const nums = parts.map((p) => Number.parseInt(p, 10)).filter(Number.isFinite);
+
+    if (nums.length >= 3) {
+        return nums.slice(0, 3);
+    }
+
+    // Default secret key
+    return [3, 5, 2];
+}
+
+function generatePublicMatrix(secret: number[], q: number): number[][] {
+    // Deterministic "random-looking" matrix based on secret seed
+    const seed = secret.reduce((a, b) => a * 31 + b, 7);
+
+    return [
+        [posMod(seed * 13 + 17, q), posMod(seed * 7 + 41, q), posMod(seed * 23 + 5, q)],
+        [posMod(seed * 29 + 11, q), posMod(seed * 3 + 67, q), posMod(seed * 19 + 31, q)],
+        [posMod(seed * 37 + 53, q), posMod(seed * 11 + 23, q), posMod(seed * 43 + 13, q)],
+    ];
+}
+
+function generateErrorVector(seed: number, n: number): number[] {
+    // Small errors in range [-2, 2]
+    const errors: number[] = [];
+
+    for (let i = 0; i < n; i++) {
+        errors.push(((seed * (i + 3) + 7) % 5) - 2);
+    }
+
+    return errors;
+}
+
+function matVecMulMod(matrix: number[][], vec: number[], q: number): number[] {
+    return matrix.map((row) => {
+        const sum = row.reduce((acc, val, j) => acc + val * vec[j], 0);
+
+        return posMod(sum, q);
+    });
+}
+
+function vecDot(a: number[], b: number[]): number {
+    return a.reduce((sum, val, i) => sum + val * (b[i] ?? 0), 0);
+}
+
+function parseMessageValue(input: string, q: number): number {
+    const trimmed = input.trim();
+
+    // Try as a number first
+    const num = Number.parseInt(trimmed, 10);
+
+    if (Number.isFinite(num) && num >= 0 && num < q) {
+        return num;
+    }
+
+    // Otherwise use first character's code
+    if (trimmed.length > 0) {
+        return trimmed.charCodeAt(0) % q;
+    }
+
+    return 42;
+}
+
+function runLatticeSimulation(
+    mode: SimulationMode,
+    text: string,
+    keyInput: string,
+): SimulationResult {
+    const q = 97; // Small prime modulus for educational visibility
+    const n = 3;  // Small dimension
+    const halfQ = Math.floor(q / 2); // 48 — threshold for bit decoding
+
+    const secret = parseLatticeKey(keyInput);
+    const A = generatePublicMatrix(secret, q);
+
+    if (mode === 'encrypt') {
+        const msgVal = parseMessageValue(text, q);
+        // Encode message as a bit (0 or 1) for LWE: 0 stays 0, nonzero becomes 1
+        const msgBit = msgVal > 0 ? 1 : 0;
+
+        // Key generation: b = A·s + e (mod q)
+        const e = generateErrorVector(msgVal, n);
+        const As = matVecMulMod(A, secret, q);
+        const b = As.map((val, i) => posMod(val + e[i], q));
+
+        // Encryption: choose random r, compute u = A^T·r, v = b^T·r + m·⌊q/2⌋
+        const r = generateErrorVector(msgVal + 17, n).map((v) => Math.abs(v) + 1);
+        // A^T · r
+        const AT = A[0].map((_, colIdx) => A.map((row) => row[colIdx]));
+        const u = matVecMulMod(AT, r, q);
+        const bDotR = posMod(vecDot(b, r), q);
+        const v = posMod(bDotR + msgBit * halfQ, q);
+
+        const steps = [
+            `Parameters: n=${n}, q=${q}, ⌊q/2⌋=${halfQ}`,
+            `Message value: ${msgVal} → encoded as bit: ${msgBit}`,
+            `Secret key s = [${secret.join(', ')}]`,
+            ``,
+            `── Key Generation ──`,
+            `Public matrix A:`,
+            `  [${A[0].join(', ')}]`,
+            `  [${A[1].join(', ')}]`,
+            `  [${A[2].join(', ')}]`,
+            ``,
+            `Error vector e = [${e.join(', ')}]  (small random noise)`,
+            `A·s = [${As.join(', ')}]`,
+            `b = A·s + e mod ${q} = [${b.join(', ')}]`,
+            ``,
+            `── Encryption ──`,
+            `Random vector r = [${r.join(', ')}]`,
+            `u = A^T · r mod ${q} = [${u.join(', ')}]`,
+            `v = b^T · r + ${msgBit}·${halfQ} mod ${q} = ${bDotR} + ${msgBit * halfQ} = ${v}`,
+            ``,
+            `Ciphertext: u = [${u.join(', ')}], v = ${v}`,
+        ];
+
+        return {
+            outputLabel: 'Ciphertext (u, v)',
+            output: `${u.join(' ')} ${v}`,
+            steps,
+        };
+    }
+
+    // ── Decrypt mode ──
+    const parts = text.trim().split(/\s+/).map(Number).filter(Number.isFinite);
+
+    if (parts.length < n + 1) {
+        return {
+            outputLabel: 'Error',
+            output: `Need at least ${n + 1} values: ${n} for u and 1 for v. Got ${parts.length}.`,
+            steps: [
+                `Expected format: u1 u2 u3 v (${n + 1} space-separated numbers)`,
+                `Example: 45 12 78 63`,
+            ],
+        };
+    }
+
+    const u = parts.slice(0, n);
+    const v = parts[n];
+
+    // Decrypt: result = v - s^T · u (mod q)
+    const sTu = posMod(vecDot(secret, u), q);
+    const decrypted = posMod(v - sTu, q);
+
+    // Decode bit: if closer to 0 → bit 0, if closer to halfQ → bit 1
+    const distTo0 = Math.min(decrypted, q - decrypted);
+    const distToHalf = Math.abs(decrypted - halfQ);
+    const recoveredBit = distToHalf < distTo0 ? 1 : 0;
+
+    const steps = [
+        `Parameters: n=${n}, q=${q}, ⌊q/2⌋=${halfQ}`,
+        `Secret key s = [${secret.join(', ')}]`,
+        ``,
+        `── Decryption ──`,
+        `Ciphertext u = [${u.join(', ')}], v = ${v}`,
+        ``,
+        `Compute s^T · u = ${secret.map((s, i) => `${s}×${u[i]}`).join(' + ')} = ${vecDot(secret, u)}`,
+        `s^T · u mod ${q} = ${sTu}`,
+        ``,
+        `Decrypted value = v - s^T·u mod ${q} = ${v} - ${sTu} mod ${q} = ${decrypted}`,
+        ``,
+        `── Bit Recovery (Rounding) ──`,
+        `Distance to 0: ${distTo0}`,
+        `Distance to ⌊q/2⌋=${halfQ}: ${distToHalf}`,
+        `Closer to ${recoveredBit === 0 ? '0' : `⌊q/2⌋=${halfQ}`} → recovered bit = ${recoveredBit}`,
+        ``,
+        `Recovered message bit: ${recoveredBit}`,
+    ];
+
+    return {
+        outputLabel: 'Recovered message bit',
+        output: String(recoveredBit),
+        steps,
+    };
+}
+
 export function runSimulation(
     labSlug: string,
     mode: SimulationMode,
@@ -868,6 +1151,8 @@ export function runSimulation(
             return runShaLab(mode, text);
         case 'digital-signature-lab':
             return runSignatureLab(mode, text, key);
+        case 'lattice-cipher-lab':
+            return runLatticeSimulation(mode, text, key);
         default:
             return {
                 outputLabel: 'Result',
@@ -889,6 +1174,8 @@ export function keyLabelByLab(slug: string): string {
             return 'Symmetric key';
         case 'digital-signature-lab':
             return 'Signing key';
+        case 'lattice-cipher-lab':
+            return 'Secret vector s (3 integers)';
         default:
             return 'Key parameter';
     }
@@ -904,6 +1191,8 @@ export function keyPlaceholderByLab(slug: string): string {
             return 'CRYPTER-LAB-KEY';
         case 'digital-signature-lab':
             return 'private-crypt-key';
+        case 'lattice-cipher-lab':
+            return '3, 5, 2';
         default:
             return 'Optional key';
     }
@@ -915,6 +1204,8 @@ export function defaultTextByLab(slug: string): string {
             return 'HELLO';
         case 'sha-lab':
             return 'Integrity is everything.';
+        case 'lattice-cipher-lab':
+            return '42';
         default:
             return 'CRYPTER LAB';
     }
@@ -934,6 +1225,12 @@ export function modeDescription(
             : 'Verify authenticity by recomputing expected signature data.';
     }
 
+    if (labSlug === 'lattice-cipher-lab') {
+        return mode === 'encrypt'
+            ? 'Encrypt a message value using LWE: b = A·s + e (mod q). Observe how small errors hide the secret.'
+            : 'Decrypt ciphertext using the secret vector s. Watch how rounding removes noise to recover the original bit.';
+    }
+
     return mode === 'encrypt'
         ? 'Transform plaintext into protected representation.'
         : 'Reverse protected representation back into readable text.';
@@ -949,6 +1246,12 @@ export function inputLabelByLab(
 
     if (labSlug === 'digital-signature-lab') {
         return mode === 'encrypt' ? 'Message to sign' : 'Message to verify';
+    }
+
+    if (labSlug === 'lattice-cipher-lab') {
+        return mode === 'encrypt'
+            ? 'Message value (0-96)'
+            : 'Ciphertext (u1 u2 u3 v)';
     }
 
     return mode === 'encrypt' ? 'Plain input' : 'Cipher input';
@@ -972,6 +1275,12 @@ export function inputPlaceholderByLab(
             : 'Enter message to verify against digest...';
     }
 
+    if (labSlug === 'lattice-cipher-lab') {
+        return mode === 'encrypt'
+            ? 'Enter a number (0-96) or a character...'
+            : 'Enter 4 space-separated numbers: u1 u2 u3 v';
+    }
+
     return mode === 'encrypt'
         ? 'Enter plaintext to encrypt...'
         : 'Enter ciphertext to decrypt...';
@@ -993,6 +1302,12 @@ export function inputHelperByLab(
         return mode === 'encrypt'
             ? 'SHA produces a one-way digest for integrity checks.'
             : 'Verification recomputes digest from message and compares with trusted digest.';
+    }
+
+    if (labSlug === 'lattice-cipher-lab') {
+        return mode === 'encrypt'
+            ? 'Enter a number (0-96) or a single character. The value is encoded as a bit (0 or 1) for LWE encryption with modulus q=97.'
+            : 'Paste the ciphertext output from encrypt mode (4 space-separated integers). The secret key recovers the original message bit.';
     }
 
     return 'Try changing a single character and compare output differences.';
@@ -1038,6 +1353,14 @@ export function validationErrorByLab(
 
         if (!/^\d+(\s+\d+)*$/.test(trimmed)) {
             return 'RSA decrypt input must contain numeric cipher blocks separated by spaces.';
+        }
+    }
+
+    if (labSlug === 'lattice-cipher-lab' && mode === 'decrypt') {
+        const parts = text.trim().split(/\s+/).filter(Boolean);
+
+        if (parts.length < 4 || parts.some((p) => !/^\d+$/.test(p))) {
+            return 'Lattice decrypt input must be 4 space-separated integers (u1 u2 u3 v). Copy from encrypt output.';
         }
     }
 

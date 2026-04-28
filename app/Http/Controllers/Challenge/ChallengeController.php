@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
+use App\Services\AdaptiveQuestionService;
 use App\Services\CacheService;
 use App\Services\ChallengeHelperService;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class ChallengeController extends Controller
 {
     public function __construct(
         private readonly ChallengeHelperService $challengeHelper,
+        private readonly AdaptiveQuestionService $adaptiveService,
     ) {}
 
     /**
@@ -117,10 +119,15 @@ class ChallengeController extends Controller
             ->whereNotNull('session_id')
             ->exists();
 
-        // Quiz mode: generate session with random questions (only if not already completed)
+        // Quiz mode: generate session with adaptive questions (only if not already completed)
         $quizSession = null;
+        $adjustedTimeLimit = null;
         if ($hasQuestionBank && ! $hasCompletedSession) {
-            $quizSession = $this->buildQuizSession($challenge);
+            $quizSession = $this->buildQuizSession($challenge, $request->user());
+            $adjustedTimeLimit = $this->adaptiveService->getAdjustedTimeLimit(
+                $request->user(),
+                $challenge->time_limit_seconds ?? 20,
+            );
         }
 
         // Legacy mode: build speed rounds for backward compat
@@ -180,7 +187,7 @@ class ChallengeController extends Controller
                 'hasCompletedSession' => $hasCompletedSession,
                 'hasQuestionBank' => $hasQuestionBank,
                 'timeLimitSeconds' => $hasQuestionBank
-                    ? $challenge->time_limit_seconds
+                    ? ($adjustedTimeLimit ?? $challenge->time_limit_seconds)
                     : (int) ($speedRound['timeLimitSeconds'] ?? $this->challengeHelper->resolveTimeLimitSeconds()),
                 'questionsPerSession' => $challenge->questions_per_session,
                 'maxPointsPerQuestion' => $challenge->max_points_per_question,
@@ -212,14 +219,17 @@ class ChallengeController extends Controller
     }
 
     /**
-     * Build a quiz session with random questions from the challenge's question bank.
+     * Build a quiz session with adaptively selected questions from the challenge's question bank.
      *
      * @return array{sessionId: string, questions: array<int, array<string, mixed>>}
      */
-    private function buildQuizSession(Challenge $challenge): array
+    private function buildQuizSession(Challenge $challenge, \App\Models\User $user): array
     {
         $sessionId = (string) Str::uuid();
-        $questions = $challenge->getRandomQuestions();
+        $count = $challenge->questions_per_session ?? 10;
+
+        // Use adaptive selection instead of random
+        $questions = $this->adaptiveService->selectQuestionsForSession($user, $challenge, $count);
 
         return [
             'sessionId' => $sessionId,
@@ -229,6 +239,7 @@ class ChallengeController extends Controller
                 'type' => $question->type,
                 'question' => $question->question,
                 'options' => $question->options,
+                'difficultyLevel' => $question->difficulty_level,
                 // correct_answer is hidden via model attribute — never sent to client
             ])->values()->all(),
         ];

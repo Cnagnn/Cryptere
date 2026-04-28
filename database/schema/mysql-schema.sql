@@ -65,6 +65,27 @@ CREATE TABLE `cache_locks` (
   KEY `cache_locks_expiration_index` (`expiration`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `certificates`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `certificates` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `course_id` bigint unsigned NOT NULL,
+  `certificate_number` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `verification_code` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `issued_at` timestamp NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `certificates_user_id_course_id_unique` (`user_id`,`course_id`),
+  UNIQUE KEY `certificates_certificate_number_unique` (`certificate_number`),
+  UNIQUE KEY `certificates_verification_code_unique` (`verification_code`),
+  KEY `certificates_course_id_foreign` (`course_id`),
+  CONSTRAINT `certificates_course_id_foreign` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `certificates_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `challenge_questions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -77,6 +98,11 @@ CREATE TABLE `challenge_questions` (
   `correct_answer` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `explanation` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `sort_order` int unsigned NOT NULL DEFAULT '0',
+  `difficulty_level` enum('easy','medium','hard') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'medium',
+  `difficulty_score` double NOT NULL DEFAULT '0.5',
+  `discrimination` double NOT NULL DEFAULT '1',
+  `times_shown` int unsigned NOT NULL DEFAULT '0',
+  `times_correct` int unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `topic_id` bigint unsigned DEFAULT NULL,
@@ -112,6 +138,9 @@ CREATE TABLE `challenge_submissions` (
   KEY `challenge_submissions_is_correct_index` (`is_correct`),
   KEY `challenge_submissions_challenge_question_id_foreign` (`challenge_question_id`),
   KEY `challenge_submissions_session_id_index` (`session_id`),
+  KEY `idx_leaderboard_agg` (`is_correct`,`submitted_at`,`user_id`),
+  KEY `idx_session_streak` (`user_id`,`challenge_id`,`session_id`,`question_index`),
+  KEY `idx_cs_user_correct_submitted` (`user_id`,`is_correct`,`submitted_at`),
   CONSTRAINT `challenge_submissions_challenge_id_foreign` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`id`) ON DELETE CASCADE,
   CONSTRAINT `challenge_submissions_challenge_question_id_foreign` FOREIGN KEY (`challenge_question_id`) REFERENCES `challenge_questions` (`id`) ON DELETE SET NULL,
   CONSTRAINT `challenge_submissions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
@@ -190,6 +219,24 @@ CREATE TABLE `courses` (
   CONSTRAINT `courses_prerequisite_course_id_foreign` FOREIGN KEY (`prerequisite_course_id`) REFERENCES `courses` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `daily_rewards`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `daily_rewards` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `claimed_date` date NOT NULL,
+  `day_number` smallint unsigned NOT NULL COMMENT 'Consecutive day in current streak (1-7)',
+  `xp_earned` int unsigned NOT NULL DEFAULT '0',
+  `points_earned` int unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `daily_rewards_user_id_claimed_date_unique` (`user_id`,`claimed_date`),
+  KEY `daily_rewards_user_id_claimed_date_index` (`user_id`,`claimed_date`),
+  CONSTRAINT `daily_rewards_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `enrollments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -205,6 +252,7 @@ CREATE TABLE `enrollments` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `enrollments_user_id_course_id_unique` (`user_id`,`course_id`),
   KEY `enrollments_course_id_foreign` (`course_id`),
+  KEY `idx_user_recent_enrollment` (`user_id`,`updated_at`),
   CONSTRAINT `enrollments_course_id_foreign` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE,
   CONSTRAINT `enrollments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -222,6 +270,20 @@ CREATE TABLE `failed_jobs` (
   `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `features`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `features` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `scope` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `features_name_scope_unique` (`name`,`scope`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `job_batches`;
@@ -289,6 +351,7 @@ CREATE TABLE `lesson_progress` (
   UNIQUE KEY `lesson_progress_user_id_lesson_id_unique` (`user_id`,`lesson_id`),
   KEY `lesson_progress_lesson_id_foreign` (`lesson_id`),
   KEY `lesson_progress_completed_at_index` (`completed_at`),
+  KEY `idx_user_completion` (`user_id`,`completed_at`),
   CONSTRAINT `lesson_progress_lesson_id_foreign` FOREIGN KEY (`lesson_id`) REFERENCES `lessons` (`id`) ON DELETE CASCADE,
   CONSTRAINT `lesson_progress_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -355,6 +418,24 @@ CREATE TABLE `migrations` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `notes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notes` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `notable_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notable_id` bigint unsigned DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `notes_notable_type_notable_id_index` (`notable_type`,`notable_id`),
+  KEY `notes_user_id_notable_type_notable_id_index` (`user_id`,`notable_type`,`notable_id`),
+  CONSTRAINT `notes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `notifications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -392,6 +473,11 @@ CREATE TABLE `quiz_questions` (
   `correct_option` tinyint unsigned NOT NULL DEFAULT '0',
   `explanation` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `sort_order` smallint unsigned NOT NULL DEFAULT '1',
+  `difficulty_level` enum('easy','medium','hard') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'medium',
+  `difficulty_score` double NOT NULL DEFAULT '0.5',
+  `discrimination` double NOT NULL DEFAULT '1',
+  `times_shown` int unsigned NOT NULL DEFAULT '0',
+  `times_correct` int unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `topic_id` bigint unsigned DEFAULT NULL,
@@ -409,17 +495,19 @@ CREATE TABLE `quiz_submissions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,
   `lesson_task_id` bigint unsigned NOT NULL,
+  `attempt_number` smallint unsigned NOT NULL DEFAULT '1',
   `answers` json NOT NULL,
   `score` smallint unsigned NOT NULL,
   `total` smallint unsigned NOT NULL,
   `results` json NOT NULL,
   `xp_earned` int unsigned NOT NULL DEFAULT '0',
   `points_earned` int unsigned NOT NULL DEFAULT '0',
+  `is_best_attempt` tinyint(1) NOT NULL DEFAULT '0',
   `submitted_at` timestamp NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `quiz_submissions_user_id_lesson_task_id_unique` (`user_id`,`lesson_task_id`),
+  UNIQUE KEY `quiz_submissions_user_task_attempt_unique` (`user_id`,`lesson_task_id`,`attempt_number`),
   KEY `quiz_submissions_lesson_task_id_foreign` (`lesson_task_id`),
   CONSTRAINT `quiz_submissions_lesson_task_id_foreign` FOREIGN KEY (`lesson_task_id`) REFERENCES `lesson_tasks` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quiz_submissions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
@@ -517,6 +605,7 @@ CREATE TABLE `users` (
   `last_active_date` date DEFAULT NULL,
   `daily_xp_earned` int unsigned NOT NULL DEFAULT '0',
   `daily_goal_met_at` date DEFAULT NULL,
+  `ability_estimate` double NOT NULL DEFAULT '0.5',
   `is_admin` tinyint(1) NOT NULL DEFAULT '0',
   `role` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'member',
   `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
@@ -604,3 +693,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (61,'2026_04_27_231
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (62,'2026_04_27_231330_add_onboarding_completed_at_to_users_table',6);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (63,'2026_04_27_231539_add_topic_id_to_quiz_questions_table',7);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (64,'2026_04_28_002224_drop_cover_image_blob_from_courses_table',8);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (65,'2026_04_28_054311_create_daily_rewards_table',9);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (66,'2026_04_28_055707_create_notes_table',10);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (67,'2026_04_28_060826_create_certificates_table',11);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (68,'2026_04_28_073206_add_performance_indexes',12);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (69,'2026_04_28_082050_create_features_table',12);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (70,'2026_04_28_103000_add_leaderboard_composite_indexes',12);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (71,'2026_04_28_114800_add_adaptive_assessment_columns',13);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (72,'2026_04_28_120000_add_quiz_retry_columns_to_quiz_submissions',14);

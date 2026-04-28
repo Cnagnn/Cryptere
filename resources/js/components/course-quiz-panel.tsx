@@ -2,8 +2,10 @@ import {
     ChevronLeft,
     ChevronRight,
     Eye,
+    RefreshCw,
     Sparkles,
     Star,
+    TrendingUp,
     Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -26,6 +28,11 @@ export type QuizSubmission = {
     results: Array<{ correct: boolean; explanation: string | null }>;
     xpEarned: number;
     pointsEarned: number;
+    attemptNumber: number;
+    xpMultiplier: number;
+    bestScore: number;
+    bestTotal: number;
+    canRetry: boolean;
 };
 
 export type QuizPanelProps = {
@@ -63,6 +70,11 @@ export function QuizPanel({
         explanations: Array<string | null>;
         xpEarned: number;
         pointsEarned: number;
+        attemptNumber: number;
+        xpMultiplier: number;
+        bestScore: number;
+        bestTotal: number;
+        canRetry: boolean;
     } | null>(() =>
         submission
             ? {
@@ -72,12 +84,20 @@ export function QuizPanel({
                   explanations: submission.results.map((r) => r.explanation),
                   xpEarned: submission.xpEarned,
                   pointsEarned: submission.pointsEarned,
+                  attemptNumber: submission.attemptNumber ?? 1,
+                  xpMultiplier: submission.xpMultiplier ?? 1.0,
+                  bestScore: submission.bestScore ?? submission.score,
+                  bestTotal: submission.bestTotal ?? submission.total,
+                  canRetry: submission.canRetry ?? true,
               }
             : null,
     );
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [showReview, setShowReview] = useState(false);
+    const [previousScore, setPreviousScore] = useState<number | null>(
+        submission ? submission.score : null,
+    );
 
     const normalizedAnswers =
         selectedAnswers.length === questions.length
@@ -157,9 +177,20 @@ export function QuizPanel({
                         }>;
                         xp_earned: number;
                         points_earned: number;
+                        attempt_number: number;
+                        max_attempts: number | null;
+                        xp_multiplier: number;
+                        best_score: number;
+                        best_total: number;
+                        can_retry: boolean;
                     };
                 })
                 .then((data) => {
+                    // Save previous score for improvement tracking
+                    if (quizResult) {
+                        setPreviousScore(quizResult.bestScore);
+                    }
+
                     setResult({
                         score: data.score,
                         total: data.total,
@@ -167,6 +198,11 @@ export function QuizPanel({
                         explanations: data.results.map((r) => r.explanation),
                         xpEarned: data.xp_earned,
                         pointsEarned: data.points_earned,
+                        attemptNumber: data.attempt_number,
+                        xpMultiplier: data.xp_multiplier,
+                        bestScore: data.best_score,
+                        bestTotal: data.best_total,
+                        canRetry: data.can_retry,
                     });
                     setShowReview(false);
 
@@ -204,6 +240,10 @@ parts.push(`+${data.points_earned} Points`);
     };
 
     const handleRetryQuiz = () => {
+        // Save the current best score before resetting
+        if (quizResult) {
+            setPreviousScore(quizResult.bestScore);
+        }
         setSelectedAnswers(questions.map(() => -1));
         setResult(null);
         setSubmitError(null);
@@ -214,6 +254,10 @@ parts.push(`+${data.points_earned} Points`);
     // Result summary screen (shown after submit, before review)
     if (quizResult && !showReview) {
         const isPerfect = quizResult.score === quizResult.total;
+        const hasImproved =
+            previousScore !== null && quizResult.score > previousScore;
+        const showRetryButton = quizResult.canRetry && !isPerfect;
+        const xpMultiplierPercent = Math.round(quizResult.xpMultiplier * 100);
 
         return (
             <div className="flex flex-col items-center gap-6 py-6">
@@ -233,6 +277,37 @@ parts.push(`+${data.points_earned} Points`);
                     <p className="mt-1 text-muted-foreground">
                         You scored {quizResult.score} out of {quizResult.total}
                     </p>
+
+                    {/* Attempt number indicator */}
+                    {quizResult.attemptNumber > 1 && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Attempt {quizResult.attemptNumber}
+                            {quizResult.xpMultiplier < 1.0 && (
+                                <span>
+                                    {' '}
+                                    · XP reward: {xpMultiplierPercent}%
+                                </span>
+                            )}
+                        </p>
+                    )}
+
+                    {/* Improvement tracking */}
+                    {hasImproved && (
+                        <div className="mt-2 flex items-center justify-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
+                            <TrendingUp className="size-4" />
+                            <span>
+                                Improved from {previousScore}/{quizResult.total}!
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Best score across all attempts */}
+                    {quizResult.attemptNumber > 1 && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Best score: {quizResult.bestScore}/
+                            {quizResult.bestTotal}
+                        </p>
+                    )}
                 </div>
 
                 {(quizResult.xpEarned > 0 || quizResult.pointsEarned > 0) ? (
@@ -274,9 +349,20 @@ parts.push(`+${data.points_earned} Points`);
                             <ChevronRight className="size-4" />
                         </Button>
                     ) : null}
-                    <Button variant="ghost" onClick={handleRetryQuiz}>
-                        Retry Quiz
-                    </Button>
+                    {showRetryButton ? (
+                        <Button
+                            variant="secondary"
+                            onClick={handleRetryQuiz}
+                            className="gap-2"
+                        >
+                            <RefreshCw className="size-4" />
+                            Retry Quiz
+                        </Button>
+                    ) : (
+                        <Button variant="ghost" onClick={handleRetryQuiz}>
+                            Retry Quiz
+                        </Button>
+                    )}
                 </div>
             </div>
         );

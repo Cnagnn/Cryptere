@@ -25,6 +25,7 @@ use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\StoryController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -122,6 +123,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('certificates', [CertificateController::class, 'index'])->name('certificates.index');
     Route::post('certificates', [CertificateController::class, 'store'])->name('certificates.store');
     Route::get('certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
+
+    Route::get('story', StoryController::class)->name('story');
+    Route::post('story/{chapter}/read', [StoryController::class, 'markAsRead'])->name('story.read');
 
 });
 

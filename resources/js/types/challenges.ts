@@ -2,12 +2,15 @@
 
 export type ChallengeOption = { label: string; value: string };
 
+export type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
 export type QuizSessionQuestion = {
     id: number;
     index: number;
     type: 'mcq' | 'true_false' | 'text' | 'fill_blank';
     question: string;
     options: string[] | null;
+    difficultyLevel?: DifficultyLevel;
 };
 
 export type QuizSession = {
@@ -62,6 +65,7 @@ export type QuestionResult = {
     questionScore: number;
     streakBonus: number;
     totalQuestionPoints: number;
+    difficultyLevel?: DifficultyLevel;
 };
 
 export type QuestionDetail = {
@@ -88,6 +92,8 @@ export type SessionResult = {
     isFirstSession: boolean;
     userTotalPoints: number;
     questionDetails: QuestionDetail[];
+    abilityEstimate?: number;
+    abilityChange?: number;
 };
 
 export type QuizPhase = 'pre' | 'playing' | 'feedback' | 'summary';

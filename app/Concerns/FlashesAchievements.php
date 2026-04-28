@@ -6,13 +6,14 @@ use App\Events\XpAwarded;
 use App\Models\User;
 use App\Services\BadgeService;
 use App\Services\LevelService;
+use App\Services\StoryService;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 
 trait FlashesAchievements
 {
     /**
-     * Check badges and flash any newly awarded ones + level-up info.
+     * Check badges, story chapters, and flash any newly awarded ones + level-up info.
      * Also persists notifications for each achievement.
      *
      * @param  string|array<int, string>  $criteriaTypes
@@ -52,6 +53,28 @@ trait FlashesAchievements
             }
         }
 
+        // Check and unlock story chapters after badges/level changes
+        $this->checkAndFlashStoryUnlocks($user);
+
         return $newBadges;
+    }
+
+    /**
+     * Check for newly unlocked story chapters and flash them.
+     */
+    protected function checkAndFlashStoryUnlocks(User $user): void
+    {
+        $storyService = app(StoryService::class);
+        $newChapters = $storyService->checkAndUnlock($user);
+
+        if ($newChapters->isNotEmpty()) {
+            Inertia::flash('newStoryChapters', $newChapters->map(fn ($chapter) => [
+                'id' => $chapter->id,
+                'slug' => $chapter->slug,
+                'title' => $chapter->title,
+                'chapter_number' => $chapter->chapter_number,
+                'icon' => $chapter->icon,
+            ])->values()->all());
+        }
     }
 }

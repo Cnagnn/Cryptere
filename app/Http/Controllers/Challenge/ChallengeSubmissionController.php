@@ -11,6 +11,7 @@ use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
 use App\Models\User;
+use App\Services\AdaptiveQuestionService;
 use App\Services\BadgeService;
 use App\Services\ChallengeHelperService;
 use App\Services\ChallengeScoreService;
@@ -32,6 +33,7 @@ class ChallengeSubmissionController extends Controller
         private readonly LevelService $levelService,
         private readonly ChallengeHelperService $challengeHelper,
         private readonly XpService $xpService,
+        private readonly AdaptiveQuestionService $adaptiveService,
     ) {}
 
     /**
@@ -215,12 +217,16 @@ class ChallengeSubmissionController extends Controller
             ],
         );
 
+        // R2: Update adaptive question statistics
+        $this->adaptiveService->updateQuestionStats($question, $isCorrect);
+
         return response()->json([
             'isCorrect' => $isCorrect,
             'explanation' => $question->explanation,
             'questionScore' => $questionScore,
             'streakBonus' => $streakBonus,
             'totalQuestionPoints' => $questionScore + $streakBonus,
+            'difficultyLevel' => $question->difficulty_level,
         ]);
     }
 
@@ -332,6 +338,12 @@ class ChallengeSubmissionController extends Controller
             ];
         });
 
+        // R2: Update user ability estimate based on session accuracy
+        $sessionAccuracy = $totalQuestions > 0 ? $correctCount / $totalQuestions : 0.0;
+        $previousAbility = $user->ability_estimate ?? 0.5;
+        $this->adaptiveService->updateUserAbility($user, $sessionAccuracy);
+        $user->refresh();
+
         return response()->json([
             'sessionId' => $sessionId,
             'totalScore' => $totalScore,
@@ -345,8 +357,10 @@ class ChallengeSubmissionController extends Controller
             'awardedXp' => $awardedXp,
             'isPerfectScore' => $isPerfectScore,
             'isFirstSession' => ! $hasEarlierSession,
-            'userTotalPoints' => $user->fresh()->points,
+            'userTotalPoints' => $user->points,
             'questionDetails' => $questionDetails,
+            'abilityEstimate' => $user->ability_estimate,
+            'abilityChange' => round(($user->ability_estimate ?? 0.5) - $previousAbility, 4),
         ]);
     }
 

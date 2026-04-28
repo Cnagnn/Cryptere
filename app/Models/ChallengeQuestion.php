@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-#[Fillable(['challenge_id', 'type', 'question', 'options', 'correct_answer', 'explanation', 'sort_order'])]
+#[Fillable(['challenge_id', 'type', 'question', 'options', 'correct_answer', 'explanation', 'sort_order', 'difficulty_level', 'difficulty_score', 'discrimination', 'times_shown', 'times_correct'])]
 #[Hidden(['correct_answer'])]
 class ChallengeQuestion extends Model
 {
@@ -42,6 +42,10 @@ class ChallengeQuestion extends Model
         return [
             'options' => 'array',
             'sort_order' => 'integer',
+            'difficulty_score' => 'float',
+            'discrimination' => 'float',
+            'times_shown' => 'integer',
+            'times_correct' => 'integer',
         ];
     }
 

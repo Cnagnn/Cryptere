@@ -15,6 +15,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'correct_option',
     'explanation',
     'sort_order',
+    'difficulty_level',
+    'difficulty_score',
+    'discrimination',
+    'times_shown',
+    'times_correct',
 ])]
 class QuizQuestion extends Model
 {
@@ -36,6 +41,10 @@ class QuizQuestion extends Model
             'options' => 'array',
             'correct_option' => 'integer',
             'sort_order' => 'integer',
+            'difficulty_score' => 'float',
+            'discrimination' => 'float',
+            'times_shown' => 'integer',
+            'times_correct' => 'integer',
         ];
     }
 

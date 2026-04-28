@@ -4,6 +4,7 @@ import {
     FlaskConical,
     LayoutGrid,
     Menu,
+    ScrollText,
     Search,
     Swords,
     Trophy,
@@ -65,6 +66,11 @@ const mainNavItems: NavItem[] = [
         title: 'Challenges',
         href: challengesIndex(),
         icon: Swords,
+    },
+    {
+        title: 'Story',
+        href: '/story',
+        icon: ScrollText,
     },
     {
         title: 'Leaderboard',

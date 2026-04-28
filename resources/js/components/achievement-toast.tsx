@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { Award, Shield, Star, Trophy } from 'lucide-react';
+import { Award, ScrollText, Shield, Star, Trophy } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
@@ -13,6 +13,14 @@ type BadgeFlash = {
 
 type LevelUpFlash = {
     level: number;
+};
+
+type StoryChapterFlash = {
+    id: number;
+    slug: string;
+    title: string;
+    chapter_number: number;
+    icon: string;
 };
 
 const tierColors: Record<string, string> = {
@@ -41,6 +49,7 @@ export function AchievementToast() {
         flash?: {
             newBadges?: BadgeFlash[];
             levelUp?: LevelUpFlash;
+            newStoryChapters?: StoryChapterFlash[];
         };
     }>();
 
@@ -48,7 +57,7 @@ export function AchievementToast() {
     const processedRef = useRef<string | null>(null);
 
     useEffect(() => {
-        const key = JSON.stringify({ b: flash?.newBadges, l: flash?.levelUp });
+        const key = JSON.stringify({ b: flash?.newBadges, l: flash?.levelUp, s: flash?.newStoryChapters });
 
         if (key === processedRef.current) {
             return;
@@ -78,7 +87,32 @@ export function AchievementToast() {
                 );
             });
         }
-    }, [flash?.newBadges, flash?.levelUp]);
+
+        if (flash?.newStoryChapters && flash.newStoryChapters.length > 0) {
+            const baseDelay =
+                (flash?.levelUp ? 800 : 0) +
+                (flash?.newBadges?.length ?? 0) * 600;
+
+            flash.newStoryChapters.forEach((chapter, i) => {
+                setTimeout(
+                    () => {
+                        toast.success('📜 New Chapter Unlocked!', {
+                            description: `Chapter ${chapter.chapter_number}: ${chapter.title}`,
+                            icon: <ScrollText className="size-5 text-amber-600" />,
+                            duration: 7000,
+                            action: {
+                                label: 'Read',
+                                onClick: () => {
+                                    window.location.href = '/story';
+                                },
+                            },
+                        });
+                    },
+                    baseDelay + i * 600,
+                );
+            });
+        }
+    }, [flash?.newBadges, flash?.levelUp, flash?.newStoryChapters]);
 
     return null;
 }

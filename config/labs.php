@@ -49,4 +49,10 @@ return [
         'group' => 'signature',
     ],
 
+    'lattice-cipher-lab' => [
+        'title' => 'Lattice Cipher',
+        'summary' => 'Explore lattice-based encryption concepts with a simplified Learning With Errors (LWE) demonstration.',
+        'group' => 'post-quantum',
+    ],
+
 ];

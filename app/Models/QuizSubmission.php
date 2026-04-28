@@ -10,12 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id',
     'lesson_task_id',
+    'attempt_number',
     'answers',
     'score',
     'total',
     'results',
     'xp_earned',
     'points_earned',
+    'is_best_attempt',
     'submitted_at',
 ])]
 class QuizSubmission extends Model
@@ -32,8 +34,10 @@ class QuizSubmission extends Model
             'results' => 'array',
             'score' => 'integer',
             'total' => 'integer',
+            'attempt_number' => 'integer',
             'xp_earned' => 'integer',
             'points_earned' => 'integer',
+            'is_best_attempt' => 'boolean',
             'submitted_at' => 'datetime',
         ];
     }

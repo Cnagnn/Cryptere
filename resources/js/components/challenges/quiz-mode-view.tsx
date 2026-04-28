@@ -26,6 +26,7 @@ import {
 } from '@/routes/challenges';
 import type {
     ChallengePayload,
+    DifficultyLevel,
     QuestionResult,
     QuizPhase,
     QuizSession,
@@ -33,6 +34,48 @@ import type {
     SessionResult,
     SubmissionSummary,
 } from '@/types/challenges';
+
+/* ── Difficulty Badge ── */
+const difficultyConfig: Record<
+    DifficultyLevel,
+    { label: string; color: string; dot: string }
+> = {
+    easy: {
+        label: 'Easy',
+        color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+        dot: 'bg-emerald-500',
+    },
+    medium: {
+        label: 'Medium',
+        color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+        dot: 'bg-yellow-500',
+    },
+    hard: {
+        label: 'Hard',
+        color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+        dot: 'bg-red-500',
+    },
+};
+
+function DifficultyBadge({ level }: { level?: DifficultyLevel }) {
+    if (!level) {
+        return null;
+    }
+
+    const config = difficultyConfig[level];
+
+    return (
+        <span
+            className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                config.color,
+            )}
+        >
+            <span className={cn('size-1.5 rounded-full', config.dot)} />
+            {config.label}
+        </span>
+    );
+}
 
 /* ── Pre-Quiz Screen ── */
 function PreQuizScreen({
@@ -290,9 +333,12 @@ function QuizPlayingScreen({
         <div className="flex flex-col gap-4">
             {/* Header bar */}
             <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">
-                    Question {currentIndex + 1} of {totalQuestions}
-                </span>
+                <div className="flex items-center gap-2">
+                    <span className="font-medium">
+                        Question {currentIndex + 1} of {totalQuestions}
+                    </span>
+                    <DifficultyBadge level={question.difficultyLevel} />
+                </div>
                 <div className="flex items-center gap-3">
                     {consecutiveCorrect >= 2 && (
                         <Badge
@@ -411,6 +457,29 @@ function PostQuizSummary({
                         </span>
                     </p>
                 )}
+
+                {summaryResult.abilityChange !== undefined &&
+                    summaryResult.abilityChange !== 0 && (
+                        <p className="text-sm text-muted-foreground">
+                            Skill level:{' '}
+                            <span
+                                className={cn(
+                                    'font-medium',
+                                    summaryResult.abilityChange > 0
+                                        ? 'text-emerald-600'
+                                        : 'text-red-500',
+                                )}
+                            >
+                                {summaryResult.abilityChange > 0 ? '↑' : '↓'}{' '}
+                                {Math.abs(
+                                    Math.round(
+                                        summaryResult.abilityChange * 100,
+                                    ),
+                                )}
+                                %
+                            </span>
+                        </p>
+                    )}
             </div>
 
             {/* Right — Stats + Actions */}
