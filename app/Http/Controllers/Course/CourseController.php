@@ -9,7 +9,9 @@ use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
 use App\Models\QuizSubmission;
+use App\Services\CacheService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,34 +24,39 @@ class CourseController extends Controller
      */
     public function index(Request $request): Response
     {
-        $courses = Course::query()
+        $catalogBase = Cache::remember('courses:catalog', CacheService::TTL_MEDIUM, fn () => Course::query()
             ->published()
             ->withCount(['lessons', 'enrollments'])
             ->orderBy('sort_order')
             ->orderBy('title')
-            ->get();
+            ->get()
+            ->map(fn (Course $course): array => [
+                'id' => $course->id,
+                'slug' => $course->slug,
+                'title' => $course->title,
+                'summary' => $course->summary,
+                'coverImage' => $course->cover,
+                'estimatedMinutes' => $course->estimated_minutes,
+                'lessonCount' => $course->lessons_count,
+                'enrollmentCount' => $course->enrollments_count,
+            ])->values()->all());
 
         $progressByCourse = $request->user()
             ->enrollments()
             ->pluck('progress_percentage', 'course_id');
 
-        return Inertia::render('courses/index', [
-            'courses' => $courses->map(function (Course $course) use ($progressByCourse): array {
-                $isEnrolled = $progressByCourse->has($course->id);
+        $courses = collect($catalogBase)->map(function (array $course) use ($progressByCourse): array {
+            $isEnrolled = $progressByCourse->has($course['id']);
 
-                return [
-                    'id' => $course->id,
-                    'slug' => $course->slug,
-                    'title' => $course->title,
-                    'summary' => $course->summary,
-                    'coverImage' => $course->cover,
-                    'estimatedMinutes' => $course->estimated_minutes,
-                    'lessonCount' => $course->lessons_count,
-                    'enrollmentCount' => $course->enrollments_count,
-                    'isEnrolled' => $isEnrolled,
-                    'progressPercentage' => $isEnrolled ? $progressByCourse[$course->id] : null,
-                ];
-            })->values(),
+            return [
+                ...$course,
+                'isEnrolled' => $isEnrolled,
+                'progressPercentage' => $isEnrolled ? $progressByCourse[$course['id']] : null,
+            ];
+        })->values();
+
+        return Inertia::render('courses/index', [
+            'courses' => $courses,
         ]);
     }
 

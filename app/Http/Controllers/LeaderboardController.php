@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\CacheService;
 use App\Services\LeaderboardService;
 use App\Services\LevelService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -49,8 +51,8 @@ class LeaderboardController extends Controller
             })
         );
 
-        // Fetch top 3 separately (always from rank 1, regardless of current page)
-        $top3Users = $this->leaderboardService->getTop3Users($timeframe);
+        // Fetch top 3 separately (always from rank 1, regardless of current page) — cached 5 min
+        $top3Users = Cache::remember("leaderboard_top3_{$timeframe}", CacheService::TTL_MEDIUM, fn () => $this->leaderboardService->getTop3Users($timeframe));
         $top3 = $top3Users->values()->map(function (User $user, int $index) use ($timeframe, $previousRanks): array {
             $levelInfo = $this->levelService->getLevelForXp($user->xp);
             $rank = $index + 1;

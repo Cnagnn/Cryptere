@@ -9,11 +9,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['course_id', 'slug', 'title', 'description', 'content', 'position'])]
+#[Fillable(['course_id', 'slug', 'title', 'description', 'content', 'position', 'learning_objectives', 'prerequisites_text', 'key_concepts'])]
 class Lesson extends Model
 {
     /** @use HasFactory<LessonFactory> */
     use HasFactory;
+
+    protected $casts = [
+        'learning_objectives' => 'array',
+        'key_concepts' => 'array',
+    ];
 
     /**
      * Get the course that owns the lesson.

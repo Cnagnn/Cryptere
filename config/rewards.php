@@ -172,4 +172,23 @@ return [
     */
     'challenge_streak_bonus' => [0, 0, 2, 4, 6, 10],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Daily Login Rewards (7-day cycle)
+    |--------------------------------------------------------------------------
+    |
+    | Escalating rewards for consecutive daily logins. After day 7 the
+    | cycle resets. Each entry: [xp, points].
+    |
+    */
+    'daily_rewards' => [
+        1 => ['xp' => 10, 'points' => 2],
+        2 => ['xp' => 15, 'points' => 3],
+        3 => ['xp' => 20, 'points' => 5],
+        4 => ['xp' => 25, 'points' => 7],
+        5 => ['xp' => 35, 'points' => 10],
+        6 => ['xp' => 50, 'points' => 15],
+        7 => ['xp' => 100, 'points' => 25],
+    ],
+
 ];

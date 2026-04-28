@@ -16,7 +16,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'password', 'points', 'xp', 'current_streak', 'longest_streak', 'last_active_date', 'daily_xp_earned', 'daily_goal_met_at', 'is_admin', 'role', 'status'])]
+#[Fillable(['name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'password', 'points', 'xp', 'current_streak', 'longest_streak', 'last_active_date', 'daily_xp_earned', 'daily_goal_met_at', 'is_admin', 'role', 'status', 'onboarding_completed_at'])]
 #[Hidden(['password', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -51,6 +51,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'daily_goal_met_at' => 'date',
             'is_admin' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
+            'onboarding_completed_at' => 'datetime',
         ];
     }
 
@@ -101,11 +102,9 @@ class User extends Authenticatable implements MustVerifyEmail
         $avatarBinary = $this->resolveAvatarBinary();
 
         if (is_string($avatarBinary) && $avatarBinary !== '') {
-            $mimeType = is_string($this->avatar_mime_type) && $this->avatar_mime_type !== ''
-                ? $this->avatar_mime_type
-                : 'image/jpeg';
+            $mime = $this->avatar_mime_type ?? 'image/png';
 
-            return sprintf('data:%s;base64,%s', $mimeType, base64_encode($avatarBinary));
+            return 'data:'.$mime.';base64,'.base64_encode($avatarBinary);
         }
 
         if (! is_string($this->avatar_path) || $this->avatar_path === '') {
@@ -113,25 +112,6 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return Storage::disk('public')->url($this->avatar_path);
-    }
-
-    private function resolveAvatarBinary(): ?string
-    {
-        $avatarImage = $this->avatar_image;
-
-        if (is_string($avatarImage)) {
-            return $avatarImage;
-        }
-
-        if (is_resource($avatarImage)) {
-            rewind($avatarImage);
-
-            $contents = stream_get_contents($avatarImage);
-
-            return is_string($contents) ? $contents : null;
-        }
-
-        return null;
     }
 
     /**
@@ -192,5 +172,48 @@ class User extends Authenticatable implements MustVerifyEmail
     public function labVisits(): HasMany
     {
         return $this->hasMany(LabVisit::class);
+    }
+
+    /**
+     * Get the daily reward claims for the user.
+     */
+    public function dailyRewards(): HasMany
+    {
+        return $this->hasMany(DailyReward::class);
+    }
+
+    /**
+     * Get the notes for the user.
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(Note::class);
+    }
+
+    /**
+     * Get the certificates for the user.
+     */
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
+    }
+
+    private function resolveAvatarBinary(): ?string
+    {
+        $avatarImage = $this->avatar_image;
+
+        if (is_string($avatarImage)) {
+            return $avatarImage;
+        }
+
+        if (is_resource($avatarImage)) {
+            rewind($avatarImage);
+
+            $contents = stream_get_contents($avatarImage);
+
+            return is_string($contents) ? $contents : null;
+        }
+
+        return null;
     }
 }

@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
+use App\Services\CacheService;
 use App\Services\ChallengeHelperService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,11 +28,24 @@ class ChallengeController extends Controller
     {
         $currentTime = now();
 
-        $challenges = Challenge::query()
+        $catalogBase = Cache::remember('challenges:catalog', CacheService::TTL_MEDIUM, fn () => Challenge::query()
             ->published()
             ->withCount('questions')
             ->orderBy('title')
-            ->get();
+            ->get()
+            ->map(fn (Challenge $challenge): array => [
+                'id' => $challenge->id,
+                'slug' => $challenge->slug,
+                'title' => $challenge->title,
+                'prompt' => $challenge->prompt,
+                'hint' => $challenge->hint,
+                'timeStart' => optional($challenge->time_start)?->toIso8601String(),
+                'timeEnd' => optional($challenge->time_end)?->toIso8601String(),
+                'questionsCount' => $challenge->questions_count,
+                'hasQuestionBank' => $challenge->questions_count > 0,
+                'time_start_raw' => $challenge->time_start,
+                'time_end_raw' => $challenge->time_end,
+            ])->values()->all());
 
         $user = $request->user();
 
@@ -52,24 +67,26 @@ class ChallengeController extends Controller
             ->groupBy('challenge_id')
             ->pluck('best_score', 'challenge_id');
 
+        $challenges = collect($catalogBase)->map(function (array $c) use ($solvedChallengeIds, $completedSessionChallengeIds, $bestScores, $currentTime): array {
+            return [
+                'id' => $c['id'],
+                'slug' => $c['slug'],
+                'title' => $c['title'],
+                'prompt' => $c['prompt'],
+                'hint' => $c['hint'],
+                'timeStart' => $c['timeStart'],
+                'timeEnd' => $c['timeEnd'],
+                'status' => $this->challengeHelper->resolveAvailabilityStatusFromDates($c['time_start_raw'], $c['time_end_raw'], $currentTime),
+                'isSolved' => $solvedChallengeIds->contains($c['id']),
+                'hasCompletedSession' => $completedSessionChallengeIds->contains($c['id']),
+                'hasQuestionBank' => $c['hasQuestionBank'],
+                'questionsCount' => $c['questionsCount'],
+                'bestScore' => $bestScores->get($c['id'], 0),
+            ];
+        })->values();
+
         return Inertia::render('challenges/index', [
-            'challenges' => $challenges->map(function (Challenge $challenge) use ($solvedChallengeIds, $completedSessionChallengeIds, $bestScores, $currentTime): array {
-                return [
-                    'id' => $challenge->id,
-                    'slug' => $challenge->slug,
-                    'title' => $challenge->title,
-                    'prompt' => $challenge->prompt,
-                    'hint' => $challenge->hint,
-                    'timeStart' => optional($challenge->time_start)?->toIso8601String(),
-                    'timeEnd' => optional($challenge->time_end)?->toIso8601String(),
-                    'status' => $this->challengeHelper->resolveAvailabilityStatus($challenge, $currentTime),
-                    'isSolved' => $solvedChallengeIds->contains($challenge->id),
-                    'hasCompletedSession' => $completedSessionChallengeIds->contains($challenge->id),
-                    'hasQuestionBank' => $challenge->questions_count > 0,
-                    'questionsCount' => $challenge->questions_count,
-                    'bestScore' => $bestScores->get($challenge->id, 0),
-                ];
-            })->values(),
+            'challenges' => $challenges,
         ]);
     }
 

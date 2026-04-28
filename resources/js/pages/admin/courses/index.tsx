@@ -1,10 +1,15 @@
 import { Head } from '@inertiajs/react';
-import type { CourseRow, LessonRow, Paginated, TaskRow } from '@/components/course-types';
-import { dashboard } from '@/routes';
-import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import AdminCoursesTask from './task';
 import AdminCoursesTitle from './title';
 import AdminCoursesTopic from './topic';
+import type {
+    CourseRow,
+    LessonRow,
+    Paginated,
+    TaskRow,
+} from '@/components/course-types';
+import { dashboard } from '@/routes';
+import { index as adminCoursesIndex } from '@/routes/admin/courses';
 
 type Props = {
     section: 'catalog' | 'lesson' | 'task';

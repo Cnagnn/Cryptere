@@ -1,9 +1,14 @@
 import { Shield } from 'lucide-react';
 
-import type { UserLevel } from '@/types/auth';
-
 import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+import type { UserLevel } from '@/types/auth';
 
 interface LevelBadgeProps {
     level?: UserLevel;
@@ -11,15 +16,23 @@ interface LevelBadgeProps {
     className?: string;
 }
 
-export function LevelBadge({ level, variant = 'compact', className }: LevelBadgeProps) {
-    if (!level) return null;
+export function LevelBadge({
+    level,
+    variant = 'compact',
+    className,
+}: LevelBadgeProps) {
+    if (!level) {
+        return null;
+    }
 
     if (variant === 'compact') {
         return (
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <span className={`inline-flex items-center gap-1 text-sm font-medium ${className ?? ''}`}>
+                        <span
+                            className={`inline-flex items-center gap-1 text-sm font-medium ${className ?? ''}`}
+                        >
                             <Shield className="size-4 text-primary" />
                             <span>Lv.{level.level}</span>
                         </span>
@@ -27,7 +40,9 @@ export function LevelBadge({ level, variant = 'compact', className }: LevelBadge
                     <TooltipContent side="top" className="text-center">
                         <p className="font-semibold">Level {level.level}</p>
                         <p className="text-xs text-muted-foreground">
-                            {level.next_level_xp ? `${level.current_xp} / ${level.next_level_xp} XP` : 'Max Level'}
+                            {level.next_level_xp
+                                ? `${level.current_xp} / ${level.next_level_xp} XP`
+                                : 'Max Level'}
                         </p>
                     </TooltipContent>
                 </Tooltip>
@@ -43,7 +58,9 @@ export function LevelBadge({ level, variant = 'compact', className }: LevelBadge
                     Lv.{level.level}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                    {level.next_level_xp ? `${level.current_xp} / ${level.next_level_xp} XP` : 'Max Level'}
+                    {level.next_level_xp
+                        ? `${level.current_xp} / ${level.next_level_xp} XP`
+                        : 'Max Level'}
                 </span>
             </div>
             <Progress value={level.progress} className="h-2" />

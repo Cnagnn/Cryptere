@@ -27,7 +27,7 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         $streakResult = ['xp' => 0, 'bonuses' => []];
-        if ($user !== null) {
+        if ($user !== null && ! $request->header('X-Inertia-Partial-Data')) {
             $streakResult = $this->xpService->updateDailyStreak($user);
             $user->refresh();
         }

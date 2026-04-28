@@ -52,8 +52,9 @@ class QuizSubmissionController extends Controller
             return response()->json(['error' => 'You must be enrolled in this course to take a quiz.'], 403);
         }
 
-        // Fetch questions in sort order
+        // Fetch questions in sort order (eager-load topic for remedial links)
         $questions = $task->quizQuestions()
+            ->with('topic')
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
@@ -72,6 +73,7 @@ class QuizSubmissionController extends Controller
             return [
                 'correct' => $isCorrect,
                 'explanation' => $question->explanation,
+                'remedialLessonSlug' => ! $isCorrect ? $question->topic?->relatedLessonSlug() : null,
             ];
         })->values()->all();
 

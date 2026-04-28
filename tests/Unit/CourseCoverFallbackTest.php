@@ -10,8 +10,6 @@ test('course cover returns generated svg placeholder when no stored cover exists
     $course = Course::factory()->make([
         'title' => 'tes',
         'cover_path' => null,
-        'cover_image' => null,
-        'cover_mime_type' => null,
     ]);
 
     $cover = $course->cover;

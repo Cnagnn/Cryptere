@@ -157,16 +157,25 @@ class LeaderboardService
         }
 
         $since = $this->resolveSinceDate($timeframe);
+        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
 
-        $challengeSub = DB::table('challenge_submissions')
-            ->select('user_id', DB::raw('COALESCE(SUM(score + COALESCE(streak_bonus, 0)), 0) as total'))
+        $challengePoints = DB::table('challenge_submissions')
+            ->select('user_id', DB::raw('SUM(score + COALESCE(streak_bonus, 0)) as total'))
             ->where('is_correct', true)
             ->where('submitted_at', '>=', $since)
             ->groupBy('user_id');
 
-        return (int) DB::query()
-            ->fromSub($challengeSub, 'ranked')
-            ->where('total', '>', $userPoints)
+        $lessonPoints = DB::table('lesson_progress')
+            ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
+            ->whereNotNull('lesson_progress.completed_at')
+            ->where('lesson_progress.completed_at', '>=', $since)
+            ->groupBy('lesson_progress.user_id');
+
+        return (int) User::query()
+            ->leftJoinSub($challengePoints, 'cp', 'users.id', '=', 'cp.user_id')
+            ->leftJoinSub($lessonPoints, 'lp', 'users.id', '=', 'lp.user_id')
+            ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > ?', [$userPoints])
+            ->where('users.id', '!=', $user->id)
             ->count() + 1;
     }
 

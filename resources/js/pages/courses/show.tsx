@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { QuizPanel  } from '@/components/course-quiz-panel';
-import type {QuizSubmission} from '@/components/course-quiz-panel';
+import { QuizPanel } from '@/components/course-quiz-panel';
+import type { QuizSubmission } from '@/components/course-quiz-panel';
 import { VideoPlayer } from '@/components/course-video-player';
 import {
     Accordion,
@@ -23,7 +23,6 @@ import {
     AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -40,7 +39,6 @@ import {
 } from '@/components/ui/empty';
 import { Progress } from '@/components/ui/progress';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-
 
 import AppLayout from '@/layouts/app-layout';
 import {
@@ -237,7 +235,6 @@ export default function CourseShow({
             lessonId: lessonId ? Number(lessonId) : null,
             taskId: taskId ? Number(taskId) : null,
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const getInitialLessonId = () => {
@@ -245,7 +242,10 @@ export default function CourseShow({
             const exists = mappedInitialLessons.some(
                 (l) => l.id === initialFromHash.lessonId,
             );
-            if (exists) return initialFromHash.lessonId;
+
+            if (exists) {
+                return initialFromHash.lessonId;
+            }
         }
 
         return mappedInitialLessons[0]?.id ?? null;
@@ -257,7 +257,10 @@ export default function CourseShow({
             const exists = lesson?.tasks.some(
                 (t) => t.id === initialFromHash.taskId,
             );
-            if (exists) return initialFromHash.taskId;
+
+            if (exists) {
+                return initialFromHash.taskId;
+            }
         }
 
         const lesson = mappedInitialLessons.find((l) => l.id === lessonId);
@@ -283,8 +286,15 @@ export default function CourseShow({
     // Sync URL hash when selected lesson/task changes
     useEffect(() => {
         const params = new URLSearchParams();
-        if (selectedLessonId !== null) params.set('lesson', String(selectedLessonId));
-        if (selectedTaskId !== null) params.set('task', String(selectedTaskId));
+
+        if (selectedLessonId !== null) {
+            params.set('lesson', String(selectedLessonId));
+        }
+
+        if (selectedTaskId !== null) {
+            params.set('task', String(selectedTaskId));
+        }
+
         const hash = params.toString();
         window.history.replaceState(null, '', `#${hash}`);
     }, [selectedLessonId, selectedTaskId]);
@@ -618,7 +628,8 @@ export default function CourseShow({
                                                 No topics yet
                                             </EmptyTitle>
                                             <EmptyDescription>
-                                                Topics and tasks are not available for this course yet.
+                                                Topics and tasks are not
+                                                available for this course yet.
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
@@ -639,14 +650,25 @@ export default function CourseShow({
                                         {lessons.map((lesson, lessonIndex) => {
                                             const isLocked =
                                                 !isAdmin &&
-                                                !(unlockedLessonIds.get(lesson.id) ?? false);
-                                            const isCompleted = completedLessonIds.includes(lesson.id);
+                                                !(
+                                                    unlockedLessonIds.get(
+                                                        lesson.id,
+                                                    ) ?? false
+                                                );
+                                            const isCompleted =
+                                                completedLessonIds.includes(
+                                                    lesson.id,
+                                                );
 
                                             return (
                                                 <AccordionItem
                                                     key={lesson.id}
                                                     value={String(lesson.id)}
-                                                    className={isLocked ? 'opacity-50' : undefined}
+                                                    className={
+                                                        isLocked
+                                                            ? 'opacity-50'
+                                                            : undefined
+                                                    }
                                                     disabled={isLocked}
                                                 >
                                                     <AccordionTrigger
@@ -655,32 +677,49 @@ export default function CourseShow({
                                                                 return;
                                                             }
 
-                                                            setSelectedLessonId(lesson.id);
+                                                            setSelectedLessonId(
+                                                                lesson.id,
+                                                            );
                                                             setSelectedTaskId(
-                                                                lesson.tasks[0]?.id ?? null,
+                                                                lesson.tasks[0]
+                                                                    ?.id ??
+                                                                    null,
                                                             );
                                                         }}
                                                     >
                                                         <div className="flex w-full items-center justify-between gap-2 pr-2">
                                                             <span className="flex items-center gap-2 truncate">
                                                                 <span className="shrink-0 text-xs text-muted-foreground">
-                                                                    {lessonIndex + 1}.
+                                                                    {lessonIndex +
+                                                                        1}
+                                                                    .
                                                                 </span>
                                                                 {lesson.title}
                                                             </span>
                                                             {isLocked ? (
-                                                                <Lock className="shrink-0 text-muted-foreground" data-icon />
+                                                                <Lock
+                                                                    className="shrink-0 text-muted-foreground"
+                                                                    data-icon
+                                                                />
                                                             ) : isCompleted ? (
-                                                                <CheckCircle2 className="shrink-0 text-emerald-500" data-icon />
+                                                                <CheckCircle2
+                                                                    className="shrink-0 text-emerald-500"
+                                                                    data-icon
+                                                                />
                                                             ) : null}
                                                         </div>
                                                     </AccordionTrigger>
                                                     <AccordionContent className="flex flex-col gap-3">
-                                                        {lesson.tasks.length > 0 ? (
+                                                        {lesson.tasks.length >
+                                                        0 ? (
                                                             <div className="flex flex-col gap-2">
                                                                 {lesson.tasks.map(
                                                                     (task) => {
-                                                                        const TaskIcon = taskTypeIcon[task.type];
+                                                                        const TaskIcon =
+                                                                            taskTypeIcon[
+                                                                                task
+                                                                                    .type
+                                                                            ];
 
                                                                         return (
                                                                             <div
@@ -698,16 +737,25 @@ export default function CourseShow({
                                                                                     size="lg"
                                                                                     className="flex-1 justify-start gap-2"
                                                                                     onClick={() => {
-                                                                                        setSelectedLessonId(lesson.id);
-                                                                                        setSelectedTaskId(task.id);
+                                                                                        setSelectedLessonId(
+                                                                                            lesson.id,
+                                                                                        );
+                                                                                        setSelectedTaskId(
+                                                                                            task.id,
+                                                                                        );
                                                                                     }}
                                                                                 >
                                                                                     <TaskIcon data-icon="inline-start" />
                                                                                     <span className="truncate">
-                                                                                        {task.title}
+                                                                                        {
+                                                                                            task.title
+                                                                                        }
                                                                                     </span>
                                                                                     {isCompleted && (
-                                                                                        <CheckCircle2 className="ml-auto shrink-0 text-emerald-500" data-icon />
+                                                                                        <CheckCircle2
+                                                                                            className="ml-auto shrink-0 text-emerald-500"
+                                                                                            data-icon
+                                                                                        />
                                                                                     )}
                                                                                 </Button>
                                                                             </div>
@@ -717,7 +765,8 @@ export default function CourseShow({
                                                             </div>
                                                         ) : (
                                                             <p className="text-xs text-muted-foreground">
-                                                                No tasks available yet.
+                                                                No tasks
+                                                                available yet.
                                                             </p>
                                                         )}
                                                     </AccordionContent>
@@ -747,7 +796,6 @@ export default function CourseShow({
                     </div>
 
                     <div className="flex flex-col gap-4">
-
                         <Card className="gap-0">
                             <CardContent className="flex flex-col gap-4">
                                 {selectedTask ? (
@@ -773,7 +821,7 @@ export default function CourseShow({
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
-                                                                ) : !isAdmin &&
+                                ) : !isAdmin &&
                                   !(
                                       unlockedLessonIds.get(
                                           selectedLesson.id,
@@ -792,11 +840,10 @@ export default function CourseShow({
                                 ) : !selectedTask ? (
                                     <Empty className="px-4 py-10">
                                         <EmptyHeader>
-                                            <EmptyTitle>
-                                                No task yet
-                                            </EmptyTitle>
+                                            <EmptyTitle>No task yet</EmptyTitle>
                                             <EmptyDescription>
-                                                No task is currently assigned to this topic.
+                                                No task is currently assigned to
+                                                this topic.
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
@@ -828,7 +875,9 @@ export default function CourseShow({
                                                 variant="ghost"
                                                 size="sm"
                                                 className="absolute top-2 right-2 z-10"
-                                                onClick={() => setIsPdfExpanded((v) => !v)}
+                                                onClick={() =>
+                                                    setIsPdfExpanded((v) => !v)
+                                                }
                                             >
                                                 {isPdfExpanded ? (
                                                     <Minimize2 data-icon />
@@ -839,7 +888,11 @@ export default function CourseShow({
                                             <iframe
                                                 title={`Document viewer for ${selectedTask.title}`}
                                                 src={selectedTask.pdfUrl}
-                                                className={isPdfExpanded ? 'h-[calc(100vh-8rem)] w-full' : 'h-140 w-full'}
+                                                className={
+                                                    isPdfExpanded
+                                                        ? 'h-[calc(100vh-8rem)] w-full'
+                                                        : 'h-140 w-full'
+                                                }
                                             />
                                         </div>
                                     ) : (
@@ -866,7 +919,6 @@ export default function CourseShow({
                                     />
                                 )}
 
-
                                 {/* Task navigation bar */}
                                 {selectedTask ? (
                                     <div className="flex items-center justify-between">
@@ -879,9 +931,12 @@ export default function CourseShow({
                                         >
                                             <ChevronLeft data-icon="inline-start" />
                                             <span className="hidden sm:inline">
-                                                {navContext.prevTask?.title ?? 'Previous'}
+                                                {navContext.prevTask?.title ??
+                                                    'Previous'}
                                             </span>
-                                            <span className="sm:hidden">Previous</span>
+                                            <span className="sm:hidden">
+                                                Previous
+                                            </span>
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -891,9 +946,12 @@ export default function CourseShow({
                                             className="gap-1"
                                         >
                                             <span className="hidden sm:inline">
-                                                {navContext.nextTask?.title ?? 'Next'}
+                                                {navContext.nextTask?.title ??
+                                                    'Next'}
                                             </span>
-                                            <span className="sm:hidden">Next</span>
+                                            <span className="sm:hidden">
+                                                Next
+                                            </span>
                                             <ChevronRight data-icon="inline-end" />
                                         </Button>
                                     </div>

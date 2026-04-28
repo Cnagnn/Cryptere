@@ -24,6 +24,7 @@ const tierColors: Record<string, string> = {
 
 function BadgeIcon({ tier }: { tier: string }) {
     const className = `size-6 ${tierColors[tier] ?? 'text-primary'}`;
+
     switch (tier) {
         case 'gold':
         case 'platinum':
@@ -48,7 +49,11 @@ export function AchievementToast() {
 
     useEffect(() => {
         const key = JSON.stringify({ b: flash?.newBadges, l: flash?.levelUp });
-        if (key === processedRef.current) return;
+
+        if (key === processedRef.current) {
+            return;
+        }
+
         processedRef.current = key;
 
         if (flash?.levelUp) {
@@ -61,13 +66,16 @@ export function AchievementToast() {
 
         if (flash?.newBadges && flash.newBadges.length > 0) {
             flash.newBadges.forEach((badge, i) => {
-                setTimeout(() => {
-                    toast.success('Badge Earned!', {
-                        description: `${badge.name} — ${badge.description}`,
-                        icon: <BadgeIcon tier={badge.tier} />,
-                        duration: 5000,
-                    });
-                }, (flash?.levelUp ? 800 : 0) + i * 600);
+                setTimeout(
+                    () => {
+                        toast.success('Badge Earned!', {
+                            description: `${badge.name} — ${badge.description}`,
+                            icon: <BadgeIcon tier={badge.tier} />,
+                            duration: 5000,
+                        });
+                    },
+                    (flash?.levelUp ? 800 : 0) + i * 600,
+                );
             });
         }
     }, [flash?.newBadges, flash?.levelUp]);

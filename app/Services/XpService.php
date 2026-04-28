@@ -78,9 +78,10 @@ class XpService
             return 0;
         }
 
-        $user->increment('xp', $baseXp);
-
-        $this->trackDailyGoal($user, $baseXp);
+        DB::transaction(function () use ($user, $baseXp): void {
+            $user->increment('xp', $baseXp);
+            $this->trackDailyGoal($user, $baseXp);
+        });
 
         return $baseXp;
     }
@@ -150,14 +151,14 @@ class XpService
         $previousDaily = $freshUser->daily_xp_earned ?? 0;
         $newDaily = $previousDaily + $xpEarned;
 
-        $freshUser->update(['daily_xp_earned' => $newDaily]);
+        $freshUser->forceFill(['daily_xp_earned' => $newDaily])->save();
         $user->daily_xp_earned = $newDaily;
 
         // Award bonus only on the first crossing of the target today
         if ($previousDaily < $target && $newDaily >= $target && $freshUser->daily_goal_met_at === null) {
             $bonus = (int) config('rewards.daily_goal_bonus_xp', 20);
             $freshUser->increment('xp', $bonus);
-            $freshUser->update(['daily_goal_met_at' => CarbonImmutable::today()]);
+            $freshUser->forceFill(['daily_goal_met_at' => CarbonImmutable::today()])->save();
             $user->daily_goal_met_at = CarbonImmutable::today();
 
             return $bonus;
@@ -186,59 +187,65 @@ class XpService
             return ['xp' => 0, 'bonuses' => []];
         }
 
-        $isConsecutive = $lastActive !== null && $today->subDay()->isSameDay($lastActive);
+        return DB::transaction(function () use ($user, $today, $lastActive): array {
+            $isConsecutive = $lastActive !== null && $today->subDay()->isSameDay($lastActive);
 
-        $newStreak = $isConsecutive ? ($user->current_streak + 1) : 1;
-        $longestStreak = max($user->longest_streak, $newStreak);
+            $newStreak = $isConsecutive ? ($user->current_streak + 1) : 1;
+            $longestStreak = max($user->longest_streak, $newStreak);
 
-        // Reset daily goal tracking for the new day
-        $user->update([
-            'current_streak' => $newStreak,
-            'longest_streak' => $longestStreak,
-            'last_active_date' => $today,
-            'daily_xp_earned' => 0,
-            'daily_goal_met_at' => null,
-        ]);
+            // Reset daily goal tracking for the new day
+            $user->forceFill([
+                'current_streak' => $newStreak,
+                'longest_streak' => $longestStreak,
+                'last_active_date' => $today,
+                'daily_xp_earned' => 0,
+                'daily_goal_met_at' => null,
+            ])->save();
 
-        $totalXp = 0;
-        $bonuses = [];
+            $totalXp = 0;
+            $bonuses = [];
 
-        // Streak daily XP
-        $dailyXp = $this->getStreakDailyXp($newStreak);
-        $this->awardXp($user, $dailyXp);
-        $totalXp += $dailyXp;
+            // Streak daily XP
+            $dailyXp = $this->getStreakDailyXp($newStreak);
+            $user->increment('xp', $dailyXp);
+            $this->trackDailyGoal($user, $dailyXp);
+            $totalXp += $dailyXp;
 
-        // First Login Bonus — user has never logged in before
-        if ($lastActive === null) {
-            $firstLoginXp = (int) config('rewards.first_login_xp', 50);
-            $this->awardXp($user, $firstLoginXp);
-            $totalXp += $firstLoginXp;
-            $bonuses[] = 'first_login';
-        }
-
-        // Comeback Bonus — returning after a long absence
-        if ($lastActive !== null && ! $isConsecutive) {
-            $gapDays = (int) $lastActive->diffInDays($today);
-            $comebackGap = (int) config('rewards.comeback_gap_days', 7);
-
-            if ($gapDays >= $comebackGap) {
-                $comebackXp = (int) config('rewards.comeback_xp', 40);
-                $this->awardXp($user, $comebackXp);
-                $totalXp += $comebackXp;
-                $bonuses[] = 'comeback';
+            // First Login Bonus — user has never logged in before
+            if ($lastActive === null) {
+                $firstLoginXp = (int) config('rewards.first_login_xp', 50);
+                $user->increment('xp', $firstLoginXp);
+                $this->trackDailyGoal($user, $firstLoginXp);
+                $totalXp += $firstLoginXp;
+                $bonuses[] = 'first_login';
             }
-        }
 
-        // Weekly Active Bonus — streak hits exactly 7
-        if ($newStreak === 7) {
-            $weeklyXp = (int) config('rewards.weekly_active_xp', 30);
-            $this->awardXp($user, $weeklyXp);
-            $totalXp += $weeklyXp;
-            $bonuses[] = 'weekly_active';
-        }
+            // Comeback Bonus — returning after a long absence
+            if ($lastActive !== null && ! $isConsecutive) {
+                $gapDays = (int) $lastActive->diffInDays($today);
+                $comebackGap = (int) config('rewards.comeback_gap_days', 7);
 
-        app(BadgeService::class)->checkAndAward($user, 'streak_days');
+                if ($gapDays >= $comebackGap) {
+                    $comebackXp = (int) config('rewards.comeback_xp', 40);
+                    $user->increment('xp', $comebackXp);
+                    $this->trackDailyGoal($user, $comebackXp);
+                    $totalXp += $comebackXp;
+                    $bonuses[] = 'comeback';
+                }
+            }
 
-        return ['xp' => $totalXp, 'bonuses' => $bonuses];
+            // Weekly Active Bonus — streak hits exactly 7
+            if ($newStreak === 7) {
+                $weeklyXp = (int) config('rewards.weekly_active_xp', 30);
+                $user->increment('xp', $weeklyXp);
+                $this->trackDailyGoal($user, $weeklyXp);
+                $totalXp += $weeklyXp;
+                $bonuses[] = 'weekly_active';
+            }
+
+            app(BadgeService::class)->checkAndAward($user, 'streak_days');
+
+            return ['xp' => $totalXp, 'bonuses' => $bonuses];
+        });
     }
 }

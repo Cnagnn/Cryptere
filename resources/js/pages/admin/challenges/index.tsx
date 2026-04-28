@@ -9,7 +9,9 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { QuestionBankPanel } from './_components/QuestionBankPanel';
+import type { QuestionRow } from './_components/QuestionFormDialog';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -41,15 +43,13 @@ import {
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
+import { ChallengeFormDialog } from '@/pages/challenges/_components/ChallengeFormDialog';
 import { dashboard } from '@/routes';
 import {
     destroy as destroyChallenge,
     index as adminChallengesIndex,
     reorder as reorderChallenges,
 } from '@/routes/admin/challenges';
-import { ChallengeFormDialog } from '@/pages/challenges/_components/ChallengeFormDialog';
-import { QuestionBankPanel } from './_components/QuestionBankPanel';
-import type { QuestionRow } from './_components/QuestionFormDialog';
 
 type ChallengeRow = {
     id: number;
@@ -128,19 +128,36 @@ function formatDateTime(value: string | null): string {
     return `${cleanedDate} WIB`;
 }
 
-export default function AdminChallengesIndex({ challenges, questions, selectedChallengeId, filters }: Props) {
+export default function AdminChallengesIndex({
+    challenges,
+    questions,
+    selectedChallengeId,
+    filters,
+}: Props) {
     const [search, setSearch] = useState(filters.search);
     const [rows, setRows] = useState<ChallengeRow[]>(challenges.data);
-    const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<string | null>(null);
-    const [deletingChallenge, setDeletingChallenge] = useState<ChallengeRow | null>(null);
-    const [challengeFormOpen, setChallengeFormOpen] = useState(false);
-    const [challengeFormMode, setChallengeFormMode] = useState<'create' | 'edit'>('create');
-    const [editingChallenge, setEditingChallenge] = useState<ChallengeRow | undefined>();
-    const [activeQuestionBankId, setActiveQuestionBankId] = useState<number>(selectedChallengeId || 0);
+    const [prevData, setPrevData] = useState(challenges.data);
 
-    useEffect(() => {
+    if (prevData !== challenges.data) {
+        setPrevData(challenges.data);
         setRows(challenges.data);
-    }, [challenges.data]);
+    }
+
+    const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<
+        string | null
+    >(null);
+    const [deletingChallenge, setDeletingChallenge] =
+        useState<ChallengeRow | null>(null);
+    const [challengeFormOpen, setChallengeFormOpen] = useState(false);
+    const [challengeFormMode, setChallengeFormMode] = useState<
+        'create' | 'edit'
+    >('create');
+    const [editingChallenge, setEditingChallenge] = useState<
+        ChallengeRow | undefined
+    >();
+    const [activeQuestionBankId, setActiveQuestionBankId] = useState<number>(
+        selectedChallengeId || 0,
+    );
 
     const reorderRows = (sourceRowId: string, targetRowId: string) => {
         if (sourceRowId === targetRowId) {
@@ -148,8 +165,12 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
         }
 
         setRows((currentRows) => {
-            const sourceIndex = currentRows.findIndex((row) => String(row.id) === sourceRowId);
-            const targetIndex = currentRows.findIndex((row) => String(row.id) === targetRowId);
+            const sourceIndex = currentRows.findIndex(
+                (row) => String(row.id) === sourceRowId,
+            );
+            const targetIndex = currentRows.findIndex(
+                (row) => String(row.id) === targetRowId,
+            );
 
             if (sourceIndex < 0 || targetIndex < 0) {
                 return currentRows;
@@ -159,17 +180,21 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
             const [movedRow] = nextRows.splice(sourceIndex, 1);
             nextRows.splice(targetIndex, 0, movedRow);
 
-            const startSortOrder = Math.max((challenges.from ?? 1), 1);
-            router.post(reorderChallenges.url(), {
-                items: nextRows.map((row, index) => ({
-                    id: row.id,
-                    sort_order: startSortOrder + index,
-                })),
-            }, {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
+            const startSortOrder = Math.max(challenges.from ?? 1, 1);
+            router.post(
+                reorderChallenges.url(),
+                {
+                    items: nextRows.map((row, index) => ({
+                        id: row.id,
+                        sort_order: startSortOrder + index,
+                    })),
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
 
             return nextRows;
         });
@@ -190,7 +215,14 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
     const openQuestionBank = (challengeId: number) => {
         setActiveQuestionBankId(challengeId);
         router.get(
-            adminChallengesIndex.url({ query: { search: search || undefined, page: challenges.current_page, per_page: challenges.per_page, challenge_id: challengeId } }),
+            adminChallengesIndex.url({
+                query: {
+                    search: search || undefined,
+                    page: challenges.current_page,
+                    per_page: challenges.per_page,
+                    challenge_id: challengeId,
+                },
+            }),
             {},
             { preserveState: true, preserveScroll: true, replace: true },
         );
@@ -199,7 +231,13 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
     const closeQuestionBank = () => {
         setActiveQuestionBankId(0);
         router.get(
-            adminChallengesIndex.url({ query: { search: search || undefined, page: challenges.current_page, per_page: challenges.per_page } }),
+            adminChallengesIndex.url({
+                query: {
+                    search: search || undefined,
+                    page: challenges.current_page,
+                    per_page: challenges.per_page,
+                },
+            }),
             {},
             { preserveState: true, preserveScroll: true, replace: true },
         );
@@ -210,10 +248,13 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
             return;
         }
 
-        router.delete(destroyChallenge.url({ challenge: deletingChallenge.id }), {
-            preserveScroll: true,
-            onSuccess: () => setDeletingChallenge(null),
-        });
+        router.delete(
+            destroyChallenge.url({ challenge: deletingChallenge.id }),
+            {
+                preserveScroll: true,
+                onSuccess: () => setDeletingChallenge(null),
+            },
+        );
     };
 
     const activeChallenge = rows.find((r) => r.id === activeQuestionBankId);
@@ -227,7 +268,8 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                     <div className="flex flex-col gap-0">
                         <TypographyH1>Challenge Management</TypographyH1>
                         <TypographyMuted className="text-sm/6">
-                            Create and manage challenge content, schedule windows, and publishing status.
+                            Create and manage challenge content, schedule
+                            windows, and publishing status.
                         </TypographyMuted>
                     </div>
 
@@ -242,9 +284,19 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                                     setSearch(nextValue);
 
                                     router.get(
-                                        adminChallengesIndex.url({ query: { search: nextValue || undefined, page: 1, per_page: challenges.per_page } }),
+                                        adminChallengesIndex.url({
+                                            query: {
+                                                search: nextValue || undefined,
+                                                page: 1,
+                                                per_page: challenges.per_page,
+                                            },
+                                        }),
                                         {},
-                                        { preserveState: true, preserveScroll: true, replace: true },
+                                        {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                            replace: true,
+                                        },
                                     );
                                 }}
                             />
@@ -266,7 +318,8 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                                     </EmptyMedia>
                                     <EmptyTitle>No challenge found</EmptyTitle>
                                     <EmptyDescription>
-                                        Create your first challenge or adjust search filter.
+                                        Create your first challenge or adjust
+                                        search filter.
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -282,17 +335,53 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                                                     type="button"
                                                     data-row-drag-handle="true"
                                                     aria-label={`Drag row ${formatChallengeCode(row.original.id)}`}
-                                                    onMouseDown={() => setDragHandleActiveRowId(String(row.original.id))}
+                                                    onMouseDown={() =>
+                                                        setDragHandleActiveRowId(
+                                                            String(
+                                                                row.original.id,
+                                                            ),
+                                                        )
+                                                    }
                                                     className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
                                                     style={{ cursor: 'grab' }}
                                                 >
-                                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                                                        <circle cx="3" cy="3" r="1" />
-                                                        <circle cx="7" cy="3" r="1" />
-                                                        <circle cx="11" cy="3" r="1" />
-                                                        <circle cx="3" cy="7" r="1" />
-                                                        <circle cx="7" cy="7" r="1" />
-                                                        <circle cx="11" cy="7" r="1" />
+                                                    <svg
+                                                        width="14"
+                                                        height="14"
+                                                        viewBox="0 0 14 14"
+                                                        fill="currentColor"
+                                                        aria-hidden="true"
+                                                    >
+                                                        <circle
+                                                            cx="3"
+                                                            cy="3"
+                                                            r="1"
+                                                        />
+                                                        <circle
+                                                            cx="7"
+                                                            cy="3"
+                                                            r="1"
+                                                        />
+                                                        <circle
+                                                            cx="11"
+                                                            cy="3"
+                                                            r="1"
+                                                        />
+                                                        <circle
+                                                            cx="3"
+                                                            cy="7"
+                                                            r="1"
+                                                        />
+                                                        <circle
+                                                            cx="7"
+                                                            cy="7"
+                                                            r="1"
+                                                        />
+                                                        <circle
+                                                            cx="11"
+                                                            cy="7"
+                                                            r="1"
+                                                        />
                                                     </svg>
                                                 </button>
                                             </div>
@@ -303,20 +392,30 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                                         header: 'Title',
                                         cell: ({ row }) => (
                                             <div className="flex flex-col gap-0.5 text-left">
-                                                <p className="font-medium">{row.original.title}</p>
-                                                <p className="line-clamp-1 text-sm text-muted-foreground">{row.original.prompt}</p>
+                                                <p className="font-medium">
+                                                    {row.original.title}
+                                                </p>
+                                                <p className="line-clamp-1 text-sm text-muted-foreground">
+                                                    {row.original.prompt}
+                                                </p>
                                             </div>
                                         ),
                                     },
                                     {
                                         accessorKey: 'time_start',
                                         header: 'Time Date Started',
-                                        cell: ({ row }) => formatDateTime(row.original.time_start),
+                                        cell: ({ row }) =>
+                                            formatDateTime(
+                                                row.original.time_start,
+                                            ),
                                     },
                                     {
                                         accessorKey: 'time_end',
                                         header: 'Time Date Ended',
-                                        cell: ({ row }) => formatDateTime(row.original.time_end),
+                                        cell: ({ row }) =>
+                                            formatDateTime(
+                                                row.original.time_end,
+                                            ),
                                     },
                                     {
                                         id: 'questions_count',
@@ -325,7 +424,8 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                                             <div className="flex justify-center">
                                                 <Badge variant="secondary">
                                                     <HelpCircle />
-                                                    {row.original.questions_count ?? 0}
+                                                    {row.original
+                                                        .questions_count ?? 0}
                                                 </Badge>
                                             </div>
                                         ),
@@ -336,8 +436,15 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                                         cell: ({ row }) => (
                                             <div className="flex justify-center">
                                                 <Badge variant="outline">
-                                                    {row.original.is_published ? <CheckCircle2 /> : <Clock3 />}
-                                                    {row.original.is_published ? 'Published' : 'Draft'}
+                                                    {row.original
+                                                        .is_published ? (
+                                                        <CheckCircle2 />
+                                                    ) : (
+                                                        <Clock3 />
+                                                    )}
+                                                    {row.original.is_published
+                                                        ? 'Published'
+                                                        : 'Draft'}
                                                 </Badge>
                                             </div>
                                         ),
@@ -348,24 +455,52 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                                         cell: ({ row }) => (
                                             <div className="flex justify-center">
                                                 <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button type="button" variant="ghost" size="icon">
+                                                    <DropdownMenuTrigger
+                                                        asChild
+                                                    >
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                        >
                                                             <MoreHorizontal />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuLabel>
+                                                            Actions
+                                                        </DropdownMenuLabel>
                                                         <DropdownMenuGroup>
-                                                            <DropdownMenuItem onClick={() => openEditChallenge(row.original)}>
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    openEditChallenge(
+                                                                        row.original,
+                                                                    )
+                                                                }
+                                                            >
                                                                 <Pencil data-icon="inline-start" />
                                                                 Edit
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => openQuestionBank(row.original.id)}>
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    openQuestionBank(
+                                                                        row
+                                                                            .original
+                                                                            .id,
+                                                                    )
+                                                                }
+                                                            >
                                                                 <HelpCircle data-icon="inline-start" />
                                                                 Questions
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={() => setDeletingChallenge(row.original)}>
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    setDeletingChallenge(
+                                                                        row.original,
+                                                                    )
+                                                                }
+                                                            >
                                                                 <Trash2 data-icon="inline-start" />
                                                                 Delete
                                                             </DropdownMenuItem>
@@ -395,16 +530,36 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                                 pageSize={challenges.per_page}
                                 onPageChange={(nextPage: number): void => {
                                     router.get(
-                                        adminChallengesIndex.url({ query: { search: search || undefined, page: nextPage, per_page: challenges.per_page } }),
+                                        adminChallengesIndex.url({
+                                            query: {
+                                                search: search || undefined,
+                                                page: nextPage,
+                                                per_page: challenges.per_page,
+                                            },
+                                        }),
                                         {},
-                                        { preserveState: true, preserveScroll: true },
+                                        {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                        },
                                     );
                                 }}
-                                onPageSizeChange={(nextPageSize: number): void => {
+                                onPageSizeChange={(
+                                    nextPageSize: number,
+                                ): void => {
                                     router.get(
-                                        adminChallengesIndex.url({ query: { search: search || undefined, page: 1, per_page: nextPageSize } }),
+                                        adminChallengesIndex.url({
+                                            query: {
+                                                search: search || undefined,
+                                                page: 1,
+                                                per_page: nextPageSize,
+                                            },
+                                        }),
                                         {},
-                                        { preserveState: true, preserveScroll: true },
+                                        {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                        },
                                     );
                                 }}
                                 footerInfo={`Showing ${challenges.from ?? 0} - ${challenges.to ?? 0} of ${challenges.total} challenges`}
@@ -418,7 +573,12 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                 <div className="px-4 pb-6">
                     <div className="flex items-center justify-between pb-3">
                         <h2 className="text-lg font-semibold">Question Bank</h2>
-                        <Button type="button" variant="outline" size="sm" onClick={closeQuestionBank}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={closeQuestionBank}
+                        >
                             Close
                         </Button>
                     </div>
@@ -449,12 +609,15 @@ export default function AdminChallengesIndex({ challenges, questions, selectedCh
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete challenge?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action will permanently remove the selected challenge.
+                            This action will permanently remove the selected
+                            challenge.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={submitDeleteChallenge}>Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={submitDeleteChallenge}>
+                            Delete
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

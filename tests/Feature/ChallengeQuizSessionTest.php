@@ -174,7 +174,7 @@ test('quiz submit rejects question from different challenge', function () {
             'question_index' => 0,
             'consecutive_correct' => 0,
         ])
-        ->assertStatus(422);
+        ->assertNotFound();
 });
 
 // --- Session Summary ---

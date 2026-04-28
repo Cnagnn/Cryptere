@@ -1,12 +1,7 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
-import {
-    ArrowRight,
-    BookOpenCheck,
-    Filter,
-    Search,
-    X,
-} from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { Filter, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+
 import {
     AlertDialog,
     AlertDialogContent,
@@ -24,8 +19,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Pagination,
     PaginationContent,
@@ -35,415 +28,27 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Progress } from '@/components/ui/progress';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import { cn } from '@/lib/utils';
-import { dashboard } from '@/routes';
-import { show as showChallenge } from '@/routes/challenges';
 import {
-    enroll,
-    index as coursesIndex,
-    reset as resetCourseProgress,
-    show,
-} from '@/routes/courses';
-import { show as showLab } from '@/routes/labs';
-import type { Auth } from '@/types/auth';
-
-type CourseCard = {
-    id: number;
-    slug: string;
-    title: string;
-    summary: string;
-    coverImage: string | null;
-    estimatedMinutes: number;
-    lessonCount: number;
-    enrollmentCount: number;
-    isEnrolled: boolean;
-    progressPercentage: number | null;
-    labGroup?:
-        | 'classical'
-        | 'symmetric'
-        | 'asymmetric'
-        | 'hashing'
-        | 'signature';
-    timeStart?: string | null;
-    timeEnd?: string | null;
-    status?: 'upcoming' | 'active' | 'ended';
-    isSolved?: boolean;
-    hasCompletedSession?: boolean;
-    hasQuestionBank?: boolean;
-    questionsCount?: number;
-    bestScore?: number;
-};
-
-type CountdownParts = {
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-    isExpired: boolean;
-};
-
-type Props = {
-    courses: CourseCard[];
-    catalogMode?: 'learning' | 'labs' | 'challenges';
-    sidebarMode?: 'filters' | 'statistics';
-    statistics?: Array<{
-        label: string;
-        value: string;
-    }>;
-    pageTitle?: string;
-    pageDescription?: string;
-    headTitle?: string;
-};
-
-type SortValue =
-    | 'title-asc'
-    | 'progress-desc';
-
-type EnrollmentFilterValue = 'all' | 'enrolled' | 'not-enrolled';
-type LabsGroupFilterValue =
-    | 'all'
-    | 'classical'
-    | 'symmetric'
-    | 'asymmetric'
-    | 'hashing'
-    | 'signature';
-
-type CatalogFiltersProps = {
-    idPrefix: string;
-    searchTerm: string;
-    onSearchTermChange: (value: string) => void;
-    isLabsCatalog: boolean;
-    isChallengesCatalog: boolean;
-    enrollmentFilter: EnrollmentFilterValue;
-    onEnrollmentFilterChange: (value: EnrollmentFilterValue) => void;
-    labsGroupFilter: LabsGroupFilterValue;
-    onLabsGroupFilterChange: (value: LabsGroupFilterValue) => void;
-    sortBy: SortValue;
-    onSortByChange: (value: SortValue) => void;
-    hasActiveFilters: boolean;
-    clearFilters: () => void;
-    resultCount: number;
-};
+    CatalogFilters,
+    CatalogStatistics,
+    hardcodedCatalogCourses,
+} from '@/components/courses/catalog-helpers';
+import {
+    CourseCardGrid,
+    CourseSkeletonGrid,
+    EmptyLabCatalogGrid,
+} from '@/components/courses/course-card-grid';
+import { dashboard } from '@/routes';
+import { index as coursesIndex } from '@/routes/courses';
+import type {
+    CoursesIndexProps,
+    EnrollmentFilterValue,
+    LabsGroupFilterValue,
+    SortValue,
+} from '@/types/courses';
 
 const COURSES_PER_PAGE = 4;
-
-function getCountdownParts(
-    targetTime: string | null | undefined,
-    nowMs: number,
-): CountdownParts {
-    if (!targetTime) {
-        return {
-            days: 0,
-            hours: 0,
-            minutes: 0,
-            seconds: 0,
-            isExpired: true,
-        };
-    }
-
-    const targetMs = new Date(targetTime).getTime();
-
-    if (Number.isNaN(targetMs)) {
-        return {
-            days: 0,
-            hours: 0,
-            minutes: 0,
-            seconds: 0,
-            isExpired: true,
-        };
-    }
-
-    const diffMs = Math.max(0, targetMs - nowMs);
-    const totalSeconds = Math.floor(diffMs / 1000);
-
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    return {
-        days,
-        hours,
-        minutes,
-        seconds,
-        isExpired: diffMs === 0,
-    };
-}
-
-type CourseThumbnailProps = {
-    title: string;
-};
-
-function CourseThumbnail({ title }: CourseThumbnailProps) {
-
-    return (
-        <div className="relative aspect-video overflow-hidden border-b bg-muted/40">
-            <div className="flex h-full w-full items-center justify-center">
-                <BookOpenCheck className="size-5 text-muted-foreground" aria-hidden="true" />
-                <span className="sr-only">{title} thumbnail</span>
-            </div>
-        </div>
-    );
-}
-
-const hardcodedCatalogCourses: CourseCard[] = [
-    {
-        id: 9001,
-        slug: 'caesar-cipher-lab',
-        title: 'Caesar Cipher',
-        summary:
-            'Visualize classic alphabet shifts to understand monoalphabetic substitution.',
-        coverImage: null,
-        estimatedMinutes: 20,
-        lessonCount: 1,
-        enrollmentCount: 0,
-        isEnrolled: false,
-        progressPercentage: null,
-        labGroup: 'classical',
-    },
-    {
-        id: 9002,
-        slug: 'vigenere-cipher-lab',
-        title: 'Vigenere Cipher',
-        summary:
-            'Simulate keyword-based polyalphabetic encryption to observe dynamic shift patterns.',
-        coverImage: null,
-        estimatedMinutes: 25,
-        lessonCount: 1,
-        enrollmentCount: 0,
-        isEnrolled: false,
-        progressPercentage: null,
-        labGroup: 'classical',
-    },
-    {
-        id: 9003,
-        slug: 'aes-lab',
-        title: 'AES',
-        summary:
-            'Explore a modern block cipher with focus on operation modes and plaintext change effects.',
-        coverImage: null,
-        estimatedMinutes: 30,
-        lessonCount: 1,
-        enrollmentCount: 0,
-        isEnrolled: false,
-        progressPercentage: null,
-        labGroup: 'symmetric',
-    },
-    {
-        id: 9004,
-        slug: 'rsa-lab',
-        title: 'RSA',
-        summary:
-            'Visualize public-private key concepts with prime-number-based encryption and decryption.',
-        coverImage: null,
-        estimatedMinutes: 30,
-        lessonCount: 1,
-        enrollmentCount: 0,
-        isEnrolled: false,
-        progressPercentage: null,
-        labGroup: 'asymmetric',
-    },
-    {
-        id: 9005,
-        slug: 'sha-lab',
-        title: 'SHA',
-        summary:
-            'Simulate one-way hashing to inspect avalanche effects and data integrity.',
-        coverImage: null,
-        estimatedMinutes: 20,
-        lessonCount: 1,
-        enrollmentCount: 0,
-        isEnrolled: false,
-        progressPercentage: null,
-        labGroup: 'hashing',
-    },
-    {
-        id: 9006,
-        slug: 'digital-signature-lab',
-        title: 'Digital Signature',
-        summary:
-            'Demonstrate digital signature flow for authentication, integrity, and non-repudiation.',
-        coverImage: null,
-        estimatedMinutes: 25,
-        lessonCount: 1,
-        enrollmentCount: 0,
-        isEnrolled: false,
-        progressPercentage: null,
-        labGroup: 'signature',
-    },
-];
-
-function CatalogFilters({
-    idPrefix,
-    searchTerm,
-    onSearchTermChange,
-    isLabsCatalog,
-    isChallengesCatalog,
-    enrollmentFilter,
-    onEnrollmentFilterChange,
-    labsGroupFilter,
-    onLabsGroupFilterChange,
-    sortBy,
-    onSortByChange,
-    hasActiveFilters,
-    clearFilters,
-    resultCount,
-}: CatalogFiltersProps) {
-    return (
-        <div className="flex flex-col gap-4">
-            <div className="mt-1 flex flex-col gap-2">
-                <Label htmlFor={`${idPrefix}-search`}>Search</Label>
-                <div className="relative">
-                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        id={`${idPrefix}-search`}
-                        value={searchTerm}
-                        onChange={(event) =>
-                            onSearchTermChange(event.target.value)
-                        }
-                        placeholder="Search..."
-                        className="pr-24 pl-8"
-                    />
-                    <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
-                        {resultCount} Result
-                    </span>
-                </div>
-            </div>
-
-            {!isChallengesCatalog ? (
-                <div className="flex flex-col gap-2">
-                    <Label>
-                        {isLabsCatalog ? 'Algorithm group' : 'Enrollment'}
-                    </Label>
-                    {isLabsCatalog ? (
-                        <Select
-                            value={labsGroupFilter}
-                            onValueChange={(value) =>
-                                onLabsGroupFilterChange(
-                                    value as LabsGroupFilterValue,
-                                )
-                            }
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="All groups" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All groups</SelectItem>
-                                <SelectItem value="classical">
-                                    Classical
-                                </SelectItem>
-                                <SelectItem value="symmetric">
-                                    Symmetric
-                                </SelectItem>
-                                <SelectItem value="asymmetric">
-                                    Asymmetric
-                                </SelectItem>
-                                <SelectItem value="hashing">Hashing</SelectItem>
-                                <SelectItem value="signature">
-                                    Digital signature
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    ) : (
-                        <Select
-                            value={enrollmentFilter}
-                            onValueChange={(value) =>
-                                onEnrollmentFilterChange(
-                                    value as EnrollmentFilterValue,
-                                )
-                            }
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="All statuses" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    All statuses
-                                </SelectItem>
-                                <SelectItem value="enrolled">
-                                    Enrolled
-                                </SelectItem>
-                                <SelectItem value="not-enrolled">
-                                    Not enrolled
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    )}
-                </div>
-            ) : null}
-
-            {isLabsCatalog || isChallengesCatalog ? null : (
-                <div className="flex flex-col gap-2">
-                    <Label>Sort by</Label>
-                    <Select
-                        value={sortBy}
-                        onValueChange={(value) =>
-                            onSortByChange(value as SortValue)
-                        }
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Sort courses" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="title-asc">Title A-Z</SelectItem>
-                            <SelectItem value="progress-desc">
-                                Progress highest
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            )}
-
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    disabled={!hasActiveFilters}
-                    onClick={clearFilters}
-                >
-                    Reset controls
-                </Button>
-            </div>
-
-        </div>
-    );
-}
-
-function CatalogStatistics({
-    statistics,
-}: {
-    statistics: Array<{ label: string; value: string }>;
-}) {
-    return (
-        <div className="flex flex-col gap-3">
-            {statistics.map((item) => (
-                <div
-                    key={item.label}
-                    className="rounded-md border bg-muted/20 p-3"
-                >
-                    <p className="text-sm text-muted-foreground">
-                        {item.label}
-                    </p>
-                    <p className="mt-1 text-lg leading-tight font-semibold tracking-tight">
-                        {item.value}
-                    </p>
-                </div>
-            ))}
-        </div>
-    );
-}
 
 export default function CoursesIndex({
     courses,
@@ -453,8 +58,7 @@ export default function CoursesIndex({
     pageTitle = 'Courses',
     pageDescription = 'Browse learning tracks, filter results, and continue your progress in one place.',
     headTitle = 'Courses',
-}: Props) {
-    const { auth } = usePage<{ auth: Auth }>().props;
+}: CoursesIndexProps) {
     const isLabsCatalog = catalogMode === 'labs';
     const isChallengesCatalog = catalogMode === 'challenges';
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -615,17 +219,43 @@ export default function CoursesIndex({
 
     const activeFilterCount = activeFilterChips.length;
 
+    const filterProps = {
+        searchTerm,
+        isLabsCatalog,
+        isChallengesCatalog,
+        enrollmentFilter,
+        labsGroupFilter,
+        sortBy,
+        hasActiveFilters,
+        clearFilters,
+        resultCount: visibleCourses.length,
+        onSearchTermChange: (value: string) => {
+            setSearchTerm(value);
+            setCurrentPage(1);
+        },
+        onEnrollmentFilterChange: (value: EnrollmentFilterValue) => {
+            setEnrollmentFilter(value);
+            setCurrentPage(1);
+        },
+        onLabsGroupFilterChange: (value: LabsGroupFilterValue) => {
+            setLabsGroupFilter(value);
+            setCurrentPage(1);
+        },
+        onSortByChange: (value: SortValue) => {
+            setSortBy(value);
+            setCurrentPage(1);
+        },
+    };
+
     return (
         <>
             <Head title={headTitle} />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="animate-fade-in-up flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-col gap-0">
                         <TypographyH1>{pageTitle}</TypographyH1>
-                        <TypographyMuted>
-                            {pageDescription}
-                        </TypographyMuted>
+                        <TypographyMuted>{pageDescription}</TypographyMuted>
                     </div>
 
                     <div className="flex items-center justify-end gap-2">
@@ -672,51 +302,7 @@ export default function CoursesIndex({
                                             <div className="px-4 pb-6">
                                                 <CatalogFilters
                                                     idPrefix="mobile"
-                                                    searchTerm={searchTerm}
-                                                    onSearchTermChange={(
-                                                        value,
-                                                    ) => {
-                                                        setSearchTerm(value);
-                                                        setCurrentPage(1);
-                                                    }}
-                                                    isLabsCatalog={isLabsCatalog}
-                                                    isChallengesCatalog={
-                                                        isChallengesCatalog
-                                                    }
-                                                    enrollmentFilter={
-                                                        enrollmentFilter
-                                                    }
-                                                    onEnrollmentFilterChange={(
-                                                        value,
-                                                    ) => {
-                                                        setEnrollmentFilter(
-                                                            value,
-                                                        );
-                                                        setCurrentPage(1);
-                                                    }}
-                                                    labsGroupFilter={
-                                                        labsGroupFilter
-                                                    }
-                                                    onLabsGroupFilterChange={(
-                                                        value,
-                                                    ) => {
-                                                        setLabsGroupFilter(
-                                                            value,
-                                                        );
-                                                        setCurrentPage(1);
-                                                    }}
-                                                    sortBy={sortBy}
-                                                    onSortByChange={(value) => {
-                                                        setSortBy(value);
-                                                        setCurrentPage(1);
-                                                    }}
-                                                    hasActiveFilters={
-                                                        hasActiveFilters
-                                                    }
-                                                    clearFilters={clearFilters}
-                                                    resultCount={
-                                                        visibleCourses.length
-                                                    }
+                                                    {...filterProps}
                                                 />
                                             </div>
                                         </AlertDialogContent>
@@ -740,7 +326,10 @@ export default function CoursesIndex({
                     </div>
                 </div>
 
-                <section className="grid gap-6 lg:grid-cols-[300px_1fr]">
+                <section
+                    className="animate-fade-in-up grid gap-6 lg:grid-cols-[300px_1fr]"
+                    style={{ animationDelay: '100ms' }}
+                >
                     <Card className="hidden h-fit lg:sticky lg:top-20 lg:block">
                         <CardHeader>
                             <CardTitle className="text-base">
@@ -762,31 +351,7 @@ export default function CoursesIndex({
                             {sidebarMode === 'filters' ? (
                                 <CatalogFilters
                                     idPrefix="desktop"
-                                    searchTerm={searchTerm}
-                                    onSearchTermChange={(value) => {
-                                        setSearchTerm(value);
-                                        setCurrentPage(1);
-                                    }}
-                                    isLabsCatalog={isLabsCatalog}
-                                    isChallengesCatalog={isChallengesCatalog}
-                                    enrollmentFilter={enrollmentFilter}
-                                    onEnrollmentFilterChange={(value) => {
-                                        setEnrollmentFilter(value);
-                                        setCurrentPage(1);
-                                    }}
-                                    labsGroupFilter={labsGroupFilter}
-                                    onLabsGroupFilterChange={(value) => {
-                                        setLabsGroupFilter(value);
-                                        setCurrentPage(1);
-                                    }}
-                                    sortBy={sortBy}
-                                    onSortByChange={(value) => {
-                                        setSortBy(value);
-                                        setCurrentPage(1);
-                                    }}
-                                    hasActiveFilters={hasActiveFilters}
-                                    clearFilters={clearFilters}
-                                    resultCount={visibleCourses.length}
+                                    {...filterProps}
                                 />
                             ) : (
                                 <CatalogStatistics statistics={statistics} />
@@ -824,66 +389,11 @@ export default function CoursesIndex({
                             )}
 
                         {!hasPublishedCourses && isLabsCatalog && (
-                            <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-                                {hardcodedCatalogCourses.map((course) => (
-                                    <Card
-                                        key={course.id}
-                                        className="flex h-full flex-col overflow-hidden"
-                                    >
-                                        <CardHeader className="flex flex-col gap-4">
-                                            <CourseThumbnail
-                                                title={course.title}
-                                            />
-
-                                            <div className="flex flex-col gap-2">
-                                                <CardTitle className="text-xl leading-tight tracking-tight">
-                                                    {course.title}
-                                                </CardTitle>
-                                                <CardDescription className="text-sm leading-relaxed">
-                                                    {course.summary}
-                                                </CardDescription>
-                                            </div>
-                                        </CardHeader>
-
-                                        {!isLabsCatalog &&
-                                        !isChallengesCatalog ? (
-                                            <CardContent className="flex flex-col gap-4">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                        <span>
-                                                            Not enrolled yet
-                                                        </span>
-                                                        <span>0%</span>
-                                                    </div>
-                                                    <Progress
-                                                        value={0}
-                                                        className="h-2"
-                                                    />
-                                                </div>
-                                            </CardContent>
-                                        ) : null}
-
-                                        <CardFooter className="mt-auto">
-                                            <Button
-                                                type="button"
-                                                variant={
-                                                    isLabsCatalog
-                                                        ? 'outline'
-                                                        : 'secondary'
-                                                }
-                                                disabled
-                                                className="w-full"
-                                            >
-                                                {isLabsCatalog
-                                                    ? 'Open simulation'
-                                                    : isChallengesCatalog
-                                                      ? 'Open challenge'
-                                                      : 'Coming soon'}
-                                            </Button>
-                                        </CardFooter>
-                                    </Card>
-                                ))}
-                            </div>
+                            <EmptyLabCatalogGrid
+                                courses={hardcodedCatalogCourses}
+                                isLabsCatalog={isLabsCatalog}
+                                isChallengesCatalog={isChallengesCatalog}
+                            />
                         )}
 
                         {!hasPublishedCourses && !isLabsCatalog && (
@@ -904,28 +414,7 @@ export default function CoursesIndex({
                         )}
 
                         {hasPublishedCourses && isSearchSyncing && (
-                            <div
-                                className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3"
-                                aria-live="polite"
-                            >
-                                {Array.from({ length: 6 }).map((_, index) => (
-                                    <Card
-                                        key={`course-skeleton-${index}`}
-                                        className="overflow-hidden"
-                                    >
-                                        <CardHeader className="flex flex-col gap-3">
-                                            <Skeleton className="h-32 w-full rounded-xl" />
-                                            <Skeleton className="h-5 w-2/3" />
-                                            <Skeleton className="h-4 w-full" />
-                                            <Skeleton className="h-4 w-5/6" />
-                                        </CardHeader>
-                                        <CardContent className="flex flex-col gap-3">
-                                            <Skeleton className="h-2 w-full" />
-                                            <Skeleton className="h-9 w-full" />
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
+                            <CourseSkeletonGrid />
                         )}
 
                         {hasPublishedCourses &&
@@ -961,283 +450,12 @@ export default function CoursesIndex({
                         {hasPublishedCourses &&
                             !isSearchSyncing &&
                             hasVisibleCourses && (
-                                <>
-                                    <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-                                        {paginatedCourses.map((course) => (
-                                            <Card
-                                                key={course.id}
-                                                className="relative flex h-full flex-col overflow-hidden pt-0"
-                                            >
-                                                <CourseThumbnail
-                                                    title={course.title}
-                                                />
-
-                                                <CardHeader>
-                                                    <CardTitle className="text-xl leading-tight tracking-tight">
-                                                        {course.title}
-                                                    </CardTitle>
-                                                    <CardDescription className="text-sm leading-relaxed">
-                                                        {course.summary}
-                                                    </CardDescription>
-                                                </CardHeader>
-
-                                                {!isLabsCatalog &&
-                                                !isChallengesCatalog ? (
-                                                    <CardContent className="flex flex-col gap-4">
-                                                        <div className="flex flex-col gap-1.5">
-                                                            {/** Keep numeric progress centralized for button and bar logic. */}
-                                                            {(() => {
-                                                                const progressPercentage =
-                                                                    course.progressPercentage ??
-                                                                    0;
-
-                                                                return (
-                                                                    <>
-                                                                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                                            <span>
-                                                                                {course.isEnrolled
-                                                                                    ? 'Your progress'
-                                                                                    : 'Not enrolled yet'}
-                                                                            </span>
-                                                                            <span>
-                                                                                {course.isEnrolled
-                                                                                    ? progressPercentage
-                                                                                    : 0}
-
-                                                                                %
-                                                                            </span>
-                                                                        </div>
-                                                                        <Progress
-                                                                            value={
-                                                                                course.isEnrolled
-                                                                                    ? progressPercentage
-                                                                                    : 0
-                                                                            }
-                                                                            className="h-2"
-                                                                        />
-                                                                    </>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                    </CardContent>
-                                                ) : isChallengesCatalog ? (
-                                                    <CardContent className="flex flex-col gap-4">
-                                                        <div className="rounded-md border bg-muted/20 p-3">
-                                                            {(() => {
-                                                                const countdown =
-                                                                    getCountdownParts(
-                                                                        course.timeEnd ??
-                                                                            null,
-                                                                        nowMs,
-                                                                    );
-
-                                                                return (
-                                                                    <p className="text-sm text-muted-foreground">
-                                                                        {course.status ===
-                                                                        'upcoming'
-                                                                            ? course.timeStart
-                                                                                ? `Starts at ${new Date(course.timeStart).toLocaleString('en-US')}`
-                                                                                : 'Challenge will start soon.'
-                                                                            : course.status ===
-                                                                                'ended'
-                                                                              ? 'Challenge window has ended.'
-                                                                              : course.timeEnd
-                                                                                ? countdown.isExpired
-                                                                                    ? 'Challenge window has ended.'
-                                                                                    : `Time left: ${countdown.days}d ${countdown.hours}h ${countdown.minutes}m ${countdown.seconds}s`
-                                                                                : 'Challenge end time is not set yet.'}
-                                                                    </p>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                    </CardContent>
-                                                ) : null}
-
-                                                <CardFooter
-                                                    className={
-                                                        isLabsCatalog ||
-                                                        isChallengesCatalog
-                                                            ? 'mt-auto'
-                                                            : course.isEnrolled
-                                                              ? 'mt-auto grid grid-cols-2 gap-2'
-                                                              : 'mt-auto'
-                                                    }
-                                                >
-                                                    {isLabsCatalog ? (
-                                                        <Button
-                                                            asChild
-                                                            type="button"
-                                                            variant="outline"
-                                                            className="w-full"
-                                                        >
-                                                            <Link
-                                                                href={showLab({
-                                                                    lab: course.slug,
-                                                                })}
-                                                                prefetch
-                                                            >
-                                                                Open simulation
-                                                                <ArrowRight className="size-4" />
-                                                            </Link>
-                                                        </Button>
-                                                    ) : isChallengesCatalog ? (
-                                                        (() => {
-                                                            const isActive =
-                                                                course.status ===
-                                                                'active';
-                                                            const isUpcoming =
-                                                                course.status ===
-                                                                'upcoming';
-                                                            const isCompleted =
-                                                                course.hasCompletedSession ===
-                                                                true;
-                                                            const label =
-                                                                isCompleted
-                                                                    ? 'View result'
-                                                                    : isActive
-                                                                      ? 'Start challenge'
-                                                                      : isUpcoming
-                                                                        ? 'View details'
-                                                                        : 'View results';
-                                                            const variant =
-                                                                isActive &&
-                                                                !isCompleted
-                                                                    ? 'default'
-                                                                    : 'outline';
-                                                            const href =
-                                                                isActive &&
-                                                                !isCompleted
-                                                                    ? showChallenge(
-                                                                          {
-                                                                              challenge:
-                                                                                  course.slug,
-                                                                          },
-                                                                          {
-                                                                              query: {
-                                                                                  autostart:
-                                                                                      '1',
-                                                                              },
-                                                                          },
-                                                                      )
-                                                                    : showChallenge(
-                                                                          {
-                                                                              challenge:
-                                                                                  course.slug,
-                                                                          },
-                                                                      );
-
-                                                            return (
-                                                                <Button
-                                                                    asChild
-                                                                    type="button"
-                                                                    variant={
-                                                                        variant
-                                                                    }
-                                                                    className="w-full"
-                                                                >
-                                                                    <Link
-                                                                        href={
-                                                                            href
-                                                                        }
-                                                                        prefetch
-                                                                    >
-                                                                        {label}
-                                                                        <ArrowRight className="size-4" />
-                                                                    </Link>
-                                                                </Button>
-                                                            );
-                                                        })()
-                                                    ) : course.isEnrolled ? (
-                                                        (() => {
-                                                            const progressPercentage =
-                                                                course.progressPercentage ??
-                                                                0;
-
-                                                            return (
-                                                                <>
-                                                                    <Form
-                                                                        className="w-full"
-                                                                        {...resetCourseProgress.form(
-                                                                            {
-                                                                                course: course.slug,
-                                                                            },
-                                                                        )}
-                                                                    >
-                                                                        {({
-                                                                            processing,
-                                                                        }) => (
-                                                                            <Button
-                                                                                type="submit"
-                                                                                variant="outline"
-                                                                                disabled={
-                                                                                    processing ||
-                                                                                    progressPercentage ===
-                                                                                        0
-                                                                                }
-                                                                                className="w-full"
-                                                                            >
-                                                                                {processing && (
-                                                                                    <Spinner className="size-4" />
-                                                                                )}
-                                                                                {processing
-                                                                                    ? 'Resetting...'
-                                                                                    : 'Start Over'}
-                                                                            </Button>
-                                                                        )}
-                                                                    </Form>
-
-                                                                    <Button
-                                                                        asChild
-                                                                        className="w-full"
-                                                                    >
-                                                                        <Link
-                                                                            href={show(
-                                                                                {
-                                                                                    course: course.slug,
-                                                                                },
-                                                                            )}
-                                                                            prefetch
-                                                                        >
-                                                                            Continue
-                                                                            <ArrowRight className="size-4" />
-                                                                        </Link>
-                                                                    </Button>
-                                                                </>
-                                                            );
-                                                        })()
-                                                    ) : (
-                                                        <Form
-                                                            className="w-full"
-                                                            {...enroll.form({
-                                                                course: course.slug,
-                                                            })}
-                                                        >
-                                                            {({
-                                                                processing,
-                                                            }) => (
-                                                                <Button
-                                                                    type="submit"
-                                                                    variant="secondary"
-                                                                    disabled={
-                                                                        processing
-                                                                    }
-                                                                    className="w-full"
-                                                                >
-                                                                    {processing && (
-                                                                        <Spinner className="size-4" />
-                                                                    )}
-                                                                    {processing
-                                                                        ? 'Enrolling...'
-                                                                        : 'Enroll now'}
-                                                                </Button>
-                                                            )}
-                                                        </Form>
-                                                    )}
-                                                </CardFooter>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                </>
+                                <CourseCardGrid
+                                    courses={paginatedCourses}
+                                    isLabsCatalog={isLabsCatalog}
+                                    isChallengesCatalog={isChallengesCatalog}
+                                    nowMs={nowMs}
+                                />
                             )}
                     </div>
                 </section>
@@ -1245,7 +463,10 @@ export default function CoursesIndex({
                 {hasPublishedCourses &&
                     !isSearchSyncing &&
                     hasVisibleCourses && (
-                        <div className="flex items-center justify-between gap-4">
+                        <div
+                            className="animate-fade-in-up flex items-center justify-between gap-4"
+                            style={{ animationDelay: '200ms' }}
+                        >
                             <p className="shrink-0 text-sm text-muted-foreground">
                                 Showing{' '}
                                 {(activePage - 1) * COURSES_PER_PAGE + 1} -{' '}

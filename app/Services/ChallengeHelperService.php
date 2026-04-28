@@ -43,6 +43,22 @@ class ChallengeHelperService
     }
 
     /**
+     * Resolve availability from raw date values (for cached challenge data).
+     */
+    public function resolveAvailabilityStatusFromDates(mixed $timeStart, mixed $timeEnd, CarbonInterface $currentTime): string
+    {
+        if ($timeStart !== null && $currentTime->lt($timeStart)) {
+            return 'upcoming';
+        }
+
+        if ($timeEnd !== null && $currentTime->gt($timeEnd)) {
+            return 'ended';
+        }
+
+        return 'active';
+    }
+
+    /**
      * Resolve validation error when challenge is outside playable window.
      */
     public function resolveChallengeAvailabilityError(Challenge $challenge): ?string
@@ -58,5 +74,13 @@ class ChallengeHelperService
         }
 
         return null;
+    }
+
+    /**
+     * Hash a normalized answer for secure storage.
+     */
+    public function hashAnswer(string $normalizedAnswer): string
+    {
+        return hash('sha256', $normalizedAnswer);
     }
 }

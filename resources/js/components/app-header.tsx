@@ -11,6 +11,9 @@ import {
 import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { CommandPalette } from '@/components/command-palette';
+import { DailyRewards } from '@/components/daily-rewards';
+import { NotificationCenter } from '@/components/notification-center';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import {
     AlertDialog,
@@ -183,11 +186,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center gap-2">
+                        <CommandPalette />
+                        <DailyRewards />
+                        <NotificationCenter />
                         <div className="relative flex items-center">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 className="group size-9 cursor-pointer"
+                                onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
                             >
                                 <Search className="size-5! opacity-80 group-hover:opacity-100" />
                             </Button>

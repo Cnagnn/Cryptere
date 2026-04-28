@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'lesson_task_id',
+    'topic_id',
     'question',
     'options',
     'correct_option',
@@ -18,6 +19,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class QuizQuestion extends Model
 {
     use HasFactory;
+
+    public function topic()
+    {
+        return $this->belongsTo(Topic::class);
+    }
 
     /**
      * Get the attributes that should be cast.

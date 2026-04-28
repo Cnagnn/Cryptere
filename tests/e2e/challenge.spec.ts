@@ -1,7 +1,9 @@
-import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import { execSync } from 'child_process';
 
-// ---------------------------------------------------------------------------
+import { test, expect } from '@playwright/test';
+import type { Page, BrowserContext } from '@playwright/test';
+
+// ----------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
@@ -25,7 +27,10 @@ async function loginAsAdmin(page: Page): Promise<void> {
         await page.getByRole('button', { name: 'Sign In' }).click();
 
         try {
-            await expect(page).toHaveURL(/dashboard|courses/, { timeout: 10_000 });
+            await expect(page).toHaveURL(/dashboard|courses/, {
+                timeout: 10_000,
+            });
+
             return;
         } catch {
             // Possibly rate-limited — wait and retry
@@ -34,6 +39,7 @@ async function loginAsAdmin(page: Page): Promise<void> {
             }
         }
     }
+
     // Final attempt — let it throw
     await expect(page).toHaveURL(/dashboard|courses/, { timeout: 15_000 });
 }
@@ -45,7 +51,11 @@ function cleanAdminChallengeSubmissions(): void {
     try {
         execSync(
             'php artisan tinker --execute "App\\Models\\ChallengeSubmission::where(\'user_id\', 1)->delete();"',
-            { cwd: 'c:\\laragon\\www\\Crypter', timeout: 15_000, stdio: 'pipe' },
+            {
+                cwd: process.cwd(),
+                timeout: 15_000,
+                stdio: 'pipe',
+            },
         );
     } catch {
         // Ignore
@@ -56,28 +66,36 @@ function cleanAdminChallengeSubmissions(): void {
  * Answer the current quiz question based on its type.
  */
 async function answerCurrentQuestion(page: Page): Promise<void> {
-    await expect(page.getByText(/Question \d+ of \d+/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Question \d+ of \d+/)).toBeVisible({
+        timeout: 10_000,
+    });
 
     // True/False
     const trueButton = page.getByRole('button', { name: 'True', exact: true });
+
     if (await trueButton.isVisible({ timeout: 1_000 }).catch(() => false)) {
         await trueButton.click();
+
         return;
     }
 
     // Fill-in-the-blank
     const fillBlankInput = page.getByPlaceholder('Fill in the blank...');
+
     if (await fillBlankInput.isVisible({ timeout: 500 }).catch(() => false)) {
         await fillBlankInput.fill('test');
         await page.getByRole('button', { name: 'Submit' }).click();
+
         return;
     }
 
     // Text answer
     const textInput = page.getByPlaceholder('Type your answer...');
+
     if (await textInput.isVisible({ timeout: 500 }).catch(() => false)) {
         await textInput.fill('test');
         await page.getByRole('button', { name: 'Submit' }).click();
+
         return;
     }
 
@@ -98,20 +116,30 @@ async function completeQuizSession(page: Page): Promise<void> {
 
         await answerCurrentQuestion(page);
 
-        await expect(
-            page.getByText(/Correct!|Incorrect/).first(),
-        ).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByText(/Correct!|Incorrect/).first()).toBeVisible({
+            timeout: 10_000,
+        });
 
         if (i < QUESTIONS_PER_SESSION - 1) {
-            const continueButton = page.getByRole('button', { name: 'Continue →' });
-            if (await continueButton.isVisible({ timeout: 1_500 }).catch(() => false)) {
+            const continueButton = page.getByRole('button', {
+                name: 'Continue →',
+            });
+
+            if (
+                await continueButton
+                    .isVisible({ timeout: 1_500 })
+                    .catch(() => false)
+            ) {
                 await continueButton.click();
             }
+
             await page.waitForTimeout(1_000);
         }
     }
 
-    await expect(page.getByText('Quiz Complete!')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Quiz Complete!')).toBeVisible({
+        timeout: 15_000,
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -159,13 +187,17 @@ test.describe('Challenge Catalog', () => {
     test('clicking challenge action navigates to detail page', async () => {
         await page.goto('/challenges');
 
-        const actionLink = page.getByRole('link', {
-            name: /start challenge|view result/i,
-        }).first();
+        const actionLink = page
+            .getByRole('link', {
+                name: /start challenge|view result/i,
+            })
+            .first();
         await expect(actionLink).toBeVisible({ timeout: 10_000 });
         await actionLink.click();
 
-        await expect(page).toHaveURL(/\/challenges\/[\w-]+/, { timeout: 10_000 });
+        await expect(page).toHaveURL(/\/challenges\/[\w-]+/, {
+            timeout: 10_000,
+        });
     });
 
     test('pre-quiz screen shows challenge info and Start Quiz button', async () => {
@@ -208,7 +240,9 @@ test.describe('Quiz Interaction', () => {
         await page.goto(`/challenges/${CHALLENGE_SLUG}`);
         await page.getByRole('button', { name: 'Start Quiz' }).click();
 
-        await expect(page.getByText(/Question 1 of \d+/)).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByText(/Question 1 of \d+/)).toBeVisible({
+            timeout: 5_000,
+        });
         await expect(page.getByText(/\d+ pts/)).toBeVisible();
         await expect(page.getByText(/\d+s/)).toBeVisible();
     });
@@ -219,13 +253,15 @@ test.describe('Quiz Interaction', () => {
 
         await page.goto(`/challenges/${CHALLENGE_SLUG}`);
         await page.getByRole('button', { name: 'Start Quiz' }).click();
-        await expect(page.getByText(/Question 1 of \d+/)).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByText(/Question 1 of \d+/)).toBeVisible({
+            timeout: 5_000,
+        });
 
         await answerCurrentQuestion(page);
 
-        await expect(
-            page.getByText(/Correct!|Incorrect/).first(),
-        ).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByText(/Correct!|Incorrect/).first()).toBeVisible({
+            timeout: 10_000,
+        });
     });
 
     test('completing all questions shows Quiz Complete summary', async () => {
@@ -271,7 +307,9 @@ test.describe('Completed Challenge Flow', () => {
     test('revisiting completed challenge shows "Challenge Completed"', async () => {
         await page.goto(`/challenges/${CHALLENGE_SLUG}`);
 
-        await expect(page.getByText('Challenge Completed')).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByText('Challenge Completed')).toBeVisible({
+            timeout: 10_000,
+        });
         await expect(
             page.getByText('You have already completed this challenge.'),
         ).toBeVisible();
@@ -291,7 +329,9 @@ test.describe('Completed Challenge Flow', () => {
 
     test('"All Challenges" link navigates back to catalog', async () => {
         await page.goto(`/challenges/${CHALLENGE_SLUG}`);
-        await expect(page.getByText('Challenge Completed')).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByText('Challenge Completed')).toBeVisible({
+            timeout: 10_000,
+        });
 
         await page.getByRole('link', { name: 'All Challenges' }).click();
 

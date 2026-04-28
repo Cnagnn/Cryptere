@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['slug', 'title', 'prompt', 'hint', 'expected_answer', 'sort_order', 'is_published', 'category', 'is_daily', 'daily_date', 'time_start', 'time_end', 'time_limit_seconds', 'questions_per_session', 'max_points_per_question'])]
+#[Fillable(['slug', 'title', 'prompt', 'hint', 'expected_answer', 'expected_answer_hash', 'difficulty', 'sort_order', 'is_published', 'category', 'is_daily', 'daily_date', 'time_start', 'time_end', 'time_limit_seconds', 'questions_per_session', 'max_points_per_question'])]
 #[Hidden(['expected_answer'])]
 class Challenge extends Model
 {
@@ -70,6 +70,11 @@ class Challenge extends Model
                 ->where('title', 'like', "%{$keyword}%")
                 ->orWhere('prompt', 'like', "%{$keyword}%");
         });
+    }
+
+    public function topics()
+    {
+        return $this->belongsToMany(Topic::class, 'challenge_topic');
     }
 
     /**

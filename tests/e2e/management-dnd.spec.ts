@@ -1,6 +1,7 @@
+import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-async function loginAsAdmin(page: import('@playwright/test').Page): Promise<void> {
+async function loginAsAdmin(page: Page): Promise<void> {
     const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'admin@example.com';
     const adminPassword = process.env.E2E_ADMIN_PASSWORD ?? 'password';
 
@@ -12,11 +13,15 @@ async function loginAsAdmin(page: import('@playwright/test').Page): Promise<void
     await expect(page).toHaveURL(/dashboard|courses/);
 }
 
-test('admin can drag and drop reorder course management rows', async ({ page }) => {
+test('admin can drag and drop reorder course management rows', async ({
+    page,
+}) => {
     await loginAsAdmin(page);
 
     await page.goto('/admin/courses?section=catalog');
-    await expect(page.getByRole('heading', { name: 'Course Management Title' })).toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: 'Course Management Title' }),
+    ).toBeVisible();
 
     const dragHandles = page.locator('button[aria-label^="Drag row CRS-"]');
     const count = await dragHandles.count();
@@ -26,24 +31,58 @@ test('admin can drag and drop reorder course management rows', async ({ page }) 
     const sourceRow = page.locator('tbody tr').first();
     const targetRow = page.locator('tbody tr').nth(1);
 
-    const firstTitleBefore = (await sourceRow.locator('td').nth(1).locator('p.font-medium').innerText()).trim();
-    const secondTitleBefore = (await targetRow.locator('td').nth(1).locator('p.font-medium').innerText()).trim();
+    const firstTitleBefore = (
+        await sourceRow
+            .locator('td')
+            .nth(1)
+            .locator('p.font-medium')
+            .innerText()
+    ).trim();
+    const secondTitleBefore = (
+        await targetRow
+            .locator('td')
+            .nth(1)
+            .locator('p.font-medium')
+            .innerText()
+    ).trim();
 
     await dragHandles.nth(0).dragTo(targetRow);
 
-    await expect(page.locator('tbody tr').first().locator('td').nth(1).locator('p.font-medium')).toHaveText(secondTitleBefore);
+    await expect(
+        page
+            .locator('tbody tr')
+            .first()
+            .locator('td')
+            .nth(1)
+            .locator('p.font-medium'),
+    ).toHaveText(secondTitleBefore);
 
     await page.reload();
-    await expect(page.locator('tbody tr').first().locator('td').nth(1).locator('p.font-medium')).toHaveText(secondTitleBefore);
-    const courseTitlesAfterReload = await page.locator('tbody tr td:nth-child(2) p.font-medium').allTextContents();
-    expect(courseTitlesAfterReload.map((title) => title.trim())).toContain(firstTitleBefore);
+    await expect(
+        page
+            .locator('tbody tr')
+            .first()
+            .locator('td')
+            .nth(1)
+            .locator('p.font-medium'),
+    ).toHaveText(secondTitleBefore);
+    const courseTitlesAfterReload = await page
+        .locator('tbody tr td:nth-child(2) p.font-medium')
+        .allTextContents();
+    expect(courseTitlesAfterReload.map((title) => title.trim())).toContain(
+        firstTitleBefore,
+    );
 });
 
-test('admin can drag and drop reorder challenge management rows', async ({ page }) => {
+test('admin can drag and drop reorder challenge management rows', async ({
+    page,
+}) => {
     await loginAsAdmin(page);
 
     await page.goto('/admin/challenges');
-    await expect(page.getByRole('heading', { name: 'Challenge Management' })).toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: 'Challenge Management' }),
+    ).toBeVisible();
 
     const dragHandles = page.locator('button[aria-label^="Drag row CHL-"]');
     const count = await dragHandles.count();
@@ -53,15 +92,45 @@ test('admin can drag and drop reorder challenge management rows', async ({ page 
     const sourceRow = page.locator('tbody tr').first();
     const targetRow = page.locator('tbody tr').nth(1);
 
-    const firstTitleBefore = (await sourceRow.locator('td').nth(1).locator('p.font-medium').innerText()).trim();
-    const secondTitleBefore = (await targetRow.locator('td').nth(1).locator('p.font-medium').innerText()).trim();
+    const firstTitleBefore = (
+        await sourceRow
+            .locator('td')
+            .nth(1)
+            .locator('p.font-medium')
+            .innerText()
+    ).trim();
+    const secondTitleBefore = (
+        await targetRow
+            .locator('td')
+            .nth(1)
+            .locator('p.font-medium')
+            .innerText()
+    ).trim();
 
     await dragHandles.nth(0).dragTo(targetRow);
 
-    await expect(page.locator('tbody tr').first().locator('td').nth(1).locator('p.font-medium')).toHaveText(secondTitleBefore);
+    await expect(
+        page
+            .locator('tbody tr')
+            .first()
+            .locator('td')
+            .nth(1)
+            .locator('p.font-medium'),
+    ).toHaveText(secondTitleBefore);
 
     await page.reload();
-    await expect(page.locator('tbody tr').first().locator('td').nth(1).locator('p.font-medium')).toHaveText(secondTitleBefore);
-    const challengeTitlesAfterReload = await page.locator('tbody tr td:nth-child(2) p.font-medium').allTextContents();
-    expect(challengeTitlesAfterReload.map((title) => title.trim())).toContain(firstTitleBefore);
+    await expect(
+        page
+            .locator('tbody tr')
+            .first()
+            .locator('td')
+            .nth(1)
+            .locator('p.font-medium'),
+    ).toHaveText(secondTitleBefore);
+    const challengeTitlesAfterReload = await page
+        .locator('tbody tr td:nth-child(2) p.font-medium')
+        .allTextContents();
+    expect(challengeTitlesAfterReload.map((title) => title.trim())).toContain(
+        firstTitleBefore,
+    );
 });

@@ -4,18 +4,35 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+DROP TABLE IF EXISTS `audit_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `audit_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `action` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_id` bigint unsigned NOT NULL,
+  `payload` json DEFAULT NULL,
+  `created_at` timestamp NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `audit_logs_target_type_target_id_index` (`target_type`,`target_id`),
+  KEY `audit_logs_user_id_index` (`user_id`),
+  CONSTRAINT `audit_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `badges`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `badges` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `icon` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `category` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tier` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'bronze',
-  `criteria_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `icon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tier` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'bronze',
+  `criteria_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `criteria_value` int unsigned NOT NULL DEFAULT '1',
   `sort_order` int unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -26,28 +43,12 @@ CREATE TABLE `badges` (
   KEY `badges_criteria_type_index` (`criteria_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `bookmarks`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `bookmarks` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` bigint unsigned NOT NULL,
-  `bookmarkable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `bookmarkable_id` bigint unsigned NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `bookmarks_user_id_bookmarkable_type_bookmarkable_id_unique` (`user_id`,`bookmarkable_type`,`bookmarkable_id`),
-  KEY `bookmarks_bookmarkable_type_bookmarkable_id_index` (`bookmarkable_type`,`bookmarkable_id`),
-  CONSTRAINT `bookmarks_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `cache`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cache` (
-  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `value` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `expiration` int NOT NULL,
   PRIMARY KEY (`key`),
   KEY `cache_expiration_index` (`expiration`)
@@ -57,8 +58,8 @@ DROP TABLE IF EXISTS `cache_locks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cache_locks` (
-  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `owner` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owner` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `expiration` int NOT NULL,
   PRIMARY KEY (`key`),
   KEY `cache_locks_expiration_index` (`expiration`)
@@ -70,17 +71,20 @@ DROP TABLE IF EXISTS `challenge_questions`;
 CREATE TABLE `challenge_questions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `challenge_id` bigint unsigned NOT NULL,
-  `type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `question` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `question` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `options` json DEFAULT NULL,
-  `correct_answer` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `explanation` text COLLATE utf8mb4_unicode_ci,
+  `correct_answer` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `explanation` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `sort_order` int unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `topic_id` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `challenge_questions_challenge_id_sort_order_index` (`challenge_id`,`sort_order`),
-  CONSTRAINT `challenge_questions_challenge_id_foreign` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`id`) ON DELETE CASCADE
+  KEY `challenge_questions_topic_id_foreign` (`topic_id`),
+  CONSTRAINT `challenge_questions_challenge_id_foreign` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `challenge_questions_topic_id_foreign` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `challenge_submissions`;
@@ -90,8 +94,8 @@ CREATE TABLE `challenge_submissions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,
   `challenge_id` bigint unsigned NOT NULL,
-  `session_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `answer` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `session_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `answer` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `is_correct` tinyint(1) NOT NULL DEFAULT '0',
   `score` smallint unsigned NOT NULL DEFAULT '0',
   `elapsed_ms` int unsigned DEFAULT NULL,
@@ -102,6 +106,7 @@ CREATE TABLE `challenge_submissions` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `challenge_question_id` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `challenge_submissions_session_question_unique` (`session_id`,`challenge_question_id`),
   KEY `challenge_submissions_challenge_id_foreign` (`challenge_id`),
   KEY `challenge_submissions_user_id_challenge_id_submitted_at_index` (`user_id`,`challenge_id`,`submitted_at`),
   KEY `challenge_submissions_is_correct_index` (`is_correct`),
@@ -112,17 +117,30 @@ CREATE TABLE `challenge_submissions` (
   CONSTRAINT `challenge_submissions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `challenge_topic`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `challenge_topic` (
+  `challenge_id` bigint unsigned NOT NULL,
+  `topic_id` bigint unsigned NOT NULL,
+  PRIMARY KEY (`challenge_id`,`topic_id`),
+  KEY `challenge_topic_topic_id_foreign` (`topic_id`),
+  CONSTRAINT `challenge_topic_challenge_id_foreign` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `challenge_topic_topic_id_foreign` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `challenges`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `challenges` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `prompt` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `hint` text COLLATE utf8mb4_unicode_ci,
-  `difficulty` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'beginner',
-  `expected_answer` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `prompt` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hint` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `difficulty` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'beginner',
+  `expected_answer` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expected_answer_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_published` tinyint(1) NOT NULL DEFAULT '1',
   `time_start` datetime DEFAULT NULL,
   `time_end` datetime DEFAULT NULL,
@@ -131,7 +149,7 @@ CREATE TABLE `challenges` (
   `sort_order` int unsigned NOT NULL DEFAULT '0',
   `time_limit_seconds` smallint unsigned NOT NULL DEFAULT '20',
   `questions_per_session` smallint unsigned NOT NULL DEFAULT '10',
-  `max_points_per_question` smallint unsigned NOT NULL DEFAULT '1000',
+  `max_points_per_question` smallint unsigned NOT NULL DEFAULT '10',
   `is_daily` tinyint(1) NOT NULL DEFAULT '0',
   `daily_date` date DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -150,18 +168,16 @@ DROP TABLE IF EXISTS `courses`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `courses` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `summary` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `cover_image` longblob,
-  `cover_mime_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `cover_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cover_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `estimated_minutes` smallint unsigned NOT NULL DEFAULT '30',
   `sort_order` int unsigned NOT NULL DEFAULT '0',
   `is_published` tinyint(1) NOT NULL DEFAULT '1',
   `prerequisite_course_id` bigint unsigned DEFAULT NULL,
-  `category` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `difficulty` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'beginner',
+  `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `difficulty` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'beginner',
   `path_position` smallint unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -198,11 +214,11 @@ DROP TABLE IF EXISTS `failed_jobs`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `failed_jobs` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `uuid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `connection` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `queue` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `exception` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `uuid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `connection` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `exception` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
@@ -212,13 +228,13 @@ DROP TABLE IF EXISTS `job_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `job_batches` (
-  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `total_jobs` int NOT NULL,
   `pending_jobs` int NOT NULL,
   `failed_jobs` int NOT NULL,
-  `failed_job_ids` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `options` mediumtext COLLATE utf8mb4_unicode_ci,
+  `failed_job_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `options` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `cancelled_at` int DEFAULT NULL,
   `created_at` int NOT NULL,
   `finished_at` int DEFAULT NULL,
@@ -230,8 +246,8 @@ DROP TABLE IF EXISTS `jobs`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `jobs` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `queue` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `attempts` tinyint unsigned NOT NULL,
   `reserved_at` int unsigned DEFAULT NULL,
   `available_at` int unsigned NOT NULL,
@@ -246,7 +262,7 @@ DROP TABLE IF EXISTS `lab_visits`;
 CREATE TABLE `lab_visits` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,
-  `lab_slug` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lab_slug` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `visit_count` int unsigned NOT NULL DEFAULT '1',
   `first_visited_at` timestamp NOT NULL,
   `last_visited_at` timestamp NOT NULL,
@@ -283,18 +299,17 @@ DROP TABLE IF EXISTS `lesson_tasks`;
 CREATE TABLE `lesson_tasks` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `lesson_id` bigint unsigned NOT NULL,
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `minutes` smallint unsigned NOT NULL DEFAULT '5',
-  `video_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `video_processing_status` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `video_mp4_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `document_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `conversion_status` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `pdf_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `video_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `video_processing_status` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `video_mp4_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `document_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `conversion_status` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pdf_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `sort_order` int unsigned NOT NULL DEFAULT '1',
-  `xp_reward` smallint unsigned NOT NULL DEFAULT '0',
   `published_at` timestamp NULL DEFAULT NULL,
   `published_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -313,12 +328,14 @@ DROP TABLE IF EXISTS `lessons`;
 CREATE TABLE `lessons` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `course_id` bigint unsigned NOT NULL,
-  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `content` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `learning_objectives` json DEFAULT NULL,
+  `prerequisites_text` text COLLATE utf8mb4_unicode_ci,
+  `key_concepts` json DEFAULT NULL,
+  `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `position` smallint unsigned NOT NULL,
-  `xp_reward` smallint unsigned NOT NULL DEFAULT '25',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -333,34 +350,33 @@ DROP TABLE IF EXISTS `migrations`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `migrations` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `migration` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `notes`;
+DROP TABLE IF EXISTS `notifications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `notes` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` bigint unsigned NOT NULL,
-  `lesson_id` bigint unsigned NOT NULL,
-  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
+CREATE TABLE `notifications` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notifiable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notifiable_id` bigint unsigned NOT NULL,
+  `data` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `read_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `notes_lesson_id_foreign` (`lesson_id`),
-  KEY `notes_user_id_lesson_id_index` (`user_id`,`lesson_id`),
-  CONSTRAINT `notes_lesson_id_foreign` FOREIGN KEY (`lesson_id`) REFERENCES `lessons` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `notes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  KEY `notifications_notifiable_type_notifiable_id_index` (`notifiable_type`,`notifiable_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `password_reset_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `password_reset_tokens` (
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -371,27 +387,53 @@ DROP TABLE IF EXISTS `quiz_questions`;
 CREATE TABLE `quiz_questions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `lesson_task_id` bigint unsigned NOT NULL,
-  `question` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `question` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `options` json NOT NULL,
   `correct_option` tinyint unsigned NOT NULL DEFAULT '0',
-  `explanation` text COLLATE utf8mb4_unicode_ci,
+  `explanation` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `sort_order` smallint unsigned NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `topic_id` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `quiz_questions_lesson_task_id_sort_order_index` (`lesson_task_id`,`sort_order`),
-  CONSTRAINT `quiz_questions_lesson_task_id_foreign` FOREIGN KEY (`lesson_task_id`) REFERENCES `lesson_tasks` (`id`) ON DELETE CASCADE
+  KEY `quiz_questions_topic_id_foreign` (`topic_id`),
+  CONSTRAINT `quiz_questions_lesson_task_id_foreign` FOREIGN KEY (`lesson_task_id`) REFERENCES `lesson_tasks` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `quiz_questions_topic_id_foreign` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `quiz_submissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `quiz_submissions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `lesson_task_id` bigint unsigned NOT NULL,
+  `answers` json NOT NULL,
+  `score` smallint unsigned NOT NULL,
+  `total` smallint unsigned NOT NULL,
+  `results` json NOT NULL,
+  `xp_earned` int unsigned NOT NULL DEFAULT '0',
+  `points_earned` int unsigned NOT NULL DEFAULT '0',
+  `submitted_at` timestamp NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `quiz_submissions_user_id_lesson_task_id_unique` (`user_id`,`lesson_task_id`),
+  KEY `quiz_submissions_lesson_task_id_foreign` (`lesson_task_id`),
+  CONSTRAINT `quiz_submissions_lesson_task_id_foreign` FOREIGN KEY (`lesson_task_id`) REFERENCES `lesson_tasks` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `quiz_submissions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sessions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sessions` (
-  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `user_id` bigint unsigned DEFAULT NULL,
-  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `user_agent` text COLLATE utf8mb4_unicode_ci,
-  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `last_activity` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `sessions_user_id_index` (`user_id`),
@@ -404,17 +446,31 @@ DROP TABLE IF EXISTS `social_accounts`;
 CREATE TABLE `social_accounts` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,
-  `provider` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `provider_user_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `provider_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `provider_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `provider_avatar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_user_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `social_accounts_provider_provider_user_id_unique` (`provider`,`provider_user_id`),
   KEY `social_accounts_user_id_foreign` (`user_id`),
   CONSTRAINT `social_accounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `topics`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `topics` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `slug` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `topics_slug_unique` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `user_badges`;
@@ -440,20 +496,20 @@ DROP TABLE IF EXISTS `users`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `avatar_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `avatar_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `avatar_image` blob,
-  `avatar_mime_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `avatar_mime_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `two_factor_secret` text COLLATE utf8mb4_unicode_ci,
-  `two_factor_recovery_codes` text COLLATE utf8mb4_unicode_ci,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `two_factor_secret` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `two_factor_recovery_codes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `two_factor_confirmed_at` timestamp NULL DEFAULT NULL,
-  `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `remember_token` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
-  `username` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `username` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `points` int unsigned NOT NULL DEFAULT '0',
   `xp` bigint unsigned NOT NULL DEFAULT '0',
   `current_streak` int unsigned NOT NULL DEFAULT '0',
@@ -462,9 +518,10 @@ CREATE TABLE `users` (
   `daily_xp_earned` int unsigned NOT NULL DEFAULT '0',
   `daily_goal_met_at` date DEFAULT NULL,
   `is_admin` tinyint(1) NOT NULL DEFAULT '0',
-  `role` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'member',
-  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `role` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'member',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
   `deleted_at` timestamp NULL DEFAULT NULL,
+  `onboarding_completed_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `users_email_unique` (`email`),
   UNIQUE KEY `users_username_unique` (`username`),
@@ -532,3 +589,18 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (46,'2026_04_22_143
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (47,'2026_04_22_143826_add_enhanced_fields_to_challenges_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (48,'2026_04_24_031410_add_xp_to_users_table',2);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (49,'2026_04_24_042519_add_daily_goal_columns_to_users_table',3);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (50,'2026_04_24_112743_create_notifications_table',4);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (51,'2026_04_24_123338_create_quiz_submissions_table',4);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (52,'2026_04_24_131923_drop_notes_and_bookmarks_tables',4);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (53,'2026_04_25_050327_scale_down_challenge_points_to_tens',4);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (54,'2026_04_25_052630_drop_xp_reward_from_lessons_and_lesson_tasks',4);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (55,'2026_04_26_182226_add_unique_session_question_to_challenge_submissions',4);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (56,'2026_04_27_225352_add_expected_answer_hash_to_challenges_table',5);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (57,'2026_04_27_231241_create_audit_logs_table',6);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (58,'2026_04_27_231307_create_topics_table',6);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (59,'2026_04_27_231308_create_challenge_topic_table',6);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (60,'2026_04_27_231309_add_topic_id_to_challenge_questions_table',6);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (61,'2026_04_27_231329_add_pedagogical_fields_to_lessons_table',6);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (62,'2026_04_27_231330_add_onboarding_completed_at_to_users_table',6);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (63,'2026_04_27_231539_add_topic_id_to_quiz_questions_table',7);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (64,'2026_04_28_002224_drop_cover_image_blob_from_courses_table',8);

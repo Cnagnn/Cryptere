@@ -54,4 +54,31 @@ class ChallengeScoreService
 
         return $total;
     }
+
+    /**
+     * Resolve speed-based awarded points within min-max boundaries.
+     * Single-answer mode: speed bonus, decay over 1× time limit, floor = 25% of max.
+     * Used by quickStore() for standalone challenge submissions.
+     */
+    public function calculateSpeedAwardedPoints(
+        int $elapsedMs,
+        int $timeLimitMs,
+        int $maxPoints = 15,
+    ): int {
+        $speedMinPoints = (int) config('rewards.challenge_speed_min_points', 3);
+        $speedFloorRatio = (float) config('rewards.challenge_speed_floor_ratio', 0.25);
+        $minimumPoints = min(
+            $maxPoints,
+            max($speedMinPoints, (int) round($maxPoints * $speedFloorRatio))
+        );
+
+        if ($timeLimitMs <= 0) {
+            return $minimumPoints;
+        }
+
+        $remainingRatio = 1 - ($elapsedMs / $timeLimitMs);
+        $variablePoints = (int) round(($maxPoints - $minimumPoints) * max(0, $remainingRatio));
+
+        return min($maxPoints, $minimumPoints + $variablePoints);
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -63,10 +64,12 @@ class UserController extends Controller
     {
         $validated = $request->validated();
 
-        $user->update([
+        $user->forceFill([
             ...$validated,
             'is_admin' => $validated['role'] === 'admin',
-        ]);
+        ])->save();
+
+        app(AuditService::class)->log($request->user(), 'updated_role', $user, ['role' => $validated['role']]);
 
         return back()->with('success', 'User access has been updated.');
     }
@@ -85,6 +88,8 @@ class UserController extends Controller
         if ((int) $request->user()?->getKey() === (int) $user->getKey()) {
             return back()->with('error', 'You cannot delete your own account.');
         }
+
+        app(AuditService::class)->log($request->user(), 'deleted', $user);
 
         $user->delete();
 

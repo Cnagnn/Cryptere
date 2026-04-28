@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StoreAdminChallengeQuestionRequest;
 use App\Http\Requests\Admin\UpdateAdminChallengeQuestionRequest;
 use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +22,7 @@ class ChallengeQuestionController extends Controller
         $validated = $request->validated();
         $nextSortOrder = (int) $challenge->questions()->max('sort_order') + 1;
 
-        $challenge->questions()->create([
+        $question = $challenge->questions()->create([
             'type' => $validated['type'],
             'question' => $validated['question'],
             'options' => $validated['options'] ?? null,
@@ -29,6 +30,8 @@ class ChallengeQuestionController extends Controller
             'explanation' => $validated['explanation'] ?? null,
             'sort_order' => $nextSortOrder,
         ]);
+
+        app(AuditService::class)->log($request->user(), 'created', $question);
 
         return back()->with('success', 'Question added.');
     }
@@ -50,6 +53,8 @@ class ChallengeQuestionController extends Controller
             'explanation' => $validated['explanation'] ?? null,
         ]);
 
+        app(AuditService::class)->log($request->user(), 'updated', $question);
+
         return back()->with('success', 'Question updated.');
     }
 
@@ -59,6 +64,8 @@ class ChallengeQuestionController extends Controller
     public function destroy(Challenge $challenge, ChallengeQuestion $question): RedirectResponse
     {
         abort_unless($question->challenge_id === $challenge->id, 404);
+
+        app(AuditService::class)->log(request()->user(), 'deleted', $question);
 
         $question->delete();
 

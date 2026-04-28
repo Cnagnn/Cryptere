@@ -157,6 +157,22 @@
     }
 }
 
+/* ── Subtle pulse for in-progress learning path nodes ── */
+@keyframes pulse-subtle {
+    0%, 100% { box-shadow: 0 0 0 0 oklch(0.6 0.18 250 / 0.3); }
+    50% { box-shadow: 0 0 0 4px oklch(0.6 0.18 250 / 0); }
+}
+
+.animate-pulse-subtle {
+    animation: pulse-subtle 2.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-pulse-subtle {
+        animation: none;
+    }
+}
+
 @layer base {
     * {
         @apply border-border;

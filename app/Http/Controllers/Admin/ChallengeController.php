@@ -8,6 +8,8 @@ use App\Http\Requests\Admin\StoreAdminChallengeRequest;
 use App\Http\Requests\Admin\UpdateAdminChallengeRequest;
 use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
+use App\Services\AuditService;
+use App\Services\ChallengeHelperService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,18 +62,19 @@ class ChallengeController extends Controller
     /**
      * Store a new managed challenge.
      */
-    public function store(StoreAdminChallengeRequest $request): RedirectResponse
+    public function store(StoreAdminChallengeRequest $request, ChallengeHelperService $helper): RedirectResponse
     {
         $validated = $request->validated();
         $nextSortOrder = (int) Challenge::query()->max('sort_order') + 1;
 
-        Challenge::query()->create([
+        $challenge = Challenge::query()->create([
             'title' => $validated['title'],
             'prompt' => $validated['prompt'],
             'hint' => $validated['hint'] ?? null,
             'time_start' => $validated['time_start'],
             'time_end' => $validated['time_end'],
             'expected_answer' => $validated['expected_answer'],
+            'expected_answer_hash' => $helper->hashAnswer($helper->normalizeAnswer($validated['expected_answer'])),
             'slug' => $this->generateUniqueSlug($validated['title']),
             'sort_order' => $nextSortOrder,
             'is_published' => (bool) ($validated['is_published'] ?? true),
@@ -80,13 +83,15 @@ class ChallengeController extends Controller
             'max_points_per_question' => $validated['max_points_per_question'] ?? 10,
         ]);
 
+        app(AuditService::class)->log($request->user(), 'created', $challenge);
+
         return back()->with('success', 'Challenge created.');
     }
 
     /**
      * Update an existing managed challenge.
      */
-    public function update(UpdateAdminChallengeRequest $request, Challenge $challenge): RedirectResponse
+    public function update(UpdateAdminChallengeRequest $request, Challenge $challenge, ChallengeHelperService $helper): RedirectResponse
     {
         $validated = $request->validated();
 
@@ -97,6 +102,7 @@ class ChallengeController extends Controller
             'time_start' => $validated['time_start'],
             'time_end' => $validated['time_end'],
             'expected_answer' => $validated['expected_answer'],
+            'expected_answer_hash' => $helper->hashAnswer($helper->normalizeAnswer($validated['expected_answer'])),
             'is_published' => (bool) ($validated['is_published'] ?? $challenge->is_published),
             'slug' => $challenge->title === $validated['title']
                 ? $challenge->slug
@@ -105,6 +111,8 @@ class ChallengeController extends Controller
             'questions_per_session' => $validated['questions_per_session'] ?? $challenge->questions_per_session,
             'max_points_per_question' => $validated['max_points_per_question'] ?? $challenge->max_points_per_question,
         ]);
+
+        app(AuditService::class)->log($request->user(), 'updated', $challenge);
 
         return back()->with('success', 'Challenge updated.');
     }
@@ -115,6 +123,8 @@ class ChallengeController extends Controller
     public function destroy(Challenge $challenge): RedirectResponse
     {
         $this->authorize('delete', $challenge);
+
+        app(AuditService::class)->log(request()->user(), 'deleted', $challenge);
 
         $challenge->delete();
 

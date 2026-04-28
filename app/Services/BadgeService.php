@@ -33,7 +33,9 @@ class BadgeService
 
         foreach ($candidateBadges as $badge) {
             if ($this->isCriteriaMet($user, $badge)) {
-                $user->badges()->attach($badge->id, ['earned_at' => now()]);
+                $user->badges()->syncWithoutDetaching([
+                    $badge->id => ['earned_at' => now()],
+                ]);
                 $newlyAwarded->push($badge);
 
                 BadgeEarned::dispatch($user, $badge);

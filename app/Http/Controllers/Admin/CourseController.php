@@ -12,6 +12,7 @@ use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
+use App\Services\AuditService;
 use App\Services\CacheService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -259,25 +260,24 @@ class CourseController extends Controller
 
         $nextSortOrder = (int) Course::query()->max('sort_order') + 1;
 
-        // Store cover image to disk (not as binary blob)
+        // Store cover image to disk
         $coverPath = null;
-        $coverMimeType = null;
         if ($request->hasFile('cover_image') && $request->file('cover_image') !== null) {
             $coverFile = $request->file('cover_image');
             $coverPath = $coverFile->store('course-covers', 'public');
-            $coverMimeType = $coverFile->getMimeType();
         }
 
-        Course::query()->create([
+        $course = Course::query()->create([
             'slug' => $slug,
             'title' => $validated['title'],
             'summary' => $validated['description'],
             'cover_path' => $coverPath,
-            'cover_mime_type' => $coverMimeType,
             'estimated_minutes' => (int) ($validated['estimated_minutes'] ?? 30),
             'sort_order' => $nextSortOrder,
             'is_published' => (bool) ($validated['is_published'] ?? true),
         ]);
+
+        app(AuditService::class)->log($request->user(), 'created', $course);
 
         CacheService::invalidateCourseCatalog();
 
@@ -290,7 +290,6 @@ class CourseController extends Controller
 
         // Store new cover image to disk if provided
         $coverPath = $course->cover_path;
-        $coverMimeType = $course->cover_mime_type;
         if ($request->hasFile('cover_image') && $request->file('cover_image') !== null) {
             $coverFile = $request->file('cover_image');
 
@@ -300,17 +299,17 @@ class CourseController extends Controller
             }
 
             $coverPath = $coverFile->store('course-covers', 'public');
-            $coverMimeType = $coverFile->getMimeType();
         }
 
         $course->update([
             'title' => $validated['title'],
             'summary' => $validated['description'],
             'cover_path' => $coverPath,
-            'cover_mime_type' => $coverMimeType,
             'estimated_minutes' => (int) ($validated['estimated_minutes'] ?? $course->estimated_minutes),
             'is_published' => (bool) ($validated['is_published'] ?? true),
         ]);
+
+        app(AuditService::class)->log($request->user(), 'updated', $course);
 
         CacheService::invalidateCourseCatalog();
 
@@ -325,6 +324,8 @@ class CourseController extends Controller
         if ($course->cover_path !== null && Storage::disk('public')->exists($course->cover_path)) {
             Storage::disk('public')->delete($course->cover_path);
         }
+
+        app(AuditService::class)->log(request()->user(), 'deleted', $course);
 
         $course->delete();
 

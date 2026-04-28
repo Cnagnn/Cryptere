@@ -7,7 +7,14 @@ use Illuminate\Support\Facades\Cache;
 
 class CacheService
 {
-    private const TTL_MEDIUM = 300; // 5 minutes
+    /** @var int 1 minute — user-specific volatile data */
+    public const TTL_SHORT = 60;
+
+    /** @var int 5 minutes — shared catalog/listing data */
+    public const TTL_MEDIUM = 300;
+
+    /** @var int 1 hour — rarely changing reference data */
+    public const TTL_LONG = 3600;
 
     /**
      * Get total published course count, cached for 5 minutes.
@@ -27,6 +34,8 @@ class CacheService
     public static function invalidateCourseCatalog(): void
     {
         Cache::forget('stats:published_courses_count');
+        Cache::forget('courses:catalog');
+        Cache::forget('learning_path:courses');
     }
 
     /**
@@ -37,6 +46,10 @@ class CacheService
     public static function invalidateAdminDashboard(): void
     {
         Cache::forget('admin_dashboard_stats');
+        Cache::forget('admin_enrollment_trends');
+        Cache::forget('admin_user_growth');
+        Cache::forget('admin_course_performance');
+        Cache::forget('admin_challenge_performance');
     }
 
     /**
@@ -46,6 +59,26 @@ class CacheService
     {
         Cache::forget('leaderboard_top_weekly');
         Cache::forget('leaderboard_top_monthly');
+        Cache::forget('leaderboard_top3_all');
+        Cache::forget('leaderboard_top3_weekly');
+        Cache::forget('leaderboard_top3_monthly');
+    }
+
+    /**
+     * Invalidate challenge catalog caches.
+     */
+    public static function invalidateChallengeCatalog(): void
+    {
+        Cache::forget('challenges:catalog');
+    }
+
+    /**
+     * Invalidate per-user analytics cache.
+     */
+    public static function invalidateUserAnalytics(int $userId): void
+    {
+        Cache::forget("analytics_page_{$userId}");
+        Cache::forget("learner_dashboard_stats:{$userId}");
     }
 
     /**
@@ -56,6 +89,7 @@ class CacheService
         self::invalidateCourseCatalog();
         self::invalidateAdminDashboard();
         self::invalidateLeaderboard();
+        self::invalidateChallengeCatalog();
         BadgeService::clearCache();
     }
 }

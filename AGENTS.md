@@ -211,3 +211,40 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 - IMPORTANT: Activate `inertia-react-development` when working with Inertia React client-side patterns.
 
 </laravel-boost-guidelines>
+
+# Crypter Project - Agent Information
+
+## Build & Configuration
+
+- **One-step Setup**: Use `composer setup` to install PHP and JS dependencies, generate application key, and run migrations.
+- **Development Server**: Use `composer dev` to start the Laravel server, queue listener, and Vite dev server concurrently.
+- **TypeScript Generation**: Use `npm run types` (which calls `php artisan wayfinder:generate`) whenever routes or controllers change to update frontend type-safe actions.
+- **Environment**: Ensure `.env` is configured. The project defaults to MySQL for the database.
+
+## Testing
+
+### Pest (PHP Testing)
+- **Running Tests**: Use `php artisan test --compact` to run all tests.
+- **Filtering**: Use `--filter` to run specific tests: `php artisan test --compact --filter=ExampleTest`.
+- **Creating Tests**: Use `php artisan make:test {Name} --pest` for feature tests, or add `--unit` for unit tests.
+- **Example**:
+  ```php
+  <?php
+  test('basic sanity check', function () {
+      expect(true)->toBeTrue();
+  });
+  ```
+
+### Playwright (E2E Testing)
+- **Running Tests**: Use `npm run e2e` to run Playwright tests.
+- **Headed Mode**: Use `npm run e2e:headed` for visual debugging.
+- **Configuration**: See `playwright.config.ts` for browser and environment settings.
+
+## Development Guidelines
+
+- **Code Style**:
+    - **PHP**: Strictly follow Laravel Pint rules. Run `composer lint` before submitting.
+    - **Frontend**: Use Prettier for formatting (`npm run format`) and ESLint for linting (`npm run lint`).
+- **Route Handling**: Always use **Laravel Wayfinder** for frontend-backend communication. Import from `@/actions/` or `@/routes/`.
+- **Inertia v3**: Leverage new v3 features like `useHttp` for standalone requests and optimistic updates.
+- **Database**: Use migrations for all schema changes. Create factories for all models to support robust testing.

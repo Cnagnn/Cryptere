@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StoreAdminLessonRequest;
 use App\Http\Requests\Admin\UpdateAdminLessonRequest;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -32,7 +33,7 @@ class LessonController extends Controller
 
         $nextPosition = (int) Lesson::query()->where('course_id', $course->id)->max('position') + 1;
 
-        Lesson::query()->create([
+        $lesson = Lesson::query()->create([
             'course_id' => $course->id,
             'slug' => $slug,
             'title' => $validated['title'],
@@ -40,6 +41,8 @@ class LessonController extends Controller
             'content' => '',
             'position' => $nextPosition,
         ]);
+
+        app(AuditService::class)->log($request->user(), 'created', $lesson);
 
         return back();
     }
@@ -52,6 +55,8 @@ class LessonController extends Controller
             'title' => $validated['title'],
             'description' => $validated['description'],
         ]);
+
+        app(AuditService::class)->log($request->user(), 'updated', $lesson);
 
         return back();
     }
@@ -80,6 +85,8 @@ class LessonController extends Controller
     public function destroy(Lesson $lesson): RedirectResponse
     {
         $this->authorize('delete', $lesson->course);
+
+        app(AuditService::class)->log(request()->user(), 'deleted', $lesson);
 
         $lesson->delete();
 

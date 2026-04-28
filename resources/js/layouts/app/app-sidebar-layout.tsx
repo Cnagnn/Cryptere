@@ -1,3 +1,4 @@
+import { RouteAnnouncer, SkipToContent, useFocusOnNavigate } from '@/components/accessibility';
 import { AchievementToast } from '@/components/achievement-toast';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
@@ -9,14 +10,20 @@ export default function AppSidebarLayout({
     children,
     breadcrumbs,
 }: AppLayoutProps) {
+    useFocusOnNavigate();
+
     return (
         <AppShell variant="sidebar">
+            <SkipToContent />
             <AppSidebar />
             <AppContent variant="sidebar" className="overflow-x-hidden">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
-                {children}
+                <main id="main-content" tabIndex={-1} className="outline-none">
+                    {children}
+                </main>
             </AppContent>
             <AchievementToast />
+            <RouteAnnouncer />
         </AppShell>
     );
 }

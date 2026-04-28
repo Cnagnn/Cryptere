@@ -6,16 +6,25 @@ use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Admin\TaskController as AdminTaskController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Challenge\ChallengeController;
 use App\Http\Controllers\Challenge\ChallengeSubmissionController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Course\EnrollmentController;
 use App\Http\Controllers\Course\LessonProgressController;
 use App\Http\Controllers\Course\QuizSubmissionController;
+use App\Http\Controllers\DailyRewardController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\LearningPathController;
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\SearchController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +33,8 @@ use Laravel\Fortify\Features;
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
+
+Route::get('/health', HealthCheckController::class)->name('health');
 
 Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
@@ -79,7 +90,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('labs', LabController::class)->name('labs.index');
     Route::get('labs/{lab}', [LabController::class, 'show'])->name('labs.show');
 
+    Route::get('search', SearchController::class)->middleware('throttle:30,1')->name('search');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+    Route::get('daily-rewards', [DailyRewardController::class, 'index'])->name('daily-rewards.index');
+    Route::post('daily-rewards/claim', [DailyRewardController::class, 'claim'])->middleware('throttle:5,1')->name('daily-rewards.claim');
+
+    Route::get('learning-path', LearningPathController::class)->name('learning-path');
+
+    Route::get('notes', [NoteController::class, 'index'])->name('notes.index');
+    Route::post('notes', [NoteController::class, 'store'])->name('notes.store');
+    Route::patch('notes/{note}', [NoteController::class, 'update'])->name('notes.update');
+    Route::delete('notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
+    Route::get('notes/export', [NoteController::class, 'export'])->name('notes.export');
+
+    Route::get('analytics', AnalyticsController::class)->name('analytics');
+
+    Route::get('onboarding', [OnboardingController::class, 'show'])->name('onboarding');
+    Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
+    Route::post('onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
+
+    Route::get('certificates', [CertificateController::class, 'index'])->name('certificates.index');
+    Route::post('certificates', [CertificateController::class, 'store'])->name('certificates.store');
+    Route::get('certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
+
 });
+
+// Public certificate verification — no auth required
+Route::get('verify/{code}', [CertificateController::class, 'verify'])->name('certificates.verify');
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('users', [AdminUserController::class, 'index'])->name('users.index');

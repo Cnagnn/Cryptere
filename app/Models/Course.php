@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,8 +16,6 @@ use Illuminate\Support\Str;
     'slug',
     'title',
     'summary',
-    'cover_image',
-    'cover_mime_type',
     'cover_path',
     'estimated_minutes',
     'sort_order',
@@ -28,7 +25,6 @@ use Illuminate\Support\Str;
     'difficulty',
     'path_position',
 ])]
-#[Hidden(['cover_image', 'cover_mime_type'])]
 class Course extends Model
 {
     use HasFactory;
@@ -64,45 +60,15 @@ class Course extends Model
 
     /**
      * Return the cover image as a URL string.
-     * Prefers file-system path (faster, CDN-friendly), falls back to binary blob (legacy).
-     *
-     * TODO: The `cover_image` LONGBLOB column is legacy. New uploads use `cover_path` (file-system).
-     *       Once all existing courses have been migrated to `cover_path`, drop the `cover_image` column
-     *       and remove the binary fallback logic below.
+     * Uses file-system path via cover_path column.
      */
     public function getCoverAttribute(): ?string
     {
-        // Prefer file-system storage (new uploads)
         if (is_string($this->cover_path) && $this->cover_path !== '') {
             return Storage::disk('public')->url($this->cover_path);
         }
 
-        // Fall back to legacy binary blob
-        $coverBinary = $this->resolveCoverBinary();
-        if (! is_string($coverBinary) || $coverBinary === '') {
-            return $this->buildDefaultCoverDataUri();
-        }
-        $mimeType = is_string($this->cover_mime_type) && $this->cover_mime_type !== ''
-            ? $this->cover_mime_type
-            : 'image/jpeg';
-
-        return sprintf('data:%s;base64,%s', $mimeType, base64_encode($coverBinary));
-    }
-
-    private function resolveCoverBinary(): ?string
-    {
-        $coverImage = $this->cover_image;
-        if (is_string($coverImage)) {
-            return $coverImage;
-        }
-        if (is_resource($coverImage)) {
-            rewind($coverImage);
-            $contents = stream_get_contents($coverImage);
-
-            return is_string($contents) ? $contents : null;
-        }
-
-        return null;
+        return $this->buildDefaultCoverDataUri();
     }
 
     private function buildDefaultCoverDataUri(): string

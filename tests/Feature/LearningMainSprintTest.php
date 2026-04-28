@@ -508,7 +508,7 @@ test('admin users can create managed courses', function () {
     expect($course)->not->toBeNull();
     expect($course?->summary)->toBe('Learn practical encryption fundamentals for day-to-day engineering work.');
     expect($course?->is_published)->toBeTrue();
-    expect($course?->cover_mime_type)->toStartWith('image/');
+    expect($course?->cover_path)->not->toBeNull();
     expect($course?->cover)->not->toBeNull();
 });
 
@@ -552,7 +552,7 @@ test('admin users can update managed courses', function () {
     expect($course->fresh()?->title)->toBe('Updated Course Title');
     expect($course->fresh()?->summary)->toBe('Updated summary text for admins.');
     expect($course->fresh()?->is_published)->toBeTrue();
-    expect($course->fresh()?->cover_mime_type)->toStartWith('image/');
+    expect($course->fresh()?->cover_path)->not->toBeNull();
     expect($course->fresh()?->cover)->not->toBeNull();
 });
 

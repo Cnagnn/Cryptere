@@ -11,6 +11,7 @@ use App\Jobs\ConvertLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -81,6 +82,8 @@ class TaskController extends Controller
         if ($createdTask->type === 'video' && $createdTask->video_processing_status === 'pending') {
             ConvertLessonVideo::dispatch($createdTask->id);
         }
+
+        app(AuditService::class)->log($request->user(), 'created', $createdTask);
 
         return back();
     }
@@ -155,6 +158,8 @@ class TaskController extends Controller
             ConvertLessonVideo::dispatch($task->id);
         }
 
+        app(AuditService::class)->log($request->user(), 'updated', $task);
+
         return back();
     }
 
@@ -182,6 +187,8 @@ class TaskController extends Controller
     public function destroy(LessonTask $task): RedirectResponse
     {
         $this->authorize('delete', $task->lesson->course);
+
+        app(AuditService::class)->log(request()->user(), 'deleted', $task);
 
         $task->delete();
 

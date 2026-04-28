@@ -109,6 +109,7 @@ class EnrollmentController extends Controller
 
             $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
             $pointsToRevert = $completedLessonIds->count() * $lessonXpPerLesson;
+            $xpToRevert = $completedLessonIds->count() * $lessonXpPerLesson;
 
             LessonProgress::query()
                 ->whereBelongsTo($user)
@@ -116,9 +117,20 @@ class EnrollmentController extends Controller
                 ->delete();
 
             if ($pointsToRevert > 0) {
-                $user->update([
+                $user->forceFill([
                     'points' => max((int) $user->points - $pointsToRevert, 0),
-                ]);
+                    'xp' => max((int) $user->xp - $xpToRevert, 0),
+                ])->save();
+            }
+
+            // Revert course completion bonus if it was completed
+            if ($enrollment->completed_at !== null) {
+                $completionXp = (int) config('rewards.course_completion_xp', 100);
+                $completionPoints = (int) config('rewards.course_completion_points', 200);
+                $user->forceFill([
+                    'points' => max((int) $user->points - $completionPoints, 0),
+                    'xp' => max((int) $user->xp - $completionXp, 0),
+                ])->save();
             }
 
             $enrollment->update([

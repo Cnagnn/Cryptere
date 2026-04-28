@@ -174,9 +174,10 @@ class ChallengeSubmissionController extends Controller
             ], 422);
         }
 
-        $question = ChallengeQuestion::findOrFail($validated['challenge_question_id']);
-
-        abort_unless($question->challenge_id === $challenge->id, 422);
+        $question = ChallengeQuestion::query()
+            ->where('id', $validated['challenge_question_id'])
+            ->where('challenge_id', $challenge->id)
+            ->firstOrFail();
 
         $isCorrect = $question->isCorrect($validated['answer']);
         $timeLimitMs = ($challenge->time_limit_seconds ?? 20) * 1000;
@@ -332,8 +333,11 @@ class ChallengeSubmissionController extends Controller
         bool $speedBased = false,
     ): array {
         $normalizedAnswer = $this->challengeHelper->normalizeAnswer($answer);
-        $correctAnswer = $this->challengeHelper->normalizeAnswer((string) $challenge->getRawOriginal('expected_answer'));
-        $isCorrect = $normalizedAnswer !== '' && hash_equals($correctAnswer, $normalizedAnswer);
+        $expectedHash = $challenge->expected_answer_hash
+            ?? $this->challengeHelper->hashAnswer($this->challengeHelper->normalizeAnswer((string) $challenge->getRawOriginal('expected_answer')));
+
+        $isCorrect = $normalizedAnswer !== '' && hash_equals($expectedHash, $this->challengeHelper->hashAnswer($normalizedAnswer));
+        $correctAnswer = (string) $challenge->getRawOriginal('expected_answer');
         $timeLimitSeconds = $this->challengeHelper->resolveTimeLimitSeconds();
         $timeLimitMilliseconds = $timeLimitSeconds * 1000;
         $safeElapsedMilliseconds = $elapsedMilliseconds === null
@@ -349,7 +353,7 @@ class ChallengeSubmissionController extends Controller
         $baseChallengePoints = (int) config('rewards.challenge_base_points', 15);
         $basePoints = $isCorrect && ! $alreadySolved
             ? ($speedBased
-                ? $this->resolveSpeedAwardedPoints($safeElapsedMilliseconds, $timeLimitMilliseconds, $baseChallengePoints)
+                ? $this->scoreService->calculateSpeedAwardedPoints($safeElapsedMilliseconds, $timeLimitMilliseconds, $baseChallengePoints)
                 : $baseChallengePoints)
             : 0;
 
@@ -358,18 +362,20 @@ class ChallengeSubmissionController extends Controller
         $baseXp = $isCorrect && ! $alreadySolved ? ($baseChallengeXp + $firstBloodXp) : 0;
         $previousXp = $user->xp;
 
-        DB::transaction(function () use ($challenge, $user, $answer, $isCorrect, $alreadySolved, $basePoints, $baseXp): void {
+        // Calculate AWARDED points ONCE before transaction
+        $awardedPoints = $basePoints > 0 ? $this->xpService->applyLevelBonus($user, $basePoints) : 0;
+
+        DB::transaction(function () use ($challenge, $user, $answer, $isCorrect, $alreadySolved, $awardedPoints, $baseXp): void {
             ChallengeSubmission::query()->create([
                 'user_id' => $user->id,
                 'challenge_id' => $challenge->id,
                 'answer' => $answer,
                 'is_correct' => $isCorrect,
-                'score' => $isCorrect ? $basePoints : 0,
+                'score' => $isCorrect ? $awardedPoints : 0,
                 'submitted_at' => now(),
             ]);
 
-            if ($basePoints > 0) {
-                $awardedPoints = $this->xpService->applyLevelBonus($user, $basePoints);
+            if ($awardedPoints > 0) {
                 $user->increment('points', $awardedPoints);
             }
 
@@ -378,11 +384,9 @@ class ChallengeSubmissionController extends Controller
             }
 
             if ($isCorrect && ! $alreadySolved) {
-                ChallengeSolved::dispatch($user, $challenge, $basePoints);
+                ChallengeSolved::dispatch($user, $challenge, $awardedPoints);
             }
         });
-
-        $awardedPoints = $basePoints > 0 ? $this->xpService->applyLevelBonus($user, $basePoints) : 0;
 
         return [
             'isCorrect' => $isCorrect,
@@ -398,26 +402,14 @@ class ChallengeSubmissionController extends Controller
 
     /**
      * Resolve speed-based awarded points within min-max boundaries.
+     *
+     * @deprecated Use ChallengeScoreService::calculateSpeedAwardedPoints instead.
      */
     private function resolveSpeedAwardedPoints(
         int $elapsedMilliseconds,
         int $timeLimitMilliseconds,
         int $maximumPoints = 15,
     ): int {
-        $speedMinPoints = (int) config('rewards.challenge_speed_min_points', 3);
-        $speedFloorRatio = (float) config('rewards.challenge_speed_floor_ratio', 0.25);
-        $minimumPoints = min(
-            $maximumPoints,
-            max($speedMinPoints, (int) round($maximumPoints * $speedFloorRatio))
-        );
-
-        if ($timeLimitMilliseconds <= 0) {
-            return $minimumPoints;
-        }
-
-        $remainingRatio = 1 - ($elapsedMilliseconds / $timeLimitMilliseconds);
-        $variablePoints = (int) round(($maximumPoints - $minimumPoints) * max(0, $remainingRatio));
-
-        return min($maximumPoints, $minimumPoints + $variablePoints);
+        return $this->scoreService->calculateSpeedAwardedPoints($elapsedMilliseconds, $timeLimitMilliseconds, $maximumPoints);
     }
 }

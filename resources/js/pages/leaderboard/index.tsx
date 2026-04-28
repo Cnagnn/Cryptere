@@ -1,21 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import {
-    ArrowUpDown,
-    Crown,
-    Flame,
-    Medal,
-    Trophy,
-} from 'lucide-react';
+import { ArrowUpDown, Crown, Flame, Medal, Trophy } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import {
     Empty,
@@ -109,7 +100,13 @@ function RankDisplay({ rank }: { rank: number }) {
     return <span className="font-semibold">#{rank}</span>;
 }
 
-export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe, timeframes }: Props) {
+export default function LeaderboardIndex({
+    leaders,
+    top3,
+    currentUser,
+    timeframe,
+    timeframes,
+}: Props) {
     const getInitials = useInitials();
     const pointsFormatter = useMemo(() => new Intl.NumberFormat('id-ID'), []);
     const [usernameInput, setUsernameInput] = useState('');
@@ -146,82 +143,105 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
         [currentUser.id],
     );
 
-    const columns = useMemo<ColumnDef<LeaderboardEntry>[]>(() => [
-        {
-            accessorKey: 'rank',
-            header: ({ column }) => (
-                <Button
-                    variant="ghost"
-                    className="mx-auto"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                    aria-sort={column.getIsSorted() === false ? 'none' : column.getIsSorted() === 'asc' ? 'ascending' : 'descending'}
-                >
-                    Rank
-                    <ArrowUpDown className="size-4" />
-                </Button>
-            ),
-            cell: ({ row }) => (
-                <RankDisplay rank={row.original.rank} />
-            ),
-        },
-        {
-            accessorKey: 'username',
-            header: 'Username',
-            cell: ({ row }) => (
-                <div className="flex justify-center">
-                    <div className="grid w-64 grid-cols-[2rem_1fr] items-center gap-3 text-left">
-                        <Avatar className="size-8 rounded-full">
-                            <AvatarImage
-                                src={row.original.avatar ?? undefined}
-                                alt={row.original.username ? `@${row.original.username}` : row.original.name}
-                            />
-                            <AvatarFallback>
-                                {getInitials(row.original.username ?? row.original.name)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex items-center gap-2 truncate">
-                            <span className="truncate text-sm font-medium">
-                                @{row.original.username ?? 'unknown'}
-                            </span>
-                            {row.original.id === currentUser.id ? (
-                                <Badge variant="secondary" className="shrink-0 text-xs">You</Badge>
-                            ) : null}
+    const columns = useMemo<ColumnDef<LeaderboardEntry>[]>(
+        () => [
+            {
+                accessorKey: 'rank',
+                header: ({ column }) => (
+                    <Button
+                        variant="ghost"
+                        className="mx-auto"
+                        onClick={() =>
+                            column.toggleSorting(column.getIsSorted() === 'asc')
+                        }
+                        aria-sort={
+                            column.getIsSorted() === false
+                                ? 'none'
+                                : column.getIsSorted() === 'asc'
+                                  ? 'ascending'
+                                  : 'descending'
+                        }
+                    >
+                        Rank
+                        <ArrowUpDown className="size-4" />
+                    </Button>
+                ),
+                cell: ({ row }) => <RankDisplay rank={row.original.rank} />,
+            },
+            {
+                accessorKey: 'username',
+                header: 'Username',
+                cell: ({ row }) => (
+                    <div className="flex justify-center">
+                        <div className="grid w-64 grid-cols-[2rem_1fr] items-center gap-3 text-left">
+                            <Avatar className="size-8 rounded-full">
+                                <AvatarImage
+                                    src={row.original.avatar ?? undefined}
+                                    alt={
+                                        row.original.username
+                                            ? `@${row.original.username}`
+                                            : row.original.name
+                                    }
+                                />
+                                <AvatarFallback>
+                                    {getInitials(
+                                        row.original.username ??
+                                            row.original.name,
+                                    )}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="flex items-center gap-2 truncate">
+                                <span className="truncate text-sm font-medium">
+                                    @{row.original.username ?? 'unknown'}
+                                </span>
+                                {row.original.id === currentUser.id ? (
+                                    <Badge
+                                        variant="secondary"
+                                        className="shrink-0 text-xs"
+                                    >
+                                        You
+                                    </Badge>
+                                ) : null}
+                            </div>
                         </div>
                     </div>
-                </div>
-            ),
-        },
-        {
-            accessorKey: 'level',
-            header: 'Level',
-            cell: ({ row }) => (
-                <span className="text-sm font-medium">
-                    Lv.{row.original.level}
-                </span>
-            ),
-        },
-        {
-            accessorKey: 'longestStreak',
-            header: 'Streak',
-            cell: ({ row }) => (
-                <span className="inline-flex items-center gap-1 text-sm">
-                    <Flame className="size-3.5 fill-orange-500 text-orange-500" />
-                    <span className="font-medium tabular-nums">{row.original.longestStreak}d</span>
-                </span>
-            ),
-        },
-        {
-            accessorKey: 'points',
-            header: 'Points',
-            cell: ({ row }) => (
-                <div className="inline-flex items-center justify-center gap-2">
-                    <span className="text-sm font-semibold">
-                        {pointsFormatter.format(row.original.points)} pts
+                ),
+            },
+            {
+                accessorKey: 'level',
+                header: 'Level',
+                cell: ({ row }) => (
+                    <span className="text-sm font-medium">
+                        Lv.{row.original.level}
                     </span>
-                </div>
-            ),
-        },
-    ], [getInitials, pointsFormatter, currentUser.id]);
+                ),
+            },
+            {
+                accessorKey: 'longestStreak',
+                header: 'Streak',
+                cell: ({ row }) => (
+                    <span className="inline-flex items-center gap-1 text-sm">
+                        <Flame className="size-3.5 fill-orange-500 text-orange-500" />
+                        <span className="font-medium tabular-nums">
+                            {row.original.longestStreak}d
+                        </span>
+                    </span>
+                ),
+            },
+            {
+                accessorKey: 'points',
+                header: 'Points',
+                cell: ({ row }) => (
+                    <div className="inline-flex items-center justify-center gap-2">
+                        <span className="text-sm font-semibold">
+                            {pointsFormatter.format(row.original.points)} pts
+                        </span>
+                    </div>
+                ),
+            },
+        ],
+        [getInitials, pointsFormatter, currentUser.id],
+    );
 
     const handleTimeframeChange = (value: string): void => {
         router.get(
@@ -282,23 +302,29 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
             <Head title="Leaderboard" />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-                <header>
+                <header className="animate-fade-in-up">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div className="flex flex-col gap-0">
                             <TypographyH1>Leaderboard</TypographyH1>
                             <TypographyMuted className="text-sm/6">
-                                Live rankings based on points earned from lessons and challenge submissions.
+                                Live rankings based on points earned from
+                                lessons and challenge submissions.
                             </TypographyMuted>
                         </div>
 
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <Input
                                 value={usernameInput}
-                                onChange={(event) => setUsernameInput(event.target.value)}
+                                onChange={(event) =>
+                                    setUsernameInput(event.target.value)
+                                }
                                 placeholder="Search username..."
                                 className="w-full sm:w-64"
                             />
-                            <Tabs value={timeframe} onValueChange={handleTimeframeChange}>
+                            <Tabs
+                                value={timeframe}
+                                onValueChange={handleTimeframeChange}
+                            >
                                 <TabsList>
                                     {timeframes.map((tf) => (
                                         <TabsTrigger key={tf} value={tf}>
@@ -309,17 +335,38 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
                             </Tabs>
                         </div>
                     </div>
-
                 </header>
 
                 {/* Podium Top 3 */}
                 {top3.length > 0 && !isNavigating ? (
-                    <PodiumSection top3={top3} pointsFormatter={pointsFormatter} />
+                    <div
+                        className="animate-fade-in-up"
+                        style={{ animationDelay: '100ms' }}
+                    >
+                        <PodiumSection
+                            top3={top3}
+                            pointsFormatter={pointsFormatter}
+                        />
+                    </div>
                 ) : isNavigating ? (
-                    <div className="grid grid-cols-3 items-end gap-3">
+                    <div
+                        className="animate-fade-in-up grid grid-cols-3 items-end gap-3"
+                        style={{ animationDelay: '100ms' }}
+                    >
                         {[2, 1, 3].map((rank) => (
-                            <div key={rank} className={cn('flex flex-col items-center gap-2', rank === 1 ? 'pb-4' : 'pb-0')}>
-                                <Skeleton className={cn('rounded-full', rank === 1 ? 'size-20' : 'size-14')} />
+                            <div
+                                key={rank}
+                                className={cn(
+                                    'flex flex-col items-center gap-2',
+                                    rank === 1 ? 'pb-4' : 'pb-0',
+                                )}
+                            >
+                                <Skeleton
+                                    className={cn(
+                                        'rounded-full',
+                                        rank === 1 ? 'size-20' : 'size-14',
+                                    )}
+                                />
                                 <Skeleton className="h-4 w-20" />
                                 <Skeleton className="h-3 w-16" />
                             </div>
@@ -327,12 +374,18 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
                     </div>
                 ) : null}
 
-                <section className="grid gap-4">
+                <section
+                    className="animate-fade-in-up grid gap-4"
+                    style={{ animationDelay: '200ms' }}
+                >
                     <div className="flex flex-col gap-4">
                         {isNavigating ? (
                             <div className="flex flex-col gap-2">
                                 {Array.from({ length: 5 }).map((_, i) => (
-                                    <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                                    <Skeleton
+                                        key={i}
+                                        className="h-14 w-full rounded-lg"
+                                    />
                                 ))}
                             </div>
                         ) : leaders.data.length === 0 ? (
@@ -341,10 +394,13 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
                                     <Trophy />
                                 </EmptyMedia>
                                 <EmptyHeader>
-                                    <EmptyTitle>Leaderboard is empty</EmptyTitle>
+                                    <EmptyTitle>
+                                        Leaderboard is empty
+                                    </EmptyTitle>
                                     <EmptyDescription>
-                                        No learner points have been recorded yet.
-                                        Complete a lesson or solve a challenge to appear here.
+                                        No learner points have been recorded
+                                        yet. Complete a lesson or solve a
+                                        challenge to appear here.
                                     </EmptyDescription>
                                 </EmptyHeader>
                                 <EmptyContent>
@@ -388,7 +444,9 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
                                     />
 
                                     <div className="mt-2 text-center text-xs text-muted-foreground">
-                                        Showing {leaders.from ?? 0} - {leaders.to ?? 0} of {leaders.total} learners
+                                        Showing {leaders.from ?? 0} -{' '}
+                                        {leaders.to ?? 0} of {leaders.total}{' '}
+                                        learners
                                     </div>
 
                                     {leaders.last_page > 1 ? (
@@ -396,19 +454,35 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                disabled={leaders.current_page <= 1}
-                                                onClick={() => handlePageChange(leaders.current_page - 1)}
+                                                disabled={
+                                                    leaders.current_page <= 1
+                                                }
+                                                onClick={() =>
+                                                    handlePageChange(
+                                                        leaders.current_page -
+                                                            1,
+                                                    )
+                                                }
                                             >
                                                 Previous
                                             </Button>
                                             <span className="text-sm text-muted-foreground">
-                                                {leaders.current_page} / {leaders.last_page}
+                                                {leaders.current_page} /{' '}
+                                                {leaders.last_page}
                                             </span>
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                disabled={leaders.current_page >= leaders.last_page}
-                                                onClick={() => handlePageChange(leaders.current_page + 1)}
+                                                disabled={
+                                                    leaders.current_page >=
+                                                    leaders.last_page
+                                                }
+                                                onClick={() =>
+                                                    handlePageChange(
+                                                        leaders.current_page +
+                                                            1,
+                                                    )
+                                                }
                                             >
                                                 Next
                                             </Button>
@@ -429,17 +503,23 @@ export default function LeaderboardIndex({ leaders, top3, currentUser, timeframe
 const PODIUM_ORDER = [1, 0, 2] as const; // Display order: #2, #1, #3
 const PODIUM_COLORS = [
     'from-amber-400/20 to-amber-400/5 border-amber-400/30', // Gold (#1)
-    'from-slate-300/20 to-slate-300/5 border-slate-300/30',  // Silver (#2)
-    'from-amber-600/20 to-amber-600/5 border-amber-600/30',  // Bronze (#3)
+    'from-slate-300/20 to-slate-300/5 border-slate-300/30', // Silver (#2)
+    'from-amber-600/20 to-amber-600/5 border-amber-600/30', // Bronze (#3)
 ];
 const PODIUM_RING_COLORS = [
-    'ring-amber-400/50',  // Gold
-    'ring-slate-300/50',  // Silver
-    'ring-amber-600/50',  // Bronze
+    'ring-amber-400/50', // Gold
+    'ring-slate-300/50', // Silver
+    'ring-amber-600/50', // Bronze
 ];
 const PODIUM_HEIGHTS = ['h-28', 'h-20', 'h-16'];
 
-function PodiumSection({ top3, pointsFormatter }: { top3: LeaderboardEntry[]; pointsFormatter: Intl.NumberFormat }) {
+function PodiumSection({
+    top3,
+    pointsFormatter,
+}: {
+    top3: LeaderboardEntry[];
+    pointsFormatter: Intl.NumberFormat;
+}) {
     const getInitials = useInitials();
 
     // Reorder: #2, #1, #3
@@ -449,7 +529,12 @@ function PodiumSection({ top3, pointsFormatter }: { top3: LeaderboardEntry[]; po
         return null;
     }
 
-    const gridCols = ordered.length === 1 ? 'grid-cols-1 max-w-48 mx-auto' : ordered.length === 2 ? 'grid-cols-2 max-w-sm mx-auto' : 'grid-cols-3';
+    const gridCols =
+        ordered.length === 1
+            ? 'grid-cols-1 max-w-48 mx-auto'
+            : ordered.length === 2
+              ? 'grid-cols-2 max-w-sm mx-auto'
+              : 'grid-cols-3';
 
     return (
         <div className={cn('grid items-end gap-3', gridCols)}>
@@ -458,29 +543,47 @@ function PodiumSection({ top3, pointsFormatter }: { top3: LeaderboardEntry[]; po
                 const isFirst = entry.rank === 1;
 
                 return (
-                    <div key={entry.id} className="flex flex-col items-center gap-2">
+                    <div
+                        key={entry.id}
+                        className="flex flex-col items-center gap-2"
+                    >
                         <div className="relative">
                             {isFirst ? (
                                 <Crown className="absolute -top-3 left-1/2 size-5 -translate-x-1/2 text-amber-400" />
                             ) : null}
-                            <Avatar className={cn(
-                                'ring-2',
-                                isFirst ? 'size-20' : 'size-14',
-                                PODIUM_RING_COLORS[rankIndex],
-                            )}>
+                            <Avatar
+                                className={cn(
+                                    'ring-2',
+                                    isFirst ? 'size-20' : 'size-14',
+                                    PODIUM_RING_COLORS[rankIndex],
+                                )}
+                            >
                                 <AvatarImage
                                     src={entry.avatar || undefined}
-                                    alt={entry.username ? `@${entry.username}` : entry.name}
-                                    onError={e => { e.currentTarget.style.display = 'none'; }}
+                                    alt={
+                                        entry.username
+                                            ? `@${entry.username}`
+                                            : entry.name
+                                    }
+                                    onError={(e) =>
+                                        (e.currentTarget.style.display = 'none')
+                                    }
                                 />
-                                <AvatarFallback className={cn(isFirst && 'text-lg')}>
+                                <AvatarFallback
+                                    className={cn(isFirst && 'text-lg')}
+                                >
                                     {getInitials(entry.username ?? entry.name)}
                                 </AvatarFallback>
                             </Avatar>
                         </div>
 
                         <div className="flex flex-col items-center gap-0.5">
-                            <span className={cn('text-center font-medium', isFirst ? 'text-sm' : 'text-xs')}>
+                            <span
+                                className={cn(
+                                    'text-center font-medium',
+                                    isFirst ? 'text-sm' : 'text-xs',
+                                )}
+                            >
                                 @{entry.username ?? 'unknown'}
                             </span>
                             <span className="text-xs text-muted-foreground">
@@ -489,11 +592,13 @@ function PodiumSection({ top3, pointsFormatter }: { top3: LeaderboardEntry[]; po
                         </div>
 
                         {/* Podium bar */}
-                        <div className={cn(
-                            'w-full rounded-t-lg border-t bg-gradient-to-b',
-                            PODIUM_COLORS[rankIndex],
-                            PODIUM_HEIGHTS[rankIndex],
-                        )}>
+                        <div
+                            className={cn(
+                                'w-full rounded-t-lg border-t bg-linear-to-b',
+                                PODIUM_COLORS[rankIndex],
+                                PODIUM_HEIGHTS[rankIndex],
+                            )}
+                        >
                             <div className="flex h-full items-center justify-center">
                                 <RankDisplay rank={entry.rank} />
                             </div>
@@ -541,7 +646,11 @@ function MobileLeaderboardCards({
                             <Avatar className="size-10 shrink-0 rounded-full">
                                 <AvatarImage
                                     src={entry.avatar ?? undefined}
-                                    alt={entry.username ? `@${entry.username}` : entry.name}
+                                    alt={
+                                        entry.username
+                                            ? `@${entry.username}`
+                                            : entry.name
+                                    }
                                 />
                                 <AvatarFallback>
                                     {getInitials(entry.username ?? entry.name)}
@@ -555,7 +664,12 @@ function MobileLeaderboardCards({
                                         @{entry.username ?? 'unknown'}
                                     </span>
                                     {isCurrentUser ? (
-                                        <Badge variant="secondary" className="shrink-0 text-xs">You</Badge>
+                                        <Badge
+                                            variant="secondary"
+                                            className="shrink-0 text-xs"
+                                        >
+                                            You
+                                        </Badge>
                                     ) : null}
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -573,7 +687,9 @@ function MobileLeaderboardCards({
                                 <span className="text-sm font-semibold">
                                     {pointsFormatter.format(entry.points)}
                                 </span>
-                                <span className="ml-0.5 text-xs text-muted-foreground">pts</span>
+                                <span className="ml-0.5 text-xs text-muted-foreground">
+                                    pts
+                                </span>
                             </div>
                         </CardContent>
                     </Card>
