@@ -105,6 +105,14 @@ After the ServerHello, all subsequent server messages are **encrypted** using ke
 
 The client verifies the server's certificate and signature, then sends its own Finished message. Application data can now flow in both directions.
 
+:::check
+question: How many round trips does the TLS 1.3 handshake require before application data can flow?
+type: mcq
+options: ["0 round trips", "1 round trip", "2 round trips", "3 round trips"]
+answer: 1
+hint: TLS 1.3 reduced the handshake from 2-RTT (in TLS 1.2) to a faster process.
+:::
+
 ## Key Exchange: ECDHE
 
 TLS 1.3 exclusively uses **Ephemeral Elliptic Curve Diffie-Hellman (ECDHE)** for key exchange:
@@ -183,6 +191,14 @@ Mitigations:
 - Servers should only accept 0-RTT for safe, idempotent requests
 - Single-use session tickets
 - Strike registers to detect replays
+
+:::check
+question: What does "forward secrecy" mean in the context of TLS?
+type: mcq
+options: ["Future messages are encrypted", "Compromising the server's long-term key cannot decrypt past sessions", "The connection is faster", "The certificate is valid for future dates"]
+answer: 1
+hint: ECDHE generates unique session keys, so even if the private key is later compromised, past traffic remains safe.
+:::
 
 ## TLS 1.3 vs TLS 1.2 Comparison
 
@@ -378,6 +394,14 @@ Certificate:
 | **OV** (Organization Validation) | Medium | Domain + organization identity | Padlock |
 | **EV** (Extended Validation) | High | Domain + legal entity + physical address | Padlock (formerly green bar) |
 
+:::check
+question: What entity signs a website's TLS certificate to establish trust?
+type: mcq
+options: ["The website owner", "The web browser", "A Certificate Authority (CA)", "The DNS server"]
+answer: 2
+hint: This trusted third party verifies the identity of the certificate holder.
+:::
+
 ## Certificate Chain Validation
 
 When a browser receives a certificate, it must validate the entire **chain of trust**:
@@ -480,6 +504,13 @@ OCSP Responder --> Client: "Good" (signed response)
 - The client verifies the stapled response without contacting the CA
 
 This is the recommended approach and is supported by all modern web servers.
+
+:::check
+question: OCSP stapling allows the server to provide certificate revocation status directly to the client, reducing privacy concerns.
+type: true_false
+answer: 0
+hint: With OCSP stapling, the server fetches the OCSP response and includes it in the TLS handshake.
+:::
 
 ## Let's Encrypt and the ACME Protocol
 
@@ -637,6 +668,14 @@ After 20 rounds, the probability of a cheating Peggy succeeding is (1/2)^20 = 0.
 
 **Key insight:** Victor is convinced Peggy knows the secret, but he learns nothing about what the secret word actually is.
 
+:::check
+question: Which of the following is NOT one of the three properties of zero-knowledge proofs?
+type: mcq
+options: ["Completeness", "Soundness", "Confidentiality", "Zero-knowledge"]
+answer: 2
+hint: The three properties are about proving truth, preventing lies, and revealing nothing extra.
+:::
+
 ## Interactive Zero-Knowledge Proofs
 
 ### The Schnorr Identification Protocol
@@ -752,6 +791,13 @@ zk-SNARKs require a **trusted setup ceremony** that generates public parameters:
 - **zkRollups**: Ethereum scaling solutions (zkSync, StarkNet, Polygon zkEVM)
 - **Identity verification**: Prove you are over 18 without revealing your age
 - **Compliance**: Prove a transaction is legal without revealing details
+
+:::check
+question: What does the 'S' in zk-SNARKs stand for?
+type: fill_blank
+answer: Succinct
+hint: It refers to the fact that the proofs are very small and quick to verify.
+:::
 
 ## zk-STARKs
 

@@ -1,4 +1,5 @@
 import { useForm } from '@inertiajs/react';
+import { Loader2, TriangleAlert, Upload, Link } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
     store as storeTask,
@@ -40,6 +41,8 @@ const TASK_TYPE_OPTIONS: ComboboxOption[] = [
     { value: 'quiz', label: 'Quiz' },
 ];
 
+type VideoSource = 'url' | 'upload';
+
 interface TaskFormSheetProps {
     mode: 'create' | 'edit';
     open: boolean;
@@ -71,6 +74,8 @@ export function TaskFormSheet({
     const fallbackLessonId = Number(lessonOptions[0]?.value ?? 0);
     const fallbackCourseId = Number(courseOptions[0]?.value ?? selectedCourseId ?? 0);
 
+    const [videoSource, setVideoSource] = useState<VideoSource>('url');
+
     const form = useForm<TaskFormData>({
         lesson_id:
             selectedLessonId > 0
@@ -81,6 +86,7 @@ export function TaskFormSheet({
         type: 'video',
         minutes: 10,
         video_url: '',
+        video_file: null,
         document: null,
         quiz_questions: [createEmptyQuizQuestion()],
     });
@@ -94,6 +100,7 @@ export function TaskFormSheet({
                 type: task.type as TaskType,
                 minutes: task.minutes,
                 video_url: task.video_url ?? '',
+                video_file: null,
                 document: null,
                 quiz_questions:
                     task.quiz_questions.length > 0
@@ -101,6 +108,7 @@ export function TaskFormSheet({
                         : [createEmptyQuizQuestion()],
             });
             form.clearErrors();
+            setVideoSource('url');
         }
 
         if (mode === 'create' && open) {
@@ -114,10 +122,12 @@ export function TaskFormSheet({
                 type: 'video',
                 minutes: 10,
                 video_url: '',
+                video_file: null,
                 document: null,
                 quiz_questions: [createEmptyQuizQuestion()],
             });
             form.clearErrors();
+            setVideoSource('url');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fallbackLessonId, mode, open, selectedLessonId, task]);
@@ -159,6 +169,7 @@ export function TaskFormSheet({
 
         if (selectedType !== 'video') {
             form.setData('video_url', '');
+            form.setData('video_file', null);
         }
 
         if (selectedType !== 'read') {
@@ -167,6 +178,15 @@ export function TaskFormSheet({
 
         if (selectedType !== 'quiz') {
             form.setData('quiz_questions', [createEmptyQuizQuestion()]);
+        }
+    };
+
+    const handleVideoSourceChange = (source: VideoSource) => {
+        setVideoSource(source);
+        if (source === 'url') {
+            form.setData('video_file', null);
+        } else {
+            form.setData('video_url', '');
         }
     };
 
@@ -208,6 +228,12 @@ export function TaskFormSheet({
             form.setData('lesson_id', Number(lessonFromSelectedCourse.value));
         }
     };
+
+    // Determine video processing status for display in edit mode
+    const videoProcessingStatus = task?.video_processing_status;
+    const isVideoProcessing = videoProcessingStatus === 'pending' || videoProcessingStatus === 'processing';
+    const isVideoFailed = videoProcessingStatus === 'failed';
+    const isVideoReady = videoProcessingStatus === 'ready' || videoProcessingStatus === 'converted';
 
     return (
         <Dialog
@@ -320,19 +346,95 @@ export function TaskFormSheet({
                     </Field>
 
                     {form.data.type === 'video' ? (
-                        <Field>
-                            <FieldLabel htmlFor={`${mode}-task-video-url`}>Video URL</FieldLabel>
-                            <FieldContent>
-                            <Input
-                                id={`${mode}-task-video-url`}
-                                value={form.data.video_url}
-                                onChange={(e) =>
-                                    form.setData('video_url', e.target.value)
-                                }
-                            />
-                                <FieldError>{form.errors.video_url}</FieldError>
-                            </FieldContent>
-                        </Field>
+                        <>
+                            <Field>
+                                <FieldLabel>Video Source</FieldLabel>
+                                <FieldContent>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant={videoSource === 'url' ? 'default' : 'outline'}
+                                            onClick={() => handleVideoSourceChange('url')}
+                                        >
+                                            <Link className="mr-1.5 size-4" />
+                                            YouTube URL
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant={videoSource === 'upload' ? 'default' : 'outline'}
+                                            onClick={() => handleVideoSourceChange('upload')}
+                                        >
+                                            <Upload className="mr-1.5 size-4" />
+                                            Upload File
+                                        </Button>
+                                    </div>
+                                </FieldContent>
+                            </Field>
+
+                            {videoSource === 'url' ? (
+                                <Field>
+                                    <FieldLabel htmlFor={`${mode}-task-video-url`}>Video URL</FieldLabel>
+                                    <FieldContent>
+                                        <Input
+                                            id={`${mode}-task-video-url`}
+                                            value={form.data.video_url}
+                                            placeholder="https://youtu.be/..."
+                                            onChange={(e) =>
+                                                form.setData('video_url', e.target.value)
+                                            }
+                                        />
+                                        <FieldError>{form.errors.video_url}</FieldError>
+                                    </FieldContent>
+                                </Field>
+                            ) : (
+                                <Field>
+                                    <FieldLabel htmlFor={`${mode}-task-video-file`}>Video File</FieldLabel>
+                                    <FieldContent>
+                                        <Input
+                                            id={`${mode}-task-video-file`}
+                                            type="file"
+                                            accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                                            onChange={(e) => {
+                                                form.setData(
+                                                    'video_file',
+                                                    e.currentTarget.files?.[0] ?? null,
+                                                );
+                                            }}
+                                        />
+                                        <FieldDescription>
+                                            Supported formats: MP4, WebM, MOV, AVI. Max size: 500MB.
+                                        </FieldDescription>
+                                        <FieldError>{form.errors.video_file}</FieldError>
+                                    </FieldContent>
+                                </Field>
+                            )}
+
+                            {/* Video processing status indicator (edit mode) */}
+                            {!isCreate && task?.type === 'video' && videoProcessingStatus ? (
+                                <div className="rounded-lg border p-3">
+                                    {isVideoProcessing ? (
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Loader2 className="size-4 animate-spin" />
+                                            {videoProcessingStatus === 'pending'
+                                                ? 'Video is queued for processing...'
+                                                : 'Converting video...'}
+                                        </div>
+                                    ) : isVideoFailed ? (
+                                        <div className="flex items-center gap-2 text-sm text-destructive">
+                                            <TriangleAlert className="size-4" />
+                                            Video processing failed. Try re-uploading.
+                                        </div>
+                                    ) : isVideoReady ? (
+                                        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                                            <span className="size-2 rounded-full bg-green-500" />
+                                            Video is ready for playback.
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : null}
+                        </>
                     ) : null}
 
                     {form.data.type === 'read' ? (

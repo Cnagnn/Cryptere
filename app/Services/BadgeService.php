@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Events\BadgeEarned;
 use App\Models\Badge;
 use App\Models\ChallengeSubmission;
+use App\Models\CtfSubmission;
+use App\Models\Discussion;
 use App\Models\Enrollment;
 use App\Models\LabVisit;
 use App\Models\LessonProgress;
@@ -89,6 +91,8 @@ class BadgeService
             'streak_days' => $this->checkStreakDays($user, $badge->criteria_value),
             'labs_visited' => $this->checkLabsVisited($user, $badge->criteria_value),
             'points_earned' => $this->checkPointsEarned($user, $badge->criteria_value),
+            'first_discussion' => $this->checkFirstDiscussion($user),
+            'ctf_flag_captured' => $this->checkCtfFlagCaptured($user, $badge->criteria_value),
             default => false,
         };
     }
@@ -164,6 +168,20 @@ class BadgeService
     private function checkPointsEarned(User $user, int $required): bool
     {
         return ($user->points ?? 0) >= $required;
+    }
+
+    private function checkFirstDiscussion(User $user): bool
+    {
+        return Discussion::query()->whereBelongsTo($user)->exists();
+    }
+
+    private function checkCtfFlagCaptured(User $user, int $required): bool
+    {
+        return CtfSubmission::query()
+            ->whereBelongsTo($user)
+            ->where('is_correct', true)
+            ->distinct('ctf_flag_id')
+            ->count('ctf_flag_id') >= $required;
     }
 
     /**

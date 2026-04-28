@@ -4,6 +4,8 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { InstallPrompt } from '@/components/install-prompt';
+import { OfflineIndicator } from '@/components/offline-indicator';
 import type { AppLayoutProps } from '@/types';
 
 export default function AppSidebarLayout({
@@ -14,6 +16,7 @@ export default function AppSidebarLayout({
 
     return (
         <AppShell variant="sidebar">
+            <OfflineIndicator />
             <SkipToContent />
             <AppSidebar />
             <AppContent variant="sidebar" className="overflow-x-hidden">
@@ -23,6 +26,7 @@ export default function AppSidebarLayout({
                 </main>
             </AppContent>
             <AchievementToast />
+            <InstallPrompt />
             <RouteAnnouncer />
         </AppShell>
     );

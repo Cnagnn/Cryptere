@@ -215,6 +215,22 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the discussions created by the user.
+     */
+    public function discussions(): HasMany
+    {
+        return $this->hasMany(Discussion::class);
+    }
+
+    /**
+     * Get the discussion replies created by the user.
+     */
+    public function discussionReplies(): HasMany
+    {
+        return $this->hasMany(DiscussionReply::class);
+    }
+
+    /**
      * Get the story chapters unlocked by the user.
      */
     public function unlockedChapters(): BelongsToMany

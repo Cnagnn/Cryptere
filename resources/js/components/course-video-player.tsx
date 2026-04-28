@@ -1,3 +1,4 @@
+import { Loader2, TriangleAlert } from 'lucide-react';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { useEffect, useMemo, useRef } from 'react';
@@ -40,11 +41,15 @@ function resolvePlayerSource(url: string): PlayerSource {
     }
 }
 
+type VideoProcessingStatus = 'pending' | 'processing' | 'ready' | 'converted' | 'failed' | null;
+
 export function VideoPlayer({
     url,
+    processingStatus,
     onEnded,
 }: {
     url: string;
+    processingStatus?: VideoProcessingStatus;
     onEnded?: () => void;
 }) {
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -54,6 +59,42 @@ export function VideoPlayer({
     useEffect(() => {
         onEndedRef.current = onEnded;
     }, [onEnded]);
+
+    // Show processing indicator
+    if (processingStatus === 'pending' || processingStatus === 'processing') {
+        return (
+            <div className="overflow-hidden rounded-xl border bg-black">
+                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 p-6 text-center">
+                    <Loader2 className="size-8 animate-spin text-muted-foreground" />
+                    <div className="text-sm text-muted-foreground">
+                        {processingStatus === 'pending'
+                            ? 'Video is queued for processing...'
+                            : 'Video is being converted...'}
+                    </div>
+                    <div className="text-xs text-muted-foreground/60">
+                        This may take a few minutes. The page will update automatically when ready.
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (processingStatus === 'failed') {
+        return (
+            <div className="overflow-hidden rounded-xl border bg-black">
+                <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 p-6 text-center">
+                    <TriangleAlert className="size-8 text-destructive" />
+                    <div className="text-sm text-destructive">
+                        Video processing failed
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        Please try re-uploading the video or contact an administrator.
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     useEffect(() => {
         if (!containerRef.current || source.kind === 'unsupported') {

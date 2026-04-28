@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpenCheck,
+    Flag,
     FlaskConical,
     LayoutGrid,
     Menu,
@@ -66,6 +67,11 @@ const mainNavItems: NavItem[] = [
         title: 'Challenges',
         href: challengesIndex(),
         icon: Swords,
+    },
+    {
+        title: 'CTF Events',
+        href: '/ctf',
+        icon: Flag,
     },
     {
         title: 'Story',

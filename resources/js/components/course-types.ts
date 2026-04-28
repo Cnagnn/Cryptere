@@ -36,6 +36,8 @@ export type TaskRow = {
     description: string;
     minutes: number;
     video_url: string | null;
+    video_processing_status?: string | null;
+    video_mp4_url?: string | null;
     document_name?: string | null;
     conversion_status?: string | null;
     pdf_url?: string | null;
@@ -79,6 +81,7 @@ export type TaskFormData = {
     type: TaskType;
     minutes: number;
     video_url: string;
+    video_file: File | null;
     document: File | null;
     quiz_questions: QuizQuestionForm[];
 };

@@ -204,4 +204,17 @@ return [
     'quiz_questions_per_attempt' => 4,
     'quiz_retry_xp_multipliers' => [1.0, 0.5, 0.25, 0.1],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Discussion Forum XP
+    |--------------------------------------------------------------------------
+    |
+    | XP awarded for first-time discussion contributions.
+    | - discussion_first_post_xp: awarded when user creates their first discussion
+    | - discussion_first_reply_xp: awarded when user posts their first reply
+    |
+    */
+    'discussion_first_post_xp' => 5,
+    'discussion_first_reply_xp' => 3,
+
 ];

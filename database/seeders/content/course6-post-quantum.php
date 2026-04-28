@@ -68,6 +68,13 @@ In 1994, mathematician **Peter Shor** published a quantum algorithm that can fac
 
 The critical insight is that Shor's algorithm specifically targets the **asymmetric** (public-key) cryptographic primitives that enable key exchange, digital signatures, and public-key encryption.
 
+:::check
+question: Which quantum algorithm can factor large numbers exponentially faster than classical computers, threatening RSA?
+type: fill_blank
+answer: Shor's Algorithm
+hint: Named after mathematician Peter Shor, who published it in 1994.
+:::
+
 ## Grover's Algorithm
 
 **Grover's algorithm** (1996) provides a quadratic speedup for unstructured search problems. For symmetric cryptography, this means:
@@ -87,6 +94,14 @@ A **Cryptographically Relevant Quantum Computer (CRQC)** — one capable of runn
 As of 2024, the largest quantum computers have approximately 1,000-1,200 physical qubits with high error rates. Expert estimates for a CRQC range from **2030 to 2045**, though breakthroughs could accelerate this timeline.
 
 The concept of **"Q-Day"** refers to the day a quantum computer first breaks a widely-used cryptographic system. Even before Q-Day, the **"Harvest Now, Decrypt Later" (HNDL)** attack is already a concern: adversaries can intercept and store encrypted communications today, then decrypt them once quantum computers become available. This makes the migration to post-quantum cryptography urgent for data with long-term confidentiality requirements.
+
+:::check
+question: Grover's algorithm reduces the effective security of symmetric encryption keys by half. What key size should you use for AES to maintain 128-bit security against quantum attacks?
+type: mcq
+options: ["128 bits", "192 bits", "256 bits", "512 bits"]
+answer: 2
+hint: If Grover's halves the effective security, you need to double the key size.
+:::
 
 ## NIST PQC Standardization
 
@@ -151,6 +166,13 @@ Every point = a·b1 + b·b2 where a,b are integers
 
 The security of lattice-based cryptography relies on the difficulty of certain problems on high-dimensional lattices, particularly the **Shortest Vector Problem (SVP)** and the **Closest Vector Problem (CVP)**. In hundreds of dimensions, these problems are believed to be hard even for quantum computers.
 
+:::check
+question: A lattice in cryptography is a regular grid of points in multi-dimensional space.
+type: true_false
+answer: 0
+hint: Think of it as an infinite set of points arranged in a repeating pattern.
+:::
+
 ## The Learning With Errors (LWE) Problem
 
 The **Learning With Errors (LWE)** problem, introduced by Oded Regev in 2005, is the foundation of modern lattice-based cryptography. It can be stated as follows:
@@ -212,6 +234,14 @@ Standard LWE requires large matrices, leading to large key sizes. Two important 
 - RSA-2048 public key: 256 bytes
 - Kyber-768 public key: 1,184 bytes (4.6× larger)
 - But Kyber is **orders of magnitude faster** than RSA for key exchange
+
+:::check
+question: CRYSTALS-Kyber is NIST's selected post-quantum algorithm for which purpose?
+type: mcq
+options: ["Digital signatures", "Key encapsulation (encryption)", "Hash functions", "Random number generation"]
+answer: 1
+hint: Kyber is standardized as ML-KEM (Module-Lattice Key Encapsulation Mechanism).
+:::
 
 ## CRYSTALS-Dilithium (FIPS 204 — ML-DSA)
 
@@ -348,6 +378,13 @@ The "s" variants optimize for **small signatures** (slower signing), while "f" v
 - **Large signatures**: 7-30 KB compared to 2-4 KB for Dilithium
 - **Slower signing**: Especially the small-signature variants
 
+:::check
+question: SPHINCS+ is a hash-based signature scheme whose security relies only on the security of the underlying hash function.
+type: true_false
+answer: 0
+hint: This is one of its main advantages — minimal security assumptions.
+:::
+
 ## Code-Based Cryptography
 
 Code-based cryptography derives security from the difficulty of decoding random linear error-correcting codes. The most famous code-based system is the **McEliece cryptosystem**.
@@ -381,6 +418,14 @@ The enormous public key size is McEliece's primary drawback. While the ciphertex
 ### Goppa Codes
 
 **Goppa codes** are the specific family of error-correcting codes used in the classic McEliece system. They are algebraic geometry codes defined over finite fields, with efficient decoding algorithms (Patterson's algorithm). The security of McEliece relies on the assumption that distinguishing a Goppa code from a random code is computationally hard.
+
+:::check
+question: Which PQC family uses the difficulty of decoding random linear codes as its security basis?
+type: mcq
+options: ["Lattice-based", "Hash-based", "Code-based", "Multivariate"]
+answer: 2
+hint: The McEliece cryptosystem from 1978 is the most well-known example.
+:::
 
 ## Comparison of PQC Families
 
@@ -469,6 +514,14 @@ Data encrypted today with RSA/ECC may be
 readable by adversaries in 10-20 years.
 ```
 
+:::check
+question: What is the "harvest now, decrypt later" threat?
+type: mcq
+options: ["Stealing encryption keys from servers", "Collecting encrypted data today to decrypt with future quantum computers", "Using quantum computers to mine cryptocurrency", "Breaking hash functions with brute force"]
+answer: 1
+hint: Adversaries may store intercepted encrypted traffic now, waiting for quantum capabilities.
+:::
+
 ## Hybrid Encryption: The Bridge Strategy
 
 Rather than immediately replacing all classical cryptography, the recommended approach is **hybrid encryption** — combining a classical algorithm with a post-quantum algorithm so that the system remains secure even if one of the two is broken.
@@ -533,6 +586,13 @@ class CryptoProvider:
 # Phase 2: kem='kyber768', sig='dilithium3'
 # Phase 3: kem='kyber1024', sig='dilithium5'  (if needed)
 ```
+
+:::check
+question: In hybrid post-quantum encryption, a classical algorithm and a PQC algorithm are combined so that the system remains secure even if one of them is broken.
+type: true_false
+answer: 0
+hint: This belt-and-suspenders approach provides security against both classical and quantum attacks.
+:::
 
 ## Real-World PQC Deployments
 

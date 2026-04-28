@@ -74,6 +74,14 @@ username=alice&password=MyS3cretP@ss!
 (unintelligible encrypted bytes)
 ```
 
+:::check
+question: What protocol does your browser use to securely communicate with websites (shown by the padlock icon)?
+type: mcq
+options: ["HTTP", "FTP", "TLS/HTTPS", "SMTP"]
+answer: 2
+hint: Look for the protocol that adds security to regular web browsing.
+:::
+
 ### End-to-End Encryption (E2EE)
 
 Applications like **Signal**, **WhatsApp**, and **iMessage** use end-to-end encryption, meaning that only the sender and recipient can read the messages. Not even the service provider can decrypt them.
@@ -125,6 +133,13 @@ When cryptography fails or is improperly implemented, the consequences can be de
 
 According to IBM's 2023 Cost of a Data Breach Report, the **average cost of a data breach is $4.45 million**, with healthcare breaches averaging **$10.93 million**.
 
+:::check
+question: Cryptographic hash functions are used to store passwords securely so they are never kept in plain text.
+type: true_false
+answer: 0
+hint: Think about what bcrypt does — it converts passwords into irreversible hashes.
+:::
+
 ## Key Cryptographic Concepts
 
 ### Plaintext and Ciphertext
@@ -149,6 +164,14 @@ The foundation of information security rests on three pillars:
 3. **Availability** — Ensuring data and systems are accessible when needed
    - Achieved through: redundancy, DDoS protection, backup systems
    - Example: Your bank's website remains accessible during peak hours
+
+:::check
+question: What does the 'C' in CIA triad stand for?
+type: mcq
+options: ["Cryptography", "Confidentiality", "Certification", "Compliance"]
+answer: 1
+hint: It's about keeping data secret from unauthorized parties.
+:::
 
 ### Symmetric vs Asymmetric Encryption (Preview)
 
@@ -270,6 +293,14 @@ decrypted = cipher.decrypt(ciphertext)
 print(f"Decrypted: {decrypted}")
 ```
 
+:::check
+question: What is the primary tool used to achieve confidentiality?
+type: mcq
+options: ["Hash functions", "Encryption", "Firewalls", "Backups"]
+answer: 1
+hint: Think about what converts readable data into unreadable ciphertext.
+:::
+
 #### Confidentiality Threats
 
 | Threat | Description | Mitigation |
@@ -326,6 +357,14 @@ else:
     print("Integrity violation: message was modified!")
 ```
 
+:::check
+question: Which cryptographic tool is primarily used to verify data integrity?
+type: mcq
+options: ["Symmetric encryption", "Access controls", "Hash functions", "Firewalls"]
+answer: 2
+hint: These produce a fixed-size fingerprint of data that changes if even one bit is modified.
+:::
+
 ### Availability
 
 **Availability** ensures that systems and data are accessible to authorized users when needed.
@@ -343,6 +382,13 @@ else:
 | **Primary tools** | Encryption (AES, RSA) | Hash functions, MACs, signatures |
 | **Threat** | Eavesdropping, data theft | Tampering, corruption |
 | **Question answered** | "Can anyone else read this?" | "Has this been changed?" |
+
+:::check
+question: Encryption alone guarantees both confidentiality and integrity.
+type: true_false
+answer: 1
+hint: Think about what happens if an attacker flips bits in ciphertext without knowing the key.
+:::
 
 ### Important Distinction
 
@@ -461,6 +507,13 @@ Consider building a house. You would not start construction without blueprints, 
 | **D**enial of Service | Availability | Making a system unavailable |
 | **E**levation of Privilege | Authorization | Gaining unauthorized access |
 
+:::check
+question: What does the 'S' in STRIDE stand for?
+type: fill_blank
+answer: Spoofing
+hint: It involves pretending to be someone or something else.
+:::
+
 ### Spoofing
 
 Spoofing occurs when an attacker pretends to be another user, system, or component.
@@ -545,6 +598,14 @@ Let us walk through creating a threat model for a simple **web-based password ma
                             +--------------+
 ```
 
+:::check
+question: In the STRIDE framework, which category does a DDoS attack fall under?
+type: mcq
+options: ["Spoofing", "Tampering", "Denial of Service", "Elevation of Privilege"]
+answer: 2
+hint: This type of attack aims to make a system unavailable to legitimate users.
+:::
+
 ### Step 2: Identify Trust Boundaries
 
 Trust boundaries are points where data crosses between different trust levels:
@@ -578,6 +639,13 @@ Impact
            Low     Medium    High
                 Likelihood
 ```
+
+:::check
+question: Trust boundaries in threat modeling are points where data crosses between different trust levels.
+type: true_false
+answer: 0
+hint: Think about where data moves from a trusted zone to an untrusted zone.
+:::
 
 ## Other Threat Modeling Frameworks
 

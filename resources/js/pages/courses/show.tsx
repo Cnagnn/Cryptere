@@ -13,7 +13,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { DiscussionPanel } from '@/components/discussion-panel';
 import { QuizPanel } from '@/components/course-quiz-panel';
+import { LessonContent } from '@/components/lesson-content';
 import type { QuizSubmission } from '@/components/course-quiz-panel';
 import { VideoPlayer } from '@/components/course-video-player';
 import {
@@ -71,6 +73,7 @@ type LessonTask = {
     minutes: number;
     description: string;
     videoUrl: string | null;
+    videoProcessingStatus: string | null;
     pdfUrl: string | null;
     pdfName: string | null;
     isPublished: boolean;
@@ -98,6 +101,7 @@ type ServerTask = {
     title: string;
     minutes: number;
     videoUrl: string | null;
+    videoProcessingStatus: string | null;
     documentName: string | null;
     conversionStatus: string | null;
     pdfUrl: string | null;
@@ -173,6 +177,7 @@ function mapServerLessonsToLessonData(
                 minutes: Math.max(1, task.minutes || 1),
                 description: defaultTaskDescription(task.type),
                 videoUrl: task.videoUrl,
+                videoProcessingStatus: task.videoProcessingStatus ?? null,
                 pdfUrl: task.pdfUrl,
                 pdfName: task.documentName,
                 isPublished: task.isPublished,
@@ -848,10 +853,11 @@ export default function CourseShow({
                                         </EmptyHeader>
                                     </Empty>
                                 ) : selectedTask.type === 'video' ? (
-                                    selectedTask.videoUrl ? (
+                                    selectedTask.videoUrl || selectedTask.videoProcessingStatus === 'pending' || selectedTask.videoProcessingStatus === 'processing' || selectedTask.videoProcessingStatus === 'failed' ? (
                                         <VideoPlayer
                                             key={selectedTask.id}
-                                            url={selectedTask.videoUrl}
+                                            url={selectedTask.videoUrl ?? ''}
+                                            processingStatus={selectedTask.videoProcessingStatus as 'pending' | 'processing' | 'ready' | 'converted' | 'failed' | null}
                                             onEnded={handleVideoEnded}
                                         />
                                     ) : (
@@ -895,19 +901,30 @@ export default function CourseShow({
                                                 }
                                             />
                                         </div>
-                                    ) : (
-                                        <Empty className="px-4 py-10">
-                                            <EmptyHeader>
-                                                <EmptyTitle>
-                                                    PDF URL missing
-                                                </EmptyTitle>
-                                                <EmptyDescription>
-                                                    This task has no configured
-                                                    PDF URL.
-                                                </EmptyDescription>
-                                            </EmptyHeader>
-                                        </Empty>
-                                    )
+                                    ) : (() => {
+                                        const serverLesson = serverLessons.find(
+                                            (l) => l.id === selectedLesson?.id,
+                                        );
+                                        return serverLesson?.content?.trim() ? (
+                                            <div className="max-h-[calc(100vh-12rem)] overflow-y-auto rounded-xl border bg-background p-6">
+                                                <LessonContent
+                                                    content={serverLesson.content}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <Empty className="px-4 py-10">
+                                                <EmptyHeader>
+                                                    <EmptyTitle>
+                                                        No content available
+                                                    </EmptyTitle>
+                                                    <EmptyDescription>
+                                                        This task has no
+                                                        configured content yet.
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        );
+                                    })()
                                 ) : (
                                     <QuizPanel
                                         key={`${selectedTask.id}-${selectedTask.quizQuestions.length}`}
@@ -958,6 +975,14 @@ export default function CourseShow({
                                 ) : null}
                             </CardContent>
                         </Card>
+
+                        {/* Discussion panel for current lesson */}
+                        {selectedLessonId && isEnrolled && (
+                            <DiscussionPanel
+                                discussableType="lesson"
+                                discussableId={selectedLessonId}
+                            />
+                        )}
                     </div>
                 </section>
             </div>

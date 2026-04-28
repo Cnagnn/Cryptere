@@ -2,6 +2,7 @@ import { setLayoutProps } from '@inertiajs/react';
 import { useMemo } from 'react';
 
 import { CompletedChallengeView } from '@/components/challenges/completed-challenge-view';
+import { DiscussionPanel } from '@/components/discussion-panel';
 import { LegacySpeedRoundView } from '@/components/challenges/legacy-speed-round-view';
 import { QuizModeView } from '@/components/challenges/quiz-mode-view';
 import { dashboard } from '@/routes';
@@ -51,30 +52,51 @@ export default function ChallengesShow({
     // Challenge already completed — show result view
     if (isQuizMode && challenge.hasCompletedSession) {
         return (
-            <CompletedChallengeView
-                challenge={challenge}
-                submissionSummary={submissionSummary}
-            />
+            <>
+                <CompletedChallengeView
+                    challenge={challenge}
+                    submissionSummary={submissionSummary}
+                />
+                <DiscussionPanel
+                    discussableType="challenge"
+                    discussableId={challenge.id}
+                    className="mx-auto max-w-4xl px-4"
+                />
+            </>
         );
     }
 
     if (isQuizMode && quizSession !== null) {
         return (
-            <QuizModeView
-                challenge={challenge}
-                quizSession={quizSession}
-                submissionSummary={submissionSummary}
-                autoStart={autoStart}
-            />
+            <>
+                <QuizModeView
+                    challenge={challenge}
+                    quizSession={quizSession}
+                    submissionSummary={submissionSummary}
+                    autoStart={autoStart}
+                />
+                <DiscussionPanel
+                    discussableType="challenge"
+                    discussableId={challenge.id}
+                    className="mx-auto max-w-4xl px-4"
+                />
+            </>
         );
     }
 
     return (
-        <LegacySpeedRoundView
-            challenge={challenge}
-            submissionSummary={submissionSummary}
-            recentSubmissions={recentSubmissions}
-            relatedChallenges={relatedChallenges}
-        />
+        <>
+            <LegacySpeedRoundView
+                challenge={challenge}
+                submissionSummary={submissionSummary}
+                recentSubmissions={recentSubmissions}
+                relatedChallenges={relatedChallenges}
+            />
+            <DiscussionPanel
+                discussableType="challenge"
+                discussableId={challenge.id}
+                className="mx-auto max-w-4xl px-4"
+            />
+        </>
     );
 }

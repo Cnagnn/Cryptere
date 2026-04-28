@@ -293,6 +293,32 @@ class BadgeSeeder extends Seeder
                 'criteria_value' => 10000,
                 'sort_order' => 73,
             ],
+
+            // Community badges
+            [
+                'slug' => 'community-starter',
+                'name' => 'Community Starter',
+                'description' => 'Post your first discussion.',
+                'icon' => 'message-circle',
+                'category' => Badge::CATEGORY_SPECIAL,
+                'tier' => Badge::TIER_BRONZE,
+                'criteria_type' => 'first_discussion',
+                'criteria_value' => 1,
+                'sort_order' => 42,
+            ],
+
+            // CTF badges
+            [
+                'slug' => 'ctf-participant',
+                'name' => 'CTF Warrior',
+                'description' => 'Capture your first flag in a CTF event.',
+                'icon' => 'flag',
+                'category' => Badge::CATEGORY_SPECIAL,
+                'tier' => Badge::TIER_SILVER,
+                'criteria_type' => 'ctf_flag_captured',
+                'criteria_value' => 1,
+                'sort_order' => 43,
+            ],
         ];
 
         foreach ($badges as $badge) {

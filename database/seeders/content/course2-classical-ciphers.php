@@ -77,6 +77,14 @@ Shift:     -3 -3 -3 -3 -3    -3 -3 -3 -3 -3
 Plaintext:  H  E  L  L  O     W  O  R  L  D
 ```
 
+:::check
+question: If you encrypt "HELLO" with a Caesar cipher shift of 3, what is the first letter of the ciphertext?
+type: mcq
+options: ["J", "K", "I", "G"]
+answer: 1
+hint: H is the 8th letter (index 7). Add 3 to get index 10, which is K.
+:::
+
 ## Mathematical Notation
 
 The Caesar cipher can be expressed using **modular arithmetic**. Assign each letter a number (A=0, B=1, ..., Z=25):
@@ -152,6 +160,13 @@ console.log(caesarEncrypt("HELLO WORLD", 3));  // KHOOR ZRUOG
 
 Note: In JavaScript we use `(... % 26 + 26) % 26` to handle negative numbers correctly.
 
+:::check
+question: How many possible keys does the Caesar cipher have (excluding shift of 0)?
+type: fill_blank
+answer: 25
+hint: The alphabet has 26 letters, and a shift of 0 means no encryption.
+:::
+
 ## Breaking the Caesar Cipher
 
 ### Brute Force Attack
@@ -176,6 +191,13 @@ A human can easily spot the correct plaintext among 25 options. A computer can d
 Even without brute force, the Caesar cipher is vulnerable to **frequency analysis**. Since each letter always maps to the same cipher letter, the frequency distribution of the ciphertext mirrors the plaintext — just shifted.
 
 In English, **E** is the most common letter (~12.7%). If the most common letter in the ciphertext is **H**, then the shift is likely H - E = 3.
+
+:::check
+question: ROT13 is a special case of the Caesar cipher with a shift of 13, and applying it twice returns the original text.
+type: true_false
+answer: 0
+hint: Since 13 + 13 = 26, and the alphabet has 26 letters, double application wraps back.
+:::
 
 ## Special Case: ROT13
 
@@ -342,6 +364,14 @@ encrypted = vigenere_encrypt("HELLO WORLD", "KEY")
 print(f"Encrypted: {encrypted}")  # RIJVS UYVJN
 ```
 
+:::check
+question: The Vigenere cipher is classified as which type of cipher?
+type: mcq
+options: ["Monoalphabetic substitution", "Polyalphabetic substitution", "Transposition", "Stream cipher"]
+answer: 1
+hint: It uses multiple different Caesar cipher shifts based on a keyword.
+:::
+
 ## Why Repeating Keys Are Vulnerable
 
 The Vigenere cipher's strength comes from using multiple alphabets. However, when the key is **shorter than the message**, it must be **repeated**, creating exploitable patterns.
@@ -427,6 +457,14 @@ def estimate_key_length(ciphertext, max_key_length=20):
         print(f"Key length {key_len:2d}: IC = {avg_ic:.4f}")
 ```
 
+:::check
+question: The Kasiski examination helps determine what aspect of the Vigenere cipher?
+type: mcq
+options: ["The plaintext language", "The key length", "The encryption algorithm", "The ciphertext frequency"]
+answer: 1
+hint: It looks for repeated sequences in the ciphertext to find patterns related to the key.
+:::
+
 ## Caesar vs Vigenere Comparison
 
 | Feature | Caesar Cipher | Vigenere Cipher |
@@ -496,6 +534,13 @@ Letter  Frequency       Letter  Frequency
 The mnemonic **"ETAOIN SHRDLU"** captures the 12 most common letters in approximate order.
 
 The least common letters are: **J** (0.15%), **X** (0.15%), **Q** (0.10%), **Z** (0.07%).
+
+:::check
+question: What is the most common letter in the English language?
+type: fill_blank
+answer: E
+hint: It appears approximately 12.7% of the time in English text.
+:::
 
 ## How Frequency Analysis Works
 
@@ -603,6 +648,13 @@ def index_of_coincidence(text):
     return ic
 ```
 
+:::check
+question: In frequency analysis, the mnemonic for the 12 most common English letters is "ETAOIN SHRDLU".
+type: true_false
+answer: 0
+hint: This ordering has been established through analysis of large English text corpora.
+:::
+
 ## The Chi-Squared Statistic
 
 The **chi-squared statistic** provides a rigorous way to compare observed frequencies with expected English frequencies:
@@ -636,6 +688,14 @@ def chi_squared(text):
         for i in range(26)
     )
 ```
+
+:::check
+question: What does the Index of Coincidence (IC) measure?
+type: mcq
+options: ["The length of the encryption key", "The probability two random letters from a text are the same", "The number of unique letters in a text", "The encryption strength of a cipher"]
+answer: 1
+hint: It quantifies how non-random a text's letter distribution is.
+:::
 
 ## Why Polyalphabetic Ciphers Resist Frequency Analysis
 

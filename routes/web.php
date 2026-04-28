@@ -15,8 +15,10 @@ use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Course\EnrollmentController;
 use App\Http\Controllers\Course\LessonProgressController;
 use App\Http\Controllers\Course\QuizSubmissionController;
+use App\Http\Controllers\CtfController;
 use App\Http\Controllers\DailyRewardController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DiscussionController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\LeaderboardController;
@@ -127,6 +129,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('story', StoryController::class)->name('story');
     Route::post('story/{chapter}/read', [StoryController::class, 'markAsRead'])->name('story.read');
 
+    // Discussions
+    Route::get('discussions', [DiscussionController::class, 'index'])->name('discussions.index');
+    Route::post('discussions', [DiscussionController::class, 'store'])->middleware('throttle:10,1')->name('discussions.store');
+    Route::get('discussions/{discussion}', [DiscussionController::class, 'show'])->name('discussions.show');
+    Route::post('discussions/{discussion}/replies', [DiscussionController::class, 'reply'])->middleware('throttle:20,1')->name('discussions.reply');
+    Route::post('discussions/upvote', [DiscussionController::class, 'upvote'])->middleware('throttle:30,1')->name('discussions.upvote');
+    Route::patch('discussions/{discussion}/pin', [DiscussionController::class, 'togglePin'])->middleware('admin')->name('discussions.pin');
+    Route::delete('discussions/{discussion}', [DiscussionController::class, 'destroy'])->name('discussions.destroy');
+
+    // CTF Events
+    Route::get('ctf', [CtfController::class, 'index'])->name('ctf.index');
+    Route::get('ctf/{event:slug}', [CtfController::class, 'show'])->name('ctf.show');
+    Route::post('ctf/{event:slug}/register', [CtfController::class, 'register'])->middleware('throttle:5,1')->name('ctf.register');
+    Route::post('ctf/{event:slug}/flags/{flag}/submit', [CtfController::class, 'submitFlag'])->middleware('throttle:challenge-submit')->name('ctf.submit');
+    Route::get('ctf/{event:slug}/leaderboard', [CtfController::class, 'leaderboard'])->name('ctf.leaderboard');
+
 });
 
 // Public certificate verification — no auth required
@@ -155,6 +173,7 @@ Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin
     Route::post('courses/tasks/reorder', [AdminTaskController::class, 'reorder'])->name('courses.tasks.reorder');
     Route::patch('courses/tasks/{task}', [AdminTaskController::class, 'update'])->name('courses.tasks.update');
     Route::delete('courses/tasks/{task}', [AdminTaskController::class, 'destroy'])->name('courses.tasks.destroy');
+    Route::get('courses/tasks/{task}/video-status', [AdminTaskController::class, 'videoStatus'])->name('courses.tasks.video-status');
 
     // Challenges
     Route::get('challenges', [AdminChallengeController::class, 'index'])->name('challenges.index');

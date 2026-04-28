@@ -74,6 +74,14 @@ Note: Collisions must exist mathematically (since the input space is infinite bu
 - Second-preimage resistance implies preimage resistance
 - The reverse is not necessarily true
 
+:::check
+question: Which property of hash functions means you cannot find the original input from the hash output?
+type: mcq
+options: ["Collision resistance", "Preimage resistance", "Avalanche effect", "Second-preimage resistance"]
+answer: 1
+hint: This is also called the one-way property of hash functions.
+:::
+
 ## The Avalanche Effect
 
 A good hash function exhibits the **avalanche effect**: a tiny change in the input produces a dramatically different output. Ideally, changing a single bit in the input should flip approximately 50% of the output bits.
@@ -127,6 +135,13 @@ for text in texts:
     digest = hashlib.sha256(text).hexdigest()
     print(f"SHA-256('{text.decode()}') = {digest}")
 ```
+
+:::check
+question: SHA-256 produces a digest that is 256 bits (64 hexadecimal characters) long.
+type: true_false
+answer: 0
+hint: Each hexadecimal character represents 4 bits, so 256 bits = 64 hex characters.
+:::
 
 ## Deprecated Hash Functions
 
@@ -209,6 +224,13 @@ print(f"HMAC: {mac}")
 expected = hmac.new(key, message, hashlib.sha256).hexdigest()
 is_valid = hmac.compare_digest(mac, expected)
 ```
+
+:::check
+question: For password hashing, you should use raw SHA-256 directly.
+type: true_false
+answer: 1
+hint: Dedicated password hashing functions like bcrypt are intentionally slow to resist brute-force attacks.
+:::
 
 ## Birthday Attack and Security Margins
 
@@ -370,6 +392,14 @@ AES operates on 128-bit blocks. To encrypt messages longer than one block, we ne
 
 **AES-GCM** is the recommended mode for most applications because it provides both confidentiality and integrity (authenticated encryption).
 
+:::check
+question: Which AES block cipher mode provides both confidentiality AND integrity?
+type: mcq
+options: ["ECB", "CBC", "CTR", "GCM"]
+answer: 3
+hint: This mode is recommended for most applications because it includes an authentication tag.
+:::
+
 ## Asymmetric Encryption: RSA
 
 ### The Key Exchange Problem
@@ -446,6 +476,14 @@ NIST recommends a minimum of 2048-bit RSA keys (SP 800-57).
 | Key distribution | Requires secure channel | Public key can be shared openly |
 | Use case | Bulk data encryption | Key exchange, signatures |
 | Examples | AES, ChaCha20 | RSA, ECC, DH |
+
+:::check
+question: What mathematical problem does RSA's security rely on?
+type: mcq
+options: ["Discrete logarithm", "Factoring large semiprime numbers", "Elliptic curve computation", "Hash collision finding"]
+answer: 1
+hint: RSA uses the product of two large primes as its modulus.
+:::
 
 ## Hybrid Encryption
 
@@ -634,6 +672,14 @@ RSA signatures are essentially RSA encryption "in reverse":
 
 **RSA-PSS** is recommended for new implementations (RFC 8017).
 
+:::check
+question: In digital signatures, which key is used to create (sign) the signature?
+type: mcq
+options: ["Public key", "Private key", "Session key", "Shared key"]
+answer: 1
+hint: Only the signer should be able to create signatures, so they use the key only they possess.
+:::
+
 ## ECDSA (Elliptic Curve Digital Signature Algorithm)
 
 **ECDSA** provides equivalent security to RSA with much smaller key sizes:
@@ -713,6 +759,13 @@ except Exception:
 | Verification speed | Fast | Medium | Fast |
 | Nonce requirement | Randomized padding | Random (critical!) | Deterministic |
 | Standard | RFC 8017 | FIPS 186-4 | RFC 8032 |
+
+:::check
+question: EdDSA (Ed25519) uses a deterministic nonce, which avoids the critical vulnerability of ECDSA's random nonce requirement.
+type: true_false
+answer: 0
+hint: The PlayStation 3 signing key was compromised because Sony reused a nonce in ECDSA.
+:::
 
 ## Non-Repudiation
 

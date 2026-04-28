@@ -114,6 +114,14 @@ root = build_merkle_tree(transactions)
 print(f"Merkle Root: {root}")
 ```
 
+:::check
+question: In a Merkle tree, what does the root hash represent?
+type: mcq
+options: ["The hash of the first transaction", "A summary hash of all data in the tree", "The block number", "The miner's signature"]
+answer: 1
+hint: The root is computed by hashing pairs of child hashes all the way up the tree.
+:::
+
 ## Merkle Proofs (Proof of Inclusion)
 
 A **Merkle proof** allows you to verify that a specific data block is included in the tree without having all the data. You only need:
@@ -166,6 +174,14 @@ For a tree with N leaves:
 For Bitcoin with ~2000 transactions per block:
 - Only ~11 hashes needed to verify any transaction (log2(2000) is approximately 11)
 - Instead of downloading all 2000 transactions
+
+:::check
+question: For a Merkle tree with 1000 leaves, how many hashes are needed in a Merkle proof?
+type: mcq
+options: ["1000", "500", "About 10", "1"]
+answer: 2
+hint: Merkle proofs have O(log N) complexity. log2(1000) ≈ 10.
+:::
 
 ## Merkle Trees in Bitcoin
 
@@ -367,6 +383,13 @@ mine_block("Block #1: Alice pays Bob 5 BTC", difficulty=4)
 # Typically requires ~65,000 attempts
 ```
 
+:::check
+question: In Proof of Work mining, what value do miners repeatedly change to find a valid block hash?
+type: fill_blank
+answer: nonce
+hint: It's a number included in the block header that miners increment through trial and error.
+:::
+
 ### Why Double SHA-256?
 
 Bitcoin uses **double SHA-256** (SHA-256 applied twice) for mining. This was a design choice by Satoshi Nakamoto, likely to protect against **length extension attacks** that affect single SHA-256.
@@ -451,6 +474,13 @@ PoW mining consumes significant energy:
 - Energy could be used for other purposes
 - Alternative consensus mechanisms achieve similar security with less energy
 - E-waste from specialized mining hardware (ASICs)
+
+:::check
+question: Bitcoin adjusts its mining difficulty every 2016 blocks to maintain an average block time of approximately how many minutes?
+type: fill_blank
+answer: 10
+hint: This is roughly every two weeks at the target rate.
+:::
 
 ## Proof of Work vs Proof of Stake
 
@@ -623,6 +653,13 @@ The **point at infinity** (denoted O or the "zero point") serves as the identity
 - P + O = P (for any point P)
 - P + (-P) = O (a point plus its inverse equals infinity)
 
+:::check
+question: Elliptic Curve Cryptography provides the same security as RSA with much smaller key sizes.
+type: true_false
+answer: 0
+hint: A 256-bit ECC key provides roughly the same security as a 3072-bit RSA key.
+:::
+
 ## Scalar Multiplication
 
 **Scalar multiplication** is the key operation in ECC. Given a point G and an integer k:
@@ -665,6 +702,14 @@ This is computationally infeasible for large k.
 **Reverse direction** (finding k from Q and G): Infeasible — no known efficient algorithm
 
 This one-way property is what makes ECC secure.
+
+:::check
+question: What is the name of the hard mathematical problem that ECC security relies on?
+type: mcq
+options: ["Integer factorization", "Discrete logarithm", "Elliptic Curve Discrete Logarithm Problem (ECDLP)", "Traveling salesman problem"]
+answer: 2
+hint: It involves finding the scalar k given the points G and Q = k * G on an elliptic curve.
+:::
 
 ## The secp256k1 Curve
 

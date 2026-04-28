@@ -7,6 +7,8 @@ use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
 use App\Models\Course;
+use App\Models\CtfEvent;
+use App\Models\CtfFlag;
 use App\Models\Enrollment;
 use App\Models\LabVisit;
 use App\Models\Lesson;
@@ -81,6 +83,9 @@ class ComprehensiveSeeder extends Seeder
 
         // ── 8. Lab visits ──
         $this->seedLabVisits($learner, $members);
+
+        // ── 8b. CTF Events ──
+        $this->seedCtfEvents();
 
         // ── 9. Recent daily activity (last 7 days for weekly chart) ──
         $this->seedRecentDailyActivity($learner, $courses, $challenges);
@@ -1158,5 +1163,134 @@ class ComprehensiveSeeder extends Seeder
         }
 
         $this->command->info("✓ {$totalAwarded} badges awarded across ".count($users).' users.');
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  CTF Events
+    // ─────────────────────────────────────────────────────────
+
+    private function seedCtfEvents(): void
+    {
+        $this->command->info('Seeding CTF events...');
+
+        // Active CTF event
+        $activeEvent = CtfEvent::create([
+            'slug' => 'crypto-ctf-spring-2026',
+            'title' => 'Crypto CTF: Spring 2026',
+            'description' => 'Test your cryptography skills in this timed capture-the-flag event! Solve crypto puzzles, decode messages, and capture flags to climb the leaderboard.',
+            'rules' => "1. Each flag is worth points based on difficulty.\n2. You can attempt each flag unlimited times.\n3. First correct submission earns full points.\n4. Event runs for 7 days.\n5. Top 3 participants earn bonus XP and a special badge.",
+            'starts_at' => now()->subDays(1),
+            'ends_at' => now()->addDays(6),
+            'is_published' => true,
+            'bonus_xp' => 200,
+        ]);
+
+        $flags = [
+            [
+                'title' => 'The Caesar Challenge',
+                'description' => 'Decrypt this message encrypted with a Caesar cipher (shift 3): "FUBSWRJUDSKB LV IXQ". The flag format is CTF{decrypted_message_lowercase_no_spaces}.',
+                'hint' => 'Try shifting each letter back by 3 positions in the alphabet.',
+                'flag_value' => 'CTF{cryptographyisfun}',
+                'points' => 50,
+                'difficulty' => 'beginner',
+                'category' => 'classical',
+                'sort_order' => 1,
+            ],
+            [
+                'title' => 'Hash Detective',
+                'description' => 'This SHA-256 hash represents a very common password: 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8. Find the original word. Flag format: CTF{word}.',
+                'hint' => 'It\'s literally one of the most common passwords in the world. Think simple.',
+                'flag_value' => 'CTF{password}',
+                'points' => 100,
+                'difficulty' => 'intermediate',
+                'category' => 'hashing',
+                'sort_order' => 2,
+            ],
+            [
+                'title' => 'Base64 Layers',
+                'description' => 'This message has been Base64 encoded THREE times: "UTBaR1pITnljSFJ2". Decode all three layers to find the flag.',
+                'hint' => 'Decode it three times using Base64. The result is a common crypto term.',
+                'flag_value' => 'CTF{crypto}',
+                'points' => 75,
+                'difficulty' => 'beginner',
+                'category' => 'encoding',
+                'sort_order' => 3,
+            ],
+            [
+                'title' => 'RSA Small Primes',
+                'description' => 'Given RSA parameters: p=61, q=53, e=17, and ciphertext c=2790. Find the plaintext m. Flag format: CTF{m_value}.',
+                'hint' => 'Calculate n=p*q, φ(n)=(p-1)(q-1), find d such that e*d ≡ 1 mod φ(n), then m = c^d mod n.',
+                'flag_value' => 'CTF{65}',
+                'points' => 150,
+                'difficulty' => 'intermediate',
+                'category' => 'asymmetric',
+                'sort_order' => 4,
+            ],
+            [
+                'title' => 'Vigenere Breaker',
+                'description' => 'The following ciphertext was encrypted with a Vigenere cipher using the key "KEY": "KXRKGIKXBKAL". Find the plaintext. Flag format: CTF{plaintext_uppercase}.',
+                'hint' => 'Use the Vigenere decryption formula: plaintext = (ciphertext - key) mod 26 for each letter.',
+                'flag_value' => 'CTF{ATTACKATDAWN}',
+                'points' => 125,
+                'difficulty' => 'intermediate',
+                'category' => 'classical',
+                'sort_order' => 5,
+            ],
+            [
+                'title' => 'XOR Master',
+                'description' => 'A message was XORed with the repeating key "KEY". The hex-encoded result is: "080a1a". Find the original 3-character plaintext (ASCII). Flag format: CTF{plaintext}.',
+                'hint' => 'XOR each byte of the result with the corresponding byte of the key. K=0x4B, E=0x45, Y=0x59.',
+                'flag_value' => 'CTF{CAT}',
+                'points' => 100,
+                'difficulty' => 'intermediate',
+                'category' => 'symmetric',
+                'sort_order' => 6,
+            ],
+        ];
+
+        foreach ($flags as $flagData) {
+            CtfFlag::create(array_merge($flagData, [
+                'ctf_event_id' => $activeEvent->id,
+            ]));
+        }
+
+        // Upcoming CTF event
+        CtfEvent::create([
+            'slug' => 'advanced-crypto-ctf-summer-2026',
+            'title' => 'Advanced Crypto CTF: Summer 2026',
+            'description' => 'An advanced-level CTF event focusing on modern cryptographic protocols, side-channel attacks, and post-quantum challenges.',
+            'rules' => "1. Advanced difficulty — recommended for experienced participants.\n2. Each flag is worth 100-300 points.\n3. Event runs for 48 hours.\n4. Limited to 100 participants.",
+            'starts_at' => now()->addDays(30),
+            'ends_at' => now()->addDays(32),
+            'is_published' => true,
+            'max_participants' => 100,
+            'bonus_xp' => 500,
+        ]);
+
+        // Past CTF event
+        $pastEvent = CtfEvent::create([
+            'slug' => 'intro-ctf-winter-2025',
+            'title' => 'Intro CTF: Winter 2025',
+            'description' => 'A beginner-friendly CTF event to introduce new learners to cryptography challenges.',
+            'rules' => "1. Beginner-friendly challenges.\n2. Unlimited attempts.\n3. Event ran for 14 days.",
+            'starts_at' => now()->subDays(60),
+            'ends_at' => now()->subDays(46),
+            'is_published' => true,
+            'bonus_xp' => 100,
+        ]);
+
+        CtfFlag::create([
+            'ctf_event_id' => $pastEvent->id,
+            'title' => 'Hello World',
+            'description' => 'The flag is literally CTF{hello_world}. Submit it to test the system!',
+            'hint' => 'Read the description carefully.',
+            'flag_value' => 'CTF{hello_world}',
+            'points' => 10,
+            'difficulty' => 'beginner',
+            'category' => 'intro',
+            'sort_order' => 1,
+        ]);
+
+        $this->command->info('✓ CTF events seeded (3 events, '.count($flags).' active flags).');
     }
 }
