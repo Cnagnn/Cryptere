@@ -2,9 +2,9 @@ import { setLayoutProps } from '@inertiajs/react';
 import { useMemo } from 'react';
 
 import { CompletedChallengeView } from '@/components/challenges/completed-challenge-view';
-import { DiscussionPanel } from '@/components/discussion-panel';
 import { LegacySpeedRoundView } from '@/components/challenges/legacy-speed-round-view';
 import { QuizModeView } from '@/components/challenges/quiz-mode-view';
+import { DiscussionPanel } from '@/components/discussion-panel';
 import { dashboard } from '@/routes';
 import {
     index as challengesIndex,

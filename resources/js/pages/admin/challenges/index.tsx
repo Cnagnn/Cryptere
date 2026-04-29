@@ -10,8 +10,6 @@ import {
     Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
-import { QuestionBankPanel } from './_components/QuestionBankPanel';
-import type { QuestionRow } from './_components/QuestionFormDialog';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -50,6 +48,8 @@ import {
     index as adminChallengesIndex,
     reorder as reorderChallenges,
 } from '@/routes/admin/challenges';
+import { QuestionBankPanel } from './_components/QuestionBankPanel';
+import type { QuestionRow } from './_components/QuestionFormDialog';
 
 type ChallengeRow = {
     id: number;

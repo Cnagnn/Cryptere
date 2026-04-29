@@ -51,10 +51,16 @@ class LessonController extends Controller
     {
         $validated = $request->validated();
 
-        $lesson->update([
+        $updateData = [
             'title' => $validated['title'],
             'description' => $validated['description'],
-        ]);
+        ];
+
+        if (isset($validated['course_id'])) {
+            $updateData['course_id'] = (int) $validated['course_id'];
+        }
+
+        $lesson->update($updateData);
 
         app(AuditService::class)->log($request->user(), 'updated', $lesson);
 

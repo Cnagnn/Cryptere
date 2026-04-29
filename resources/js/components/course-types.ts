@@ -8,6 +8,8 @@ export type CourseRow = {
     lessons_count: number;
     tasks_count?: number;
     enrollments_count: number;
+    created_at: string;
+    updated_at: string;
 };
 
 export type LessonRow = {
@@ -20,7 +22,8 @@ export type LessonRow = {
     title: string;
     description: string;
     position: number;
-    tasks_count: number;
+    created_at: string;
+    updated_at: string;
 };
 
 export type TaskRow = {
@@ -36,6 +39,8 @@ export type TaskRow = {
     description: string;
     minutes: number;
     video_url: string | null;
+    created_at: string | null;
+    updated_at: string | null;
     video_processing_status?: string | null;
     video_mp4_url?: string | null;
     document_name?: string | null;

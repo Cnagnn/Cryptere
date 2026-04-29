@@ -51,13 +51,16 @@ function parseCheckBlock(block: string): CheckSegment | null {
             question = trimmed.slice('question:'.length).trim();
         } else if (trimmed.startsWith('type:')) {
             const typeValue = trimmed.slice('type:'.length).trim();
+
             if (typeValue === 'mcq' || typeValue === 'true_false' || typeValue === 'fill_blank') {
                 checkType = typeValue;
             }
         } else if (trimmed.startsWith('options:')) {
             const optionsStr = trimmed.slice('options:'.length).trim();
+
             try {
                 const parsed = JSON.parse(optionsStr);
+
                 if (Array.isArray(parsed)) {
                     options = parsed;
                 }
@@ -114,6 +117,7 @@ export function parseContentWithChecks(markdown: string): ContentSegment[] {
     while ((match = checkBlockRegex.exec(markdown)) !== null) {
         // Add markdown segment before this check block
         const beforeContent = markdown.slice(lastIndex, match.index);
+
         if (beforeContent.trim()) {
             segments.push({
                 type: 'markdown',
@@ -123,6 +127,7 @@ export function parseContentWithChecks(markdown: string): ContentSegment[] {
 
         // Parse the check block
         const checkSegment = parseCheckBlock(match[1]);
+
         if (checkSegment) {
             segments.push(checkSegment);
         }
@@ -132,6 +137,7 @@ export function parseContentWithChecks(markdown: string): ContentSegment[] {
 
     // Add remaining markdown after the last check block
     const remaining = markdown.slice(lastIndex);
+
     if (remaining.trim()) {
         segments.push({
             type: 'markdown',

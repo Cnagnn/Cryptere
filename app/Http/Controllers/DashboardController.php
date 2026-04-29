@@ -23,14 +23,27 @@ class DashboardController extends Controller
     public function __invoke(Request $request): Response
     {
         $user = $request->user();
-
-        if ($user->isAdmin()) {
-            return $this->traceSpan('dashboard.admin', 'Admin dashboard render', fn () => Inertia::render('dashboard', $this->adminBuilder->build()),
-            );
+        \Log::info('DashboardController invoked', ['user_id' => $user?->id, 'is_admin' => $user?->isAdmin()]);
+        try {
+            if ($user->isAdmin()) {
+                \Log::info('Rendering admin dashboard', ['user_id' => $user->id]);
+                $result = $this->traceSpan('dashboard.admin', 'Admin dashboard render', fn () => Inertia::render('dashboard', $this->adminBuilder->build()));
+                \Log::info('Admin dashboard rendered successfully', ['user_id' => $user->id]);
+                return $result;
+            }
+            \Log::info('Rendering learner dashboard', ['user_id' => $user->id]);
+            $result = $this->traceSpan('dashboard.learner', 'Learner dashboard render', fn () => Inertia::render('dashboard', $this->learnerBuilder->build($user)));
+            \Log::info('Learner dashboard rendered successfully', ['user_id' => $user->id]);
+            return $result;
+        } catch (\Throwable $e) {
+            \Log::error('Dashboard error', [
+                'user_id' => $user?->id,
+                'is_admin' => $user?->isAdmin(),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
         }
-
-        return $this->traceSpan('dashboard.learner', 'Learner dashboard render', fn () => Inertia::render('dashboard', $this->learnerBuilder->build($user)),
-        );
     }
 
     /**

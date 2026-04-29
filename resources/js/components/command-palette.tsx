@@ -9,6 +9,7 @@ import {
     Trophy,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import SearchController from '@/actions/App/Http/Controllers/SearchController';
 import {
     CommandDialog,
     CommandEmpty,
@@ -19,7 +20,6 @@ import {
     CommandSeparator,
 } from '@/components/ui/command';
 import { Spinner } from '@/components/ui/spinner';
-import SearchController from '@/actions/App/Http/Controllers/SearchController';
 import { dashboard } from '@/routes';
 import { index as challengesIndex } from '@/routes/challenges';
 import { index as coursesIndex } from '@/routes/courses';
@@ -74,6 +74,7 @@ export function CommandPalette() {
         }
 
         document.addEventListener('keydown', onKeyDown);
+
         return () => document.removeEventListener('keydown', onKeyDown);
     }, []);
 
@@ -100,6 +101,7 @@ export function CommandPalette() {
         if (value.trim().length < 2) {
             setResults([]);
             setLoading(false);
+
             return;
         }
 
@@ -116,7 +118,9 @@ export function CommandPalette() {
                     headers: { Accept: 'application/json' },
                 });
 
-                if (!response.ok) throw new Error('Search failed');
+                if (!response.ok) {
+throw new Error('Search failed');
+}
 
                 const data = await response.json();
                 setResults(data.results ?? []);
@@ -124,6 +128,7 @@ export function CommandPalette() {
                 if (err instanceof DOMException && err.name === 'AbortError') {
                     return;
                 }
+
                 setResults([]);
             } finally {
                 setLoading(false);
@@ -140,8 +145,13 @@ export function CommandPalette() {
     const grouped = results.reduce<Record<string, SearchResult[]>>(
         (acc, result) => {
             const key = result.type;
-            if (!acc[key]) acc[key] = [];
+
+            if (!acc[key]) {
+acc[key] = [];
+}
+
             acc[key].push(result);
+
             return acc;
         },
         {},
@@ -209,6 +219,7 @@ export function CommandPalette() {
                                     {items.map((item, index) => {
                                         const Icon =
                                             typeIcons[item.type] ?? Search;
+
                                         return (
                                             <CommandItem
                                                 key={`${item.type}-${index}`}

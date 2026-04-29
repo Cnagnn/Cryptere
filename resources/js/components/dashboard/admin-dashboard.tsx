@@ -47,6 +47,18 @@ const userGrowthConfig: ChartConfig = {
     users: { label: 'New Users', color: 'var(--chart-2)' },
 };
 
+function normalizeArray<T>(value: unknown): T[] {
+    if (Array.isArray(value)) {
+        return value;
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.values(value as Record<string, T>);
+    }
+
+    return [];
+}
+
 /* ── Admin table column definitions ── */
 const courseColumns: ColumnDef<AdminCoursePerformance>[] = [
     {
@@ -260,6 +272,22 @@ const userColumns: ColumnDef<AdminRecentUser>[] = [
 ];
 
 export function AdminDashboard({ admin }: { admin: AdminData }) {
+    const enrollmentTrends = normalizeArray<
+        AdminData['enrollmentTrends'][number]
+    >(admin.enrollmentTrends);
+    const userGrowth = normalizeArray<AdminData['userGrowth'][number]>(
+        admin.userGrowth,
+    );
+    const coursePerformance = normalizeArray<
+        AdminData['coursePerformance'][number]
+    >(admin.coursePerformance);
+    const challengePerformance = normalizeArray<
+        AdminData['challengePerformance'][number]
+    >(admin.challengePerformance);
+    const recentUsers = normalizeArray<AdminData['recentUsers'][number]>(
+        admin.recentUsers,
+    );
+
     const statCards = [
         { label: 'Total Users', value: admin.stats.totalUsers, icon: Users },
         {
@@ -336,7 +364,7 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
                             className="h-62.5 w-full"
                         >
                             <BarChart
-                                data={admin.enrollmentTrends}
+                                data={enrollmentTrends}
                                 accessibilityLayer
                             >
                                 <XAxis
@@ -371,10 +399,7 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
                             config={userGrowthConfig}
                             className="h-62.5 w-full"
                         >
-                            <AreaChart
-                                data={admin.userGrowth}
-                                accessibilityLayer
-                            >
+                            <AreaChart data={userGrowth} accessibilityLayer>
                                 <CartesianGrid
                                     vertical={false}
                                     strokeDasharray="3 3"
@@ -448,7 +473,7 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
                         ) : (
                             <DataTable
                                 columns={courseColumns}
-                                data={admin.coursePerformance}
+                                data={coursePerformance}
                                 centered
                                 showFilterInput={false}
                                 showFooter={false}
@@ -470,7 +495,7 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
                         ) : (
                             <DataTable
                                 columns={challengeColumns}
-                                data={admin.challengePerformance}
+                                data={challengePerformance}
                                 centered
                                 showFilterInput={false}
                                 showFooter={false}
@@ -506,7 +531,7 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
                         ) : (
                             <DataTable
                                 columns={userColumns}
-                                data={admin.recentUsers}
+                                data={recentUsers}
                                 centered
                                 showFilterInput={false}
                                 showFooter={false}

@@ -1,9 +1,19 @@
 import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ChevronDown, Download, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { BookOpen, Check, ChevronsUpDown, ChevronDown, CircleHelp, Download, Eye, MoreHorizontal, Pencil, Play, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import type { CourseRow, LessonRow, Paginated, TaskRow } from '@/components/course-types';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
 import { DataTable } from '@/components/ui/data-table';
 import {
     Dialog,
@@ -20,6 +30,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -31,8 +42,11 @@ import {
 } from '@/components/ui/empty';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import {
     Select,
     SelectContent,
@@ -41,17 +55,21 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import { toast } from 'sonner';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as tasksDestroy } from '@/routes/admin/courses/tasks';
 import { reorder as tasksReorder } from '@/routes/admin/courses/tasks';
 import { store as tasksStore } from '@/routes/admin/courses/tasks';
 import { update as tasksUpdate } from '@/routes/admin/courses/tasks';
 
+type LessonOption = { id: number; course_id: number; title: string };
+
 type Props = {
     tasks: Paginated<TaskRow>;
     lessons: Paginated<LessonRow>;
+    allLessons: LessonOption[];
     courseOptions: Pick<CourseRow, 'id' | 'title'>[];
     selectedCourseId: number;
     selectedLessonId: number;
@@ -92,6 +110,7 @@ function downloadQuizTemplate(kind: 'csv' | 'xlsx' | 'xls'): void {
 
 function normalizeDelimiter(text: string): ',' | ';' | '\t' {
     const firstLine = text.split(/\r?\n/).find((line) => line.trim() !== '') ?? '';
+
     if (firstLine.includes('\t')) {
         return '\t';
     }
@@ -146,6 +165,7 @@ function parseQuizImportText(text: string): QuizImportQuestion[] {
 export default function AdminCoursesTask({
     tasks,
     lessons,
+    allLessons,
     courseOptions,
     selectedCourseId,
     selectedLessonId,
@@ -165,6 +185,7 @@ export default function AdminCoursesTask({
         title: '',
         description: '',
         type: 'video' as 'video' | 'read' | 'quiz',
+        minutes: 10,
         video_url: '',
         document: null as File | null,
     });
@@ -183,6 +204,7 @@ export default function AdminCoursesTask({
     const taskDescriptionHasError = Boolean(errors.description);
     const taskLessonHasError = Boolean(errors.lesson_id);
     const taskTypeHasError = Boolean(errors.type);
+    const taskMinutesHasError = Boolean(errors.minutes);
     const taskVideoUrlHasError = Boolean(errors.video_url);
     const taskDocumentHasError = Boolean(errors.document);
     const taskQuizQuestionsHasError = Boolean(errors.quiz_questions);
@@ -194,6 +216,7 @@ export default function AdminCoursesTask({
             title: '',
             description: '',
             type: 'video',
+            minutes: 10,
             video_url: '',
             document: null,
         });
@@ -208,6 +231,7 @@ export default function AdminCoursesTask({
             title: task.title,
             description: task.description,
             type: task.type as 'video' | 'read' | 'quiz',
+            minutes: task.minutes ?? 10,
             video_url: task.video_url ?? '',
             document: null,
         });
@@ -331,11 +355,51 @@ export default function AdminCoursesTask({
         {
             accessorKey: 'type',
             header: 'Type',
-            cell: ({ row }) => <span className="uppercase">{row.original.type}</span>,
+            cell: ({ row }) => {
+                const type = row.original.type;
+                const config: Record<string, { icon: React.ReactNode; label: string; className: string }> = {
+                    video: { icon: <Play className="text-red-500" />, label: 'Video', className: '' },
+                    read: { icon: <BookOpen className="text-emerald-500" />, label: 'Reading', className: '' },
+                    quiz: { icon: <CircleHelp className="text-amber-500" />, label: 'Quiz', className: '' },
+                };
+                const c = config[type] ?? { icon: null, label: type, className: '' };
+                return (
+                    <div className="flex justify-center">
+                        <Badge variant="outline" className={c.className}>
+                            {c.icon}
+                            {c.label}
+                        </Badge>
+                    </div>
+                );
+            },
         },
         {
-            accessorKey: 'lesson_title',
-            header: 'Topic',
+            accessorKey: 'created_at',
+            header: 'Created At',
+            cell: ({ row }) => {
+                const date = row.original.created_at ? new Date(row.original.created_at) : null;
+                if (!date) return '—';
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = date.getFullYear();
+                const h = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                return `${d}/${m}/${y}, ${h}:${min}`;
+            },
+        },
+        {
+            accessorKey: 'updated_at',
+            header: 'Updated At',
+            cell: ({ row }) => {
+                const date = row.original.updated_at ? new Date(row.original.updated_at) : null;
+                if (!date) return '—';
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = date.getFullYear();
+                const h = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                return `${d}/${m}/${y}, ${h}:${min}`;
+            },
         },
         {
             id: 'actions',
@@ -367,11 +431,23 @@ export default function AdminCoursesTask({
                                     onClick={() => {
                                         router.delete(tasksDestroy.url({ task: row.original.id }), {
                                             preserveScroll: true,
+                                            onSuccess: () => toast.success('Task deleted successfully.'),
+                                            onError: (formErrors) => {
+                                                const messages = Object.values(formErrors).flat().join(', ');
+                                                toast.error(messages || 'Failed to delete task.');
+                                            },
                                         });
                                     }}
                                 >
                                     <Trash2 data-icon="inline-start" />
                                     Delete
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={() => router.get(`/courses/${row.original.course_slug}`)}
+                                >
+                                    <Eye data-icon="inline-start" />
+                                    View Task
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -424,56 +500,60 @@ export default function AdminCoursesTask({
                 </div>
 
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                    <Select
-                        value={String(selectedCourseId)}
-                        onValueChange={(value) => {
-                            const nextCourseId = Number(value);
-                            const firstLesson = lessons.data.find((lesson) => lesson.course_id === nextCourseId);
-
-                            router.get(
-                                adminCoursesIndex.url({ query: { section: 'task', course_id: nextCourseId, lesson_id: firstLesson?.id, page: 1, per_page: tasks.per_page } }),
-                                {},
-                                { preserveState: true, preserveScroll: true },
-                            );
-                        }}
-                    >
-                        <SelectTrigger className="w-full sm:w-56">
-                            <SelectValue placeholder="Select title" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {courseOptions.map((course) => (
-                                    <SelectItem key={course.id} value={String(course.id)}>
-                                        {course.title}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-
-                    <Select
-                        value={String(selectedLessonId || lessonOptions[0]?.id || '')}
-                        onValueChange={(value) => {
-                            router.get(
-                                adminCoursesIndex.url({ query: { section: 'task', course_id: selectedCourseId, lesson_id: Number(value), page: 1, per_page: tasks.per_page } }),
-                                {},
-                                { preserveState: true, preserveScroll: true },
-                            );
-                        }}
-                    >
-                        <SelectTrigger className="w-full sm:w-64">
-                            <SelectValue placeholder="Select topic" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {lessonOptions.map((lesson) => (
-                                    <SelectItem key={lesson.id} value={String(lesson.id)}>
-                                        {lesson.title}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                className="w-full justify-between sm:w-72"
+                            >
+                                <span className="truncate">
+                                    {(() => {
+                                        const course = courseOptions.find((c) => c.id === selectedCourseId);
+                                        const lesson = allLessons.find((l) => l.id === (selectedLessonId || lessonOptions[0]?.id));
+                                        if (course && lesson) return `${course.title} › ${lesson.title}`;
+                                        if (course) return course.title;
+                                        return 'Select course & topic...';
+                                    })()}
+                                </span>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 p-0" align="start">
+                            <Command>
+                                <CommandInput placeholder="Search course or topic..." />
+                                <CommandList>
+                                    <CommandEmpty>No results found.</CommandEmpty>
+                                    {courseOptions.map((course) => {
+                                        const courseLessons = allLessons.filter((l) => l.course_id === course.id);
+                                        if (courseLessons.length === 0) return null;
+                                        return (
+                                            <CommandGroup key={course.id} heading={course.title}>
+                                                {courseLessons.map((lesson) => (
+                                                    <CommandItem
+                                                        key={lesson.id}
+                                                        value={`${course.title} ${lesson.title}`}
+                                                        onSelect={() => {
+                                                            router.get(
+                                                                adminCoursesIndex.url({ query: { section: 'task', course_id: course.id, lesson_id: lesson.id, page: 1, per_page: tasks.per_page } }),
+                                                                {},
+                                                                { preserveState: true, preserveScroll: true },
+                                                            );
+                                                        }}
+                                                    >
+                                                        {lesson.title}
+                                                        <Check
+                                                            className={`ml-auto h-4 w-4 ${(selectedLessonId || lessonOptions[0]?.id) === lesson.id && selectedCourseId === course.id ? 'opacity-100' : 'opacity-0'}`}
+                                                        />
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        );
+                                    })}
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
 
                     <div className="w-full sm:w-80">
                         <Input
@@ -515,7 +595,7 @@ export default function AdminCoursesTask({
                                     payload.append('title', taskForm.title);
                                     payload.append('description', taskForm.description);
                                     payload.append('type', taskForm.type);
-                                    payload.append('minutes', '10');
+                                    payload.append('minutes', String(taskForm.minutes));
 
                                     if (taskForm.type === 'video') {
                                         payload.append('video_url', taskForm.video_url);
@@ -528,6 +608,7 @@ export default function AdminCoursesTask({
                                     if (taskForm.type === 'quiz') {
                                         if (quizQuestions.length === 0) {
                                             toast.error('Import quiz question terlebih dahulu.');
+
                                             return;
                                         }
 
@@ -559,6 +640,10 @@ export default function AdminCoursesTask({
                                             toast.success(isEditMode ? 'Task updated successfully.' : 'Task created successfully.');
                                             resetTaskForm();
                                             setCreateTaskDialogOpen(false);
+                                        },
+                                        onError: (formErrors) => {
+                                            const messages = Object.values(formErrors).flat().join(', ');
+                                            toast.error(messages || 'Failed to save task.');
                                         },
                                         onFinish: () => setIsSavingTask(false),
                                     });
@@ -669,6 +754,31 @@ export default function AdminCoursesTask({
                                             <FieldDescription className="text-destructive">{errors.type}</FieldDescription>
                                         )}
                                     </Field>
+
+                                    <Field className="gap-2" data-invalid={taskMinutesHasError || undefined}>
+                                        <FieldLabel htmlFor="task-minutes">
+                                            Duration (minutes) <span className="text-destructive">*</span>
+                                        </FieldLabel>
+                                        <Input
+                                            id="task-minutes"
+                                            name="minutes"
+                                            type="number"
+                                            min={1}
+                                            max={240}
+                                            placeholder="e.g. 10"
+                                            value={taskForm.minutes}
+                                            onChange={(event) => setTaskForm((current) => ({ ...current, minutes: Number(event.target.value) || 0 }))}
+                                            aria-invalid={taskMinutesHasError}
+                                            required
+                                        />
+                                        {taskMinutesHasError && (
+                                            <FieldDescription className="text-destructive">{errors.minutes}</FieldDescription>
+                                        )}
+                                        <FieldDescription>
+                                            Estimated time to complete this task (1–240 min).
+                                        </FieldDescription>
+                                    </Field>
+
                                     {taskForm.type === 'video' && (
                                         <Field className="gap-2" data-invalid={taskVideoUrlHasError || undefined}>
                                             <FieldLabel htmlFor="task-video-url">
@@ -740,6 +850,7 @@ export default function AdminCoursesTask({
                                                         if (!selectedFile) {
                                                             setQuizImportFileName('');
                                                             setQuizQuestions([]);
+
                                                             return;
                                                         }
 
@@ -749,6 +860,7 @@ export default function AdminCoursesTask({
 
                                                             if (parsedRows.length === 0) {
                                                                 toast.error('Tidak ada data question yang dapat diimport.');
+
                                                                 return;
                                                             }
 

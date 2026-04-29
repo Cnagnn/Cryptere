@@ -11,10 +11,10 @@ import {
 import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { CommandPalette } from '@/components/command-palette';
 import { DailyRewards } from '@/components/daily-rewards';
 import { NotificationCenter } from '@/components/notification-center';
-import { Breadcrumbs } from '@/components/breadcrumbs';
 import {
     AlertDialog,
     AlertDialogContent,

@@ -23,6 +23,7 @@ class UpdateAdminLessonRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'course_id' => ['sometimes', 'integer', 'exists:courses,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
         ];

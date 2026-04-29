@@ -1,6 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { CheckCircle2, Clock3, Eye, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, BadgeCheck, CircleDashed, CheckCircle2, Clock3, Eye, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { CourseRow, Paginated } from '@/components/course-types';
@@ -34,6 +34,9 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -51,8 +54,8 @@ import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import {
     destroy as coursesDestroy,
     index as adminCoursesIndex,
-    reorder as coursesReorder,
     store as coursesStore,
+    togglePublish as coursesTogglePublish,
     update as coursesUpdate,
 } from '@/routes/admin/courses';
 import { show as coursesShow } from '@/routes/courses';
@@ -61,17 +64,11 @@ type Props = {
     courses: Paginated<CourseRow>;
 };
 
-function formatCourseCode(id: number): string {
-    return `CRS-${String(id).padStart(4, '0')}`;
-}
-
 export default function AdminCoursesTitle({ courses }: Props) {
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [deletingCourse, setDeletingCourse] = useState<CourseRow | null>(null);
     const [editingCourse, setEditingCourse] = useState<CourseRow | null>(null);
     const [courseFilterValue, setCourseFilterValue] = useState('');
-    const [localOrderedIds, setLocalOrderedIds] = useState<string[]>([]);
-    const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<string | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isSavingCourse, setIsSavingCourse] = useState(false);
     const [courseForm, setCourseForm] = useState({
@@ -108,70 +105,18 @@ export default function AdminCoursesTitle({ courses }: Props) {
         setIsCreateDialogOpen(true);
     };
 
-    const displayedRows = useMemo(() => {
-        if (localOrderedIds.length === 0) {
-            return courses.data;
-        }
-
-        const rowsById = new Map(courses.data.map((course) => [String(course.id), course]));
-        const currentIds = new Set(courses.data.map((course) => String(course.id)));
-
-        const isSameSet = localOrderedIds.length === currentIds.size
-            && localOrderedIds.every((id) => currentIds.has(id));
-
-        if (!isSameSet) {
-            return courses.data;
-        }
-
-        return localOrderedIds
-            .map((id) => rowsById.get(id))
-            .filter((course): course is CourseRow => course !== undefined);
-    }, [courses.data, localOrderedIds]);
-
     const filteredCourses = useMemo(() => {
         const keyword = courseFilterValue.trim().toLowerCase();
 
         if (keyword === '') {
-            return displayedRows;
+            return courses.data;
         }
 
-        return displayedRows.filter((course) => {
+        return courses.data.filter((course) => {
             return course.title.toLowerCase().includes(keyword)
                 || course.summary.toLowerCase().includes(keyword);
         });
-    }, [courseFilterValue, displayedRows]);
-
-    const reorderRows = (sourceRowId: string, targetRowId: string) => {
-        if (sourceRowId === targetRowId) {
-            return;
-        }
-
-        const currentRows = displayedRows;
-            const sourceIndex = currentRows.findIndex((row) => String(row.id) === sourceRowId);
-            const targetIndex = currentRows.findIndex((row) => String(row.id) === targetRowId);
-
-            if (sourceIndex < 0 || targetIndex < 0) {
-                return;
-            }
-
-            const nextRows = [...currentRows];
-            const [movedRow] = nextRows.splice(sourceIndex, 1);
-            nextRows.splice(targetIndex, 0, movedRow);
-
-            setLocalOrderedIds(nextRows.map((row) => String(row.id)));
-
-            const startSortOrder = Math.max((courses.from ?? 1), 1);
-            router.post(coursesReorder.url(), {
-                items: nextRows.map((row, index) => ({
-                    id: row.id,
-                    sort_order: startSortOrder + index,
-                })),
-            }, {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
-    };
+    }, [courseFilterValue, courses.data]);
 
     const submitDeleteCourse = () => {
         if (!deletingCourse) {
@@ -180,57 +125,27 @@ export default function AdminCoursesTitle({ courses }: Props) {
 
         router.delete(coursesDestroy.url({ course: deletingCourse.id }), {
             preserveScroll: true,
-            onSuccess: () => setDeletingCourse(null),
+            onSuccess: () => {
+                toast.success('Course deleted successfully.');
+                setDeletingCourse(null);
+            },
+            onError: (formErrors) => {
+                const messages = Object.values(formErrors).flat().join(', ');
+                toast.error(messages || 'Failed to delete course.');
+                setDeletingCourse(null);
+            },
         });
     };
 
     const columns = useMemo<ColumnDef<CourseRow>[]>(() => [
         {
-            id: 'drag',
-            header: '',
-            cell: ({ row }) => (
-                <div className="flex justify-center">
-                    <button
-                        type="button"
-                        data-row-drag-handle="true"
-                        aria-label={`Drag row ${formatCourseCode(row.original.id)}`}
-                        onMouseDown={() => setDragHandleActiveRowId(String(row.original.id))}
-                        className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
-                        style={{ cursor: 'grab' }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                            <circle cx="3" cy="3" r="1" />
-                            <circle cx="7" cy="3" r="1" />
-                            <circle cx="11" cy="3" r="1" />
-                            <circle cx="3" cy="7" r="1" />
-                            <circle cx="7" cy="7" r="1" />
-                            <circle cx="11" cy="7" r="1" />
-                        </svg>
-                    </button>
-                </div>
-            ),
-        },
-        {
             accessorKey: 'title',
             header: 'Title',
             cell: ({ row }) => (
-                <div className="max-w-48 text-left">
+                <div className="min-w-48 max-w-sm text-left">
                     <p className="truncate font-medium" title={row.original.title}>{row.original.title}</p>
                 </div>
             ),
-        },
-        {
-            accessorKey: 'lessons_count',
-            header: 'Topics',
-        },
-        {
-            accessorKey: 'tasks_count',
-            header: 'Tasks',
-            cell: ({ row }) => row.original.tasks_count ?? 0,
-        },
-        {
-            accessorKey: 'enrollments_count',
-            header: 'Enrollments',
         },
         {
             accessorKey: 'is_published',
@@ -238,11 +153,43 @@ export default function AdminCoursesTitle({ courses }: Props) {
             cell: ({ row }) => (
                 <div className="flex justify-center">
                     <Badge variant="outline">
-                        {row.original.is_published ? <CheckCircle2 /> : <Clock3 />}
+                        {row.original.is_published ? <BadgeCheck className="text-emerald-500" /> : <CircleDashed className="text-amber-500" />}
                         {row.original.is_published ? 'Published' : 'Draft'}
                     </Badge>
                 </div>
             ),
+        },
+        {
+            accessorKey: 'enrollments_count',
+            header: 'Enrollments',
+        },
+        {
+            accessorKey: 'created_at',
+            header: 'Created At',
+            cell: ({ row }) => {
+                const date = row.original.created_at ? new Date(row.original.created_at) : null;
+                if (!date) return '—';
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = date.getFullYear();
+                const h = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                return `${d}/${m}/${y}, ${h}:${min}`;
+            },
+        },
+        {
+            accessorKey: 'updated_at',
+            header: 'Updated At',
+            cell: ({ row }) => {
+                const date = row.original.updated_at ? new Date(row.original.updated_at) : null;
+                if (!date) return '—';
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = date.getFullYear();
+                const h = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                return `${d}/${m}/${y}, ${h}:${min}`;
+            },
         },
         {
             id: 'actions',
@@ -257,20 +204,42 @@ export default function AdminCoursesTitle({ courses }: Props) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuGroup>
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => router.get(coursesShow.url(row.original.slug))}>
-                                    <Eye data-icon="inline-start" />
-                                    View Course
-                                </DropdownMenuItem>
+                                <DropdownMenuLabel className="text-muted-foreground">Actions</DropdownMenuLabel>
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <ArrowRightLeft data-icon="inline-start" />
+                                        Set Status
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem
+                                            disabled={row.original.is_published}
+                                            onClick={() => router.patch(coursesTogglePublish.url({ course: row.original.id }), { is_published: true }, { preserveScroll: true })}
+                                        >
+                                            <BadgeCheck data-icon="inline-start" />
+                                            Published
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            disabled={!row.original.is_published}
+                                            onClick={() => router.patch(coursesTogglePublish.url({ course: row.original.id }), { is_published: false }, { preserveScroll: true })}
+                                        >
+                                            <CircleDashed data-icon="inline-start" />
+                                            Draft
+                                        </DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
                                 <DropdownMenuItem onClick={() => openEditDialog(row.original)}>
                                     <Pencil data-icon="inline-start" />
                                     Edit
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setDeletingCourse(row.original)}>
+                                    <Trash2 data-icon="inline-start" />
+                                    Delete
+                                </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setDeletingCourse(row.original)}>
-                                <Trash2 data-icon="inline-start" />
-                                Delete
+                            <DropdownMenuItem onClick={() => router.get(coursesShow.url(row.original.slug))}>
+                                <Eye data-icon="inline-start" />
+                                View Course
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -359,6 +328,10 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                                 toast.success(isEditMode ? 'Course updated successfully.' : 'Course created successfully.');
                                                 resetCourseDialogState();
                                                 setIsCreateDialogOpen(false);
+                                            },
+                                            onError: (formErrors) => {
+                                                const messages = Object.values(formErrors).flat().join(', ');
+                                                toast.error(messages || 'Failed to save course.');
                                             },
                                             onFinish: () => {
                                                 setIsSavingCourse(false);
@@ -451,7 +424,7 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                         </DialogClose>
                                         <Button type="submit" disabled={isSavingCourse}>
                                             {isSavingCourse && <Spinner data-icon="inline-start" />}
-                                            {isEditMode ? 'Update course' : 'Save changes'}
+                                            {isEditMode ? 'Update course' : 'Save draft'}
                                         </Button>
                                     </DialogFooter>
                                 </form>
@@ -483,14 +456,6 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                 showColumnToggle={false}
                                 showPageInfo={false}
                                 enableDefaultIdSort={false}
-                                getRowDataId={(row) => String(row.id)}
-                                dragHandleActiveRowId={dragHandleActiveRowId}
-                                onRowDrop={(sourceRowId, targetRowId) => {
-                                    reorderRows(sourceRowId, targetRowId);
-                                }}
-                                onRowDragEnd={() => {
-                                    setDragHandleActiveRowId(null);
-                                }}
                                 page={courses.current_page}
                                 pageCount={courses.last_page}
                                 pageSize={courses.per_page}

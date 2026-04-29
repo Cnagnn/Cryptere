@@ -82,9 +82,13 @@ type Props = {
 };
 
 function formatMinutes(minutes: number): string {
-    if (minutes < 60) return `${minutes}m`;
+    if (minutes < 60) {
+return `${minutes}m`;
+}
+
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
+
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
@@ -96,6 +100,7 @@ function ActivityHeatmap({ data }: { data: HeatmapEntry[] }) {
 
     // Group by week (7 days per column)
     const weeks: HeatmapEntry[][] = [];
+
     for (let i = 0; i < recent.length; i += 7) {
         weeks.push(recent.slice(i, i + 7));
     }
@@ -109,6 +114,7 @@ function ActivityHeatmap({ data }: { data: HeatmapEntry[] }) {
                             day.count === 0
                                 ? 0
                                 : Math.ceil((day.count / maxCount) * 4);
+
                         return (
                             <div
                                 key={day.date}

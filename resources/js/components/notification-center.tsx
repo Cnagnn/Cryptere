@@ -7,6 +7,11 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import {
+    index as fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+} from '@/actions/App/Http/Controllers/NotificationController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,11 +26,6 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-    index as fetchNotifications,
-    markAsRead,
-    markAllAsRead,
-} from '@/actions/App/Http/Controllers/NotificationController';
 import { cn } from '@/lib/utils';
 
 type NotificationItem = {
@@ -56,14 +56,25 @@ function timeAgo(dateStr: string): string {
     const diffMs = now - then;
     const diffMin = Math.floor(diffMs / 60_000);
 
-    if (diffMin < 1) return 'Just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffMin < 1) {
+return 'Just now';
+}
+
+    if (diffMin < 60) {
+return `${diffMin}m ago`;
+}
 
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
+
+    if (diffHr < 24) {
+return `${diffHr}h ago`;
+}
 
     const diffDay = Math.floor(diffHr / 24);
-    if (diffDay < 7) return `${diffDay}d ago`;
+
+    if (diffDay < 7) {
+return `${diffDay}d ago`;
+}
 
     return new Date(dateStr).toLocaleDateString();
 }
@@ -76,11 +87,16 @@ export function NotificationCenter() {
 
     const loadNotifications = useCallback(async () => {
         setLoading(true);
+
         try {
             const response = await fetch(fetchNotifications.url(), {
                 headers: { Accept: 'application/json' },
             });
-            if (!response.ok) return;
+
+            if (!response.ok) {
+return;
+}
+
             const data = await response.json();
             setNotifications(data.notifications ?? []);
             setUnreadCount(data.unread_count ?? 0);
@@ -95,6 +111,7 @@ export function NotificationCenter() {
     useEffect(() => {
         loadNotifications();
         const interval = setInterval(loadNotifications, 60_000);
+
         return () => clearInterval(interval);
     }, [loadNotifications]);
 
@@ -242,6 +259,7 @@ export function NotificationCenter() {
                                                         notification.id,
                                                     );
                                                 }
+
                                                 if (notification.data.url) {
                                                     window.location.href =
                                                         notification.data.url;

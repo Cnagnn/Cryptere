@@ -53,7 +53,7 @@ class CourseController extends Controller
         $perPage = max(10, min($perPage, 100));
 
         $courses = Course::query()
-            ->withCount(['lessons', 'enrollments'])
+            ->withCount('enrollments')
             ->searchManagement($search)
             ->orderBy('sort_order')
             ->orderBy('title')
@@ -69,12 +69,26 @@ class CourseController extends Controller
                 'summary' => $course->summary,
                 'cover' => $course->cover,
                 'is_published' => $course->is_published,
-                'lessons_count' => $course->lessons_count,
                 'enrollments_count' => $course->enrollments_count,
+                'created_at' => $course->created_at?->toIso8601String(),
+                'updated_at' => $course->updated_at?->toIso8601String(),
             ];
         });
 
         $courseOptions = Course::query()->orderBy('title')->get(['id', 'slug', 'title']);
+
+        // Lightweight list of ALL lessons for the combobox (course + topic picker)
+        $allLessons = Lesson::query()
+            ->orderBy('course_id')
+            ->orderBy('position')
+            ->get(['id', 'course_id', 'title'])
+            ->map(fn (Lesson $l) => [
+                'id' => $l->id,
+                'course_id' => $l->course_id,
+                'title' => $l->title,
+            ])
+            ->values()
+            ->all();
 
         $selectedCourseId = (int) $request->integer('course_id', (int) ($courseOptions->first()?->id ?? 0));
         $selectedLessonId = (int) $request->integer('lesson_id', 0);
@@ -103,8 +117,6 @@ class CourseController extends Controller
                 ->withQueryString();
 
             $lessonPaginator->getCollection()->transform(function (Lesson $lesson): array {
-                $legacyTasks = $this->extractLegacyTaskPayloads((string) $lesson->content);
-
                 return [
                     'id' => $lesson->id,
                     'management_id' => 'topic-'.$lesson->id,
@@ -115,9 +127,8 @@ class CourseController extends Controller
                     'title' => $lesson->title,
                     'description' => (string) ($lesson->description ?? ''),
                     'position' => $lesson->position,
-                    'tasks_count' => (int) $lesson->tasks_count > 0
-                        ? (int) $lesson->tasks_count
-                        : count($legacyTasks),
+                    'created_at' => $lesson->created_at?->toIso8601String(),
+                    'updated_at' => $lesson->updated_at?->toIso8601String(),
                 ];
             });
 
@@ -168,6 +179,8 @@ class CourseController extends Controller
                             'description' => (string) ($task->description ?? ''),
                             'minutes' => $task->minutes,
                             'video_url' => $task->video_url,
+                            'created_at' => $task->created_at?->toIso8601String(),
+                            'updated_at' => $task->updated_at?->toIso8601String(),
                             'quiz_questions' => $task->quizQuestions->map(fn (QuizQuestion $q): array => [
                                 'question' => $q->question,
                                 'options' => $q->options,
@@ -203,6 +216,8 @@ class CourseController extends Controller
                                 'description' => '',
                                 'minutes' => (int) ($task['minutes'] ?? 5),
                                 'video_url' => isset($task['videoUrl']) ? (string) $task['videoUrl'] : null,
+                                'created_at' => null,
+                                'updated_at' => null,
                                 'quiz_questions' => [],
                             ];
                         });
@@ -232,6 +247,7 @@ class CourseController extends Controller
             'section' => $section,
             'courses' => $courses,
             'courseOptions' => $courseOptions,
+            'allLessons' => $allLessons,
             'lessons' => $lessons,
             'tasks' => $tasks,
             'selectedCourseId' => $selectedCourseId,
@@ -274,7 +290,7 @@ class CourseController extends Controller
             'cover_path' => $coverPath,
             'estimated_minutes' => (int) ($validated['estimated_minutes'] ?? 30),
             'sort_order' => $nextSortOrder,
-            'is_published' => (bool) ($validated['is_published'] ?? true),
+            'is_published' => (bool) ($validated['is_published'] ?? false),
         ]);
 
         app(AuditService::class)->log($request->user(), 'created', $course);

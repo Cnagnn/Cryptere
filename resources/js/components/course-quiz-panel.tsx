@@ -244,6 +244,7 @@ parts.push(`+${data.points_earned} Points`);
         if (quizResult) {
             setPreviousScore(quizResult.bestScore);
         }
+
         setSelectedAnswers(questions.map(() => -1));
         setResult(null);
         setSubmitError(null);

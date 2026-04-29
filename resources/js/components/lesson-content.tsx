@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { parseContentWithChecks } from '@/lib/content-parser';
 import { InlineKnowledgeCheck } from '@/components/inline-knowledge-check';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
+import { parseContentWithChecks } from '@/lib/content-parser';
 
 type LessonContentProps = {
     content: string;

@@ -364,7 +364,7 @@ export function DataTable<TData, TValue>({
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id} className={cn(centered && 'text-center align-middle')}>
+                                    <TableHead key={header.id} className={cn(centered && 'text-center align-middle', header.index === 0 && 'pl-4', header.index === headerGroup.headers.length - 1 && 'pr-4')}>
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(header.column.columnDef.header, header.getContext())}
@@ -436,7 +436,7 @@ export function DataTable<TData, TValue>({
                                             style={rowTransform ? { transform: rowTransform } : undefined}
                                         >
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className={cn(centered && 'text-center align-middle')}>
+                                        <TableCell key={cell.id} className={cn(centered && 'text-center align-middle', cell.column.getIndex() === 0 && 'pl-4', cell.column.getIsLastColumn() && 'pr-4')}>
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </TableCell>
                                     ))}

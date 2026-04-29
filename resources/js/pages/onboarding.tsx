@@ -131,6 +131,7 @@ function ExperienceStep({
             >
                 {EXPERIENCE_LEVELS.map((level) => {
                     const Icon = level.icon;
+
                     return (
                         <Label
                             key={level.value}
@@ -187,6 +188,7 @@ function InterestsStep({
                 {INTERESTS.map((interest) => {
                     const Icon = interest.icon;
                     const isSelected = selected.includes(interest.id);
+
                     return (
                         <button
                             key={interest.id}

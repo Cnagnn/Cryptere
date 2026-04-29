@@ -56,9 +56,9 @@ class AdminDashboardBuilder
         ]);
     }
 
-    private function buildEnrollmentTrends(): mixed
+    private function buildEnrollmentTrends(): array
     {
-        return Cache::remember('admin_enrollment_trends', 300, function () {
+        return Cache::remember('admin_enrollment_trends', 300, function (): array {
             return collect(range(5, 0))->map(function (int $monthOffset): array {
                 $month = now()->subMonths($monthOffset)->startOfMonth();
                 $end = (clone $month)->endOfMonth();
@@ -67,13 +67,13 @@ class AdminDashboardBuilder
                     'month' => $month->format('M'),
                     'enrollments' => Enrollment::whereBetween('created_at', [$month, $end])->count(),
                 ];
-            })->values();
+            })->values()->all();
         });
     }
 
-    private function buildUserGrowth(): mixed
+    private function buildUserGrowth(): array
     {
-        return Cache::remember('admin_user_growth', 300, function () {
+        return Cache::remember('admin_user_growth', 300, function (): array {
             return collect(range(5, 0))->map(function (int $monthOffset): array {
                 $month = now()->subMonths($monthOffset)->startOfMonth();
                 $end = (clone $month)->endOfMonth();
@@ -82,13 +82,13 @@ class AdminDashboardBuilder
                     'month' => $month->format('M'),
                     'users' => User::whereBetween('created_at', [$month, $end])->count(),
                 ];
-            })->values();
+            })->values()->all();
         });
     }
 
-    private function buildCoursePerformance(): mixed
+    private function buildCoursePerformance(): array
     {
-        return Cache::remember('admin_course_performance', 300, function () {
+        return Cache::remember('admin_course_performance', 300, function (): array {
             return Course::query()
                 ->where('is_published', true)
                 ->withCount([
@@ -111,13 +111,13 @@ class AdminDashboardBuilder
                             ? round(($completedCount / $enrollmentCount) * 100, 1)
                             : 0.0,
                     ];
-                });
+                })->values()->all();
         });
     }
 
-    private function buildChallengePerformance(): mixed
+    private function buildChallengePerformance(): array
     {
-        return Cache::remember('admin_challenge_performance', 300, function () {
+        return Cache::remember('admin_challenge_performance', 300, function (): array {
             return Challenge::query()
                 ->where('is_published', true)
                 ->withCount([
@@ -140,11 +140,11 @@ class AdminDashboardBuilder
                             ? round(($correctCount / $submissionCount) * 100, 1)
                             : 0.0,
                     ];
-                });
+                })->values()->all();
         });
     }
 
-    private function buildRecentUsers(): mixed
+    private function buildRecentUsers(): array
     {
         return User::query()
             ->latest()
@@ -157,6 +157,6 @@ class AdminDashboardBuilder
                 'email' => $u->email,
                 'role' => $u->role,
                 'createdAt' => $u->created_at?->diffForHumans(),
-            ]);
+            ])->values()->all();
     }
 }

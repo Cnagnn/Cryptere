@@ -31,7 +31,8 @@ import {
     destroy as destroyQuestion,
     reorder as reorderQuestions,
 } from '@/routes/admin/challenges/questions';
-import { QuestionFormDialog, type QuestionRow } from './QuestionFormDialog';
+import { QuestionFormDialog  } from './QuestionFormDialog';
+import type {QuestionRow} from './QuestionFormDialog';
 
 const TYPE_LABELS: Record<string, string> = {
     mcq: 'MCQ',
@@ -79,7 +80,10 @@ export function QuestionBankPanel({ challengeId, challengeTitle, questions }: Pr
     };
 
     const submitDelete = () => {
-        if (!deletingQuestion) return;
+        if (!deletingQuestion) {
+return;
+}
+
         router.delete(
             destroyQuestion.url({ challenge: challengeId, question: deletingQuestion.id }),
             {
@@ -95,19 +99,26 @@ export function QuestionBankPanel({ challengeId, challengeTitle, questions }: Pr
 
     const handleDragOver = (e: React.DragEvent, targetIndex: number) => {
         e.preventDefault();
-        if (dragIndex === null || dragIndex === targetIndex) return;
+
+        if (dragIndex === null || dragIndex === targetIndex) {
+return;
+}
 
         setRows((prev) => {
             const next = [...prev];
             const [moved] = next.splice(dragIndex, 1);
             next.splice(targetIndex, 0, moved);
+
             return next;
         });
         setDragIndex(targetIndex);
     };
 
     const handleDragEnd = () => {
-        if (dragIndex === null) return;
+        if (dragIndex === null) {
+return;
+}
+
         setDragIndex(null);
 
         router.post(
@@ -221,7 +232,9 @@ export function QuestionBankPanel({ challengeId, challengeTitle, questions }: Pr
             <AlertDialog
                 open={deletingQuestion !== null}
                 onOpenChange={(isOpen) => {
-                    if (!isOpen) setDeletingQuestion(null);
+                    if (!isOpen) {
+setDeletingQuestion(null);
+}
                 }}
             >
                 <AlertDialogContent>

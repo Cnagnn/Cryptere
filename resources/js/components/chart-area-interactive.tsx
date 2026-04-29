@@ -15,9 +15,10 @@ import {
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
+  ChartTooltipContent
+  
 } from "@/components/ui/chart"
+import type {ChartConfig} from "@/components/ui/chart";
 import {
   Select,
   SelectContent,
@@ -51,10 +52,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartAreaInteractive({ weekly, monthly }: ChartAreaInteractiveProps) {
+export function ChartAreaInteractive({ weekly = [], monthly = [] }: ChartAreaInteractiveProps) {
   const [timeRange, setTimeRange] = React.useState("monthly")
 
-  const data = timeRange === "weekly" ? weekly : monthly
+  const rawData = timeRange === "weekly" ? weekly : monthly
+  const data = Array.isArray(rawData) ? rawData : []
 
   return (
     <Card className="pt-0">

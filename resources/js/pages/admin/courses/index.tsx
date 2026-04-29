@@ -1,7 +1,4 @@
 import { Head } from '@inertiajs/react';
-import AdminCoursesTask from './task';
-import AdminCoursesTitle from './title';
-import AdminCoursesTopic from './topic';
 import type {
     CourseRow,
     LessonRow,
@@ -10,11 +7,17 @@ import type {
 } from '@/components/course-types';
 import { dashboard } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
+import AdminCoursesTask from './task';
+import AdminCoursesTitle from './title';
+import AdminCoursesTopic from './topic';
+
+type LessonOption = { id: number; course_id: number; title: string };
 
 type Props = {
     section: 'catalog' | 'lesson' | 'task';
     courses: Paginated<CourseRow>;
     courseOptions: Array<Pick<CourseRow, 'id' | 'title'>>;
+    allLessons: LessonOption[];
     lessons: Paginated<LessonRow>;
     tasks: Paginated<TaskRow>;
     selectedCourseId: number;
@@ -41,6 +44,7 @@ export default function AdminCoursesIndex(props: Props) {
                 <AdminCoursesTask
                     tasks={props.tasks}
                     lessons={props.lessons}
+                    allLessons={props.allLessons ?? []}
                     courseOptions={props.courseOptions}
                     selectedCourseId={props.selectedCourseId}
                     selectedLessonId={props.selectedLessonId}

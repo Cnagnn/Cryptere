@@ -8,6 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import {
     canFormatOutput,
     conceptLensByLab,
@@ -32,9 +35,6 @@ import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as labsIndex, show as labsShow } from '@/routes/labs';
 import type { FormatValue, LabShowProps, SimulationMode, SimulationResult } from '@/types/labs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 
 // ── Mobile-friendly collapsible card wrapper ──
 function CollapsibleCard({
@@ -85,11 +85,19 @@ function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
 
     const handleTouchEnd = useCallback(
         (e: React.TouchEvent) => {
-            if (touchStartX.current === null) return;
+            if (touchStartX.current === null) {
+return;
+}
+
             const diff = e.changedTouches[0].clientX - touchStartX.current;
             const threshold = 50;
-            if (diff > threshold) onSwipeRight();
-            else if (diff < -threshold) onSwipeLeft();
+
+            if (diff > threshold) {
+onSwipeRight();
+} else if (diff < -threshold) {
+onSwipeLeft();
+}
+
             touchStartX.current = null;
         },
         [onSwipeLeft, onSwipeRight],

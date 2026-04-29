@@ -13,11 +13,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { DiscussionPanel } from '@/components/discussion-panel';
 import { QuizPanel } from '@/components/course-quiz-panel';
-import { LessonContent } from '@/components/lesson-content';
 import type { QuizSubmission } from '@/components/course-quiz-panel';
 import { VideoPlayer } from '@/components/course-video-player';
+import { DiscussionPanel } from '@/components/discussion-panel';
+import { LessonContent } from '@/components/lesson-content';
 import {
     Accordion,
     AccordionContent,
@@ -54,10 +54,11 @@ import type { Auth } from '@/types/auth';
 const taskTypeIcon: Record<TaskType, React.ComponentType> = {
     video: Video,
     read: BookOpen,
+    reading: BookOpen,
     quiz: Brain,
 };
 
-type TaskType = 'video' | 'read' | 'quiz';
+type TaskType = 'video' | 'read' | 'reading' | 'quiz';
 
 type LessonQuizQuestion = {
     question: string;
@@ -148,7 +149,7 @@ function defaultTaskDescription(type: TaskType): string {
         return 'Watch the video until the end to complete this task.';
     }
 
-    if (type === 'read') {
+    if (type === 'read' || type === 'reading') {
         return 'Read through the material and note the key takeaways.';
     }
 
@@ -156,7 +157,7 @@ function defaultTaskDescription(type: TaskType): string {
 }
 
 function normalizeTaskTitle(title: string): string {
-    return title.replace(/^(video|quiz|read)\s*:\s*/i, '').trim();
+    return title.replace(/^(video|quiz|read|reading)\s*:\s*/i, '').trim();
 }
 
 function mapServerLessonsToLessonData(
@@ -169,13 +170,15 @@ function mapServerLessonsToLessonData(
         tasks: lesson.tasks.map((task, index) => {
             const mappedTaskId = task.taskId ?? lesson.id * 1000 + index + 1;
             const displayTaskTitle = normalizeTaskTitle(task.title);
+            // Normalize 'reading' → 'read' for consistency
+            const normalizedType: TaskType = task.type === 'reading' ? 'read' : task.type;
 
             return {
                 id: mappedTaskId,
-                type: task.type,
+                type: normalizedType,
                 title: displayTaskTitle,
                 minutes: Math.max(1, task.minutes || 1),
-                description: defaultTaskDescription(task.type),
+                description: defaultTaskDescription(normalizedType),
                 videoUrl: task.videoUrl,
                 videoProcessingStatus: task.videoProcessingStatus ?? null,
                 pdfUrl: task.pdfUrl,
@@ -905,6 +908,7 @@ export default function CourseShow({
                                         const serverLesson = serverLessons.find(
                                             (l) => l.id === selectedLesson?.id,
                                         );
+
                                         return serverLesson?.content?.trim() ? (
                                             <div className="max-h-[calc(100vh-12rem)] overflow-y-auto rounded-xl border bg-background p-6">
                                                 <LessonContent

@@ -183,6 +183,7 @@ export function TaskFormSheet({
 
     const handleVideoSourceChange = (source: VideoSource) => {
         setVideoSource(source);
+
         if (source === 'url') {
             form.setData('video_file', null);
         } else {

@@ -205,9 +205,13 @@ describe('SHA Lab', () => {
         const r1 = runSimulation('sha-lab', 'encrypt', 'hello', '');
         const r2 = runSimulation('sha-lab', 'encrypt', 'hellp', '');
         let diffCount = 0;
+
         for (let i = 0; i < r1.output.length; i++) {
-            if (r1.output[i] !== r2.output[i]) diffCount++;
+            if (r1.output[i] !== r2.output[i]) {
+diffCount++;
+}
         }
+
         expect(diffCount).toBeGreaterThan(r1.output.length * 0.3);
     });
 });
@@ -306,6 +310,7 @@ describe('Utility Functions', () => {
     describe('recommendedInputFormatByLab', () => {
         it('returns valid format for each lab', () => {
             const validFormats = ['ascii', 'hex', 'binary', 'base64', 'decimal'];
+
             for (const lab of ALL_LABS) {
                 const format = recommendedInputFormatByLab(lab, 'encrypt');
                 expect(validFormats).toContain(format);
@@ -324,6 +329,7 @@ describe('Utility Functions', () => {
     describe('recommendedOutputFormatByLab', () => {
         it('returns valid format for each lab', () => {
             const validFormats = ['ascii', 'hex', 'binary', 'base64', 'decimal'];
+
             for (const lab of ALL_LABS) {
                 const format = recommendedOutputFormatByLab(lab, 'encrypt');
                 expect(validFormats).toContain(format);

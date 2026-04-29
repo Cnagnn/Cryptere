@@ -77,6 +77,7 @@ function getInitialForm(question?: QuestionRow): QuestionFormData {
             explanation: question.explanation ?? '',
         };
     }
+
     return { ...defaultForm, options: ['', '', '', ''] };
 }
 
@@ -105,6 +106,7 @@ export function QuestionFormDialog({ mode, open, onOpenChange, challengeId, ques
     const handleTypeChange = (type: string) => {
         setForm((prev) => {
             const next = { ...prev, type };
+
             if (type === 'true_false') {
                 next.options = ['True', 'False'];
                 next.correct_answer = '';
@@ -113,6 +115,7 @@ export function QuestionFormDialog({ mode, open, onOpenChange, challengeId, ques
             } else {
                 next.options = [];
             }
+
             return next;
         });
     };
@@ -121,6 +124,7 @@ export function QuestionFormDialog({ mode, open, onOpenChange, challengeId, ques
         setForm((prev) => {
             const options = [...prev.options];
             options[index] = value;
+
             return { ...prev, options };
         });
     };

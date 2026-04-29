@@ -78,9 +78,18 @@ const DIFFICULTY_CONFIG: Record<
 
 // ── Node status helpers ──
 function getNodeStatus(node: PathNode) {
-    if (node.isCompleted) return 'completed' as const;
-    if (node.isLocked) return 'locked' as const;
-    if (node.isEnrolled) return 'in-progress' as const;
+    if (node.isCompleted) {
+return 'completed' as const;
+}
+
+    if (node.isLocked) {
+return 'locked' as const;
+}
+
+    if (node.isEnrolled) {
+return 'in-progress' as const;
+}
+
     return 'available' as const;
 }
 
@@ -337,7 +346,10 @@ export default function LearningPath({ learningPath, summary }: Props) {
 
     // Group nodes by category for the tree view
     const filteredNodes = useMemo(() => {
-        if (categoryFilter === 'all') return learningPath.nodes;
+        if (categoryFilter === 'all') {
+return learningPath.nodes;
+}
+
         return learningPath.nodes.filter(
             (n) => n.category === categoryFilter,
         );
@@ -346,20 +358,28 @@ export default function LearningPath({ learningPath, summary }: Props) {
     // Build prerequisite chains for visual connections
     const nodeMap = useMemo(() => {
         const map = new Map<number, PathNode>();
+
         for (const node of learningPath.nodes) {
             map.set(node.id, node);
         }
+
         return map;
     }, [learningPath.nodes]);
 
     // Group nodes into tiers (by pathPosition)
     const tiers = useMemo(() => {
         const tierMap = new Map<number, PathNode[]>();
+
         for (const node of filteredNodes) {
             const pos = node.pathPosition ?? 0;
-            if (!tierMap.has(pos)) tierMap.set(pos, []);
+
+            if (!tierMap.has(pos)) {
+tierMap.set(pos, []);
+}
+
             tierMap.get(pos)!.push(node);
         }
+
         return Array.from(tierMap.entries())
             .sort(([a], [b]) => a - b)
             .map(([position, nodes]) => ({ position, nodes }));
@@ -544,6 +564,7 @@ export default function LearningPath({ learningPath, summary }: Props) {
                                 {Object.entries(STATUS_CONFIG).map(
                                     ([key, cfg]) => {
                                         const Icon = cfg.icon;
+
                                         return (
                                             <div
                                                 key={key}

@@ -3,6 +3,16 @@ import { Filter, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
+    CatalogFilters,
+    CatalogStatistics,
+    hardcodedCatalogCourses,
+} from '@/components/courses/catalog-helpers';
+import {
+    CourseCardGrid,
+    CourseSkeletonGrid,
+    EmptyLabCatalogGrid,
+} from '@/components/courses/course-card-grid';
+import {
     AlertDialog,
     AlertDialogContent,
     AlertDialogDescription,
@@ -29,16 +39,6 @@ import {
     PaginationPrevious,
 } from '@/components/ui/pagination';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import {
-    CatalogFilters,
-    CatalogStatistics,
-    hardcodedCatalogCourses,
-} from '@/components/courses/catalog-helpers';
-import {
-    CourseCardGrid,
-    CourseSkeletonGrid,
-    EmptyLabCatalogGrid,
-} from '@/components/courses/course-card-grid';
 import { dashboard } from '@/routes';
 import { index as coursesIndex } from '@/routes/courses';
 import type {

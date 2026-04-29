@@ -10,6 +10,13 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import {
+    destroy,
+    index,
+    store,
+    update,
+    export as exportNotes,
+} from '@/actions/App/Http/Controllers/NoteController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,13 +46,6 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import {
-    destroy,
-    index,
-    store,
-    update,
-    export as exportNotes,
-} from '@/actions/App/Http/Controllers/NoteController';
 
 type Note = {
     id: number;
@@ -84,6 +84,7 @@ export function NotePanel({
         try {
             setLoading(true);
             const params: Record<string, string> = {};
+
             if (notableType && notableId) {
                 const typeMap: Record<string, string> = {
                     lesson: 'App\\Models\\Lesson',
@@ -113,8 +114,12 @@ export function NotePanel({
 
     // Create note
     const handleCreate = async () => {
-        if (!newContent.trim()) return;
+        if (!newContent.trim()) {
+return;
+}
+
         setSaving(true);
+
         try {
             const res = await fetch(store.url(), {
                 method: 'POST',
@@ -136,6 +141,7 @@ export function NotePanel({
                         : {}),
                 }),
             });
+
             if (res.ok) {
                 setNewTitle('');
                 setNewContent('');
@@ -150,7 +156,10 @@ export function NotePanel({
     // Auto-save on edit (debounced)
     const handleAutoSave = useCallback(
         (note: Note, title: string, content: string) => {
-            if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+            if (autoSaveTimer.current) {
+clearTimeout(autoSaveTimer.current);
+}
+
             autoSaveTimer.current = setTimeout(async () => {
                 try {
                     setSaving(true);
@@ -193,9 +202,11 @@ export function NotePanel({
                     ),
                 },
             });
+
             if (activeNote?.id === note.id) {
                 setActiveNote(null);
             }
+
             await fetchNotes();
         } catch {
             // silently fail

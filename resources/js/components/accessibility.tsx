@@ -66,6 +66,7 @@ export function useFocusOnNavigate(targetId = 'main-content') {
                 window.scrollTo({ top: 0, left: 0 });
 
                 const target = document.getElementById(targetId);
+
                 if (target) {
                     // Use preventScroll so focus doesn't cause an
                     // unwanted scroll jump to the element's position
@@ -86,7 +87,9 @@ export function useFocusOnNavigate(targetId = 'main-content') {
  */
 export function useEscapeKey(onEscape: () => void, enabled = true) {
     useEffect(() => {
-        if (!enabled) return;
+        if (!enabled) {
+return;
+}
 
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
@@ -95,6 +98,7 @@ export function useEscapeKey(onEscape: () => void, enabled = true) {
         }
 
         document.addEventListener('keydown', handleKeyDown);
+
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [onEscape, enabled]);
 }
@@ -104,7 +108,10 @@ export function useEscapeKey(onEscape: () => void, enabled = true) {
  */
 export function usePrefersReducedMotion(): boolean {
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-        if (typeof window === 'undefined') return false;
+        if (typeof window === 'undefined') {
+return false;
+}
+
         return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     });
 
@@ -112,6 +119,7 @@ export function usePrefersReducedMotion(): boolean {
         const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
         const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
         mediaQuery.addEventListener('change', handler);
+
         return () => mediaQuery.removeEventListener('change', handler);
     }, []);
 

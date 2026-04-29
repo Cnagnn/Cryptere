@@ -1,5 +1,9 @@
 import { Gift, Sparkles, Star, Zap } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import {
+    index as fetchRewards,
+    claim as claimReward,
+} from '@/actions/App/Http/Controllers/DailyRewardController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,10 +18,6 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import {
-    index as fetchRewards,
-    claim as claimReward,
-} from '@/actions/App/Http/Controllers/DailyRewardController';
 import { cn } from '@/lib/utils';
 
 type RewardTier = { xp: number; points: number };
@@ -54,11 +54,16 @@ export function DailyRewards() {
 
     const loadData = useCallback(async () => {
         setLoading(true);
+
         try {
             const response = await fetch(fetchRewards.url(), {
                 headers: { Accept: 'application/json' },
             });
-            if (!response.ok) return;
+
+            if (!response.ok) {
+return;
+}
+
             const json = await response.json();
             setData(json);
         } catch {
@@ -77,6 +82,7 @@ export function DailyRewards() {
 
     async function handleClaim() {
         setClaiming(true);
+
         try {
             const csrfToken = document
                 .querySelector('meta[name="csrf-token"]')
@@ -91,7 +97,9 @@ export function DailyRewards() {
                 },
             });
 
-            if (!response.ok) return;
+            if (!response.ok) {
+return;
+}
 
             const result: ClaimResult = await response.json();
             setClaimResult(result);

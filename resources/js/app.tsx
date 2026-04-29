@@ -12,7 +12,10 @@ import SettingsLayout from '@/layouts/settings/layout';
 if (import.meta.env.VITE_SENTRY_DSN) {
     Sentry.init({
         dsn: import.meta.env.VITE_SENTRY_DSN,
-        integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
+        integrations: [
+            Sentry.browserTracingIntegration(),
+            Sentry.replayIntegration(),
+        ],
         tracesSampleRate: 0.2,
         replaysSessionSampleRate: 0,
         replaysOnErrorSampleRate: 1.0,
@@ -28,14 +31,21 @@ const appName =
     'App';
 
 createInertiaApp({
+    pages: {
+        path: './pages',
+        extension: '.tsx',
+        lazy: true,
+    },
     title: () => appName,
     layout: (name) => {
         switch (true) {
             case name === 'welcome':
                 return null;
-            case ['auth/login', 'auth/register', 'auth/forgot-password'].includes(
-                name,
-            ):
+            case [
+                'auth/login',
+                'auth/register',
+                'auth/forgot-password',
+            ].includes(name):
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
@@ -67,4 +77,3 @@ createInertiaApp({
 if (typeof window !== 'undefined') {
     initializeTheme();
 }
-

@@ -131,6 +131,7 @@ function renderMarkdown(markdown: string): string {
                         .filter((c) => c.trim())
                         .map((c) => `<td class="border border-border px-3 py-2 text-sm">${processInline(c.trim())}</td>`)
                         .join('');
+
                     return `<tr>${cells}</tr>`;
                 })
                 .join('');
@@ -165,6 +166,7 @@ function renderMarkdown(markdown: string): string {
                 inCodeBlock = true;
                 codeBlockLang = line.trimStart().slice(3).trim();
             }
+
             i++;
             continue;
         }
@@ -179,9 +181,11 @@ function renderMarkdown(markdown: string): string {
         if (line.trim() === '') {
             flushBlockquote();
             flushList();
+
             if (inTable) {
                 flushTable();
             }
+
             i++;
             continue;
         }
@@ -193,6 +197,7 @@ function renderMarkdown(markdown: string): string {
                 flushList();
                 inTable = true;
             }
+
             tableRows.push(line);
             i++;
             continue;
@@ -206,6 +211,7 @@ function renderMarkdown(markdown: string): string {
                 flushList();
                 inBlockquote = true;
             }
+
             blockquoteLines.push(line.trimStart().slice(2));
             i++;
             continue;
@@ -215,6 +221,7 @@ function renderMarkdown(markdown: string): string {
 
         // Headings
         const headingMatch = line.match(/^(#{1,4})\s+(.+)$/);
+
         if (headingMatch) {
             flushList();
             const level = headingMatch[1].length;
@@ -242,12 +249,14 @@ function renderMarkdown(markdown: string): string {
 
         // Unordered list items
         const ulMatch = line.match(/^(\s*)[-*+]\s+(.+)$/);
+
         if (ulMatch) {
             if (!inList || listType !== 'ul') {
                 flushList();
                 inList = true;
                 listType = 'ul';
             }
+
             listItems.push(ulMatch[2]);
             i++;
             continue;
@@ -255,12 +264,14 @@ function renderMarkdown(markdown: string): string {
 
         // Ordered list items
         const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
+
         if (olMatch) {
             if (!inList || listType !== 'ol') {
                 flushList();
                 inList = true;
                 listType = 'ol';
             }
+
             listItems.push(olMatch[2]);
             i++;
             continue;
@@ -281,6 +292,7 @@ function renderMarkdown(markdown: string): string {
             `<pre class="my-4 overflow-x-auto rounded-lg bg-muted p-4"><code class="text-sm font-mono">${code}</code></pre>`,
         );
     }
+
     flushBlockquote();
     flushList();
     flushTable();

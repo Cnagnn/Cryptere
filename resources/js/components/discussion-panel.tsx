@@ -97,10 +97,22 @@ function timeAgo(dateStr: string): string {
     const date = new Date(dateStr);
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    if (seconds < 60) {
+return 'just now';
+}
+
+    if (seconds < 3600) {
+return `${Math.floor(seconds / 60)}m ago`;
+}
+
+    if (seconds < 86400) {
+return `${Math.floor(seconds / 3600)}h ago`;
+}
+
+    if (seconds < 604800) {
+return `${Math.floor(seconds / 86400)}d ago`;
+}
+
     return date.toLocaleDateString();
 }
 
@@ -160,13 +172,19 @@ export function DiscussionPanel({
                 const res = await fetch(`/discussions?${params}`, {
                     headers: { Accept: 'application/json' },
                 });
-                if (!res.ok) return;
+
+                if (!res.ok) {
+return;
+}
+
                 const json: PaginatedResponse = await res.json();
+
                 if (page === 1) {
                     setDiscussions(json.data);
                 } else {
                     setDiscussions((prev) => [...prev, ...json.data]);
                 }
+
                 setCurrentPage(json.current_page);
                 setLastPage(json.last_page);
                 setTotalCount(json.total);
@@ -194,7 +212,11 @@ export function DiscussionPanel({
             const res = await fetch(`/discussions/${id}`, {
                 headers: { Accept: 'application/json' },
             });
-            if (!res.ok) return;
+
+            if (!res.ok) {
+return;
+}
+
             const discussion: Discussion = await res.json();
             setDiscussions((prev) =>
                 prev.map((d) =>
@@ -211,8 +233,12 @@ export function DiscussionPanel({
     // ─── Create discussion ───────────────────────────────────────────────────
 
     const handleCreateDiscussion = async () => {
-        if (!newTitle.trim() || !newBody.trim()) return;
+        if (!newTitle.trim() || !newBody.trim()) {
+return;
+}
+
         setSubmitting(true);
+
         try {
             const res = await fetch('/discussions', {
                 method: 'POST',
@@ -228,8 +254,10 @@ export function DiscussionPanel({
                     body: newBody,
                 }),
             });
+
             if (res.ok) {
                 const json = await res.json();
+
                 if (json.xp_awarded > 0) {
                     toast.success(
                         `Discussion posted! +${json.xp_awarded} XP 🎉`,
@@ -237,6 +265,7 @@ export function DiscussionPanel({
                 } else {
                     toast.success('Discussion posted!');
                 }
+
                 setNewTitle('');
                 setNewBody('');
                 setShowNewForm(false);
@@ -256,8 +285,12 @@ export function DiscussionPanel({
     // ─── Reply ───────────────────────────────────────────────────────────────
 
     const handleReply = async (discussionId: number) => {
-        if (!replyBody.trim()) return;
+        if (!replyBody.trim()) {
+return;
+}
+
         setSubmittingReply(true);
+
         try {
             const res = await fetch(`/discussions/${discussionId}/replies`, {
                 method: 'POST',
@@ -268,13 +301,16 @@ export function DiscussionPanel({
                 },
                 body: JSON.stringify({ body: replyBody }),
             });
+
             if (res.ok) {
                 const json = await res.json();
+
                 if (json.xp_awarded > 0) {
                     toast.success(`Reply posted! +${json.xp_awarded} XP 🎉`);
                 } else {
                     toast.success('Reply posted!');
                 }
+
                 setReplyBody('');
                 await fetchDiscussionDetail(discussionId);
                 // Update reply count in list
@@ -304,6 +340,7 @@ export function DiscussionPanel({
         id: number,
     ) => {
         const key = `${type}:${id}`;
+
         try {
             const res = await fetch('/discussions/upvote', {
                 method: 'POST',
@@ -314,17 +351,23 @@ export function DiscussionPanel({
                 },
                 body: JSON.stringify({ type, id }),
             });
-            if (!res.ok) return;
+
+            if (!res.ok) {
+return;
+}
+
             const json = await res.json();
             const delta = json.upvoted ? 1 : -1;
 
             setUpvotedItems((prev) => {
                 const next = new Set(prev);
+
                 if (json.upvoted) {
                     next.add(key);
                 } else {
                     next.delete(key);
                 }
+
                 return next;
             });
 
@@ -368,7 +411,11 @@ export function DiscussionPanel({
                     'X-XSRF-TOKEN': getXsrfToken(),
                 },
             });
-            if (!res.ok) return;
+
+            if (!res.ok) {
+return;
+}
+
             const json = await res.json();
             setDiscussions((prev) =>
                 prev.map((d) =>
@@ -386,7 +433,10 @@ export function DiscussionPanel({
     // ─── Delete ──────────────────────────────────────────────────────────────
 
     const handleDelete = async (discussionId: number) => {
-        if (!confirm('Are you sure you want to delete this discussion?')) return;
+        if (!confirm('Are you sure you want to delete this discussion?')) {
+return;
+}
+
         try {
             const res = await fetch(`/discussions/${discussionId}`, {
                 method: 'DELETE',
@@ -395,12 +445,17 @@ export function DiscussionPanel({
                     'X-XSRF-TOKEN': getXsrfToken(),
                 },
             });
+
             if (res.ok) {
                 setDiscussions((prev) =>
                     prev.filter((d) => d.id !== discussionId),
                 );
                 setTotalCount((prev) => prev - 1);
-                if (expandedId === discussionId) setExpandedId(null);
+
+                if (expandedId === discussionId) {
+setExpandedId(null);
+}
+
                 toast.success('Discussion deleted');
             }
         } catch {
@@ -413,10 +468,13 @@ export function DiscussionPanel({
     const handleToggleExpand = (id: number) => {
         if (expandedId === id) {
             setExpandedId(null);
+
             return;
         }
+
         setExpandedId(id);
         const discussion = discussions.find((d) => d.id === id);
+
         if (!discussion?.replies) {
             fetchDiscussionDetail(id);
         }

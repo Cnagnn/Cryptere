@@ -1,6 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { CourseRow, LessonRow, Paginated } from '@/components/course-types';
@@ -21,6 +21,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -32,8 +33,6 @@ import {
 } from '@/components/ui/empty';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -42,6 +41,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as lessonsDestroy } from '@/routes/admin/courses/lessons';
@@ -191,8 +192,32 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
             header: 'Title',
         },
         {
-            accessorKey: 'tasks_count',
-            header: 'Tasks',
+            accessorKey: 'created_at',
+            header: 'Created At',
+            cell: ({ row }) => {
+                const date = row.original.created_at ? new Date(row.original.created_at) : null;
+                if (!date) return '—';
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = date.getFullYear();
+                const h = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                return `${d}/${m}/${y}, ${h}:${min}`;
+            },
+        },
+        {
+            accessorKey: 'updated_at',
+            header: 'Updated At',
+            cell: ({ row }) => {
+                const date = row.original.updated_at ? new Date(row.original.updated_at) : null;
+                if (!date) return '—';
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = date.getFullYear();
+                const h = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                return `${d}/${m}/${y}, ${h}:${min}`;
+            },
         },
         {
             id: 'actions',
@@ -215,11 +240,25 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
                                 onClick={() => {
                                     router.delete(lessonsDestroy.url({ lesson: row.original.id }), {
                                         preserveScroll: true,
+                                        onSuccess: () => toast.success('Topic deleted successfully.'),
+                                        onError: (formErrors) => {
+                                            const messages = Object.values(formErrors).flat().join(', ');
+                                            toast.error(messages || 'Failed to delete topic.');
+                                        },
                                     });
                                 }}
                             >
                                 <Trash2 data-icon="inline-start" />
                                 Delete
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onClick={() => router.get(
+                                    adminCoursesIndex.url({ query: { section: 'task', course_id: row.original.course_id, lesson_id: row.original.id } }),
+                                )}
+                            >
+                                <Eye data-icon="inline-start" />
+                                View Topic
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -334,6 +373,10 @@ export default function AdminCoursesTopic({ lessons, courseOptions, selectedCour
                                             toast.success(isEditMode ? 'Topic updated successfully.' : 'Topic created successfully.');
                                             resetTopicForm();
                                             setCreateTopicDialogOpen(false);
+                                        },
+                                        onError: (formErrors) => {
+                                            const messages = Object.values(formErrors).flat().join(', ');
+                                            toast.error(messages || 'Failed to save topic.');
                                         },
                                         onFinish: () => setIsSavingTopic(false),
                                     });

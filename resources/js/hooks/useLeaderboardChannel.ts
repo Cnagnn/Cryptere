@@ -76,6 +76,7 @@ export function useLeaderboardChannel(options: UseLeaderboardChannelOptions = {}
                 '[useLeaderboardChannel] Laravel Echo is not available on window.Echo. ' +
                     'Make sure laravel-echo and the Reverb connector are installed and configured.',
             );
+
             return;
         }
 

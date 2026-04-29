@@ -4,7 +4,6 @@ import {
     Activity,
     AlertTriangle,
     ArrowUpRight,
-    BookOpen,
     Flame,
     GraduationCap,
     X,
@@ -592,7 +591,7 @@ export function LearnerDashboard({
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-semibold tabular-nums">
-                            Rank #{academy.learningPath.currentRank}
+                            Rank #{academy.learningPath?.currentRank ?? '-'}
                         </p>
                     </CardContent>
                 </Card>
@@ -600,8 +599,8 @@ export function LearnerDashboard({
                 {/* Row 2: Area Chart (8 cols) + Streak Calendar (4 cols) */}
                 <div className="col-span-2 flex *:flex-1 md:col-span-4 lg:col-span-8">
                     <ChartAreaInteractive
-                        weekly={academy.earningsHistory.weekly}
-                        monthly={academy.earningsHistory.monthly}
+                        weekly={academy.earningsHistory?.weekly ?? []}
+                        monthly={academy.earningsHistory?.monthly ?? []}
                     />
                 </div>
 
@@ -666,8 +665,9 @@ export function LearnerDashboard({
                     </CardHeader>
                     <CardContent>
                         {(() => {
-                            const top = academy.leaderboardPreview;
-                            const myRank = academy.learningPath.currentRank;
+                            const top = academy.leaderboardPreview ?? [];
+                            const myRank =
+                                academy.learningPath?.currentRank ?? 0;
                             const myUsername = auth.user.username;
                             const isInTop = top.some(
                                 (e) => e.username === myUsername,

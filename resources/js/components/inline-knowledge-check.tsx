@@ -43,6 +43,7 @@ export function InlineKnowledgeCheck({
         } else if (type === 'fill_blank') {
             const normalizedAnswer = String(answer).toLowerCase().trim();
             const normalizedInput = textAnswer.toLowerCase().trim();
+
             if (normalizedInput === normalizedAnswer) {
                 setState('correct');
             } else {
@@ -126,6 +127,7 @@ export function InlineKnowledgeCheck({
                                 checked={selectedOption === index}
                                 onChange={() => {
                                     setSelectedOption(index);
+
                                     if (state === 'incorrect') {
                                         setState('unanswered');
                                     }
@@ -148,6 +150,7 @@ export function InlineKnowledgeCheck({
                             type="button"
                             onClick={() => {
                                 setSelectedOption(index);
+
                                 if (state === 'incorrect') {
                                     setState('unanswered');
                                 }
@@ -179,6 +182,7 @@ export function InlineKnowledgeCheck({
                         value={textAnswer}
                         onChange={(e) => {
                             setTextAnswer(e.target.value);
+
                             if (state === 'incorrect') {
                                 setState('unanswered');
                             }

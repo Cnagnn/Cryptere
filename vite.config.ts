@@ -5,9 +5,12 @@ import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
+const enableSourceMap = process.env.VITE_BUILD_SOURCEMAP === 'true';
+const enableReactCompiler = process.env.VITE_REACT_COMPILER !== 'false';
+
 export default defineConfig({
     build: {
-        sourcemap: 'hidden',
+        sourcemap: enableSourceMap ? 'hidden' : false,
     },
     plugins: [
         laravel({
@@ -16,9 +19,11 @@ export default defineConfig({
         }),
         inertia(),
         react({
-            babel: {
-                plugins: ['babel-plugin-react-compiler'],
-            },
+            babel: enableReactCompiler
+                ? {
+                      plugins: ['babel-plugin-react-compiler'],
+                  }
+                : undefined,
         }),
         tailwindcss(),
         wayfinder({
