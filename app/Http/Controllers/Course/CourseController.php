@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Course;
 
 use App\Concerns\ExtractsLegacyTasks;
 use App\Http\Controllers\Controller;
+use App\Models\AssessmentAnswer;
+use App\Models\AssessmentSubmission;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonTask;
@@ -152,6 +154,144 @@ class CourseController extends Controller
             ];
         })->values();
 
+        // Load the course's final assessment (if any)
+        $user = $request->user();
+        $assessment = $course->assessment()->published()->withCount('questions')->first();
+        $assessmentData = null;
+
+        if ($assessment) {
+            $allLessonsCompleted = $enrollment && $enrollment->progress_percentage >= 100;
+
+            $bestSubmission = AssessmentSubmission::query()
+                ->where('user_id', $user->id)
+                ->where('assessment_id', $assessment->id)
+                ->where('status', 'graded')
+                ->orderByDesc('total_score')
+                ->first();
+
+            $attemptCount = AssessmentSubmission::query()
+                ->where('user_id', $user->id)
+                ->where('assessment_id', $assessment->id)
+                ->whereIn('status', ['submitted', 'grading', 'graded'])
+                ->count();
+
+            // Load questions (hide correct answers)
+            $questions = $assessment->questions()
+                ->get()
+                ->map(fn ($q) => [
+                    'id' => $q->id,
+                    'bloomLevel' => $q->bloom_level,
+                    'questionType' => $q->question_type,
+                    'questionText' => $q->question_text,
+                    'options' => $q->options,
+                    'points' => $q->points,
+                    'gradingType' => $q->grading_type,
+                    'minWords' => $q->min_words,
+                    'maxWords' => $q->max_words,
+                    'sortOrder' => $q->sort_order,
+                ]);
+
+            // Check for in-progress submission
+            $activeSubmission = AssessmentSubmission::query()
+                ->where('user_id', $user->id)
+                ->where('assessment_id', $assessment->id)
+                ->where('status', AssessmentSubmission::STATUS_IN_PROGRESS)
+                ->first();
+
+            // Get past submissions
+            $pastSubmissions = AssessmentSubmission::query()
+                ->where('user_id', $user->id)
+                ->where('assessment_id', $assessment->id)
+                ->whereIn('status', [
+                    AssessmentSubmission::STATUS_SUBMITTED,
+                    AssessmentSubmission::STATUS_GRADING,
+                    AssessmentSubmission::STATUS_GRADED,
+                ])
+                ->orderByDesc('attempt_number')
+                ->get()
+                ->map(fn (AssessmentSubmission $sub) => [
+                    'id' => $sub->id,
+                    'attemptNumber' => $sub->attempt_number,
+                    'status' => $sub->status,
+                    'totalScore' => $sub->total_score,
+                    'passed' => $sub->passed,
+                    'submittedAt' => $sub->submitted_at?->toIso8601String(),
+                    'gradedAt' => $sub->graded_at?->toIso8601String(),
+                ]);
+
+            // Load results for the latest graded submission (for inline results view)
+            $latestGraded = AssessmentSubmission::query()
+                ->where('user_id', $user->id)
+                ->where('assessment_id', $assessment->id)
+                ->where('status', 'graded')
+                ->orderByDesc('attempt_number')
+                ->with(['answers.question', 'grader:id,name'])
+                ->first();
+
+            $latestResults = null;
+            if ($latestGraded) {
+                $latestResults = [
+                    'submission' => [
+                        'id' => $latestGraded->id,
+                        'attemptNumber' => $latestGraded->attempt_number,
+                        'status' => $latestGraded->status,
+                        'totalScore' => $latestGraded->total_score,
+                        'pointsEarned' => $latestGraded->points_earned,
+                        'pointsPossible' => $latestGraded->points_possible,
+                        'passed' => $latestGraded->passed,
+                        'submittedAt' => $latestGraded->submitted_at?->toIso8601String(),
+                        'gradedAt' => $latestGraded->graded_at?->toIso8601String(),
+                        'overallFeedback' => $latestGraded->overall_feedback,
+                        'graderName' => $latestGraded->grader?->name,
+                    ],
+                    'answers' => $latestGraded->answers->map(fn (AssessmentAnswer $answer) => [
+                        'id' => $answer->id,
+                        'questionId' => $answer->question_id,
+                        'questionText' => $answer->question->question_text,
+                        'questionType' => $answer->question->question_type,
+                        'bloomLevel' => $answer->question->bloom_level,
+                        'answerText' => $answer->answer_text,
+                        'selectedOption' => $answer->selected_option,
+                        'isCorrect' => $answer->is_correct,
+                        'pointsAwarded' => $answer->points_awarded,
+                        'maxPoints' => $answer->max_points,
+                        'rubricScores' => $answer->rubric_scores,
+                        'feedback' => $answer->feedback,
+                        'explanation' => $answer->question->explanation,
+                        'correctAnswer' => $answer->question->correct_answer,
+                    ]),
+                ];
+            }
+
+            $assessmentData = [
+                'id' => $assessment->id,
+                'slug' => $assessment->slug,
+                'title' => $assessment->title,
+                'description' => $assessment->description,
+                'bloomLevel' => $assessment->bloom_level,
+                'bloomLabel' => $assessment->bloom_label,
+                'gradingType' => $assessment->grading_type,
+                'passingScore' => $assessment->passing_score,
+                'maxAttempts' => $assessment->max_attempts,
+                'timeLimitMinutes' => $assessment->time_limit_minutes,
+                'questionsCount' => $assessment->questions_count,
+                'totalPoints' => $assessment->total_points,
+                'bestScore' => $bestSubmission?->total_score,
+                'passed' => $bestSubmission?->passed ?? false,
+                'attemptCount' => $attemptCount,
+                'canAttempt' => $allLessonsCompleted && $assessment->canAttempt($user),
+                'isLocked' => ! $allLessonsCompleted,
+                'questions' => $questions,
+                'activeSubmission' => $activeSubmission ? [
+                    'id' => $activeSubmission->id,
+                    'attemptNumber' => $activeSubmission->attempt_number,
+                    'startedAt' => $activeSubmission->started_at->toIso8601String(),
+                ] : null,
+                'pastSubmissions' => $pastSubmissions,
+                'latestResults' => $latestResults,
+            ];
+        }
+
         return Inertia::render('courses/show', [
             'course' => [
                 'id' => $course->id,
@@ -166,6 +306,7 @@ class CourseController extends Controller
                 'progressPercentage' => $enrollment->progress_percentage,
                 'completedAt' => optional($enrollment->completed_at)->toIso8601String(),
             ] : null,
+            'assessment' => $assessmentData,
         ]);
     }
 }

@@ -39,29 +39,59 @@ const ALL_LABS = [
 // ─── Caesar Cipher ───────────────────────────────────────────────────────────
 describe('Caesar Cipher Lab', () => {
     it('encrypts "HELLO" with shift 3', () => {
-        const result = runSimulation('caesar-cipher-lab', 'encrypt', 'HELLO', '3');
+        const result = runSimulation(
+            'caesar-cipher-lab',
+            'encrypt',
+            'HELLO',
+            '3',
+        );
         expect(result.output).toBeTruthy();
         expect(result.output.length).toBe(5);
     });
 
     it('decrypt reverses encrypt', () => {
-        const encrypted = runSimulation('caesar-cipher-lab', 'encrypt', 'HELLO', '3');
-        const decrypted = runSimulation('caesar-cipher-lab', 'decrypt', encrypted.output, '3');
+        const encrypted = runSimulation(
+            'caesar-cipher-lab',
+            'encrypt',
+            'HELLO',
+            '3',
+        );
+        const decrypted = runSimulation(
+            'caesar-cipher-lab',
+            'decrypt',
+            encrypted.output,
+            '3',
+        );
         expect(decrypted.output).toBe('HELLO');
     });
 
     it('handles shift of 0 (identity)', () => {
-        const result = runSimulation('caesar-cipher-lab', 'encrypt', 'TEST', '0');
+        const result = runSimulation(
+            'caesar-cipher-lab',
+            'encrypt',
+            'TEST',
+            '0',
+        );
         expect(result.output).toBe('TEST');
     });
 
     it('handles shift of 26 (full rotation = identity)', () => {
-        const result = runSimulation('caesar-cipher-lab', 'encrypt', 'TEST', '26');
+        const result = runSimulation(
+            'caesar-cipher-lab',
+            'encrypt',
+            'TEST',
+            '26',
+        );
         expect(result.output).toBe('TEST');
     });
 
     it('handles lowercase input', () => {
-        const result = runSimulation('caesar-cipher-lab', 'encrypt', 'hello', '3');
+        const result = runSimulation(
+            'caesar-cipher-lab',
+            'encrypt',
+            'hello',
+            '3',
+        );
         expect(result.output).toBeTruthy();
         expect(result.output.length).toBe(5);
     });
@@ -73,8 +103,18 @@ describe('Caesar Cipher Lab', () => {
 
     it('encrypt then decrypt is identity for any shift', () => {
         const text = 'CRYPTOGRAPHY';
-        const encrypted = runSimulation('caesar-cipher-lab', 'encrypt', text, '13');
-        const decrypted = runSimulation('caesar-cipher-lab', 'decrypt', encrypted.output, '13');
+        const encrypted = runSimulation(
+            'caesar-cipher-lab',
+            'encrypt',
+            text,
+            '13',
+        );
+        const decrypted = runSimulation(
+            'caesar-cipher-lab',
+            'decrypt',
+            encrypted.output,
+            '13',
+        );
         expect(decrypted.output).toBe(text);
     });
 
@@ -85,7 +125,12 @@ describe('Caesar Cipher Lab', () => {
     });
 
     it('has an outputLabel', () => {
-        const result = runSimulation('caesar-cipher-lab', 'encrypt', 'TEST', '3');
+        const result = runSimulation(
+            'caesar-cipher-lab',
+            'encrypt',
+            'TEST',
+            '3',
+        );
         expect(result.outputLabel).toBeTruthy();
     });
 });
@@ -93,36 +138,76 @@ describe('Caesar Cipher Lab', () => {
 // ─── Vigenère Cipher ─────────────────────────────────────────────────────────
 describe('Vigenère Cipher Lab', () => {
     it('encrypts with keyword correctly', () => {
-        const result = runSimulation('vigenere-cipher-lab', 'encrypt', 'HELLO', 'KEY');
+        const result = runSimulation(
+            'vigenere-cipher-lab',
+            'encrypt',
+            'HELLO',
+            'KEY',
+        );
         expect(result.output).toBeTruthy();
         expect(result.output.length).toBe(5);
     });
 
     it('decrypt reverses encrypt', () => {
-        const encrypted = runSimulation('vigenere-cipher-lab', 'encrypt', 'HELLO', 'KEY');
-        const decrypted = runSimulation('vigenere-cipher-lab', 'decrypt', encrypted.output, 'KEY');
+        const encrypted = runSimulation(
+            'vigenere-cipher-lab',
+            'encrypt',
+            'HELLO',
+            'KEY',
+        );
+        const decrypted = runSimulation(
+            'vigenere-cipher-lab',
+            'decrypt',
+            encrypted.output,
+            'KEY',
+        );
         expect(decrypted.output).toBe('HELLO');
     });
 
     it('handles lowercase input', () => {
-        const result = runSimulation('vigenere-cipher-lab', 'encrypt', 'hello', 'key');
+        const result = runSimulation(
+            'vigenere-cipher-lab',
+            'encrypt',
+            'hello',
+            'key',
+        );
         expect(result.output).toBeTruthy();
         expect(result.output.length).toBe(5);
     });
 
     it('generates walkthrough steps', () => {
-        const result = runSimulation('vigenere-cipher-lab', 'encrypt', 'TEST', 'KEY');
+        const result = runSimulation(
+            'vigenere-cipher-lab',
+            'encrypt',
+            'TEST',
+            'KEY',
+        );
         expect(result.steps.length).toBeGreaterThan(0);
     });
 
     it('produces different output for different keys', () => {
-        const r1 = runSimulation('vigenere-cipher-lab', 'encrypt', 'HELLO', 'AAA');
-        const r2 = runSimulation('vigenere-cipher-lab', 'encrypt', 'HELLO', 'ZZZ');
+        const r1 = runSimulation(
+            'vigenere-cipher-lab',
+            'encrypt',
+            'HELLO',
+            'AAA',
+        );
+        const r2 = runSimulation(
+            'vigenere-cipher-lab',
+            'encrypt',
+            'HELLO',
+            'ZZZ',
+        );
         expect(r1.output).not.toBe(r2.output);
     });
 
     it('key A produces identity (no shift)', () => {
-        const result = runSimulation('vigenere-cipher-lab', 'encrypt', 'HELLO', 'A');
+        const result = runSimulation(
+            'vigenere-cipher-lab',
+            'encrypt',
+            'HELLO',
+            'A',
+        );
         expect(result.output).toBe('HELLO');
     });
 });
@@ -130,14 +215,29 @@ describe('Vigenère Cipher Lab', () => {
 // ─── AES Lab ─────────────────────────────────────────────────────────────────
 describe('AES Lab', () => {
     it('produces output for encrypt mode', () => {
-        const result = runSimulation('aes-lab', 'encrypt', 'Hello World', 'mysecretkey12345');
+        const result = runSimulation(
+            'aes-lab',
+            'encrypt',
+            'Hello World',
+            'mysecretkey12345',
+        );
         expect(result.output).toBeTruthy();
         expect(result.steps.length).toBeGreaterThan(0);
     });
 
     it('produces different output for different keys', () => {
-        const r1 = runSimulation('aes-lab', 'encrypt', 'Hello', 'key1longerthan16');
-        const r2 = runSimulation('aes-lab', 'encrypt', 'Hello', 'key2longerthan16');
+        const r1 = runSimulation(
+            'aes-lab',
+            'encrypt',
+            'Hello',
+            'key1longerthan16',
+        );
+        const r2 = runSimulation(
+            'aes-lab',
+            'encrypt',
+            'Hello',
+            'key2longerthan16',
+        );
         expect(r1.output).not.toBe(r2.output);
     });
 
@@ -208,8 +308,8 @@ describe('SHA Lab', () => {
 
         for (let i = 0; i < r1.output.length; i++) {
             if (r1.output[i] !== r2.output[i]) {
-diffCount++;
-}
+                diffCount++;
+            }
         }
 
         expect(diffCount).toBeGreaterThan(r1.output.length * 0.3);
@@ -219,23 +319,48 @@ diffCount++;
 // ─── Digital Signature Lab ───────────────────────────────────────────────────
 describe('Digital Signature Lab', () => {
     it('produces signature output in sign mode', () => {
-        const result = runSimulation('digital-signature-lab', 'encrypt', 'Document', 'key');
+        const result = runSimulation(
+            'digital-signature-lab',
+            'encrypt',
+            'Document',
+            'key',
+        );
         expect(result.output).toBeTruthy();
     });
 
     it('verify mode produces verification result', () => {
-        const result = runSimulation('digital-signature-lab', 'decrypt', 'Document', 'key');
+        const result = runSimulation(
+            'digital-signature-lab',
+            'decrypt',
+            'Document',
+            'key',
+        );
         expect(result.output).toBeTruthy();
     });
 
     it('generates walkthrough steps', () => {
-        const result = runSimulation('digital-signature-lab', 'encrypt', 'Test', 'key');
+        const result = runSimulation(
+            'digital-signature-lab',
+            'encrypt',
+            'Test',
+            'key',
+        );
         expect(result.steps.length).toBeGreaterThan(0);
     });
 
     it('different documents produce different signatures', () => {
-        const r1 = runSimulation('digital-signature-lab', 'encrypt', 'Document A', 'key');
-        const r2 = runSimulation('digital-signature-lab', 'encrypt', 'Document B', 'key');
+        const r1 = runSimulation(
+            'digital-signature-lab',
+            'encrypt',
+            'Document A',
+            'key',
+        );
+        const r2 = runSimulation(
+            'digital-signature-lab',
+            'encrypt',
+            'Document B',
+            'key',
+        );
         expect(r1.output).not.toBe(r2.output);
     });
 });
@@ -293,13 +418,23 @@ describe('Format Conversion', () => {
     });
 
     it('normalizeInputForSimulation handles hex for AES decrypt', () => {
-        const result = normalizeInputForSimulation('aes-lab', 'decrypt', '4A6F686E', 'hex');
+        const result = normalizeInputForSimulation(
+            'aes-lab',
+            'decrypt',
+            '4A6F686E',
+            'hex',
+        );
         expect(result.error).toBeNull();
         expect(result.value).toBe('4A6F686E');
     });
 
     it('normalizeInputForSimulation handles ascii passthrough', () => {
-        const result = normalizeInputForSimulation('caesar-cipher-lab', 'encrypt', 'Hello', 'ascii');
+        const result = normalizeInputForSimulation(
+            'caesar-cipher-lab',
+            'encrypt',
+            'Hello',
+            'ascii',
+        );
         expect(result.error).toBeNull();
         expect(result.value).toBe('Hello');
     });
@@ -309,7 +444,13 @@ describe('Format Conversion', () => {
 describe('Utility Functions', () => {
     describe('recommendedInputFormatByLab', () => {
         it('returns valid format for each lab', () => {
-            const validFormats = ['ascii', 'hex', 'binary', 'base64', 'decimal'];
+            const validFormats = [
+                'ascii',
+                'hex',
+                'binary',
+                'base64',
+                'decimal',
+            ];
 
             for (const lab of ALL_LABS) {
                 const format = recommendedInputFormatByLab(lab, 'encrypt');
@@ -318,17 +459,27 @@ describe('Utility Functions', () => {
         });
 
         it('returns hex for AES decrypt', () => {
-            expect(recommendedInputFormatByLab('aes-lab', 'decrypt')).toBe('hex');
+            expect(recommendedInputFormatByLab('aes-lab', 'decrypt')).toBe(
+                'hex',
+            );
         });
 
         it('returns decimal for RSA decrypt', () => {
-            expect(recommendedInputFormatByLab('rsa-lab', 'decrypt')).toBe('decimal');
+            expect(recommendedInputFormatByLab('rsa-lab', 'decrypt')).toBe(
+                'decimal',
+            );
         });
     });
 
     describe('recommendedOutputFormatByLab', () => {
         it('returns valid format for each lab', () => {
-            const validFormats = ['ascii', 'hex', 'binary', 'base64', 'decimal'];
+            const validFormats = [
+                'ascii',
+                'hex',
+                'binary',
+                'base64',
+                'decimal',
+            ];
 
             for (const lab of ALL_LABS) {
                 const format = recommendedOutputFormatByLab(lab, 'encrypt');
@@ -349,13 +500,25 @@ describe('Utility Functions', () => {
 
     describe('visualizationLensByLab', () => {
         it('returns visualization data for caesar cipher', () => {
-            const lens = visualizationLensByLab('caesar-cipher-lab', 'HELLO', '3', 'encrypt', 'ascii');
+            const lens = visualizationLensByLab(
+                'caesar-cipher-lab',
+                'HELLO',
+                '3',
+                'encrypt',
+                'ascii',
+            );
             expect(lens).toBeTruthy();
             expect(lens.headers).toBeTruthy();
         });
 
         it('returns visualization data for vigenere cipher', () => {
-            const lens = visualizationLensByLab('vigenere-cipher-lab', 'HELLO', 'KEY', 'encrypt', 'ascii');
+            const lens = visualizationLensByLab(
+                'vigenere-cipher-lab',
+                'HELLO',
+                'KEY',
+                'encrypt',
+                'ascii',
+            );
             expect(lens).toBeTruthy();
             expect(lens.headers).toBeTruthy();
         });
@@ -363,37 +526,72 @@ describe('Utility Functions', () => {
 
     describe('validationErrorByLab', () => {
         it('returns null for valid Caesar cipher input', () => {
-            const error = validationErrorByLab('caesar-cipher-lab', 'encrypt', 'Hello', '3');
+            const error = validationErrorByLab(
+                'caesar-cipher-lab',
+                'encrypt',
+                'Hello',
+                '3',
+            );
             expect(error).toBeNull();
         });
 
         it('returns error for Caesar cipher with non-numeric key', () => {
-            const error = validationErrorByLab('caesar-cipher-lab', 'encrypt', 'Hello', 'abc');
+            const error = validationErrorByLab(
+                'caesar-cipher-lab',
+                'encrypt',
+                'Hello',
+                'abc',
+            );
             expect(error).toBeTruthy();
         });
 
         it('returns null for valid Vigenère input', () => {
-            const error = validationErrorByLab('vigenere-cipher-lab', 'encrypt', 'Hello', 'KEY');
+            const error = validationErrorByLab(
+                'vigenere-cipher-lab',
+                'encrypt',
+                'Hello',
+                'KEY',
+            );
             expect(error).toBeNull();
         });
 
         it('returns error for Vigenère with empty key', () => {
-            const error = validationErrorByLab('vigenere-cipher-lab', 'encrypt', 'Hello', '');
+            const error = validationErrorByLab(
+                'vigenere-cipher-lab',
+                'encrypt',
+                'Hello',
+                '',
+            );
             expect(error).toBeTruthy();
         });
 
         it('returns error for empty input', () => {
-            const error = validationErrorByLab('caesar-cipher-lab', 'encrypt', '', '3');
+            const error = validationErrorByLab(
+                'caesar-cipher-lab',
+                'encrypt',
+                '',
+                '3',
+            );
             expect(error).toBeTruthy();
         });
 
         it('returns error for AES decrypt with invalid hex', () => {
-            const error = validationErrorByLab('aes-lab', 'decrypt', 'ZZZZ', 'key');
+            const error = validationErrorByLab(
+                'aes-lab',
+                'decrypt',
+                'ZZZZ',
+                'key',
+            );
             expect(error).toBeTruthy();
         });
 
         it('returns null for valid SHA input', () => {
-            const error = validationErrorByLab('sha-lab', 'encrypt', 'hello', '');
+            const error = validationErrorByLab(
+                'sha-lab',
+                'encrypt',
+                'hello',
+                '',
+            );
             expect(error).toBeNull();
         });
     });
@@ -487,7 +685,12 @@ describe('Cross-Lab Integration', () => {
 
         for (const lab of ALL_LABS) {
             const defaultText = defaultTextByLab(lab);
-            const result = runSimulation(lab, 'encrypt', defaultText, keys[lab]);
+            const result = runSimulation(
+                lab,
+                'encrypt',
+                defaultText,
+                keys[lab],
+            );
             expect(result.output, `${lab} should produce output`).toBeTruthy();
         }
     });
@@ -504,15 +707,26 @@ describe('Cross-Lab Integration', () => {
 
         for (const lab of ALL_LABS) {
             const defaultText = defaultTextByLab(lab);
-            const result = runSimulation(lab, 'encrypt', defaultText, keys[lab]);
-            expect(result.steps.length, `${lab} should produce steps`).toBeGreaterThan(0);
+            const result = runSimulation(
+                lab,
+                'encrypt',
+                defaultText,
+                keys[lab],
+            );
+            expect(
+                result.steps.length,
+                `${lab} should produce steps`,
+            ).toBeGreaterThan(0);
         }
     });
 
     it('all labs have an outputLabel', () => {
         for (const lab of ALL_LABS) {
             const result = runSimulation(lab, 'encrypt', 'Test', 'key');
-            expect(result.outputLabel, `${lab} should have outputLabel`).toBeTruthy();
+            expect(
+                result.outputLabel,
+                `${lab} should have outputLabel`,
+            ).toBeTruthy();
         }
     });
 });

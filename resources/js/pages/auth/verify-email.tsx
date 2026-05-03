@@ -9,13 +9,13 @@ import { logout } from '@/routes';
 export default function VerifyEmail({ status }: { status?: string }) {
     return (
         <>
-            <Head title="Email verification" />
+            <Head title="Verifikasi Email" />
 
             {status === 'verification-link-sent' && (
                 <Alert className="mb-4 text-center">
                     <AlertDescription>
-                        A new verification link has been sent to the email
-                        address you provided during registration.
+                        Tautan verifikasi baru telah dikirim ke alamat email
+                        yang Anda berikan saat pendaftaran.
                     </AlertDescription>
                 </Alert>
             )}
@@ -25,14 +25,14 @@ export default function VerifyEmail({ status }: { status?: string }) {
                     <>
                         <Button disabled={processing} variant="secondary">
                             {processing && <Spinner />}
-                            Resend verification email
+                            Kirim Ulang Email Verifikasi
                         </Button>
 
                         <Link
                             href={logout()}
                             className="mx-auto block text-sm text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
                         >
-                            Log out
+                            Keluar
                         </Link>
                     </>
                 )}
@@ -42,7 +42,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
 }
 
 VerifyEmail.layout = {
-    title: 'Verify email',
+    title: 'Verifikasi Email',
     description:
-        'Please verify your email address by clicking on the link we just emailed to you.',
+        'Silakan verifikasi alamat email Anda dengan mengklik tautan yang baru saja kami kirimkan kepada Anda.',
 };

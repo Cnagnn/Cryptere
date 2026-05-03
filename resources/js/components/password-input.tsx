@@ -14,7 +14,10 @@ export default function PasswordInput({
     ref,
     icon,
     ...props
-}: Omit<ComponentProps<'input'>, 'type'> & { ref?: Ref<HTMLInputElement>; icon?: ReactNode }) {
+}: Omit<ComponentProps<'input'>, 'type'> & {
+    ref?: Ref<HTMLInputElement>;
+    icon?: ReactNode;
+}) {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
@@ -36,7 +39,9 @@ export default function PasswordInput({
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={
+                        showPassword ? 'Hide password' : 'Show password'
+                    }
                     tabIndex={-1}
                 >
                     {showPassword ? <EyeOff /> : <Eye />}

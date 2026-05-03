@@ -5,7 +5,11 @@ import {
     getSortedRowModel,
     useReactTable,
 } from '@tanstack/react-table';
-import type { ColumnDef, RowSelectionState, SortingState } from '@tanstack/react-table';
+import type {
+    ColumnDef,
+    RowSelectionState,
+    SortingState,
+} from '@tanstack/react-table';
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
@@ -58,11 +62,14 @@ export function CourseTable({
                     <div className="flex justify-center">
                         <Checkbox
                             checked={
-                                table.getIsAllPageRowsSelected()
-                                || (table.getIsSomePageRowsSelected() && 'indeterminate')
+                                table.getIsAllPageRowsSelected() ||
+                                (table.getIsSomePageRowsSelected() &&
+                                    'indeterminate')
                             }
-                            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                            aria-label="Select all rows"
+                            onCheckedChange={(value) =>
+                                table.toggleAllPageRowsSelected(!!value)
+                            }
+                            aria-label="Pilih semua baris"
                         />
                     </div>
                 ),
@@ -70,8 +77,10 @@ export function CourseTable({
                     <div className="flex justify-center">
                         <Checkbox
                             checked={row.getIsSelected()}
-                            onCheckedChange={(value) => row.toggleSelected(!!value)}
-                            aria-label={`Select ${row.original.title}`}
+                            onCheckedChange={(value) =>
+                                row.toggleSelected(!!value)
+                            }
+                            aria-label={`Pilih ${row.original.title}`}
                         />
                     </div>
                 ),
@@ -88,7 +97,7 @@ export function CourseTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Title
+                        Judul
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -108,7 +117,7 @@ export function CourseTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Lesson
+                        Topik
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -128,7 +137,7 @@ export function CourseTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Task
+                        Tugas
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -148,7 +157,7 @@ export function CourseTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Enrollment
+                        Pendaftaran
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -170,12 +179,12 @@ export function CourseTable({
                                     variant="ghost"
                                     className="size-8 p-0"
                                 >
-                                    <span className="sr-only">Open menu</span>
+                                    <span className="sr-only">Buka menu</span>
                                     <MoreHorizontal className="size-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                 <DropdownMenuItem
                                     onClick={() =>
                                         router.get(
@@ -183,18 +192,18 @@ export function CourseTable({
                                         )
                                     }
                                 >
-                                    View course
+                                    Lihat kursus
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onClick={() => onEdit(row.original)}
                                 >
-                                    Open Builder
+                                    Buka Builder
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => onDelete(row.original)}
                                 >
-                                    Delete
+                                    Hapus
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => {
@@ -203,7 +212,7 @@ export function CourseTable({
                                         );
                                     }}
                                 >
-                                    Copy slug
+                                    Salin slug
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -246,14 +255,12 @@ export function CourseTable({
                 <Input
                     value={filterValue}
                     onChange={(event) => onFilterChange(event.target.value)}
-                    placeholder="Search courses..."
+                    placeholder="Cari kursus..."
                     className="w-full sm:max-w-sm"
                 />
 
                 {toolbarAction ? (
-                    <div className="sm:shrink-0">
-                        {toolbarAction}
-                    </div>
+                    <div className="sm:shrink-0">{toolbarAction}</div>
                 ) : null}
             </div>
 
@@ -263,13 +270,17 @@ export function CourseTable({
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id} className="text-center align-middle">
+                                    <TableHead
+                                        key={header.id}
+                                        className="text-center align-middle"
+                                    >
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext(),
-                                            )}
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext(),
+                                              )}
                                     </TableHead>
                                 ))}
                             </TableRow>
@@ -278,9 +289,19 @@ export function CourseTable({
                     <TableBody>
                         {table.getRowModel().rows.length ? (
                             table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
+                                <TableRow
+                                    key={row.id}
+                                    data-state={
+                                        row.getIsSelected()
+                                            ? 'selected'
+                                            : undefined
+                                    }
+                                >
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className="text-center align-middle">
+                                        <TableCell
+                                            key={cell.id}
+                                            className="text-center align-middle"
+                                        >
                                             {flexRender(
                                                 cell.column.columnDef.cell,
                                                 cell.getContext(),
@@ -291,8 +312,11 @@ export function CourseTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No courses found.
+                                <TableCell
+                                    colSpan={columns.length}
+                                    className="h-24 text-center"
+                                >
+                                    Kursus tidak ditemukan.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -302,11 +326,13 @@ export function CourseTable({
 
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
-                    {table.getSelectedRowModel().rows.length} of {table.getRowModel().rows.length} row(s) selected.
+                    {table.getSelectedRowModel().rows.length} dari{' '}
+                    {table.getRowModel().rows.length} baris dipilih.
                 </p>
 
                 <p className="text-sm text-muted-foreground">
-                    Showing {courses.from ?? 0} - {courses.to ?? 0} of {courses.total} courses.
+                    Menampilkan {courses.from ?? 0} - {courses.to ?? 0} dari{' '}
+                    {courses.total} kursus.
                 </p>
             </div>
         </div>

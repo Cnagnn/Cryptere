@@ -8,23 +8,31 @@ import { store } from '@/routes/password/confirm';
 export default function ConfirmPassword() {
     return (
         <>
-            <Head title="Confirm password" />
+            <Head title="Konfirmasi Kata Sandi" />
 
             <Form {...store.form()} resetOnSuccess={['password']}>
                 {({ processing, errors }) => (
                     <div className="flex flex-col gap-6">
                         <Field data-invalid={Boolean(errors.password)}>
-                            <FieldLabel htmlFor="password">Password</FieldLabel>
+                            <FieldLabel htmlFor="password">
+                                Kata Sandi
+                            </FieldLabel>
                             <PasswordInput
                                 id="password"
                                 name="password"
-                                placeholder="Password"
+                                placeholder="Kata Sandi"
                                 autoComplete="current-password"
                                 autoFocus
-                                aria-invalid={Boolean(errors.password) || undefined}
+                                aria-invalid={
+                                    Boolean(errors.password) || undefined
+                                }
                             />
 
-                            {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                            {errors.password && (
+                                <p className="text-sm text-destructive">
+                                    {errors.password}
+                                </p>
+                            )}
                         </Field>
 
                         <div className="flex items-center">
@@ -34,7 +42,7 @@ export default function ConfirmPassword() {
                                 data-test="confirm-password-button"
                             >
                                 {processing && <Spinner />}
-                                Confirm password
+                                Konfirmasi Kata Sandi
                             </Button>
                         </div>
                     </div>
@@ -45,7 +53,7 @@ export default function ConfirmPassword() {
 }
 
 ConfirmPassword.layout = {
-    title: 'Confirm your password',
+    title: 'Konfirmasi Kata Sandi Anda',
     description:
-        'This is a secure area of the application. Please confirm your password before continuing.',
+        'Ini adalah area aman dari aplikasi. Silakan konfirmasi kata sandi Anda sebelum melanjutkan.',
 };

@@ -1,7 +1,7 @@
 import { Form, Link } from '@inertiajs/react';
 import { ArrowRight } from 'lucide-react';
 
-import { CourseThumbnail, getCountdownParts } from '@/components/courses/catalog-helpers';
+import { CourseThumbnail } from '@/components/courses/catalog-helpers';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -14,12 +14,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import { show as showChallenge } from '@/routes/challenges';
-import {
-    enroll,
-    reset as resetCourseProgress,
-    show,
-} from '@/routes/courses';
+import { enroll, reset as resetCourseProgress, show } from '@/routes/courses';
 import { show as showLab } from '@/routes/labs';
 import type { CourseCard } from '@/types/courses';
 
@@ -31,7 +26,10 @@ export function CourseSkeletonGrid() {
             aria-live="polite"
         >
             {Array.from({ length: 6 }).map((_, index) => (
-                <Card key={`course-skeleton-${index}`} className="overflow-hidden">
+                <Card
+                    key={`course-skeleton-${index}`}
+                    className="overflow-hidden"
+                >
                     <CardHeader className="flex flex-col gap-3">
                         <Skeleton className="h-32 w-full rounded-xl" />
                         <Skeleton className="h-5 w-2/3" />
@@ -52,13 +50,9 @@ export function CourseSkeletonGrid() {
 export function CourseCardGrid({
     courses,
     isLabsCatalog,
-    isChallengesCatalog,
-    nowMs,
 }: {
     courses: CourseCard[];
     isLabsCatalog: boolean;
-    isChallengesCatalog: boolean;
-    nowMs: number;
 }) {
     return (
         <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
@@ -78,7 +72,7 @@ export function CourseCardGrid({
                         </CardDescription>
                     </CardHeader>
 
-                    {!isLabsCatalog && !isChallengesCatalog ? (
+                    {!isLabsCatalog ? (
                         <CardContent className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1.5">
                                 {(() => {
@@ -90,8 +84,8 @@ export function CourseCardGrid({
                                             <div className="flex items-center justify-between text-sm text-muted-foreground">
                                                 <span>
                                                     {course.isEnrolled
-                                                        ? 'Your progress'
-                                                        : 'Not enrolled yet'}
+                                                        ? 'Progres Anda'
+                                                        : 'Belum terdaftar'}
                                                 </span>
                                                 <span>
                                                     {course.isEnrolled
@@ -113,38 +107,11 @@ export function CourseCardGrid({
                                 })()}
                             </div>
                         </CardContent>
-                    ) : isChallengesCatalog ? (
-                        <CardContent className="flex flex-col gap-4">
-                            <div className="rounded-md border bg-muted/20 p-3">
-                                {(() => {
-                                    const countdown = getCountdownParts(
-                                        course.timeEnd ?? null,
-                                        nowMs,
-                                    );
-
-                                    return (
-                                        <p className="text-sm text-muted-foreground">
-                                            {course.status === 'upcoming'
-                                                ? course.timeStart
-                                                    ? `Starts at ${new Date(course.timeStart).toLocaleString('en-US')}`
-                                                    : 'Challenge will start soon.'
-                                                : course.status === 'ended'
-                                                  ? 'Challenge window has ended.'
-                                                  : course.timeEnd
-                                                    ? countdown.isExpired
-                                                        ? 'Challenge window has ended.'
-                                                        : `Time left: ${countdown.days}d ${countdown.hours}h ${countdown.minutes}m ${countdown.seconds}s`
-                                                    : 'Challenge end time is not set yet.'}
-                                        </p>
-                                    );
-                                })()}
-                            </div>
-                        </CardContent>
                     ) : null}
 
                     <CardFooter
                         className={
-                            isLabsCatalog || isChallengesCatalog
+                            isLabsCatalog
                                 ? 'mt-auto'
                                 : course.isEnrolled
                                   ? 'mt-auto grid grid-cols-2 gap-2'
@@ -162,12 +129,10 @@ export function CourseCardGrid({
                                     href={showLab({ lab: course.slug })}
                                     prefetch
                                 >
-                                    Open simulation
+                                    Buka simulasi
                                     <ArrowRight className="size-4" />
                                 </Link>
                             </Button>
-                        ) : isChallengesCatalog ? (
-                            <ChallengeCardFooter course={course} />
                         ) : course.isEnrolled ? (
                             <EnrolledCardFooter course={course} />
                         ) : (
@@ -186,8 +151,8 @@ export function CourseCardGrid({
                                             <Spinner className="size-4" />
                                         )}
                                         {processing
-                                            ? 'Enrolling...'
-                                            : 'Enroll now'}
+                                            ? 'Mendaftar...'
+                                            : 'Daftar sekarang'}
                                     </Button>
                                 )}
                             </Form>
@@ -196,37 +161,6 @@ export function CourseCardGrid({
                 </Card>
             ))}
         </div>
-    );
-}
-
-/* ── Challenge Card Footer ── */
-function ChallengeCardFooter({ course }: { course: CourseCard }) {
-    const isActive = course.status === 'active';
-    const isUpcoming = course.status === 'upcoming';
-    const isCompleted = course.hasCompletedSession === true;
-    const label = isCompleted
-        ? 'View result'
-        : isActive
-          ? 'Start challenge'
-          : isUpcoming
-            ? 'View details'
-            : 'View results';
-    const variant = isActive && !isCompleted ? 'default' : 'outline';
-    const href =
-        isActive && !isCompleted
-            ? showChallenge(
-                  { challenge: course.slug },
-                  { query: { autostart: '1' } },
-              )
-            : showChallenge({ challenge: course.slug });
-
-    return (
-        <Button asChild type="button" variant={variant} className="w-full">
-            <Link href={href} prefetch>
-                {label}
-                <ArrowRight className="size-4" />
-            </Link>
-        </Button>
     );
 }
 
@@ -248,14 +182,14 @@ function EnrolledCardFooter({ course }: { course: CourseCard }) {
                         className="w-full"
                     >
                         {processing && <Spinner className="size-4" />}
-                        {processing ? 'Resetting...' : 'Start Over'}
+                        {processing ? 'Mengatur ulang...' : 'Mulai Ulang'}
                     </Button>
                 )}
             </Form>
 
             <Button asChild className="w-full">
                 <Link href={show({ course: course.slug })} prefetch>
-                    Continue
+                    Lanjutkan
                     <ArrowRight className="size-4" />
                 </Link>
             </Button>
@@ -267,11 +201,9 @@ function EnrolledCardFooter({ course }: { course: CourseCard }) {
 export function EmptyLabCatalogGrid({
     courses,
     isLabsCatalog,
-    isChallengesCatalog,
 }: {
     courses: CourseCard[];
     isLabsCatalog: boolean;
-    isChallengesCatalog: boolean;
 }) {
     return (
         <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
@@ -293,11 +225,11 @@ export function EmptyLabCatalogGrid({
                         </div>
                     </CardHeader>
 
-                    {!isLabsCatalog && !isChallengesCatalog ? (
+                    {!isLabsCatalog ? (
                         <CardContent className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                    <span>Not enrolled yet</span>
+                                    <span>Belum terdaftar</span>
                                     <span>0%</span>
                                 </div>
                                 <Progress value={0} className="h-2" />
@@ -312,11 +244,7 @@ export function EmptyLabCatalogGrid({
                             disabled
                             className="w-full"
                         >
-                            {isLabsCatalog
-                                ? 'Open simulation'
-                                : isChallengesCatalog
-                                  ? 'Open challenge'
-                                  : 'Coming soon'}
+                            {isLabsCatalog ? 'Buka simulasi' : 'Segera hadir'}
                         </Button>
                     </CardFooter>
                 </Card>

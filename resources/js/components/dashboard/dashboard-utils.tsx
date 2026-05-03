@@ -6,7 +6,6 @@ import {
     GraduationCap,
     Link2,
     Shield,
-    Swords,
     UserCheck,
 } from 'lucide-react';
 
@@ -83,32 +82,32 @@ export function getTimeGreeting(name: string): {
 
     if (hour >= 5 && hour < 12) {
         return {
-            text: `Good morning, ${name}`,
+            text: `Selamat pagi, ${name}`,
             emoji: '☀️',
-            subtitle: 'Ready to learn something new today?',
+            subtitle: 'Siap belajar sesuatu yang baru hari ini?',
         };
     }
 
     if (hour >= 12 && hour < 17) {
         return {
-            text: `Good afternoon, ${name}`,
+            text: `Selamat siang, ${name}`,
             emoji: '👋',
-            subtitle: 'Keep the momentum going!',
+            subtitle: 'Pertahankan momentum!',
         };
     }
 
     if (hour >= 17 && hour < 21) {
         return {
-            text: `Good evening, ${name}`,
+            text: `Selamat sore, ${name}`,
             emoji: '🌆',
-            subtitle: 'Wind down with a quick lesson?',
+            subtitle: 'Santai dengan pelajaran singkat?',
         };
     }
 
     return {
-        text: `Good night, ${name}`,
+        text: `Selamat malam, ${name}`,
         emoji: '🌙',
-        subtitle: 'A little late-night learning?',
+        subtitle: 'Belajar sedikit di malam hari?',
     };
 }
 
@@ -116,15 +115,14 @@ export const ACTIVITY_TAG_CONFIG: Record<
     string,
     { icon: typeof BookOpen; label: string }
 > = {
-    Lesson: { icon: BookOpen, label: 'Lesson' },
-    Challenge: { icon: Swords, label: 'Challenge' },
-    Course: { icon: GraduationCap, label: 'Course' },
-    Badge: { icon: Award, label: 'Badge' },
-    Quiz: { icon: ClipboardCheck, label: 'Quiz' },
+    Lesson: { icon: BookOpen, label: 'Pelajaran' },
+    Course: { icon: GraduationCap, label: 'Kursus' },
+    Badge: { icon: Award, label: 'Lencana' },
+    Quiz: { icon: ClipboardCheck, label: 'Kuis' },
     Lab: { icon: FlaskConical, label: 'Lab' },
-    Account: { icon: UserCheck, label: 'Account' },
-    Security: { icon: Shield, label: 'Security' },
-    Social: { icon: Link2, label: 'Social' },
+    Account: { icon: UserCheck, label: 'Akun' },
+    Security: { icon: Shield, label: 'Keamanan' },
+    Social: { icon: Link2, label: 'Sosial' },
 };
 
 export const DEFAULT_ACTIVITY_TAG = ACTIVITY_TAG_CONFIG.Lesson;

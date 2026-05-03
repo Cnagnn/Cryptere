@@ -72,24 +72,24 @@ function DecayWarningBanner({
             <AlertTriangle className="size-4" />
             <AlertTitle className="font-semibold">
                 {isUrgent
-                    ? 'Points decay tomorrow!'
-                    : `Points decay in ${warning.daysUntilDecay} days`}
+                    ? 'Poin akan berkurang besok!'
+                    : `Poin akan berkurang dalam ${warning.daysUntilDecay} hari`}
             </AlertTitle>
             <AlertDescription
                 className={cn(
                     !isUrgent && 'text-amber-600/80 dark:text-amber-400/80',
                 )}
             >
-                Complete a lesson or challenge to keep your{' '}
-                {formatNumber(warning.currentPoints)} points safe from{' '}
-                {warning.decayPercent}% decay.
+                Selesaikan pelajaran untuk menjaga{' '}
+                {formatNumber(warning.currentPoints)} poin Anda dari pengurangan{' '}
+                {warning.decayPercent}%.
             </AlertDescription>
             <Button
                 variant="ghost"
                 size="icon"
                 className="absolute top-2 right-2 size-6"
                 onClick={onDismiss}
-                aria-label="Dismiss decay warning"
+                aria-label="Tutup peringatan pengurangan"
             >
                 <X className="size-3.5" />
             </Button>
@@ -107,16 +107,16 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
         return (
             <Card className="col-span-2 md:col-span-3 lg:col-span-4">
                 <CardHeader>
-                    <CardTitle>Continue Learning</CardTitle>
+                    <CardTitle>Lanjutkan Belajar</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
                     <GraduationCap className="size-10 text-muted-foreground/40" />
                     <p className="text-sm text-muted-foreground">
-                        No courses in progress. Start one!
+                        Tidak ada kursus yang sedang berlangsung. Mulai satu!
                     </p>
                     <Button variant="outline" size="sm" asChild>
                         <Link href={coursesIndex.url()}>
-                            Browse Courses
+                            Jelajahi Kursus
                             <ArrowUpRight data-icon="inline-end" />
                         </Link>
                     </Button>
@@ -128,15 +128,16 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
     return (
         <Card className="col-span-2 md:col-span-3 lg:col-span-4">
             <CardHeader className="gap-1">
-                <CardTitle>Continue Learning</CardTitle>
+                <CardTitle>Lanjutkan Belajar</CardTitle>
                 <CardDescription>
                     {inProgress.length}{' '}
-                    {inProgress.length === 1 ? 'course' : 'courses'} in progress
+                    {inProgress.length === 1 ? 'kursus' : 'kursus'} sedang
+                    berlangsung
                 </CardDescription>
                 <CardAction>
                     <Button variant="ghost" size="sm" asChild>
                         <Link href={coursesIndex.url()}>
-                            View All
+                            Lihat Semua
                             <ArrowUpRight data-icon="inline-end" />
                         </Link>
                     </Button>
@@ -199,8 +200,8 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
                                         <p className="text-xs text-muted-foreground">
                                             {course.lessonCount}{' '}
                                             {course.lessonCount === 1
-                                                ? 'lesson'
-                                                : 'lessons'}
+                                                ? 'pelajaran'
+                                                : 'pelajaran'}
                                         </p>
                                     </div>
                                     {/* Continue arrow */}
@@ -225,12 +226,12 @@ function ActivityFeedTimeline({
         return (
             <Card className="col-span-2 md:col-span-3 lg:col-span-4">
                 <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
+                    <CardTitle>Aktivitas Terkini</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
                     <Activity className="size-10 text-muted-foreground/40" />
                     <p className="text-sm text-muted-foreground">
-                        No recent activity yet. Start learning!
+                        Belum ada aktivitas terkini. Mulai belajar!
                     </p>
                 </CardContent>
             </Card>
@@ -240,15 +241,15 @@ function ActivityFeedTimeline({
     return (
         <Card className="col-span-2 flex flex-col md:col-span-3 lg:col-span-4">
             <CardHeader className="gap-1">
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Your latest actions</CardDescription>
+                <CardTitle>Aktivitas Terkini</CardTitle>
+                <CardDescription>Tindakan terbaru Anda</CardDescription>
             </CardHeader>
             <CardContent className="min-h-0 flex-1 p-0">
                 <ScrollArea className="h-full max-h-56">
                     <div
                         className="flex flex-col px-6 pb-6"
                         role="list"
-                        aria-label="Recent activity feed"
+                        aria-label="Umpan aktivitas terkini"
                     >
                         {/* Timeline */}
                         <div className="relative flex flex-col">
@@ -323,7 +324,7 @@ const leaderboardColumns: ColumnDef<LeaderboardEntry>[] = [
     },
     {
         accessorKey: 'name',
-        header: 'Username',
+        header: 'Nama Pengguna',
         cell: ({ row }) => (
             <div className="flex items-center gap-2">
                 <Avatar size="sm">
@@ -344,7 +345,7 @@ const leaderboardColumns: ColumnDef<LeaderboardEntry>[] = [
                     @{row.original.username ?? 'unknown'}
                     {row.original.isCurrentUser && (
                         <span className="ml-1 text-xs text-muted-foreground">
-                            (You)
+                            (Anda)
                         </span>
                     )}
                 </span>
@@ -353,7 +354,7 @@ const leaderboardColumns: ColumnDef<LeaderboardEntry>[] = [
     },
     {
         accessorKey: 'points',
-        header: 'Points',
+        header: 'Poin',
         cell: ({ row }) => (
             <span
                 className={cn(
@@ -394,10 +395,10 @@ function StreakCalendar({
     return (
         <div
             className="grid grid-cols-7 gap-1"
-            aria-label="Activity streak calendar"
+            aria-label="Kalender streak aktivitas"
             role="grid"
         >
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
+            {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((day, i) => (
                 <div
                     key={i}
                     className="text-center text-xs text-muted-foreground"
@@ -479,6 +480,7 @@ export function LearnerDashboard({
     analytics,
     decayWarning,
     recentCourses,
+    adminTabs,
 }: {
     stats: LearnerStats;
     level?: UserLevel;
@@ -487,6 +489,7 @@ export function LearnerDashboard({
     analytics?: AnalyticsData;
     decayWarning?: DecayWarning | null;
     recentCourses?: RecentCourse[];
+    adminTabs?: React.ReactNode;
 }) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const [showDecayWarning, setShowDecayWarning] = useState(true);
@@ -509,15 +512,20 @@ export function LearnerDashboard({
             )}
 
             {/* ── Greeting ── */}
-            <section className="animate-fade-in-up relative flex flex-col gap-1">
-                <TypographyH1>
-                    {greeting.text} {greeting.emoji}
-                </TypographyH1>
-                <TypographyMuted>
-                    {auth.user.current_streak > 0
-                        ? `${greeting.subtitle} You're on a ${auth.user.current_streak}-day streak! 🔥`
-                        : greeting.subtitle}
-                </TypographyMuted>
+            <section className="animate-fade-in-up relative flex flex-col gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex flex-col gap-0">
+                        <TypographyH1>
+                            {greeting.text} {greeting.emoji}
+                        </TypographyH1>
+                        <TypographyMuted className="text-sm/6">
+                            {auth.user.current_streak > 0
+                                ? `${greeting.subtitle} Anda sedang dalam streak ${auth.user.current_streak} hari! 🔥`
+                                : greeting.subtitle}
+                        </TypographyMuted>
+                    </div>
+                    {adminTabs && <div>{adminTabs}</div>}
+                </div>
             </section>
 
             {/* ── Bento Grid: Unified grid with KPI + charts + cards ── */}
@@ -528,24 +536,26 @@ export function LearnerDashboard({
                 {/* Row 1: KPI Cards — 2×2 on mobile, 4 across on md+lg */}
                 <Card className="md:col-span-3 lg:col-span-3">
                     <CardHeader className="gap-1">
-                        <CardTitle>Total Points</CardTitle>
+                        <CardTitle>Total Poin</CardTitle>
                         <CardDescription>
-                            Keep earning to climb up!
+                            Kumpulkan poin untuk naik peringkat
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-semibold tabular-nums">
                             {formatNumber(stats.points)}{' '}
                             <span className="text-sm font-medium text-muted-foreground">
-                                pts
+                                poin
                             </span>
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="md:col-span-3 lg:col-span-3">
                     <CardHeader className="gap-1">
-                        <CardTitle>Current Level & XP</CardTitle>
-                        <CardDescription>You're doing great!</CardDescription>
+                        <CardTitle>Level & XP Saat Ini</CardTitle>
+                        <CardDescription>
+                            Anda melakukannya dengan baik!
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-start gap-4">
@@ -572,26 +582,29 @@ export function LearnerDashboard({
                 </Card>
                 <Card className="md:col-span-3 lg:col-span-3">
                     <CardHeader className="gap-1">
-                        <CardTitle>Courses Completed</CardTitle>
-                        <CardDescription>One step at a time</CardDescription>
+                        <CardTitle>Kursus Selesai</CardTitle>
+                        <CardDescription>
+                            Satu langkah pada satu waktu
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-semibold tabular-nums">
                             {stats.completedCourses}{' '}
                             <span className="text-base font-normal text-muted-foreground">
-                                courses
+                                kursus
                             </span>
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="md:col-span-3 lg:col-span-3">
                     <CardHeader className="gap-1">
-                        <CardTitle>Your Rank</CardTitle>
-                        <CardDescription>Keep it up!</CardDescription>
+                        <CardTitle>Peringkat Anda</CardTitle>
+                        <CardDescription>Pertahankan!</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-semibold tabular-nums">
-                            Rank #{academy.learningPath?.currentRank ?? '-'}
+                            Peringkat #
+                            {academy.learningPath?.currentRank ?? '-'}
                         </p>
                     </CardContent>
                 </Card>
@@ -608,18 +621,19 @@ export function LearnerDashboard({
                     <CardHeader>
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex flex-col gap-1">
-                                <CardTitle>Streak & Calendar</CardTitle>
+                                <CardTitle>Streak & Kalender</CardTitle>
                                 <CardDescription>
-                                    Activity overview
+                                    Ringkasan aktivitas
                                 </CardDescription>
                             </div>
                             <div className="flex flex-col items-end gap-0.5">
                                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums">
                                     <Flame className="size-4 fill-orange-500 text-orange-500" />
-                                    {auth.user.current_streak} days streak
+                                    Streak {auth.user.current_streak} hari
                                 </span>
                                 <span className="text-xs text-muted-foreground tabular-nums">
-                                    Best streak: {auth.user.longest_streak} days
+                                    Streak terbaik: {auth.user.longest_streak}{' '}
+                                    hari
                                 </span>
                             </div>
                         </div>
@@ -635,7 +649,7 @@ export function LearnerDashboard({
                                 />
                             ) : (
                                 <p className="text-sm text-muted-foreground">
-                                    Streak data is not available.
+                                    Data streak tidak tersedia.
                                 </p>
                             )}
                         </Deferred>
@@ -650,14 +664,14 @@ export function LearnerDashboard({
 
                 <Card className="col-span-2 flex flex-col md:col-span-6 lg:col-span-4">
                     <CardHeader className="gap-1">
-                        <CardTitle>Leaderboard</CardTitle>
+                        <CardTitle>Papan Peringkat</CardTitle>
                         <CardDescription>
-                            Top learners this month
+                            Peserta teratas bulan ini
                         </CardDescription>
                         <CardAction>
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={leaderboardIndex()}>
-                                    View All
+                                    Lihat Semua
                                     <ArrowUpRight data-icon="inline-end" />
                                 </Link>
                             </Button>

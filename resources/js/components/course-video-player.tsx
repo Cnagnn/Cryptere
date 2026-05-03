@@ -41,7 +41,13 @@ function resolvePlayerSource(url: string): PlayerSource {
     }
 }
 
-type VideoProcessingStatus = 'pending' | 'processing' | 'ready' | 'converted' | 'failed' | null;
+type VideoProcessingStatus =
+    | 'pending'
+    | 'processing'
+    | 'ready'
+    | 'converted'
+    | 'failed'
+    | null;
 
 export function VideoPlayer({
     url,
@@ -68,11 +74,12 @@ export function VideoPlayer({
                     <Loader2 className="size-8 animate-spin text-muted-foreground" />
                     <div className="text-sm text-muted-foreground">
                         {processingStatus === 'pending'
-                            ? 'Video is queued for processing...'
-                            : 'Video is being converted...'}
+                            ? 'Video sedang dalam antrian untuk diproses...'
+                            : 'Video sedang dikonversi...'}
                     </div>
                     <div className="text-xs text-muted-foreground/60">
-                        This may take a few minutes. The page will update automatically when ready.
+                        Ini mungkin memakan waktu beberapa menit. Halaman akan
+                        diperbarui secara otomatis saat siap.
                     </div>
                 </div>
             </div>
@@ -86,10 +93,11 @@ export function VideoPlayer({
                 <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 p-6 text-center">
                     <TriangleAlert className="size-8 text-destructive" />
                     <div className="text-sm text-destructive">
-                        Video processing failed
+                        Pemrosesan video gagal
                     </div>
                     <div className="text-xs text-muted-foreground">
-                        Please try re-uploading the video or contact an administrator.
+                        Silakan coba unggah ulang video atau hubungi
+                        administrator.
                     </div>
                 </div>
             </div>
@@ -101,7 +109,8 @@ export function VideoPlayer({
             return;
         }
 
-        const targetElement = containerRef.current.querySelector('[data-plyr-player]');
+        const targetElement =
+            containerRef.current.querySelector('[data-plyr-player]');
 
         if (!targetElement) {
             return;
@@ -148,12 +157,19 @@ export function VideoPlayer({
 
     if (source.kind !== 'unsupported') {
         return (
-            <div ref={containerRef} className="overflow-hidden rounded-xl border bg-black">
+            <div
+                ref={containerRef}
+                className="overflow-hidden rounded-xl border bg-black"
+            >
                 <div className="aspect-video w-full">
                     {source.kind === 'file' ? (
-                        <video data-plyr-player controls className="h-full w-full">
+                        <video
+                            data-plyr-player
+                            controls
+                            className="h-full w-full"
+                        >
                             <source src={source.src} />
-                            Your browser does not support this video element.
+                            Browser Anda tidak mendukung elemen video ini.
                         </video>
                     ) : (
                         <div
@@ -170,7 +186,8 @@ export function VideoPlayer({
     return (
         <div className="overflow-hidden rounded-xl border bg-black">
             <div className="flex aspect-video w-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-                Video URL is not supported or invalid. Please update the task video link in admin.
+                URL video tidak didukung atau tidak valid. Silakan perbarui
+                tautan video tugas di admin.
             </div>
         </div>
     );

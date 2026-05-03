@@ -201,97 +201,12 @@ export type LessonProgress = {
 };
 
 // ---------------------------------------------------------------------------
-// Challenge
-// ---------------------------------------------------------------------------
-
-/** Based on `app/Models/Challenge.php` */
-export type Challenge = {
-    id: number;
-    slug: string;
-    title: string;
-    prompt: string;
-    hint: string | null;
-    difficulty: string;
-    sort_order: number;
-    is_published: boolean;
-    category: string | null;
-    is_daily: boolean;
-    daily_date: string | null;
-    time_start: string | null;
-    time_end: string | null;
-    time_limit_seconds: number;
-    questions_per_session: number;
-    max_points_per_question: number;
-    created_at: string;
-    updated_at: string;
-    // Relations
-    questions?: ChallengeQuestion[];
-    submissions?: ChallengeSubmission[];
-    // Aggregates
-    questions_count?: number;
-    submissions_count?: number;
-};
-
-// ---------------------------------------------------------------------------
-// ChallengeQuestion
-// ----------------------------------------------------------------
-
-export type ChallengeQuestionType =
-    | 'mcq'
-    | 'true_false'
-    | 'text'
-    | 'fill_blank';
-
-/** Based on `app/Models/ChallengeQuestion.php` */
-export type ChallengeQuestion = {
-    id: number;
-    challenge_id: number;
-    type: ChallengeQuestionType;
-    question: string;
-    options: string[] | null;
-    correct_answer?: string; // hidden from client by default via #[Hidden]
-    explanation: string | null;
-    sort_order: number;
-    created_at: string;
-    updated_at: string;
-    // Relations
-    challenge?: Challenge;
-};
-
-// ----------------------------------------------------------------
-// ChallengeSubmission
-// ---------------------------------------------------------------------------
-
-/** Based on `app/Models/ChallengeSubmission.php` */
-export type ChallengeSubmission = {
-    id: number;
-    user_id: number;
-    challenge_id: number;
-    session_id: string | null;
-    challenge_question_id: number | null;
-    answer: string;
-    is_correct: boolean;
-    score: number;
-    elapsed_ms: number | null;
-    streak_bonus: number;
-    question_index: number | null;
-    submitted_at: string;
-    created_at: string;
-    updated_at: string;
-    // Relations
-    user?: User;
-    challenge?: Challenge;
-    challenge_question?: ChallengeQuestion;
-};
-
-// ---------------------------------------------------------------------------
 // Badge
 // ---------------------------------------------------------------------------
 
 export type BadgeCategory =
     | 'milestone'
     | 'course'
-    | 'challenge'
     | 'streak'
     | 'lab'
     | 'special';

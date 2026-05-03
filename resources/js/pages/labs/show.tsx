@@ -1,14 +1,38 @@
 import { Head, Link } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, ArrowRight, ChevronDown, Pause, Play, RefreshCcw } from 'lucide-react';
+import {
+    AlertCircle,
+    ArrowLeft,
+    ArrowRight,
+    ChevronDown,
+    Pause,
+    Play,
+    RefreshCcw,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -34,7 +58,12 @@ import {
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as labsIndex, show as labsShow } from '@/routes/labs';
-import type { FormatValue, LabShowProps, SimulationMode, SimulationResult } from '@/types/labs';
+import type {
+    FormatValue,
+    LabShowProps,
+    SimulationMode,
+    SimulationResult,
+} from '@/types/labs';
 
 // ── Mobile-friendly collapsible card wrapper ──
 function CollapsibleCard({
@@ -86,17 +115,17 @@ function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
     const handleTouchEnd = useCallback(
         (e: React.TouchEvent) => {
             if (touchStartX.current === null) {
-return;
-}
+                return;
+            }
 
             const diff = e.changedTouches[0].clientX - touchStartX.current;
             const threshold = 50;
 
             if (diff > threshold) {
-onSwipeRight();
-} else if (diff < -threshold) {
-onSwipeLeft();
-}
+                onSwipeRight();
+            } else if (diff < -threshold) {
+                onSwipeLeft();
+            }
 
             touchStartX.current = null;
         },
@@ -120,39 +149,50 @@ export default function LabsShow({ lab }: LabShowProps) {
     const [isWalkthroughPlaying, setIsWalkthroughPlaying] = useState(false);
 
     const normalizedInput = useMemo(
-        () => normalizeInputForSimulation(lab.slug, mode, inputText, inputFormat),
+        () =>
+            normalizeInputForSimulation(lab.slug, mode, inputText, inputFormat),
         [inputFormat, inputText, lab.slug, mode],
     );
 
-    const validationError = useMemo(
-        () => {
-            if (normalizedInput.error !== null) {
-                return normalizedInput.error;
-            }
+    const validationError = useMemo(() => {
+        if (normalizedInput.error !== null) {
+            return normalizedInput.error;
+        }
 
-            if (normalizedInput.value === null) {
-                return 'Input could not be normalized for this algorithm mode.';
-            }
+        if (normalizedInput.value === null) {
+            return 'Input could not be normalized for this algorithm mode.';
+        }
 
-            return validationErrorByLab(lab.slug, mode, normalizedInput.value, keyInput);
-        },
-        [keyInput, lab.slug, mode, normalizedInput.error, normalizedInput.value],
-    );
+        return validationErrorByLab(
+            lab.slug,
+            mode,
+            normalizedInput.value,
+            keyInput,
+        );
+    }, [
+        keyInput,
+        lab.slug,
+        mode,
+        normalizedInput.error,
+        normalizedInput.value,
+    ]);
 
-    const rawResult = useMemo(
-        () => {
-            if (validationError !== null) {
-                return {
-                    outputLabel: 'Validation required',
-                    output: 'Fix the input format to see simulation output.',
-                    steps: [validationError],
-                } as SimulationResult;
-            }
+    const rawResult = useMemo(() => {
+        if (validationError !== null) {
+            return {
+                outputLabel: 'Validation required',
+                output: 'Fix the input format to see simulation output.',
+                steps: [validationError],
+            } as SimulationResult;
+        }
 
-            return runSimulation(lab.slug, mode, normalizedInput.value ?? '', keyInput);
-        },
-        [keyInput, lab.slug, mode, normalizedInput.value, validationError],
-    );
+        return runSimulation(
+            lab.slug,
+            mode,
+            normalizedInput.value ?? '',
+            keyInput,
+        );
+    }, [keyInput, lab.slug, mode, normalizedInput.value, validationError]);
 
     const outputPresentation = useMemo(() => {
         if (!canFormatOutput(lab.slug)) {
@@ -167,14 +207,29 @@ export default function LabsShow({ lab }: LabShowProps) {
 
     const showKeyInput = !['rsa-lab', 'sha-lab'].includes(lab.slug);
     const recommendedInputFormat = recommendedInputFormatByLab(lab.slug, mode);
-    const recommendedOutputFormat = recommendedOutputFormatByLab(lab.slug, mode);
+    const recommendedOutputFormat = recommendedOutputFormatByLab(
+        lab.slug,
+        mode,
+    );
     const conceptLens = conceptLensByLab(lab.slug, mode);
-    const visualizationLens = visualizationLensByLab(lab.slug, mode, normalizedInput.value ?? '', keyInput, rawResult);
+    const visualizationLens = visualizationLensByLab(
+        lab.slug,
+        mode,
+        normalizedInput.value ?? '',
+        keyInput,
+        rawResult,
+    );
 
-    const safeActiveStepIndex = Math.min(activeStepIndex, Math.max(0, rawResult.steps.length - 1));
+    const safeActiveStepIndex = Math.min(
+        activeStepIndex,
+        Math.max(0, rawResult.steps.length - 1),
+    );
 
     const swipeHandlers = useSwipe(
-        () => setActiveStepIndex((i) => Math.min(i + 1, rawResult.steps.length - 1)),
+        () =>
+            setActiveStepIndex((i) =>
+                Math.min(i + 1, rawResult.steps.length - 1),
+            ),
         () => setActiveStepIndex((i) => Math.max(i - 1, 0)),
     );
 
@@ -209,143 +264,214 @@ export default function LabsShow({ lab }: LabShowProps) {
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-col gap-2">
-                        <Button variant="ghost" size="sm" asChild className="-ml-2 min-h-[44px] sm:min-h-0">
-                            <Link href={labsIndex()} prefetch>
-                                <ArrowLeft className="size-4" />
-                                Back to catalog
-                            </Link>
-                        </Button>
-                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{lab.title} Simulation Lab</h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">{lab.summary}</p>
+                        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                            Laboratorium Simulasi {lab.title}
+                        </h1>
+                        <p className="max-w-3xl text-sm text-muted-foreground">
+                            {lab.summary}
+                        </p>
                     </div>
                 </div>
 
                 <section className="grid items-start gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
                     <div className="flex flex-col gap-4">
                         <CollapsibleCard
-                            title="Input Playground"
-                            description="Switch between encrypt and decrypt flows, adjust input, then inspect each generated step."
+                            title="Area Masukan"
+                            description="Beralih antara alur enkripsi dan dekripsi, sesuaikan masukan, lalu periksa setiap langkah yang dihasilkan."
                             defaultOpen={true}
                         >
-                        <div className="flex flex-col gap-4">
-                            <Tabs value={mode} onValueChange={(value) => setMode(value as SimulationMode)}>
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="encrypt">Encrypt Flow</TabsTrigger>
-                                    <TabsTrigger value="decrypt">{lab.slug === 'sha-lab' ? 'Verify Flow' : 'Decrypt Flow'}</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="encrypt" className="pt-3 text-sm text-muted-foreground">
-                                    {modeDescription(lab.slug, 'encrypt')}
-                                </TabsContent>
-                                <TabsContent value="decrypt" className="pt-3 text-sm text-muted-foreground">
-                                    {modeDescription(lab.slug, 'decrypt')}
-                                </TabsContent>
-                            </Tabs>
+                            <div className="flex flex-col gap-4">
+                                <Tabs
+                                    value={mode}
+                                    onValueChange={(value) =>
+                                        setMode(value as SimulationMode)
+                                    }
+                                >
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="encrypt">
+                                            Alur Enkripsi
+                                        </TabsTrigger>
+                                        <TabsTrigger value="decrypt">
+                                            {lab.slug === 'sha-lab'
+                                                ? 'Alur Verifikasi'
+                                                : 'Alur Dekripsi'}
+                                        </TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent
+                                        value="encrypt"
+                                        className="pt-3 text-sm text-muted-foreground"
+                                    >
+                                        {modeDescription(lab.slug, 'encrypt')}
+                                    </TabsContent>
+                                    <TabsContent
+                                        value="decrypt"
+                                        className="pt-3 text-sm text-muted-foreground"
+                                    >
+                                        {modeDescription(lab.slug, 'decrypt')}
+                                    </TabsContent>
+                                </Tabs>
 
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="lab-input">{inputLabelByLab(lab.slug, mode)}</Label>
-                                <Textarea
-                                    id="lab-input"
-                                    value={inputText}
-                                    onChange={(event) => setInputText(event.target.value)}
-                                    placeholder={inputPlaceholderByLab(lab.slug, mode)}
-                                    className="min-h-28"
-                                />
-                                <p className="text-sm text-muted-foreground">{inputHelperByLab(lab.slug, mode)}</p>
-                            </div>
-
-                            <div className="grid gap-3 md:grid-cols-2">
-                                <div className="min-w-0 flex flex-col gap-2">
-                                    <Label>Input format</Label>
-                                    <Select value={inputFormat} onValueChange={(value) => setInputFormat(value as FormatValue)}>
-                                        <SelectTrigger className="w-full min-w-0">
-                                            <SelectValue placeholder="Select input format" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {formatOptions.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <p className="text-sm text-muted-foreground">
-                                        {formatLabel(recommendedInputFormat)} (recommended)
-                                    </p>
-                                </div>
-
-                                <div className="min-w-0 flex flex-col gap-2">
-                                    <Label>Output format</Label>
-                                    <Select value={outputFormat} onValueChange={(value) => setOutputFormat(value as FormatValue)}>
-                                        <SelectTrigger className="w-full min-w-0">
-                                            <SelectValue placeholder="Select output format" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {formatOptions.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <p className="text-sm text-muted-foreground">
-                                        {formatLabel(recommendedOutputFormat)} (recommended)
-                                    </p>
-                                </div>
-                            </div>
-
-                            {showKeyInput ? (
                                 <div className="flex flex-col gap-2">
-                                    <Label htmlFor="lab-key">{keyLabelByLab(lab.slug)}</Label>
-                                    <Input
-                                        id="lab-key"
-                                        value={keyInput}
-                                        onChange={(event) => setKeyInput(event.target.value)}
-                                        placeholder={keyPlaceholderByLab(lab.slug)}
+                                    <Label htmlFor="lab-input">
+                                        {inputLabelByLab(lab.slug, mode)}
+                                    </Label>
+                                    <Textarea
+                                        id="lab-input"
+                                        value={inputText}
+                                        onChange={(event) =>
+                                            setInputText(event.target.value)
+                                        }
+                                        placeholder={inputPlaceholderByLab(
+                                            lab.slug,
+                                            mode,
+                                        )}
+                                        className="min-h-28"
                                     />
                                     <p className="text-sm text-muted-foreground">
-                                        Keep key consistent between encrypt and decrypt flows to compare reversible behavior.
+                                        {inputHelperByLab(lab.slug, mode)}
                                     </p>
                                 </div>
-                            ) : null}
 
-                            {validationError ? (
-                                <Alert variant="destructive">
-                                    <AlertCircle className="size-4" />
-                                    <AlertTitle>Invalid simulation input</AlertTitle>
-                                    <AlertDescription>{validationError}</AlertDescription>
-                                </Alert>
-                            ) : null}
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="flex min-w-0 flex-col gap-2">
+                                        <Label>Format masukan</Label>
+                                        <Select
+                                            value={inputFormat}
+                                            onValueChange={(value) =>
+                                                setInputFormat(
+                                                    value as FormatValue,
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full min-w-0">
+                                                <SelectValue placeholder="Pilih format masukan" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {formatOptions.map((option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-sm text-muted-foreground">
+                                            {formatLabel(
+                                                recommendedInputFormat,
+                                            )}{' '}
+                                            (disarankan)
+                                        </p>
+                                    </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => {
-                                        setMode((currentMode) => (currentMode === 'encrypt' ? 'decrypt' : 'encrypt'));
-                                    }}
-                                >
-                                    <RefreshCcw className="size-4" />
-                                    Flip Mode
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={() => {
-                                        setInputText(defaultTextByLab(lab.slug));
-                                        setKeyInput(keyPlaceholderByLab(lab.slug));
-                                        setInputFormat('ascii');
-                                        setOutputFormat('ascii');
-                                        setMode('encrypt');
-                                    }}
-                                >
-                                    Reset Example
-                                </Button>
+                                    <div className="flex min-w-0 flex-col gap-2">
+                                        <Label>Format keluaran</Label>
+                                        <Select
+                                            value={outputFormat}
+                                            onValueChange={(value) =>
+                                                setOutputFormat(
+                                                    value as FormatValue,
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full min-w-0">
+                                                <SelectValue placeholder="Pilih format keluaran" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {formatOptions.map((option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-sm text-muted-foreground">
+                                            {formatLabel(
+                                                recommendedOutputFormat,
+                                            )}{' '}
+                                            (disarankan)
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {showKeyInput ? (
+                                    <div className="flex flex-col gap-2">
+                                        <Label htmlFor="lab-key">
+                                            {keyLabelByLab(lab.slug)}
+                                        </Label>
+                                        <Input
+                                            id="lab-key"
+                                            value={keyInput}
+                                            onChange={(event) =>
+                                                setKeyInput(event.target.value)
+                                            }
+                                            placeholder={keyPlaceholderByLab(
+                                                lab.slug,
+                                            )}
+                                        />
+                                        <p className="text-sm text-muted-foreground">
+                                            Jaga konsistensi kunci antara alur
+                                            enkripsi dan dekripsi untuk
+                                            membandingkan perilaku yang dapat
+                                            dibalik.
+                                        </p>
+                                    </div>
+                                ) : null}
+
+                                {validationError ? (
+                                    <Alert variant="destructive">
+                                        <AlertCircle className="size-4" />
+                                        <AlertTitle>
+                                            Masukan simulasi tidak valid
+                                        </AlertTitle>
+                                        <AlertDescription>
+                                            {validationError}
+                                        </AlertDescription>
+                                    </Alert>
+                                ) : null}
+
+                                <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => {
+                                            setMode((currentMode) =>
+                                                currentMode === 'encrypt'
+                                                    ? 'decrypt'
+                                                    : 'encrypt',
+                                            );
+                                        }}
+                                    >
+                                        <RefreshCcw className="size-4" />
+                                        Balik Mode
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setInputText(
+                                                defaultTextByLab(lab.slug),
+                                            );
+                                            setKeyInput(
+                                                keyPlaceholderByLab(lab.slug),
+                                            );
+                                            setInputFormat('ascii');
+                                            setOutputFormat('ascii');
+                                            setMode('encrypt');
+                                        }}
+                                    >
+                                        Atur Ulang Contoh
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
                         </CollapsibleCard>
 
                         <CollapsibleCard
-                            title="Live Visualization"
+                            title="Visualisasi Langsung"
                             description={visualizationLens.description}
                             defaultOpen={true}
                         >
@@ -359,24 +485,37 @@ export default function LabsShow({ lab }: LabShowProps) {
                                     <p>{visualizationLens.headers[2]}</p>
                                 </div>
 
-                                {visualizationLens.rows.length > 0 ? visualizationLens.rows.map((row, index) => (
-                                    <div
-                                        key={`${lab.slug}-visual-row-${index}-${safeActiveStepIndex}`}
-                                        className={cn(
-                                            'grid grid-cols-3 gap-2 rounded-md border p-2 text-sm leading-relaxed',
-                                            'animate-in fade-in-0 slide-in-from-bottom-1 duration-200',
-                                            'transition-all duration-200 ease-out hover:bg-muted/30',
-                                            index === safeActiveStepIndex ? 'bg-primary/10 border-primary/30 shadow-sm' : 'bg-muted/20',
-                                        )}
-                                        style={{ animationDelay: `${Math.min(index * 35, 220)}ms` }}
-                                    >
-                                        <p className="break-all">{row.source}</p>
-                                        <p className="break-all text-muted-foreground">{row.operation}</p>
-                                        <p className="break-all">{row.result}</p>
-                                    </div>
-                                )) : (
+                                {visualizationLens.rows.length > 0 ? (
+                                    visualizationLens.rows.map((row, index) => (
+                                        <div
+                                            key={`${lab.slug}-visual-row-${index}-${safeActiveStepIndex}`}
+                                            className={cn(
+                                                'grid grid-cols-3 gap-2 rounded-md border p-2 text-sm leading-relaxed',
+                                                'animate-in duration-200 fade-in-0 slide-in-from-bottom-1',
+                                                'transition-all duration-200 ease-out hover:bg-muted/30',
+                                                index === safeActiveStepIndex
+                                                    ? 'border-primary/30 bg-primary/10 shadow-sm'
+                                                    : 'bg-muted/20',
+                                            )}
+                                            style={{
+                                                animationDelay: `${Math.min(index * 35, 220)}ms`,
+                                            }}
+                                        >
+                                            <p className="break-all">
+                                                {row.source}
+                                            </p>
+                                            <p className="break-all text-muted-foreground">
+                                                {row.operation}
+                                            </p>
+                                            <p className="break-all">
+                                                {row.result}
+                                            </p>
+                                        </div>
+                                    ))
+                                ) : (
                                     <p className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
-                                        Enter valid input to render visualization.
+                                        Masukkan input yang valid untuk
+                                        menampilkan visualisasi.
                                     </p>
                                 )}
                             </div>
@@ -385,24 +524,30 @@ export default function LabsShow({ lab }: LabShowProps) {
 
                     <div className="flex flex-col gap-4">
                         <CollapsibleCard
-                            title="Output"
+                            title="Keluaran"
                             description={rawResult.outputLabel}
                             defaultOpen={true}
                         >
-                                <div className="rounded-md border bg-muted/30 p-3 font-mono text-sm break-all">
-                                    {outputPresentation.value || '(empty output)'}
-                                </div>
-                                {outputPresentation.error ? (
-                                    <p className="mt-2 text-sm text-muted-foreground">{outputPresentation.error}</p>
-                                ) : null}
+                            <div className="rounded-md border bg-muted/30 p-3 font-mono text-sm break-all">
+                                {outputPresentation.value ||
+                                    '(keluaran kosong)'}
+                            </div>
+                            {outputPresentation.error ? (
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    {outputPresentation.error}
+                                </p>
+                            ) : null}
                         </CollapsibleCard>
 
                         <CollapsibleCard
-                            title="Step-by-Step Breakdown"
-                            description="Select a step to focus the explanation and follow the full transformation path."
+                            title="Rincian Langkah demi Langkah"
+                            description="Pilih langkah untuk fokus pada penjelasan dan ikuti jalur transformasi lengkap."
                             defaultOpen={true}
                         >
-                            <div className="flex flex-col gap-2" {...swipeHandlers}>
+                            <div
+                                className="flex flex-col gap-2"
+                                {...swipeHandlers}
+                            >
                                 <div className="flex flex-wrap gap-2">
                                     <Button
                                         type="button"
@@ -410,19 +555,31 @@ export default function LabsShow({ lab }: LabShowProps) {
                                         size="sm"
                                         disabled={rawResult.steps.length <= 1}
                                         onClick={() => {
-                                            if (safeActiveStepIndex >= rawResult.steps.length - 1) {
+                                            if (
+                                                safeActiveStepIndex >=
+                                                rawResult.steps.length - 1
+                                            ) {
                                                 setActiveStepIndex(0);
                                             }
 
-                                            setIsWalkthroughPlaying((current) => !current);
+                                            setIsWalkthroughPlaying(
+                                                (current) => !current,
+                                            );
                                         }}
                                     >
-                                        {isWalkthroughPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
-                                        {isWalkthroughPlaying ? 'Pause walkthrough' : 'Play walkthrough'}
+                                        {isWalkthroughPlaying ? (
+                                            <Pause className="size-4" />
+                                        ) : (
+                                            <Play className="size-4" />
+                                        )}
+                                        {isWalkthroughPlaying
+                                            ? 'Jeda panduan'
+                                            : 'Putar panduan'}
                                     </Button>
 
                                     <p className="self-center text-sm text-muted-foreground">
-                                        Auto-step every 1.1s for guided walkthrough mode.
+                                        Langkah otomatis setiap 1,1 detik untuk
+                                        mode panduan terpandu.
                                     </p>
                                 </div>
 
@@ -431,11 +588,15 @@ export default function LabsShow({ lab }: LabShowProps) {
                                         <Button
                                             key={`${lab.slug}-step-button-${index}`}
                                             type="button"
-                                            variant={index === safeActiveStepIndex ? 'secondary' : 'outline'}
+                                            variant={
+                                                index === safeActiveStepIndex
+                                                    ? 'secondary'
+                                                    : 'outline'
+                                            }
                                             className={cn(
                                                 'justify-start transition-all duration-200 ease-out',
                                                 index === safeActiveStepIndex
-                                                    ? 'border-primary/40 shadow-sm scale-[1.01]'
+                                                    ? 'scale-[1.01] border-primary/40 shadow-sm'
                                                     : 'opacity-90 hover:opacity-100',
                                             )}
                                             onClick={() => {
@@ -443,7 +604,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                                 setActiveStepIndex(index);
                                             }}
                                         >
-                                            Step {index + 1}
+                                            Langkah {index + 1}
                                         </Button>
                                     ))}
                                 </div>
@@ -451,10 +612,18 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 {rawResult.steps.length > 0 ? (
                                     <div
                                         key={`${lab.slug}-active-step-${safeActiveStepIndex}`}
-                                        className="animate-in fade-in-0 slide-in-from-bottom-1 duration-200 rounded-md border bg-muted/20 p-3"
+                                        className="animate-in rounded-md border bg-muted/20 p-3 duration-200 fade-in-0 slide-in-from-bottom-1"
                                     >
-                                        <p className="text-sm font-medium text-muted-foreground">Active step</p>
-                                        <p className="mt-1 text-sm leading-relaxed">{rawResult.steps[safeActiveStepIndex]}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">
+                                            Langkah aktif
+                                        </p>
+                                        <p className="mt-1 text-sm leading-relaxed">
+                                            {
+                                                rawResult.steps[
+                                                    safeActiveStepIndex
+                                                ]
+                                            }
+                                        </p>
                                     </div>
                                 ) : null}
 
@@ -465,36 +634,59 @@ export default function LabsShow({ lab }: LabShowProps) {
                                         variant="outline"
                                         size="sm"
                                         disabled={safeActiveStepIndex === 0}
-                                        onClick={() => setActiveStepIndex((i) => Math.max(i - 1, 0))}
+                                        onClick={() =>
+                                            setActiveStepIndex((i) =>
+                                                Math.max(i - 1, 0),
+                                            )
+                                        }
                                     >
-                                        <ArrowLeft className="size-4" data-icon />
-                                        Prev
+                                        <ArrowLeft
+                                            className="size-4"
+                                            data-icon
+                                        />
+                                        Sebelumnya
                                     </Button>
                                     <span className="text-xs text-muted-foreground">
-                                        Swipe to navigate steps
+                                        Geser untuk navigasi langkah
                                     </span>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        disabled={safeActiveStepIndex >= rawResult.steps.length - 1}
-                                        onClick={() => setActiveStepIndex((i) => Math.min(i + 1, rawResult.steps.length - 1))}
+                                        disabled={
+                                            safeActiveStepIndex >=
+                                            rawResult.steps.length - 1
+                                        }
+                                        onClick={() =>
+                                            setActiveStepIndex((i) =>
+                                                Math.min(
+                                                    i + 1,
+                                                    rawResult.steps.length - 1,
+                                                ),
+                                            )
+                                        }
                                     >
-                                        Next
-                                        <ArrowRight className="size-4" data-icon />
+                                        Selanjutnya
+                                        <ArrowRight
+                                            className="size-4"
+                                            data-icon
+                                        />
                                     </Button>
                                 </div>
                             </div>
                         </CollapsibleCard>
 
                         <CollapsibleCard
-                            title="Concept Lens"
+                            title="Lensa Konsep"
                             description={conceptLens.title}
                             defaultOpen={false}
                         >
                             <div className="flex flex-col gap-2">
                                 {conceptLens.points.map((point, index) => (
-                                    <div key={`${lab.slug}-concept-${index}`} className="rounded-md border bg-muted/20 p-3 text-sm leading-relaxed">
+                                    <div
+                                        key={`${lab.slug}-concept-${index}`}
+                                        className="rounded-md border bg-muted/20 p-3 text-sm leading-relaxed"
+                                    >
                                         {point}
                                     </div>
                                 ))}
@@ -502,33 +694,58 @@ export default function LabsShow({ lab }: LabShowProps) {
                         </CollapsibleCard>
 
                         <CollapsibleCard
-                            title="Explore Other Labs"
-                            description="Move between algorithm labs to compare how each encryption and decryption flow behaves."
+                            title="Jelajahi Laboratorium Lain"
+                            description="Berpindah antar laboratorium algoritma untuk membandingkan bagaimana setiap alur enkripsi dan dekripsi berperilaku."
                             defaultOpen={false}
                         >
                             <div className="grid gap-2 sm:grid-cols-2">
                                 {[
-                                    { slug: 'caesar-cipher-lab', title: 'Caesar' },
-                                    { slug: 'vigenere-cipher-lab', title: 'Vigenere' },
+                                    {
+                                        slug: 'caesar-cipher-lab',
+                                        title: 'Caesar',
+                                    },
+                                    {
+                                        slug: 'vigenere-cipher-lab',
+                                        title: 'Vigenere',
+                                    },
                                     { slug: 'aes-lab', title: 'AES' },
                                     { slug: 'rsa-lab', title: 'RSA' },
                                     { slug: 'sha-lab', title: 'SHA' },
-                                    { slug: 'digital-signature-lab', title: 'Digital Signature' },
-                                ].map((item) => (
+                                    {
+                                        slug: 'digital-signature-lab',
+                                        title: 'Digital Signature',
+                                    },
+                                ].map((item) =>
                                     item.slug === lab.slug ? (
-                                        <Button key={item.slug} type="button" variant="secondary" disabled className="justify-between">
+                                        <Button
+                                            key={item.slug}
+                                            type="button"
+                                            variant="secondary"
+                                            disabled
+                                            className="justify-between"
+                                        >
                                             {item.title}
                                             <ArrowRight className="size-4" />
                                         </Button>
                                     ) : (
-                                        <Button key={item.slug} asChild variant="outline" className="justify-between">
-                                            <Link href={labsShow({ lab: item.slug })} prefetch>
+                                        <Button
+                                            key={item.slug}
+                                            asChild
+                                            variant="outline"
+                                            className="justify-between"
+                                        >
+                                            <Link
+                                                href={labsShow({
+                                                    lab: item.slug,
+                                                })}
+                                                prefetch
+                                            >
                                                 {item.title}
                                                 <ArrowRight className="size-4" />
                                             </Link>
                                         </Button>
-                                    )
-                                ))}
+                                    ),
+                                )}
                             </div>
                         </CollapsibleCard>
                     </div>
@@ -541,11 +758,11 @@ export default function LabsShow({ lab }: LabShowProps) {
 LabsShow.layout = {
     breadcrumbs: [
         {
-            title: 'Home',
+            title: 'Beranda',
             href: dashboard(),
         },
         {
-            title: 'Labs',
+            title: 'Laboratorium',
             href: labsIndex(),
         },
     ],

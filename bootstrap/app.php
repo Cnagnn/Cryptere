@@ -38,6 +38,11 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->respond(function (Response $response, Throwable $e, Request $request) {
+            // Tampilkan error asli Laravel di local/development untuk debugging
+            if (app()->environment('local', 'development')) {
+                return $response;
+            }
+
             $status = $e instanceof HttpExceptionInterface
                 ? $e->getStatusCode()
                 : $response->getStatusCode();

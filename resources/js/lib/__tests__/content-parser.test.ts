@@ -8,7 +8,11 @@
  */
 import { describe, it, expect } from 'vitest';
 import { parseContentWithChecks } from '../content-parser';
-import type { ContentSegment, CheckSegment, MarkdownSegment } from '../content-parser';
+import type {
+    ContentSegment,
+    CheckSegment,
+    MarkdownSegment,
+} from '../content-parser';
 
 describe('parseContentWithChecks', () => {
     // ─── Basic Parsing ──────────────────────────────────────────────────────
@@ -359,12 +363,18 @@ Cryptography protects data in transit and at rest.`;
 
         // First markdown segment
         expect(result[0].type).toBe('markdown');
-        expect((result[0] as MarkdownSegment).content).toContain('# Why Cryptography Matters');
-        expect((result[0] as MarkdownSegment).content).toContain('data is the new currency');
+        expect((result[0] as MarkdownSegment).content).toContain(
+            '# Why Cryptography Matters',
+        );
+        expect((result[0] as MarkdownSegment).content).toContain(
+            'data is the new currency',
+        );
 
         // First check
         expect(result[1].type).toBe('check');
-        expect((result[1] as CheckSegment).question).toBe("What does the 'C' in CIA triad stand for?");
+        expect((result[1] as CheckSegment).question).toBe(
+            "What does the 'C' in CIA triad stand for?",
+        );
         expect((result[1] as CheckSegment).checkType).toBe('mcq');
         expect((result[1] as CheckSegment).options).toEqual([
             'Cryptography',
@@ -376,7 +386,9 @@ Cryptography protects data in transit and at rest.`;
 
         // Middle markdown
         expect(result[2].type).toBe('markdown');
-        expect((result[2] as MarkdownSegment).content).toContain('Plaintext and Ciphertext');
+        expect((result[2] as MarkdownSegment).content).toContain(
+            'Plaintext and Ciphertext',
+        );
 
         // Second check
         expect(result[3].type).toBe('check');

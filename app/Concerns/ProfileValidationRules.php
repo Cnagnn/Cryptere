@@ -17,6 +17,10 @@ trait ProfileValidationRules
         return [
             'name' => $this->nameRules(),
             'email' => $this->emailRules($userId),
+            'bio' => ['nullable', 'string', 'max:500'],
+            'pronoun' => ['nullable', 'string', 'max:50'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'profile_visibility' => ['nullable', 'string', Rule::in(['public', 'private'])],
         ];
     }
 

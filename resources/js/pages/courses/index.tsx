@@ -55,12 +55,11 @@ export default function CoursesIndex({
     catalogMode = 'learning',
     sidebarMode = 'filters',
     statistics = [],
-    pageTitle = 'Courses',
-    pageDescription = 'Browse learning tracks, filter results, and continue your progress in one place.',
-    headTitle = 'Courses',
+    pageTitle = 'Kursus',
+    pageDescription = 'Jelajahi jalur pembelajaran, filter hasil, dan lanjutkan progres Anda di satu tempat.',
+    headTitle = 'Kursus',
 }: CoursesIndexProps) {
     const isLabsCatalog = catalogMode === 'labs';
-    const isChallengesCatalog = catalogMode === 'challenges';
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -70,7 +69,6 @@ export default function CoursesIndex({
         useState<LabsGroupFilterValue>('all');
     const [sortBy, setSortBy] = useState<SortValue>('title-asc');
     const [currentPage, setCurrentPage] = useState(1);
-    const [nowMs, setNowMs] = useState(() => Date.now());
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -79,18 +77,6 @@ export default function CoursesIndex({
 
         return () => clearTimeout(timer);
     }, [searchTerm]);
-
-    useEffect(() => {
-        if (!isChallengesCatalog) {
-            return;
-        }
-
-        const timer = setInterval(() => {
-            setNowMs(Date.now());
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [isChallengesCatalog]);
 
     const catalogCourses = useMemo(() => {
         if (isLabsCatalog && courses.length === 0) {
@@ -113,11 +99,9 @@ export default function CoursesIndex({
             const matchesEnrollmentOrGroup = isLabsCatalog
                 ? labsGroupFilter === 'all' ||
                   course.labGroup === labsGroupFilter
-                : isChallengesCatalog
-                  ? true
-                  : enrollmentFilter === 'all' ||
-                    (enrollmentFilter === 'enrolled' && course.isEnrolled) ||
-                    (enrollmentFilter === 'not-enrolled' && !course.isEnrolled);
+                : enrollmentFilter === 'all' ||
+                  (enrollmentFilter === 'enrolled' && course.isEnrolled) ||
+                  (enrollmentFilter === 'not-enrolled' && !course.isEnrolled);
 
             return matchesSearch && matchesEnrollmentOrGroup;
         });
@@ -137,7 +121,6 @@ export default function CoursesIndex({
         catalogCourses,
         debouncedSearchTerm,
         enrollmentFilter,
-        isChallengesCatalog,
         isLabsCatalog,
         labsGroupFilter,
         sortBy,
@@ -155,8 +138,8 @@ export default function CoursesIndex({
         searchTerm.length > 0 ||
         (isLabsCatalog
             ? labsGroupFilter !== 'all'
-            : !isChallengesCatalog && enrollmentFilter !== 'all') ||
-        (!isLabsCatalog && !isChallengesCatalog && sortBy !== 'title-asc');
+            : enrollmentFilter !== 'all') ||
+        (!isLabsCatalog && sortBy !== 'title-asc');
 
     const hasPublishedCourses = catalogCourses.length > 0;
     const hasVisibleCourses = visibleCourses.length > 0;
@@ -208,7 +191,7 @@ export default function CoursesIndex({
         searchTerm.trim().length > 0
             ? {
                   key: 'search',
-                  label: `Search: ${searchTerm.trim()}`,
+                  label: `Pencarian: ${searchTerm.trim()}`,
                   onClear: () => setSearchTerm(''),
               }
             : null,
@@ -222,7 +205,6 @@ export default function CoursesIndex({
     const filterProps = {
         searchTerm,
         isLabsCatalog,
-        isChallengesCatalog,
         enrollmentFilter,
         labsGroupFilter,
         sortBy,
@@ -271,7 +253,7 @@ export default function CoursesIndex({
                                         }
                                     >
                                         <Filter className="size-4" />
-                                        Filters
+                                        Filter
                                         {activeFilterCount > 0 ? (
                                             <Badge
                                                 variant="secondary"
@@ -289,14 +271,12 @@ export default function CoursesIndex({
                                         <AlertDialogContent className="w-full sm:max-w-sm">
                                             <AlertDialogHeader className="px-4">
                                                 <AlertDialogTitle className="text-base">
-                                                    Sort and filter
+                                                    Urutkan dan filter
                                                 </AlertDialogTitle>
                                                 <AlertDialogDescription>
                                                     {isLabsCatalog
-                                                        ? 'Refine labs by keyword, group, and sort mode.'
-                                                        : isChallengesCatalog
-                                                          ? 'Refine challenge cards by keyword and availability.'
-                                                          : 'Refine your catalog before you enroll or continue.'}
+                                                        ? 'Perbaiki lab berdasarkan kata kunci, grup, dan mode urutan.'
+                                                        : 'Perbaiki katalog Anda sebelum mendaftar atau melanjutkan.'}
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <div className="px-4 pb-6">
@@ -312,7 +292,7 @@ export default function CoursesIndex({
                                 <Card className="w-full sm:w-72">
                                     <CardHeader>
                                         <CardTitle className="text-base">
-                                            Statistics
+                                            Statistik
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
@@ -334,17 +314,15 @@ export default function CoursesIndex({
                         <CardHeader>
                             <CardTitle className="text-base">
                                 {sidebarMode === 'filters'
-                                    ? 'Sort and filter'
-                                    : 'Statistics'}
+                                    ? 'Urutkan dan Filter'
+                                    : 'Statistik'}
                             </CardTitle>
                             <CardDescription>
                                 {sidebarMode === 'filters'
                                     ? isLabsCatalog
-                                        ? 'Refine your labs by keyword, algorithm group, and sort mode.'
-                                        : isChallengesCatalog
-                                          ? 'Refine challenge cards by keyword and availability.'
-                                          : 'Focus your learning path by keyword, status, and sort mode.'
-                                    : 'Quick snapshot for this page.'}
+                                        ? 'Perbaiki lab Anda berdasarkan kata kunci, grup algoritma, dan mode urutan.'
+                                        : 'Fokuskan jalur pembelajaran Anda berdasarkan kata kunci, status, dan mode urutan.'
+                                    : 'Ringkasan cepat untuk halaman ini.'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -392,7 +370,6 @@ export default function CoursesIndex({
                             <EmptyLabCatalogGrid
                                 courses={hardcodedCatalogCourses}
                                 isLabsCatalog={isLabsCatalog}
-                                isChallengesCatalog={isChallengesCatalog}
                             />
                         )}
 
@@ -400,14 +377,12 @@ export default function CoursesIndex({
                             <Card>
                                 <CardHeader>
                                     <CardTitle>
-                                        {isChallengesCatalog
-                                            ? 'No challenge has been published yet'
-                                            : 'No course has been published yet'}
+                                        Belum Ada Kursus yang Dipublikasikan
                                     </CardTitle>
                                     <CardDescription>
-                                        {isChallengesCatalog
-                                            ? 'Return later or ask an admin to publish the next challenge batch.'
-                                            : 'Return later or ask an admin to publish learning tracks.'}
+                                        Kembali lagi nanti atau minta admin
+                                        untuk mempublikasikan jalur
+                                        pembelajaran.
                                     </CardDescription>
                                 </CardHeader>
                             </Card>
@@ -423,16 +398,12 @@ export default function CoursesIndex({
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>
-                                            {isChallengesCatalog
-                                                ? 'No challenge matches current controls'
-                                                : 'No course matches current controls'}
+                                            Tidak Ada Kursus yang Cocok
                                         </CardTitle>
                                         <CardDescription>
-                                            Broaden your search or reset filters
-                                            to reveal more
-                                            {isChallengesCatalog
-                                                ? ' challenge cards.'
-                                                : ' tracks.'}
+                                            Perluas pencarian Anda atau atur
+                                            ulang filter untuk menampilkan lebih
+                                            banyak jalur.
                                         </CardDescription>
                                     </CardHeader>
                                     <CardFooter>
@@ -441,7 +412,7 @@ export default function CoursesIndex({
                                             variant="outline"
                                             onClick={clearFilters}
                                         >
-                                            Reset controls
+                                            Atur Ulang Filter
                                         </Button>
                                     </CardFooter>
                                 </Card>
@@ -453,8 +424,6 @@ export default function CoursesIndex({
                                 <CourseCardGrid
                                     courses={paginatedCourses}
                                     isLabsCatalog={isLabsCatalog}
-                                    isChallengesCatalog={isChallengesCatalog}
-                                    nowMs={nowMs}
                                 />
                             )}
                     </div>
@@ -468,18 +437,14 @@ export default function CoursesIndex({
                             style={{ animationDelay: '200ms' }}
                         >
                             <p className="shrink-0 text-sm text-muted-foreground">
-                                Showing{' '}
+                                Menampilkan{' '}
                                 {(activePage - 1) * COURSES_PER_PAGE + 1} -{' '}
                                 {Math.min(
                                     activePage * COURSES_PER_PAGE,
                                     visibleCourses.length,
                                 )}{' '}
-                                of {visibleCourses.length}{' '}
-                                {isLabsCatalog
-                                    ? 'lab(s)'
-                                    : isChallengesCatalog
-                                      ? 'challenge(s)'
-                                      : 'course(s)'}
+                                dari {visibleCourses.length}{' '}
+                                {isLabsCatalog ? 'lab' : 'kursus'}
                             </p>
                             <Pagination className="mx-0 w-auto justify-end">
                                 <PaginationContent>
@@ -555,11 +520,11 @@ export default function CoursesIndex({
 CoursesIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Home',
+            title: 'Beranda',
             href: dashboard(),
         },
         {
-            title: 'Courses',
+            title: 'Kursus',
             href: coursesIndex(),
         },
     ],

@@ -61,8 +61,8 @@ export function DailyRewards() {
             });
 
             if (!response.ok) {
-return;
-}
+                return;
+            }
 
             const json = await response.json();
             setData(json);
@@ -98,8 +98,8 @@ return;
             });
 
             if (!response.ok) {
-return;
-}
+                return;
+            }
 
             const result: ClaimResult = await response.json();
             setClaimResult(result);
@@ -173,14 +173,12 @@ return;
                         {/* 7-Day Tier Grid */}
                         <div className="grid grid-cols-7 gap-1.5">
                             {tierEntries.map((tier) => {
-                                const isCurrent =
-                                    tier.day === data.day_number;
+                                const isCurrent = tier.day === data.day_number;
                                 const isPast = data.calendar.some(
                                     (c) => c.day_number === tier.day,
                                 );
                                 const isCompleted =
-                                    isPast ||
-                                    (isCurrent && data.claimed_today);
+                                    isPast || (isCurrent && data.claimed_today);
 
                                 return (
                                     <div
@@ -235,9 +233,7 @@ return;
                         ) : data.claimed_today ? (
                             <div className="flex flex-col items-center gap-2 py-4 text-center text-sm text-muted-foreground">
                                 <Star className="size-6 fill-amber-400 text-amber-400" />
-                                <span>
-                                    Today's reward has been claimed!
-                                </span>
+                                <span>Today's reward has been claimed!</span>
                                 <span className="text-xs">
                                     Come back tomorrow for Day{' '}
                                     {data.day_number >= 7

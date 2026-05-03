@@ -47,12 +47,10 @@ type HeatmapEntry = { date: string; count: number };
 type WeeklyTrend = {
     week: string;
     lessons: number;
-    challenges: number;
     total: number;
 };
 type StudyStats = {
     totalLessons: number;
-    totalChallenges: number;
     totalEnrollments: number;
     completedCourses: number;
     estimatedStudyMinutes: number;
@@ -83,8 +81,8 @@ type Props = {
 
 function formatMinutes(minutes: number): string {
     if (minutes < 60) {
-return `${minutes}m`;
-}
+        return `${minutes}m`;
+    }
 
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -121,8 +119,7 @@ function ActivityHeatmap({ data }: { data: HeatmapEntry[] }) {
                                 title={`${day.date}: ${day.count} activities`}
                                 className={cn(
                                     'size-3 rounded-[2px] transition-colors',
-                                    intensity === 0 &&
-                                        'bg-muted-foreground/10',
+                                    intensity === 0 && 'bg-muted-foreground/10',
                                     intensity === 1 &&
                                         'bg-emerald-200 dark:bg-emerald-900',
                                     intensity === 2 &&
@@ -175,7 +172,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
             {rec.slug && (
                 <Button variant="outline" size="sm" asChild>
                     <Link href={courseShow.url({ course: rec.slug })} prefetch>
-                        Go
+                        Buka
                     </Link>
                 </Button>
             )}
@@ -195,22 +192,22 @@ export default function Analytics({
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Analytics', href: '/analytics' },
+                { title: 'Dasbor', href: '/dashboard' },
+                { title: 'Analitik', href: '/analytics' },
             ]}
         >
-            <Head title="Learning Analytics" />
+            <Head title="Analitik Pembelajaran" />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 {/* ── Header ── */}
                 <section className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                         <BarChart3 className="size-6 text-primary" />
-                        <TypographyH1>Learning Analytics</TypographyH1>
+                        <TypographyH1>Analitik Pembelajaran</TypographyH1>
                     </div>
                     <TypographyMuted>
-                        Track your progress, identify strengths, and discover
-                        areas to improve.
+                        Lacak progres Anda, identifikasi kekuatan, dan temukan
+                        area yang perlu ditingkatkan.
                     </TypographyMuted>
                 </section>
 
@@ -238,10 +235,7 @@ export default function Analytics({
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
-                            <Progress
-                                value={level.progress}
-                                className="h-1"
-                            />
+                            <Progress value={level.progress} className="h-1" />
                         </CardContent>
                     </Card>
                     <Card>
@@ -253,7 +247,7 @@ export default function Analytics({
                             <CardTitle className="text-2xl tabular-nums">
                                 {stats.currentStreak}{' '}
                                 <span className="text-sm font-normal text-muted-foreground">
-                                    days
+                                    hari
                                 </span>
                             </CardTitle>
                         </CardHeader>
@@ -262,7 +256,7 @@ export default function Analytics({
                         <CardHeader className="gap-1 pb-2">
                             <CardDescription className="flex items-center gap-1">
                                 <Clock className="size-3" />
-                                Study Time
+                                Waktu Belajar
                             </CardDescription>
                             <CardTitle className="text-2xl tabular-nums">
                                 {formatMinutes(
@@ -275,7 +269,7 @@ export default function Analytics({
                         <CardHeader className="gap-1 pb-2">
                             <CardDescription className="flex items-center gap-1">
                                 <Target className="size-3" />
-                                Completion
+                                Penyelesaian
                             </CardDescription>
                             <CardTitle className="text-2xl tabular-nums">
                                 {studyStats.completionRate}%
@@ -286,11 +280,10 @@ export default function Analytics({
                         <CardHeader className="gap-1 pb-2">
                             <CardDescription className="flex items-center gap-1">
                                 <Activity className="size-3" />
-                                Activities
+                                Aktivitas
                             </CardDescription>
                             <CardTitle className="text-2xl tabular-nums">
-                                {studyStats.totalLessons +
-                                    studyStats.totalChallenges}
+                                {studyStats.totalLessons}
                             </CardTitle>
                         </CardHeader>
                     </Card>
@@ -301,17 +294,14 @@ export default function Analytics({
                     {/* Skill Radar */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Skill Radar</CardTitle>
+                            <CardTitle>Radar Keterampilan</CardTitle>
                             <CardDescription>
-                                Your proficiency across categories
+                                Kemahiran Anda di berbagai kategori
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             {skillRadar.length > 0 ? (
-                                <ResponsiveContainer
-                                    width="100%"
-                                    height={280}
-                                >
+                                <ResponsiveContainer width="100%" height={280}>
                                     <RadarChart data={skillRadar}>
                                         <PolarGrid />
                                         <PolarAngleAxis dataKey="category" />
@@ -328,8 +318,8 @@ export default function Analytics({
                             ) : (
                                 <div className="flex h-[280px] items-center justify-center">
                                     <p className="text-sm text-muted-foreground">
-                                        Enroll in courses to see your skill
-                                        radar.
+                                        Daftar kursus untuk melihat radar
+                                        keterampilan Anda.
                                     </p>
                                 </div>
                             )}
@@ -339,9 +329,9 @@ export default function Analytics({
                     {/* Weekly Trends */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Weekly Activity</CardTitle>
+                            <CardTitle>Aktivitas Mingguan</CardTitle>
                             <CardDescription>
-                                Lessons & challenges over the last 8 weeks
+                                Pelajaran selama 8 minggu terakhir
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -351,10 +341,7 @@ export default function Analytics({
                                         strokeDasharray="3 3"
                                         className="stroke-border"
                                     />
-                                    <XAxis
-                                        dataKey="week"
-                                        className="text-xs"
-                                    />
+                                    <XAxis dataKey="week" className="text-xs" />
                                     <YAxis
                                         allowDecimals={false}
                                         className="text-xs"
@@ -362,14 +349,8 @@ export default function Analytics({
                                     <RechartsTooltip />
                                     <Bar
                                         dataKey="lessons"
-                                        name="Lessons"
+                                        name="Pelajaran"
                                         fill="oklch(0.6 0.18 250)"
-                                        radius={[4, 4, 0, 0]}
-                                    />
-                                    <Bar
-                                        dataKey="challenges"
-                                        name="Challenges"
-                                        fill="oklch(0.7 0.15 160)"
                                         radius={[4, 4, 0, 0]}
                                     />
                                 </BarChart>
@@ -381,21 +362,22 @@ export default function Analytics({
                 {/* ── Activity Heatmap ── */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Activity Heatmap</CardTitle>
+                        <CardTitle>Peta Panas Aktivitas</CardTitle>
                         <CardDescription>
-                            Your learning activity over the last 20 weeks
+                            Aktivitas pembelajaran Anda selama 20 minggu
+                            terakhir
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ActivityHeatmap data={heatmap} />
                         <div className="mt-2 flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
-                            <span>Less</span>
+                            <span>Sedikit</span>
                             <div className="size-3 rounded-[2px] bg-muted-foreground/10" />
                             <div className="size-3 rounded-[2px] bg-emerald-200 dark:bg-emerald-900" />
                             <div className="size-3 rounded-[2px] bg-emerald-400 dark:bg-emerald-700" />
                             <div className="size-3 rounded-[2px] bg-emerald-500 dark:bg-emerald-500" />
                             <div className="size-3 rounded-[2px] bg-emerald-700 dark:bg-emerald-300" />
-                            <span>More</span>
+                            <span>Banyak</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -405,9 +387,9 @@ export default function Analytics({
                     {/* Study Stats */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Study Breakdown</CardTitle>
+                            <CardTitle>Rincian Belajar</CardTitle>
                             <CardDescription>
-                                Your learning activity summary
+                                Ringkasan aktivitas pembelajaran Anda
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -415,7 +397,7 @@ export default function Analytics({
                                 <div className="flex items-center justify-between">
                                     <span className="flex items-center gap-2 text-sm">
                                         <BookOpen className="size-4 text-blue-500" />
-                                        Lessons Completed
+                                        Pelajaran Selesai
                                     </span>
                                     <span className="font-semibold tabular-nums">
                                         {studyStats.totalLessons}
@@ -423,17 +405,8 @@ export default function Analytics({
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="flex items-center gap-2 text-sm">
-                                        <TrendingUp className="size-4 text-emerald-500" />
-                                        Challenges Solved
-                                    </span>
-                                    <span className="font-semibold tabular-nums">
-                                        {studyStats.totalChallenges}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-2 text-sm">
                                         <GraduationCap className="size-4 text-purple-500" />
-                                        Courses Completed
+                                        Kursus Selesai
                                     </span>
                                     <span className="font-semibold tabular-nums">
                                         {studyStats.completedCourses} /{' '}
@@ -443,10 +416,10 @@ export default function Analytics({
                                 <div className="flex items-center justify-between">
                                     <span className="flex items-center gap-2 text-sm">
                                         <Flame className="size-4 text-orange-500" />
-                                        Longest Streak
+                                        Streak Terpanjang
                                     </span>
                                     <span className="font-semibold tabular-nums">
-                                        {stats.longestStreak} days
+                                        {stats.longestStreak} hari
                                     </span>
                                 </div>
                             </div>
@@ -456,27 +429,24 @@ export default function Analytics({
                     {/* Recommendations */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Recommendations</CardTitle>
+                            <CardTitle>Rekomendasi</CardTitle>
                             <CardDescription>
-                                Personalized suggestions to improve
+                                Saran personal untuk meningkatkan kemampuan
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             {recommendations.length > 0 ? (
                                 <div className="flex flex-col gap-2">
                                     {recommendations.map((rec, i) => (
-                                        <RecommendationCard
-                                            key={i}
-                                            rec={rec}
-                                        />
+                                        <RecommendationCard key={i} rec={rec} />
                                     ))}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center gap-2 py-6 text-center">
                                     <Trophy className="size-8 text-emerald-500" />
                                     <p className="text-sm text-muted-foreground">
-                                        You're doing great! Keep up the
-                                        momentum.
+                                        Anda melakukannya dengan baik!
+                                        Pertahankan momentum.
                                     </p>
                                 </div>
                             )}

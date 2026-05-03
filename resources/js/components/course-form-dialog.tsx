@@ -105,74 +105,81 @@ export function CourseFormDialog({
             <DialogContent className="w-full overflow-y-auto sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {isCreate ? 'Create Course' : 'Edit Course'}
+                        {isCreate ? 'Buat Kursus' : 'Edit Kursus'}
                     </DialogTitle>
                     <DialogDescription>
                         {isCreate
-                            ? 'Fill the initial information to create a new course.'
-                            : 'Update title and description for this course.'}
+                            ? 'Isi informasi awal untuk membuat kursus baru.'
+                            : 'Perbarui judul dan deskripsi untuk kursus ini.'}
                     </DialogDescription>
                 </DialogHeader>
 
                 <FieldGroup className="px-4">
                     <Field>
-                        <FieldLabel htmlFor={`${mode}-course-title`}>Title</FieldLabel>
+                        <FieldLabel htmlFor={`${mode}-course-title`}>
+                            Judul
+                        </FieldLabel>
                         <FieldContent>
-                        <Input
-                            id={`${mode}-course-title`}
-                            placeholder={
-                                isCreate ? 'Basic Cryptography' : undefined
-                            }
-                            value={form.data.title}
-                            onChange={(e) =>
-                                form.setData('title', e.target.value)
-                            }
-                            aria-invalid={Boolean(form.errors.title)}
-                        />
+                            <Input
+                                id={`${mode}-course-title`}
+                                placeholder={
+                                    isCreate ? 'Kriptografi Dasar' : undefined
+                                }
+                                value={form.data.title}
+                                onChange={(e) =>
+                                    form.setData('title', e.target.value)
+                                }
+                                aria-invalid={Boolean(form.errors.title)}
+                            />
                             <FieldError>{form.errors.title}</FieldError>
                         </FieldContent>
                     </Field>
 
                     <Field>
-                        <FieldLabel htmlFor={`${mode}-course-description`}>Description</FieldLabel>
+                        <FieldLabel htmlFor={`${mode}-course-description`}>
+                            Deskripsi
+                        </FieldLabel>
                         <FieldContent>
-                        <Textarea
-                            id={`${mode}-course-description`}
-                            placeholder={
-                                isCreate
-                                    ? 'Introduction to core crypto concepts'
-                                    : undefined
-                            }
-                            value={form.data.description}
-                            onChange={(e) =>
-                                form.setData('description', e.target.value)
-                            }
-                            aria-invalid={Boolean(form.errors.description)}
-                        />
+                            <Textarea
+                                id={`${mode}-course-description`}
+                                placeholder={
+                                    isCreate
+                                        ? 'Pengenalan konsep dasar kriptografi'
+                                        : undefined
+                                }
+                                value={form.data.description}
+                                onChange={(e) =>
+                                    form.setData('description', e.target.value)
+                                }
+                                aria-invalid={Boolean(form.errors.description)}
+                            />
                             <FieldError>{form.errors.description}</FieldError>
                         </FieldContent>
                     </Field>
 
                     <Field>
-                        <FieldLabel htmlFor={`${mode}-course-cover`}>Grid Cover Image</FieldLabel>
+                        <FieldLabel htmlFor={`${mode}-course-cover`}>
+                            Gambar Sampul Grid
+                        </FieldLabel>
                         <FieldContent>
-                        <Input
-                            id={`${mode}-course-cover`}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                                form.setData(
-                                    'cover_image',
-                                    e.currentTarget.files?.[0] ?? null,
-                                );
-                            }}
-                            aria-invalid={Boolean(form.errors.cover_image)}
-                        />
-                        {!isCreate ? (
+                            <Input
+                                id={`${mode}-course-cover`}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    form.setData(
+                                        'cover_image',
+                                        e.currentTarget.files?.[0] ?? null,
+                                    );
+                                }}
+                                aria-invalid={Boolean(form.errors.cover_image)}
+                            />
+                            {!isCreate ? (
                                 <FieldDescription>
-                                Leave empty to keep the current grid cover.
+                                    Biarkan kosong untuk mempertahankan sampul
+                                    grid saat ini.
                                 </FieldDescription>
-                        ) : null}
+                            ) : null}
                             <FieldError>{form.errors.cover_image}</FieldError>
                         </FieldContent>
                     </Field>
@@ -180,11 +187,11 @@ export function CourseFormDialog({
                     {!isCreate && course?.cover ? (
                         <div className="flex flex-col gap-1">
                             <p className="text-sm text-muted-foreground">
-                                Current cover:
+                                Sampul saat ini:
                             </p>
                             <img
                                 src={course.cover}
-                                alt="Current course cover"
+                                alt="Sampul kursus saat ini"
                                 className="h-24 w-full rounded-lg border object-cover"
                             />
                         </div>
@@ -193,8 +200,12 @@ export function CourseFormDialog({
 
                 <DialogFooter className="mt-4 sm:flex-row sm:justify-end">
                     <DialogClose asChild>
-                        <Button type="button" variant="outline" onClick={handleClose}>
-                        Cancel
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleClose}
+                        >
+                            Batal
                         </Button>
                     </DialogClose>
                     <Button
@@ -202,7 +213,7 @@ export function CourseFormDialog({
                         disabled={form.processing}
                         onClick={handleSubmit}
                     >
-                        {isCreate ? 'Create' : 'Update'}
+                        {isCreate ? 'Buat' : 'Perbarui'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

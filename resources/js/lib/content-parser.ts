@@ -52,7 +52,11 @@ function parseCheckBlock(block: string): CheckSegment | null {
         } else if (trimmed.startsWith('type:')) {
             const typeValue = trimmed.slice('type:'.length).trim();
 
-            if (typeValue === 'mcq' || typeValue === 'true_false' || typeValue === 'fill_blank') {
+            if (
+                typeValue === 'mcq' ||
+                typeValue === 'true_false' ||
+                typeValue === 'fill_blank'
+            ) {
                 checkType = typeValue;
             }
         } else if (trimmed.startsWith('options:')) {

@@ -7,6 +7,7 @@ use App\Events\CourseCompleted;
 use App\Events\LessonCompleted;
 use App\Events\XpAwarded;
 use App\Http\Controllers\Controller;
+use App\Models\AssessmentSubmission;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
@@ -104,13 +105,27 @@ class LessonProgressController extends Controller
             $totalLessons = max(1, $lessonIds->count());
             $progressPercentage = (int) round(($completedLessonsCount / $totalLessons) * 100);
 
+            // Course is only "completed" when all lessons are done AND assessment is passed (if one exists)
+            $hasAssessment = $course->assessment()->published()->exists();
+            $assessmentPassed = false;
+
+            if ($hasAssessment && $progressPercentage === 100) {
+                $assessmentPassed = AssessmentSubmission::query()
+                    ->where('user_id', $user->id)
+                    ->whereHas('assessment', fn ($q) => $q->where('course_id', $course->id))
+                    ->where('passed', true)
+                    ->exists();
+            }
+
+            $courseCompleted = $progressPercentage === 100 && (! $hasAssessment || $assessmentPassed);
+
             $enrollment->update([
                 'progress_percentage' => $progressPercentage,
-                'completed_at' => $progressPercentage === 100 ? now() : null,
+                'completed_at' => $courseCompleted ? now() : null,
             ]);
 
             // Course Completion Bonus — award extra XP + points when course reaches 100%
-            if ($progressPercentage === 100 && ! $alreadyCompleted) {
+            if ($courseCompleted && $progressPercentage === 100 && ! $alreadyCompleted) {
                 $completionXp = (int) config('rewards.course_completion_xp', 100);
                 $completionPoints = (int) config('rewards.course_completion_points', 200);
                 $awardedCompletionPoints = $this->xpService->applyLevelBonus($user, $completionPoints);

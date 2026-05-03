@@ -37,30 +37,30 @@ type Props = {
 };
 
 const INTERESTS = [
-    { id: 'symmetric', label: 'Symmetric Encryption', icon: Key },
-    { id: 'asymmetric', label: 'Asymmetric Encryption', icon: Lock },
-    { id: 'hashing', label: 'Hash Functions', icon: Shield },
-    { id: 'protocols', label: 'Security Protocols', icon: Zap },
-    { id: 'applied', label: 'Applied Cryptography', icon: Target },
+    { id: 'symmetric', label: 'Enkripsi Simetris', icon: Key },
+    { id: 'asymmetric', label: 'Enkripsi Asimetris', icon: Lock },
+    { id: 'hashing', label: 'Fungsi Hash', icon: Shield },
+    { id: 'protocols', label: 'Protokol Keamanan', icon: Zap },
+    { id: 'applied', label: 'Kriptografi Terapan', icon: Target },
 ] as const;
 
 const EXPERIENCE_LEVELS = [
     {
         value: 'beginner',
-        label: 'Beginner',
-        description: "I'm new to cryptography",
+        label: 'Pemula',
+        description: 'Saya baru mengenal kriptografi',
         icon: Sparkles,
     },
     {
         value: 'intermediate',
-        label: 'Intermediate',
-        description: 'I know the basics and want to go deeper',
+        label: 'Menengah',
+        description: 'Saya mengetahui dasar-dasarnya dan ingin lebih mendalam',
         icon: BookOpen,
     },
     {
         value: 'advanced',
-        label: 'Advanced',
-        description: 'I have strong foundations and want to master it',
+        label: 'Lanjutan',
+        description: 'Saya memiliki fondasi yang kuat dan ingin menguasainya',
         icon: GraduationCap,
     },
 ] as const;
@@ -74,32 +74,28 @@ function WelcomeStep({ userName }: { userName: string }) {
             </div>
             <div className="flex flex-col gap-2">
                 <h2 className="text-2xl font-bold tracking-tight">
-                    Welcome to Crypter, {userName}! 🎉
+                    Selamat datang di Crypter, {userName}! 🎉
                 </h2>
                 <p className="text-muted-foreground">
-                    You're about to embark on an exciting journey into the world
-                    of cryptography. Let's personalize your experience in just a
-                    few steps.
+                    Anda akan memulai perjalanan yang menarik ke dunia
+                    kriptografi. Mari personalisasi pengalaman Anda hanya dalam
+                    beberapa langkah.
                 </p>
             </div>
             <div className="grid w-full max-w-sm grid-cols-3 gap-3">
                 <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
                     <BookOpen className="size-5 text-blue-500" />
                     <span className="text-xs font-medium">
-                        Interactive Courses
+                        Kursus Interaktif
                     </span>
                 </div>
                 <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
                     <Trophy className="size-5 text-amber-500" />
-                    <span className="text-xs font-medium">
-                        Earn Achievements
-                    </span>
+                    <span className="text-xs font-medium">Raih Pencapaian</span>
                 </div>
                 <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
                     <Target className="size-5 text-emerald-500" />
-                    <span className="text-xs font-medium">
-                        Hands-on Challenges
-                    </span>
+                    <span className="text-xs font-medium">Lab Interaktif</span>
                 </div>
             </div>
         </div>
@@ -118,10 +114,11 @@ function ExperienceStep({
         <div className="flex flex-col gap-6">
             <div className="text-center">
                 <h2 className="text-2xl font-bold tracking-tight">
-                    What's your experience level?
+                    Apa tingkat pengalaman Anda?
                 </h2>
                 <p className="mt-1 text-muted-foreground">
-                    This helps us recommend the right starting point for you.
+                    Ini membantu kami merekomendasikan titik awal yang tepat
+                    untuk Anda.
                 </p>
             </div>
             <RadioGroup
@@ -177,11 +174,11 @@ function InterestsStep({
         <div className="flex flex-col gap-6">
             <div className="text-center">
                 <h2 className="text-2xl font-bold tracking-tight">
-                    What interests you most?
+                    Apa yang paling menarik bagi Anda?
                 </h2>
                 <p className="mt-1 text-muted-foreground">
-                    Select topics you'd like to explore. You can always change
-                    this later.
+                    Pilih topik yang ingin Anda jelajahi. Anda selalu dapat
+                    mengubah ini nanti.
                 </p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -196,8 +193,7 @@ function InterestsStep({
                             onClick={() => onToggle(interest.id)}
                             className={cn(
                                 'flex items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-accent',
-                                isSelected &&
-                                    'border-primary bg-primary/5',
+                                isSelected && 'border-primary bg-primary/5',
                             )}
                         >
                             <div
@@ -214,11 +210,8 @@ function InterestsStep({
                                 {interest.label}
                             </span>
                             {isSelected && (
-                                <Badge
-                                    variant="secondary"
-                                    className="ml-auto"
-                                >
-                                    Selected
+                                <Badge variant="secondary" className="ml-auto">
+                                    Dipilih
                                 </Badge>
                             )}
                         </button>
@@ -241,9 +234,7 @@ export default function Onboarding({ userName }: Props) {
 
     function toggleInterest(id: string) {
         setInterests((prev) =>
-            prev.includes(id)
-                ? prev.filter((i) => i !== id)
-                : [...prev, id],
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
         );
     }
 
@@ -263,21 +254,25 @@ export default function Onboarding({ userName }: Props) {
 
     function handleSkip() {
         setSubmitting(true);
-        router.post(skip.url(), {}, {
-            onFinish: () => setSubmitting(false),
-        });
+        router.post(
+            skip.url(),
+            {},
+            {
+                onFinish: () => setSubmitting(false),
+            },
+        );
     }
 
     return (
         <>
-            <Head title="Welcome to Crypter" />
+            <Head title="Selamat Datang di Crypter" />
 
             <div className="flex min-h-screen items-center justify-center bg-background p-4">
                 <Card className="w-full max-w-lg">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <CardDescription>
-                                Step {step + 1} of {TOTAL_STEPS}
+                                Langkah {step + 1} dari {TOTAL_STEPS}
                             </CardDescription>
                             <Button
                                 variant="ghost"
@@ -285,7 +280,7 @@ export default function Onboarding({ userName }: Props) {
                                 onClick={handleSkip}
                                 disabled={submitting}
                             >
-                                Skip
+                                Lewati
                             </Button>
                         </div>
                         <Progress value={progress} className="h-1.5" />
@@ -313,14 +308,12 @@ export default function Onboarding({ userName }: Props) {
                                 disabled={step === 0}
                             >
                                 <ChevronLeft className="size-4" data-icon />
-                                Back
+                                Kembali
                             </Button>
 
                             {step < TOTAL_STEPS - 1 ? (
-                                <Button
-                                    onClick={() => setStep((s) => s + 1)}
-                                >
-                                    Next
+                                <Button onClick={() => setStep((s) => s + 1)}>
+                                    Selanjutnya
                                     <ChevronRight
                                         className="size-4"
                                         data-icon
@@ -331,11 +324,8 @@ export default function Onboarding({ userName }: Props) {
                                     onClick={handleComplete}
                                     disabled={submitting}
                                 >
-                                    <Rocket
-                                        className="size-4"
-                                        data-icon
-                                    />
-                                    Get Started
+                                    <Rocket className="size-4" data-icon />
+                                    Mulai
                                 </Button>
                             )}
                         </div>

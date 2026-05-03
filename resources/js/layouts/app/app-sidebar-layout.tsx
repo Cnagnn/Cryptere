@@ -1,4 +1,8 @@
-import { RouteAnnouncer, SkipToContent, useFocusOnNavigate } from '@/components/accessibility';
+import {
+    RouteAnnouncer,
+    SkipToContent,
+    useFocusOnNavigate,
+} from '@/components/accessibility';
 import { AchievementToast } from '@/components/achievement-toast';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';

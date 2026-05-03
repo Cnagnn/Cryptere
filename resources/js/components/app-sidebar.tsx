@@ -4,7 +4,6 @@ import {
     ChevronRight,
     FlaskConical,
     LayoutGrid,
-    Swords,
     Trophy,
     Users,
 } from 'lucide-react';
@@ -33,10 +32,8 @@ import {
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
-import { index as adminChallengesIndex } from '@/routes/admin/challenges';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { index as adminUsersIndex } from '@/routes/admin/users';
-import { index as challengesIndex } from '@/routes/challenges';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
@@ -55,11 +52,6 @@ const mainNavItems: NavItem[] = [
         icon: BookOpenCheck,
     },
     {
-        title: 'Challenges',
-        href: challengesIndex(),
-        icon: Swords,
-    },
-    {
         title: 'Leaderboard',
         href: leaderboardIndex(),
         icon: Trophy,
@@ -73,11 +65,6 @@ const mainNavItems: NavItem[] = [
 
 const managementNavItems: NavItem[] = [
     {
-        title: 'Challenges',
-        href: adminChallengesIndex(),
-        icon: Swords,
-    },
-    {
         title: 'Users',
         href: adminUsersIndex(),
         icon: Users,
@@ -88,9 +75,14 @@ export function AppSidebar() {
     const page = usePage<{ auth: Auth }>();
     const { auth } = page.props;
     const { isCurrentUrl } = useCurrentUrl();
-    const isCourseManagementPage = isCurrentUrl(adminCoursesIndex(), undefined, true);
+    const isCourseManagementPage = isCurrentUrl(
+        adminCoursesIndex(),
+        undefined,
+        true,
+    );
     const activeCourseSection = isCourseManagementPage
-        ? (new URLSearchParams(page.url.split('?')[1] ?? '').get('section') ?? 'catalog')
+        ? (new URLSearchParams(page.url.split('?')[1] ?? '').get('section') ??
+          'catalog')
         : null;
 
     return (
@@ -129,12 +121,19 @@ export function AppSidebar() {
                         <SidebarGroupLabel>Management</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
-                                <Collapsible defaultOpen={isCourseManagementPage} className="group/courses">
+                                <Collapsible
+                                    defaultOpen={isCourseManagementPage}
+                                    className="group/courses"
+                                >
                                     <SidebarMenuItem>
                                         <CollapsibleTrigger asChild>
                                             <SidebarMenuButton
-                                                isActive={isCourseManagementPage}
-                                                tooltip={{ children: 'Courses' }}
+                                                isActive={
+                                                    isCourseManagementPage
+                                                }
+                                                tooltip={{
+                                                    children: 'Courses',
+                                                }}
                                             >
                                                 <BookOpenCheck />
                                                 <span>Courses</span>
@@ -145,23 +144,96 @@ export function AppSidebar() {
                                         <CollapsibleContent>
                                             <SidebarMenuSub>
                                                 <SidebarMenuSubItem>
-                                                    <SidebarMenuSubButton asChild isActive={activeCourseSection === 'catalog'}>
-                                                        <Link href={adminCoursesIndex.url({ query: { section: 'catalog' } })} prefetch>
+                                                    <SidebarMenuSubButton
+                                                        asChild
+                                                        isActive={
+                                                            activeCourseSection ===
+                                                            'catalog'
+                                                        }
+                                                    >
+                                                        <Link
+                                                            href={adminCoursesIndex.url(
+                                                                {
+                                                                    query: {
+                                                                        section:
+                                                                            'catalog',
+                                                                    },
+                                                                },
+                                                            )}
+                                                            prefetch
+                                                        >
                                                             <span>Title</span>
                                                         </Link>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                                 <SidebarMenuSubItem>
-                                                    <SidebarMenuSubButton asChild isActive={activeCourseSection === 'lesson'}>
-                                                        <Link href={adminCoursesIndex.url({ query: { section: 'lesson' } })} prefetch>
+                                                    <SidebarMenuSubButton
+                                                        asChild
+                                                        isActive={
+                                                            activeCourseSection ===
+                                                            'lesson'
+                                                        }
+                                                    >
+                                                        <Link
+                                                            href={adminCoursesIndex.url(
+                                                                {
+                                                                    query: {
+                                                                        section:
+                                                                            'lesson',
+                                                                    },
+                                                                },
+                                                            )}
+                                                            prefetch
+                                                        >
                                                             <span>Topic</span>
                                                         </Link>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                                 <SidebarMenuSubItem>
-                                                    <SidebarMenuSubButton asChild isActive={activeCourseSection === 'task'}>
-                                                        <Link href={adminCoursesIndex.url({ query: { section: 'task' } })} prefetch>
+                                                    <SidebarMenuSubButton
+                                                        asChild
+                                                        isActive={
+                                                            activeCourseSection ===
+                                                            'task'
+                                                        }
+                                                    >
+                                                        <Link
+                                                            href={adminCoursesIndex.url(
+                                                                {
+                                                                    query: {
+                                                                        section:
+                                                                            'task',
+                                                                    },
+                                                                },
+                                                            )}
+                                                            prefetch
+                                                        >
                                                             <span>Task</span>
+                                                        </Link>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                                <SidebarMenuSubItem>
+                                                    <SidebarMenuSubButton
+                                                        asChild
+                                                        isActive={
+                                                            activeCourseSection ===
+                                                            'assessment'
+                                                        }
+                                                    >
+                                                        <Link
+                                                            href={adminCoursesIndex.url(
+                                                                {
+                                                                    query: {
+                                                                        section:
+                                                                            'assessment',
+                                                                    },
+                                                                },
+                                                            )}
+                                                            prefetch
+                                                        >
+                                                            <span>
+                                                                Penilaian
+                                                            </span>
                                                         </Link>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>

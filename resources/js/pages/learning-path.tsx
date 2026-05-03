@@ -60,17 +60,17 @@ const DIFFICULTY_CONFIG: Record<
     { label: string; color: string; bgColor: string }
 > = {
     beginner: {
-        label: 'Beginner',
+        label: 'Pemula',
         color: 'text-emerald-600 dark:text-emerald-400',
         bgColor: 'bg-emerald-100 dark:bg-emerald-950',
     },
     intermediate: {
-        label: 'Intermediate',
+        label: 'Menengah',
         color: 'text-amber-600 dark:text-amber-400',
         bgColor: 'bg-amber-100 dark:bg-amber-950',
     },
     advanced: {
-        label: 'Advanced',
+        label: 'Lanjutan',
         color: 'text-red-600 dark:text-red-400',
         bgColor: 'bg-red-100 dark:bg-red-950',
     },
@@ -79,44 +79,44 @@ const DIFFICULTY_CONFIG: Record<
 // ── Node status helpers ──
 function getNodeStatus(node: PathNode) {
     if (node.isCompleted) {
-return 'completed' as const;
-}
+        return 'completed' as const;
+    }
 
     if (node.isLocked) {
-return 'locked' as const;
-}
+        return 'locked' as const;
+    }
 
     if (node.isEnrolled) {
-return 'in-progress' as const;
-}
+        return 'in-progress' as const;
+    }
 
     return 'available' as const;
 }
 
 const STATUS_CONFIG = {
     completed: {
-        label: 'Completed',
+        label: 'Selesai',
         icon: CheckCircle2,
         ringColor: 'ring-emerald-500',
         bgGlow: 'shadow-emerald-500/20',
         badgeVariant: 'default' as const,
     },
     'in-progress': {
-        label: 'In Progress',
+        label: 'Sedang Berlangsung',
         icon: Play,
         ringColor: 'ring-blue-500',
         bgGlow: 'shadow-blue-500/20',
         badgeVariant: 'secondary' as const,
     },
     available: {
-        label: 'Available',
+        label: 'Tersedia',
         icon: BookOpen,
         ringColor: 'ring-primary/50',
         bgGlow: '',
         badgeVariant: 'outline' as const,
     },
     locked: {
-        label: 'Locked',
+        label: 'Terkunci',
         icon: Lock,
         ringColor: 'ring-muted-foreground/30',
         bgGlow: '',
@@ -128,7 +128,8 @@ const STATUS_CONFIG = {
 function PathNodeCard({ node }: { node: PathNode }) {
     const status = getNodeStatus(node);
     const config = STATUS_CONFIG[status];
-    const difficulty = DIFFICULTY_CONFIG[node.difficulty] ?? DIFFICULTY_CONFIG.beginner;
+    const difficulty =
+        DIFFICULTY_CONFIG[node.difficulty] ?? DIFFICULTY_CONFIG.beginner;
     const StatusIcon = config.icon;
     const isInteractive = status !== 'locked';
 
@@ -140,7 +141,7 @@ function PathNodeCard({ node }: { node: PathNode }) {
                 config.ringColor,
                 config.bgGlow && `shadow-lg ${config.bgGlow}`,
                 status === 'locked' && 'opacity-60',
-                isInteractive && 'hover:shadow-xl hover:-translate-y-1',
+                isInteractive && 'hover:-translate-y-1 hover:shadow-xl',
                 status === 'in-progress' && 'animate-pulse-subtle',
             )}
         >
@@ -193,7 +194,7 @@ function PathNodeCard({ node }: { node: PathNode }) {
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                         <BookOpen className="size-3" />
-                        {node.lessonCount} lessons
+                        {node.lessonCount} pelajaran
                     </span>
                     {node.estimatedMinutes && (
                         <span className="inline-flex items-center gap-1">
@@ -210,8 +211,8 @@ function PathNodeCard({ node }: { node: PathNode }) {
                             value={node.progressPercentage}
                             className="h-1.5"
                         />
-                        <span className="text-[10px] tabular-nums text-muted-foreground">
-                            {node.progressPercentage}% complete
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {node.progressPercentage}% selesai
                         </span>
                     </div>
                 )}
@@ -220,7 +221,7 @@ function PathNodeCard({ node }: { node: PathNode }) {
                 {node.isCompleted && (
                     <div className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                         <Trophy className="size-3" />
-                        Course completed!
+                        Kursus selesai!
                     </div>
                 )}
 
@@ -228,7 +229,7 @@ function PathNodeCard({ node }: { node: PathNode }) {
                 {node.isLocked && node.prerequisiteTitle && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Lock className="size-3" />
-                        Requires: {node.prerequisiteTitle}
+                        Memerlukan: {node.prerequisiteTitle}
                     </div>
                 )}
             </CardContent>
@@ -244,8 +245,8 @@ function PathNodeCard({ node }: { node: PathNode }) {
                     </TooltipTrigger>
                     <TooltipContent>
                         <p>
-                            Complete &quot;{node.prerequisiteTitle}&quot; to
-                            unlock
+                            Selesaikan &quot;{node.prerequisiteTitle}&quot;
+                            untuk membuka
                         </p>
                     </TooltipContent>
                 </Tooltip>
@@ -256,7 +257,7 @@ function PathNodeCard({ node }: { node: PathNode }) {
     return (
         <Link
             href={courseShow.url({ course: node.slug })}
-            className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+            className="block rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
             prefetch
         >
             {cardContent}
@@ -347,12 +348,10 @@ export default function LearningPath({ learningPath, summary }: Props) {
     // Group nodes by category for the tree view
     const filteredNodes = useMemo(() => {
         if (categoryFilter === 'all') {
-return learningPath.nodes;
-}
+            return learningPath.nodes;
+        }
 
-        return learningPath.nodes.filter(
-            (n) => n.category === categoryFilter,
-        );
+        return learningPath.nodes.filter((n) => n.category === categoryFilter);
     }, [learningPath.nodes, categoryFilter]);
 
     // Build prerequisite chains for visual connections
@@ -374,8 +373,8 @@ return learningPath.nodes;
             const pos = node.pathPosition ?? 0;
 
             if (!tierMap.has(pos)) {
-tierMap.set(pos, []);
-}
+                tierMap.set(pos, []);
+            }
 
             tierMap.get(pos)!.push(node);
         }
@@ -395,8 +394,8 @@ tierMap.set(pos, []);
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Learning Path', href: '/learning-path' },
+                { title: 'Dasbor', href: '/dashboard' },
+                { title: 'Jalur Pembelajaran', href: '/learning-path' },
             ]}
         >
             <Head title="Learning Path" />
@@ -407,11 +406,12 @@ tierMap.set(pos, []);
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                             <Map className="size-6 text-primary" />
-                            <TypographyH1>Learning Path</TypographyH1>
+                            <TypographyH1>Jalur Pembelajaran</TypographyH1>
                         </div>
                         <TypographyMuted>
-                            Follow the skill tree to master cryptography — complete
-                            prerequisites to unlock advanced courses.
+                            Ikuti pohon keterampilan untuk menguasai kriptografi
+                            — selesaikan prasyarat untuk membuka kursus
+                            lanjutan.
                         </TypographyMuted>
                     </div>
 
@@ -421,14 +421,12 @@ tierMap.set(pos, []);
                             onValueChange={setCategoryFilter}
                         >
                             <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter category" />
+                                <SelectValue placeholder="Filter kategori" />
                             </SelectTrigger>
                             <SelectContent>
                                 {categories.map((cat) => (
                                     <SelectItem key={cat} value={cat}>
-                                        {cat === 'all'
-                                            ? 'All Categories'
-                                            : cat}
+                                        {cat === 'all' ? 'Semua Kategori' : cat}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -440,7 +438,7 @@ tierMap.set(pos, []);
                 <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <Card>
                         <CardHeader className="gap-1 pb-2">
-                            <CardDescription>Total Courses</CardDescription>
+                            <CardDescription>Total Kursus</CardDescription>
                             <CardTitle className="text-2xl tabular-nums">
                                 {summary.totalCourses}
                             </CardTitle>
@@ -448,23 +446,27 @@ tierMap.set(pos, []);
                     </Card>
                     <Card>
                         <CardHeader className="gap-1 pb-2">
-                            <CardDescription>Completed</CardDescription>
-                            <CardTitle className="text-2xl tabular-nums text-emerald-600 dark:text-emerald-400">
+                            <CardDescription>Selesai</CardDescription>
+                            <CardTitle className="text-2xl text-emerald-600 tabular-nums dark:text-emerald-400">
                                 {summary.completedCourses}
                             </CardTitle>
                         </CardHeader>
                     </Card>
                     <Card>
                         <CardHeader className="gap-1 pb-2">
-                            <CardDescription>In Progress</CardDescription>
-                            <CardTitle className="text-2xl tabular-nums text-blue-600 dark:text-blue-400">
+                            <CardDescription>
+                                Sedang Berlangsung
+                            </CardDescription>
+                            <CardTitle className="text-2xl text-blue-600 tabular-nums dark:text-blue-400">
                                 {summary.inProgressCourses}
                             </CardTitle>
                         </CardHeader>
                     </Card>
                     <Card>
                         <CardHeader className="gap-1 pb-2">
-                            <CardDescription>Overall Progress</CardDescription>
+                            <CardDescription>
+                                Progres Keseluruhan
+                            </CardDescription>
                             <div className="flex flex-col gap-1.5">
                                 <CardTitle className="text-2xl tabular-nums">
                                     {completionPercentage}%
@@ -480,14 +482,17 @@ tierMap.set(pos, []);
 
                 {/* ── Skill Tree ── */}
                 <section className="flex flex-col gap-2">
-                    <h2 className="text-lg font-semibold">Skill Tree</h2>
+                    <h2 className="text-lg font-semibold">
+                        Pohon Keterampilan
+                    </h2>
 
                     {tiers.length === 0 ? (
                         <Card>
                             <CardContent className="flex flex-col items-center gap-3 py-12">
                                 <GraduationCap className="size-12 text-muted-foreground/50" />
                                 <p className="text-sm text-muted-foreground">
-                                    No courses available in this category yet.
+                                    Belum ada kursus tersedia dalam kategori
+                                    ini.
                                 </p>
                             </CardContent>
                         </Card>
@@ -501,7 +506,7 @@ tierMap.set(pos, []);
                                             variant="outline"
                                             className="text-xs font-medium"
                                         >
-                                            Stage {tierIndex + 1}
+                                            Tahap {tierIndex + 1}
                                         </Badge>
                                         <div className="h-px flex-1 bg-border" />
                                     </div>
@@ -509,12 +514,11 @@ tierMap.set(pos, []);
                                     {/* Nodes in this tier */}
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                         {tier.nodes.map((node) => {
-                                            const prereq =
-                                                node.prerequisiteId
-                                                    ? nodeMap.get(
-                                                          node.prerequisiteId,
-                                                      )
-                                                    : null;
+                                            const prereq = node.prerequisiteId
+                                                ? nodeMap.get(
+                                                      node.prerequisiteId,
+                                                  )
+                                                : null;
 
                                             return (
                                                 <div
@@ -530,9 +534,7 @@ tierMap.set(pos, []);
                                                             isVertical
                                                         />
                                                     )}
-                                                    <PathNodeCard
-                                                        node={node}
-                                                    />
+                                                    <PathNodeCard node={node} />
                                                 </div>
                                             );
                                         })}
@@ -557,7 +559,7 @@ tierMap.set(pos, []);
                 <section>
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Legend</CardTitle>
+                            <CardTitle className="text-sm">Legenda</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-wrap gap-4">
@@ -575,8 +577,7 @@ tierMap.set(pos, []);
                                                         'flex size-5 items-center justify-center rounded-full',
                                                         key === 'completed' &&
                                                             'bg-emerald-500 text-white',
-                                                        key ===
-                                                            'in-progress' &&
+                                                        key === 'in-progress' &&
                                                             'bg-blue-500 text-white',
                                                         key === 'available' &&
                                                             'bg-primary/20 text-primary',

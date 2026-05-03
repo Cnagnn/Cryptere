@@ -68,21 +68,21 @@ export default function CertificateShow({ certificate }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Certificates', href: '/certificates' },
+                { title: 'Dasbor', href: '/dashboard' },
+                { title: 'Sertifikat', href: '/certificates' },
                 { title: certificate.certificate_number, href: '#' },
             ]}
         >
-            <Head title={`Certificate - ${certificate.course.title}`} />
+            <Head title={`Sertifikat - ${certificate.course.title}`} />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <section className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                         <Award className="size-6 text-primary" />
-                        <TypographyH1>Certificate</TypographyH1>
+                        <TypographyH1>Sertifikat</TypographyH1>
                     </div>
                     <TypographyMuted>
-                        Proof of completion for {certificate.course.title}
+                        Bukti penyelesaian untuk {certificate.course.title}
                     </TypographyMuted>
                 </section>
 
@@ -94,8 +94,8 @@ export default function CertificateShow({ certificate }: Props) {
                                 <GraduationCap className="size-8 text-primary" />
                             </div>
                             <div>
-                                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                                    Certificate of Completion
+                                <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+                                    Sertifikat Penyelesaian
                                 </p>
                                 <h2 className="mt-1 text-2xl font-bold">
                                     {certificate.course.title}
@@ -104,14 +104,14 @@ export default function CertificateShow({ certificate }: Props) {
                             <Separator />
                             <div>
                                 <p className="text-sm text-muted-foreground">
-                                    This certifies that
+                                    Diberikan kepada
                                 </p>
                                 <p className="mt-1 text-xl font-semibold">
                                     {certificate.user.name}
                                 </p>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                                has successfully completed the course
+                                atas keberhasilan menyelesaikan kursus ini
                             </p>
                             {certificate.course.category && (
                                 <Badge variant="secondary">
@@ -124,7 +124,7 @@ export default function CertificateShow({ certificate }: Props) {
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <p className="text-muted-foreground">
-                                    Certificate Number
+                                    Nomor Sertifikat
                                 </p>
                                 <p className="font-mono font-medium">
                                     {certificate.certificate_number}
@@ -132,7 +132,7 @@ export default function CertificateShow({ certificate }: Props) {
                             </div>
                             <div>
                                 <p className="text-muted-foreground">
-                                    Date Issued
+                                    Tanggal Terbit
                                 </p>
                                 <p className="flex items-center gap-1 font-medium">
                                     <Calendar className="size-3" />
@@ -157,14 +157,11 @@ export default function CertificateShow({ certificate }: Props) {
                                 onClick={copyVerificationUrl}
                             >
                                 {copied ? (
-                                    <CheckCircle
-                                        className="size-4"
-                                        data-icon
-                                    />
+                                    <CheckCircle className="size-4" data-icon />
                                 ) : (
                                     <Copy className="size-4" data-icon />
                                 )}
-                                {copied ? 'Copied!' : 'Copy Link'}
+                                {copied ? 'Tersalin!' : 'Salin Tautan'}
                             </Button>
                             <Button
                                 variant="outline"
@@ -172,7 +169,7 @@ export default function CertificateShow({ certificate }: Props) {
                                 onClick={shareUrl}
                             >
                                 <Share2 className="size-4" data-icon />
-                                Share
+                                Bagikan
                             </Button>
                             <Button variant="outline" size="sm" asChild>
                                 <a
@@ -184,7 +181,7 @@ export default function CertificateShow({ certificate }: Props) {
                                         className="size-4"
                                         data-icon
                                     />
-                                    Verify
+                                    Verifikasi
                                 </a>
                             </Button>
                         </div>

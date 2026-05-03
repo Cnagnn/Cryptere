@@ -1,5 +1,5 @@
+export type * from './assessments';
 export type * from './auth';
-export type * from './challenges';
 export type * from './courses';
 export type * from './dashboard';
 export type * from './labs';

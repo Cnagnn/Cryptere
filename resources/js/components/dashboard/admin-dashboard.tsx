@@ -4,7 +4,6 @@ import {
     ArrowUpDown,
     BookOpen,
     GraduationCap,
-    Swords,
     TrendingUp,
     Users,
 } from 'lucide-react';
@@ -34,7 +33,6 @@ import {
 import { DataTable } from '@/components/ui/data-table';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import type {
-    AdminChallengePerformance,
     AdminCoursePerformance,
     AdminData,
     AdminRecentUser,
@@ -70,7 +68,7 @@ const courseColumns: ColumnDef<AdminCoursePerformance>[] = [
                     column.toggleSorting(column.getIsSorted() === 'asc')
                 }
             >
-                Course
+                Kursus
                 <ArrowUpDown className="size-4" />
             </Button>
         ),
@@ -89,7 +87,7 @@ const courseColumns: ColumnDef<AdminCoursePerformance>[] = [
                     column.toggleSorting(column.getIsSorted() === 'asc')
                 }
             >
-                Enrollments
+                Pendaftaran
                 <ArrowUpDown className="size-4" />
             </Button>
         ),
@@ -103,7 +101,7 @@ const courseColumns: ColumnDef<AdminCoursePerformance>[] = [
                     column.toggleSorting(column.getIsSorted() === 'asc')
                 }
             >
-                Completion
+                Penyelesaian
                 <ArrowUpDown className="size-4" />
             </Button>
         ),
@@ -119,65 +117,6 @@ const courseColumns: ColumnDef<AdminCoursePerformance>[] = [
     },
 ];
 
-const challengeColumns: ColumnDef<AdminChallengePerformance>[] = [
-    {
-        accessorKey: 'title',
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Challenge
-                <ArrowUpDown className="size-4" />
-            </Button>
-        ),
-        cell: ({ row }) => (
-            <span className="max-w-40 truncate font-medium">
-                {row.original.title}
-            </span>
-        ),
-    },
-    {
-        accessorKey: 'submissions',
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Submissions
-                <ArrowUpDown className="size-4" />
-            </Button>
-        ),
-    },
-    {
-        accessorKey: 'successRate',
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Success
-                <ArrowUpDown className="size-4" />
-            </Button>
-        ),
-        cell: ({ row }) => (
-            <Badge
-                variant={
-                    row.original.successRate >= 50 ? 'default' : 'secondary'
-                }
-            >
-                {row.original.successRate}%
-            </Badge>
-        ),
-    },
-];
-
 const userColumns: ColumnDef<AdminRecentUser>[] = [
     {
         accessorKey: 'name',
@@ -188,7 +127,7 @@ const userColumns: ColumnDef<AdminRecentUser>[] = [
                     column.toggleSorting(column.getIsSorted() === 'asc')
                 }
             >
-                User
+                Pengguna
                 <ArrowUpDown className="size-4" />
             </Button>
         ),
@@ -236,7 +175,7 @@ const userColumns: ColumnDef<AdminRecentUser>[] = [
                     column.toggleSorting(column.getIsSorted() === 'asc')
                 }
             >
-                Role
+                Peran
                 <ArrowUpDown className="size-4" />
             </Button>
         ),
@@ -259,7 +198,7 @@ const userColumns: ColumnDef<AdminRecentUser>[] = [
                     column.toggleSorting(column.getIsSorted() === 'asc')
                 }
             >
-                Joined
+                Bergabung
                 <ArrowUpDown className="size-4" />
             </Button>
         ),
@@ -271,7 +210,13 @@ const userColumns: ColumnDef<AdminRecentUser>[] = [
     },
 ];
 
-export function AdminDashboard({ admin }: { admin: AdminData }) {
+export function AdminDashboard({
+    admin,
+    adminTabs,
+}: {
+    admin: AdminData;
+    adminTabs?: React.ReactNode;
+}) {
     const enrollmentTrends = normalizeArray<
         AdminData['enrollmentTrends'][number]
     >(admin.enrollmentTrends);
@@ -281,37 +226,29 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
     const coursePerformance = normalizeArray<
         AdminData['coursePerformance'][number]
     >(admin.coursePerformance);
-    const challengePerformance = normalizeArray<
-        AdminData['challengePerformance'][number]
-    >(admin.challengePerformance);
     const recentUsers = normalizeArray<AdminData['recentUsers'][number]>(
         admin.recentUsers,
     );
 
     const statCards = [
-        { label: 'Total Users', value: admin.stats.totalUsers, icon: Users },
+        { label: 'Total Pengguna', value: admin.stats.totalUsers, icon: Users },
         {
-            label: 'Total Courses',
+            label: 'Total Kursus',
             value: admin.stats.totalCourses,
             icon: BookOpen,
         },
         {
-            label: 'Total Challenges',
-            value: admin.stats.totalChallenges,
-            icon: Swords,
-        },
-        {
-            label: 'Total Enrollments',
+            label: 'Total Pendaftaran',
             value: admin.stats.totalEnrollments,
             icon: GraduationCap,
         },
         {
-            label: 'Active Users (30d)',
+            label: 'Pengguna Aktif (30h)',
             value: admin.stats.activeUsers,
             icon: Activity,
         },
         {
-            label: 'New This Month',
+            label: 'Baru Bulan Ini',
             value: admin.stats.newUsersThisMonth,
             icon: TrendingUp,
         },
@@ -319,10 +256,13 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
 
     return (
         <div className="relative flex flex-col gap-4 px-4 py-4 lg:gap-6 lg:py-6">
-            <section className="animate-fade-in-up relative flex flex-col gap-1">
-                <TypographyH1>Analytics Dashboard</TypographyH1>
+            <section className="animate-fade-in-up relative flex flex-col gap-2">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <TypographyH1>Dasbor Analitik</TypographyH1>
+                    {adminTabs}
+                </div>
                 <TypographyMuted>
-                    Platform overview and performance metrics.
+                    Ringkasan platform dan metrik kinerja.
                 </TypographyMuted>
             </section>
 
@@ -353,9 +293,9 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
             >
                 <Card>
                     <CardHeader>
-                        <CardTitle>Enrollment Trends</CardTitle>
+                        <CardTitle>Tren Pendaftaran</CardTitle>
                         <CardDescription>
-                            New enrollments per month (last 6 months)
+                            Pendaftaran baru per bulan (6 bulan terakhir)
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -389,9 +329,9 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>User Growth</CardTitle>
+                        <CardTitle>Pertumbuhan Pengguna</CardTitle>
                         <CardDescription>
-                            New registrations per month (last 6 months)
+                            Registrasi baru per bulan (6 bulan terakhir)
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -462,40 +402,20 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
             >
                 <Card>
                     <CardHeader>
-                        <CardTitle>Top Courses</CardTitle>
-                        <CardDescription>By enrollment count</CardDescription>
+                        <CardTitle>Kursus Teratas</CardTitle>
+                        <CardDescription>
+                            Berdasarkan jumlah pendaftaran
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {admin.coursePerformance.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                No published courses yet.
+                                Belum ada kursus yang dipublikasikan.
                             </p>
                         ) : (
                             <DataTable
                                 columns={courseColumns}
                                 data={coursePerformance}
-                                centered
-                                showFilterInput={false}
-                                showFooter={false}
-                                enableDefaultIdSort={false}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Top Challenges</CardTitle>
-                        <CardDescription>By submission count</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {admin.challengePerformance.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                No published challenges yet.
-                            </p>
-                        ) : (
-                            <DataTable
-                                columns={challengeColumns}
-                                data={challengePerformance}
                                 centered
                                 showFilterInput={false}
                                 showFooter={false}
@@ -518,15 +438,15 @@ export function AdminDashboard({ admin }: { admin: AdminData }) {
             >
                 <Card>
                     <CardHeader>
-                        <CardTitle>Recent Registrations</CardTitle>
+                        <CardTitle>Registrasi Terkini</CardTitle>
                         <CardDescription>
-                            Newest users on the platform
+                            Pengguna terbaru di platform
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {admin.recentUsers.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                No users registered yet.
+                                Belum ada pengguna yang terdaftar.
                             </p>
                         ) : (
                             <DataTable

@@ -294,7 +294,12 @@ export function recommendedOutputFormatByLab(
 }
 
 export function canFormatOutput(labSlug: string): boolean {
-    return !['rsa-lab', 'sha-lab', 'digital-signature-lab', 'lattice-cipher-lab'].includes(labSlug);
+    return ![
+        'rsa-lab',
+        'sha-lab',
+        'digital-signature-lab',
+        'lattice-cipher-lab',
+    ].includes(labSlug);
 }
 
 export function formatLabel(value: FormatValue): string {
@@ -431,7 +436,9 @@ export function visualizationLensByLab(
     }
 
     if (slug === 'aes-lab') {
-        const bytes = Array.from(new TextEncoder().encode(normalizedInput)).slice(0, 10);
+        const bytes = Array.from(
+            new TextEncoder().encode(normalizedInput),
+        ).slice(0, 10);
         const keyBytes = Array.from(
             new TextEncoder().encode(keyInput || 'CRYPTER-LAB-KEY'),
         );
@@ -552,7 +559,11 @@ export function visualizationLensByLab(
         }
 
         // Decrypt mode
-        const cipherVals = normalizedInput.trim().split(/\s+/).filter(Boolean).map(Number);
+        const cipherVals = normalizedInput
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(Number);
 
         return {
             title: 'LWE Decryption View',
@@ -586,8 +597,7 @@ export function visualizationLensByLab(
 
     return {
         title: 'Signing and Verification Lens',
-        description:
-            'Observe how digest and signature token are related.',
+        description: 'Observe how digest and signature token are related.',
         headers: ['Source', 'Operation', 'Result'],
         rows: [
             {
@@ -598,9 +608,7 @@ export function visualizationLensByLab(
             {
                 source: 'Digest + key material',
                 operation:
-                    mode === 'encrypt'
-                        ? 'Sign'
-                        : 'Verify expected suffix',
+                    mode === 'encrypt' ? 'Sign' : 'Verify expected suffix',
                 result: rawResult.output.slice(0, 24),
             },
         ],
@@ -817,10 +825,7 @@ function runAesConcept(
     };
 }
 
-function runRsaConcept(
-    mode: SimulationMode,
-    text: string,
-): SimulationResult {
+function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
     const p = 61;
     const q = 53;
     const n = p * q;
@@ -829,9 +834,7 @@ function runRsaConcept(
 
     if (mode === 'encrypt') {
         const chars = Array.from(text);
-        const encrypted = chars.map((char) =>
-            modPow(char.charCodeAt(0), e, n),
-        );
+        const encrypted = chars.map((char) => modPow(char.charCodeAt(0), e, n));
 
         return {
             outputLabel: 'Cipher blocks',
@@ -877,10 +880,7 @@ function runRsaConcept(
     };
 }
 
-function runShaLab(
-    mode: SimulationMode,
-    text: string,
-): SimulationResult {
+function runShaLab(mode: SimulationMode, text: string): SimulationResult {
     const digest = pseudoSha256(text);
 
     if (mode === 'encrypt') {
@@ -956,8 +956,14 @@ function posMod(value: number, modulus: number): number {
 
 function parseLatticeKey(keyInput: string): number[] {
     // Try to parse comma or space separated numbers
-    const parts = keyInput.replace(/[[\]]/g, '').trim().split(/[\s,]+/).filter(Boolean);
-    const nums = parts.map((p) => Number.parseInt(p, 10)).filter(Number.isFinite);
+    const parts = keyInput
+        .replace(/[[\]]/g, '')
+        .trim()
+        .split(/[\s,]+/)
+        .filter(Boolean);
+    const nums = parts
+        .map((p) => Number.parseInt(p, 10))
+        .filter(Number.isFinite);
 
     if (nums.length >= 3) {
         return nums.slice(0, 3);
@@ -972,9 +978,21 @@ function generatePublicMatrix(secret: number[], q: number): number[][] {
     const seed = secret.reduce((a, b) => a * 31 + b, 7);
 
     return [
-        [posMod(seed * 13 + 17, q), posMod(seed * 7 + 41, q), posMod(seed * 23 + 5, q)],
-        [posMod(seed * 29 + 11, q), posMod(seed * 3 + 67, q), posMod(seed * 19 + 31, q)],
-        [posMod(seed * 37 + 53, q), posMod(seed * 11 + 23, q), posMod(seed * 43 + 13, q)],
+        [
+            posMod(seed * 13 + 17, q),
+            posMod(seed * 7 + 41, q),
+            posMod(seed * 23 + 5, q),
+        ],
+        [
+            posMod(seed * 29 + 11, q),
+            posMod(seed * 3 + 67, q),
+            posMod(seed * 19 + 31, q),
+        ],
+        [
+            posMod(seed * 37 + 53, q),
+            posMod(seed * 11 + 23, q),
+            posMod(seed * 43 + 13, q),
+        ],
     ];
 }
 
@@ -1025,7 +1043,7 @@ function runLatticeSimulation(
     keyInput: string,
 ): SimulationResult {
     const q = 97; // Small prime modulus for educational visibility
-    const n = 3;  // Small dimension
+    const n = 3; // Small dimension
     const halfQ = Math.floor(q / 2); // 48 — threshold for bit decoding
 
     const secret = parseLatticeKey(keyInput);
@@ -1042,7 +1060,9 @@ function runLatticeSimulation(
         const b = As.map((val, i) => posMod(val + e[i], q));
 
         // Encryption: choose random r, compute u = A^T·r, v = b^T·r + m·⌊q/2⌋
-        const r = generateErrorVector(msgVal + 17, n).map((v) => Math.abs(v) + 1);
+        const r = generateErrorVector(msgVal + 17, n).map(
+            (v) => Math.abs(v) + 1,
+        );
         // A^T · r
         const AT = A[0].map((_, colIdx) => A.map((row) => row[colIdx]));
         const u = matVecMulMod(AT, r, q);
@@ -1211,10 +1231,7 @@ export function defaultTextByLab(slug: string): string {
     }
 }
 
-export function modeDescription(
-    labSlug: string,
-    mode: SimulationMode,
-): string {
+export function modeDescription(labSlug: string, mode: SimulationMode): string {
     if (labSlug === 'sha-lab' && mode === 'decrypt') {
         return 'SHA is one-way; this tab explains verification flow instead of decryption.';
     }
@@ -1236,10 +1253,7 @@ export function modeDescription(
         : 'Reverse protected representation back into readable text.';
 }
 
-export function inputLabelByLab(
-    labSlug: string,
-    mode: SimulationMode,
-): string {
+export function inputLabelByLab(labSlug: string, mode: SimulationMode): string {
     if (labSlug === 'sha-lab') {
         return mode === 'encrypt' ? 'Message input' : 'Message to verify';
     }
@@ -1340,10 +1354,7 @@ export function validationErrorByLab(
     if (labSlug === 'aes-lab' && mode === 'decrypt') {
         const sanitized = text.replace(/\s+/g, '');
 
-        if (
-            !/^[0-9a-fA-F]+$/.test(sanitized) ||
-            sanitized.length % 2 !== 0
-        ) {
+        if (!/^[0-9a-fA-F]+$/.test(sanitized) || sanitized.length % 2 !== 0) {
             return 'AES decrypt input must be valid hex with even length, for example 4A6F686E.';
         }
     }

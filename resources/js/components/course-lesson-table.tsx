@@ -39,7 +39,7 @@ export function LessonTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Lesson
+                        Topik
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -59,7 +59,7 @@ export function LessonTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Course
+                        Kursus
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -79,7 +79,7 @@ export function LessonTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Task
+                        Tugas
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -105,7 +105,7 @@ export function LessonTable({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                 <DropdownMenuItem
                                     onClick={() => onEdit(row.original)}
                                 >
@@ -114,7 +114,7 @@ export function LessonTable({
                                 <DropdownMenuItem
                                     onClick={() => onDelete(row.original)}
                                 >
-                                    Delete
+                                    Hapus
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -136,7 +136,7 @@ export function LessonTable({
             centered
             showColumnToggle={false}
             showPageInfo={false}
-            footerInfo={`Showing ${lessons.length} lessons.`}
+            footerInfo={`Menampilkan ${lessons.length} topik.`}
         />
     );
 }

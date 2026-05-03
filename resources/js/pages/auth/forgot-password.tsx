@@ -19,7 +19,7 @@ import { email } from '@/routes/password';
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
         <>
-            <Head title="Forgot Password" />
+            <Head title="Lupa Kata Sandi" />
 
             <div className="flex min-h-screen items-center justify-center bg-background py-4 lg:h-screen">
                 <Card className="mx-auto w-full max-w-sm">
@@ -31,9 +31,12 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                 className="h-11 w-auto"
                             />
                         </div>
-                        <CardTitle className="text-2xl">Forgot Password</CardTitle>
+                        <CardTitle className="text-2xl">
+                            Lupa Kata Sandi
+                        </CardTitle>
                         <CardDescription>
-                            Enter your email address and we'll send you instructions to reset your password.
+                            Masukkan alamat email Anda dan kami akan mengirimkan
+                            instruksi untuk mengatur ulang kata sandi Anda.
                         </CardDescription>
                     </CardHeader>
 
@@ -46,50 +49,65 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
                         <Form {...email.form()} className="flex flex-col gap-6">
                             {({ processing, errors, wasSuccessful }) => {
-                                const isSuccess = Boolean(status || wasSuccessful);
+                                const isSuccess = Boolean(
+                                    status || wasSuccessful,
+                                );
 
                                 return (
-                                <>
-                                    <Field data-invalid={Boolean(errors.email)}>
-                                        <FieldLabel htmlFor="email">
-                                            Email address
-                                        </FieldLabel>
+                                    <>
+                                        <Field
+                                            data-invalid={Boolean(errors.email)}
+                                        >
+                                            <FieldLabel htmlFor="email">
+                                                Alamat Email
+                                            </FieldLabel>
 
-                                        <div className="relative">
-                                            <Mail className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 transform" />
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                name="email"
-                                                autoComplete="email"
-                                                autoFocus
-                                                placeholder="email@domain.com"
-                                                aria-invalid={Boolean(errors.email) || undefined}
-                                                className="w-full pl-9"
-                                                disabled={isSuccess}
-                                            />
-                                        </div>
+                                            <div className="relative">
+                                                <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 transform text-muted-foreground" />
+                                                <Input
+                                                    id="email"
+                                                    type="email"
+                                                    name="email"
+                                                    autoComplete="email"
+                                                    autoFocus
+                                                    placeholder="email@domain.com"
+                                                    aria-invalid={
+                                                        Boolean(errors.email) ||
+                                                        undefined
+                                                    }
+                                                    className="w-full pl-9"
+                                                    disabled={isSuccess}
+                                                />
+                                            </div>
 
-                                        {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                                    </Field>
+                                            {errors.email && (
+                                                <p className="text-sm text-destructive">
+                                                    {errors.email}
+                                                </p>
+                                            )}
+                                        </Field>
 
-                                    <Button
-                                        className="w-full"
-                                        disabled={processing || isSuccess}
-                                        data-test="email-password-reset-link-button"
-                                        variant={isSuccess ? "outline" : "default"}
-                                    >
-                                        {processing && (
-                                            <LoaderCircle className="size-4 animate-spin -ml-1 mr-2" />
-                                        )}
-                                        {isSuccess && !processing && (
-                                            <CheckCircle2 className="-ml-1 mr-2 size-4 text-foreground" />
-                                        )}
-                                        {isSuccess
-                                            ? 'Terkirim ke Email anda (jika cocok)'
-                                            : 'Send Reset Instructions'}
-                                    </Button>
-                                </>
+                                        <Button
+                                            className="w-full"
+                                            disabled={processing || isSuccess}
+                                            data-test="email-password-reset-link-button"
+                                            variant={
+                                                isSuccess
+                                                    ? 'outline'
+                                                    : 'default'
+                                            }
+                                        >
+                                            {processing && (
+                                                <LoaderCircle className="mr-2 -ml-1 size-4 animate-spin" />
+                                            )}
+                                            {isSuccess && !processing && (
+                                                <CheckCircle2 className="mr-2 -ml-1 size-4 text-foreground" />
+                                            )}
+                                            {isSuccess
+                                                ? 'Terkirim ke Email Anda (jika cocok)'
+                                                : 'Kirim Instruksi Reset'}
+                                        </Button>
+                                    </>
                                 );
                             }}
                         </Form>
@@ -97,12 +115,12 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
                     <CardFooter className="justify-center">
                         <p className="text-sm">
-                            Already have an account?{' '}
+                            Sudah punya akun?{' '}
                             <Link
                                 href={login()}
                                 className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
                             >
-                                Log in
+                                Masuk
                             </Link>
                         </p>
                     </CardFooter>

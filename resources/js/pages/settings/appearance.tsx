@@ -1,40 +1,32 @@
 import { Head } from '@inertiajs/react';
-import AppearanceTabs from '@/components/appearance-tabs';
-import { TypographyLarge, TypographyMuted } from '@/components/ui/typography';
-import { dashboard } from '@/routes';
-import { edit as editAppearance } from '@/routes/appearance';
 
-export default function Appearance() {
+import AppearanceTabs from '@/components/appearance-tabs';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+
+export default function SettingsAppearance() {
     return (
         <>
-            <Head title="Appearance settings" />
+            <Head title="Pengaturan Tampilan" />
 
-            <h1 className="sr-only">Appearance settings</h1>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Tampilan</CardTitle>
+                    <CardDescription>
+                        Pilih tampilan Crypter sesuai keinginan Anda. Pilih tema
+                        yang sesuai dengan preferensi Anda.
+                    </CardDescription>
+                </CardHeader>
 
-            <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-0.5">
-                    <TypographyLarge className="text-base font-medium leading-snug">
-                        Appearance settings
-                    </TypographyLarge>
-                    <TypographyMuted className="text-sm/6">
-                        Update your account's appearance settings
-                    </TypographyMuted>
-                </div>
-                <AppearanceTabs />
-            </div>
+                <CardContent>
+                    <AppearanceTabs />
+                </CardContent>
+            </Card>
         </>
     );
 }
-
-Appearance.layout = {
-    breadcrumbs: [
-        {
-            title: 'Home',
-            href: dashboard(),
-        },
-        {
-            title: 'Appearance settings',
-            href: editAppearance(),
-        },
-    ],
-};

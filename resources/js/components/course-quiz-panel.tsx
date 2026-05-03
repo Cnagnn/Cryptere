@@ -60,8 +60,8 @@ export function QuizPanel({
 }: QuizPanelProps) {
     const questions = task.quizQuestions;
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [selectedAnswers, setSelectedAnswers] = useState<number[]>(() =>
-        submission?.answers ?? questions.map(() => -1),
+    const [selectedAnswers, setSelectedAnswers] = useState<number[]>(
+        () => submission?.answers ?? questions.map(() => -1),
     );
     const [result, setResult] = useState<{
         score: number;
@@ -210,12 +210,12 @@ export function QuizPanel({
                         const parts: string[] = [];
 
                         if (data.xp_earned > 0) {
-parts.push(`+${data.xp_earned} XP`);
-}
+                            parts.push(`+${data.xp_earned} XP`);
+                        }
 
                         if (data.points_earned > 0) {
-parts.push(`+${data.points_earned} Points`);
-}
+                            parts.push(`+${data.points_earned} Points`);
+                        }
 
                         toast.success(parts.join(' · '), {
                             description: `Score: ${data.score}/${data.total}`,
@@ -297,7 +297,8 @@ parts.push(`+${data.points_earned} Points`);
                         <div className="mt-2 flex items-center justify-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
                             <TrendingUp className="size-4" />
                             <span>
-                                Improved from {previousScore}/{quizResult.total}!
+                                Improved from {previousScore}/{quizResult.total}
+                                !
                             </span>
                         </div>
                     )}
@@ -311,7 +312,7 @@ parts.push(`+${data.points_earned} Points`);
                     )}
                 </div>
 
-                {(quizResult.xpEarned > 0 || quizResult.pointsEarned > 0) ? (
+                {quizResult.xpEarned > 0 || quizResult.pointsEarned > 0 ? (
                     <div className="flex gap-4">
                         {quizResult.xpEarned > 0 ? (
                             <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2">

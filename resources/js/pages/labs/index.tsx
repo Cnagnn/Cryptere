@@ -7,9 +7,9 @@ export default function LabsIndex() {
         <CoursesIndex
             courses={[]}
             catalogMode="labs"
-            headTitle="Labs"
-            pageTitle="Labs"
-            pageDescription="Explore cryptography simulations and visual labs without progress or point requirements."
+            headTitle="Laboratorium"
+            pageTitle="Laboratorium"
+            pageDescription="Jelajahi simulasi kriptografi dan laboratorium visual tanpa persyaratan progres atau poin."
             sidebarMode="filters"
         />
     );
@@ -18,11 +18,11 @@ export default function LabsIndex() {
 LabsIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Home',
+            title: 'Beranda',
             href: dashboard(),
         },
         {
-            title: 'Labs',
+            title: 'Laboratorium',
             href: labsIndex(),
         },
     ],

@@ -5,7 +5,6 @@ import {
     FlaskConical,
     LayoutGrid,
     Search,
-    Swords,
     Trophy,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -21,13 +20,12 @@ import {
 } from '@/components/ui/command';
 import { Spinner } from '@/components/ui/spinner';
 import { dashboard } from '@/routes';
-import { index as challengesIndex } from '@/routes/challenges';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 
 type SearchResult = {
-    type: 'course' | 'challenge' | 'lesson' | 'lab';
+    type: 'course' | 'lesson' | 'lab';
     title: string;
     description: string;
     url: string;
@@ -36,24 +34,21 @@ type SearchResult = {
 
 const typeIcons: Record<SearchResult['type'], React.ElementType> = {
     course: BookOpenCheck,
-    challenge: Swords,
     lesson: FileText,
     lab: FlaskConical,
 };
 
 const typeLabels: Record<SearchResult['type'], string> = {
-    course: 'Courses',
-    challenge: 'Challenges',
-    lesson: 'Lessons',
-    lab: 'Labs',
+    course: 'Kursus',
+    lesson: 'Pelajaran',
+    lab: 'Laboratorium',
 };
 
 const quickLinks = [
-    { title: 'Dashboard', href: dashboard.url(), icon: LayoutGrid },
-    { title: 'Courses', href: coursesIndex.url(), icon: BookOpenCheck },
-    { title: 'Challenges', href: challengesIndex.url(), icon: Swords },
-    { title: 'Leaderboard', href: leaderboardIndex.url(), icon: Trophy },
-    { title: 'Labs', href: labsIndex.url(), icon: FlaskConical },
+    { title: 'Dasbor', href: dashboard.url(), icon: LayoutGrid },
+    { title: 'Kursus', href: coursesIndex.url(), icon: BookOpenCheck },
+    { title: 'Papan Peringkat', href: leaderboardIndex.url(), icon: Trophy },
+    { title: 'Laboratorium', href: labsIndex.url(), icon: FlaskConical },
 ];
 
 export function CommandPalette() {
@@ -119,8 +114,8 @@ export function CommandPalette() {
                 });
 
                 if (!response.ok) {
-throw new Error('Search failed');
-}
+                    throw new Error('Search failed');
+                }
 
                 const data = await response.json();
                 setResults(data.results ?? []);
@@ -147,8 +142,8 @@ throw new Error('Search failed');
             const key = result.type;
 
             if (!acc[key]) {
-acc[key] = [];
-}
+                acc[key] = [];
+            }
 
             acc[key].push(result);
 
@@ -164,11 +159,11 @@ acc[key] = [];
         <CommandDialog
             open={open}
             onOpenChange={setOpen}
-            title="Search Crypter"
-            description="Search courses, challenges, lessons, and labs"
+            title="Cari Crypter"
+            description="Cari kursus, pelajaran, dan laboratorium"
         >
             <CommandInput
-                placeholder="Search courses, challenges, labs..."
+                placeholder="Cari kursus, laboratorium..."
                 value={query}
                 onValueChange={performSearch}
             />
@@ -176,19 +171,17 @@ acc[key] = [];
                 {loading && (
                     <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
                         <Spinner className="size-4" />
-                        <span>Searching…</span>
+                        <span>Mencari…</span>
                     </div>
                 )}
 
                 {!loading && !hasResults && query.trim().length >= 2 && (
-                    <CommandEmpty>
-                        No results found for "{query}"
-                    </CommandEmpty>
+                    <CommandEmpty>Tidak ada hasil untuk "{query}"</CommandEmpty>
                 )}
 
                 {/* Quick Links — shown when no search query */}
                 {showQuickLinks && (
-                    <CommandGroup heading="Quick Links">
+                    <CommandGroup heading="Tautan Cepat">
                         {quickLinks.map((link) => (
                             <CommandItem
                                 key={link.title}
@@ -205,63 +198,58 @@ acc[key] = [];
 
                 {/* Search Results — grouped by type */}
                 {!loading &&
-                    Object.entries(grouped).map(
-                        ([type, items], groupIndex) => (
-                            <div key={type}>
-                                {groupIndex > 0 && <CommandSeparator />}
-                                <CommandGroup
-                                    heading={
-                                        typeLabels[
-                                            type as SearchResult['type']
-                                        ]
-                                    }
-                                >
-                                    {items.map((item, index) => {
-                                        const Icon =
-                                            typeIcons[item.type] ?? Search;
+                    Object.entries(grouped).map(([type, items], groupIndex) => (
+                        <div key={type}>
+                            {groupIndex > 0 && <CommandSeparator />}
+                            <CommandGroup
+                                heading={
+                                    typeLabels[type as SearchResult['type']]
+                                }
+                            >
+                                {items.map((item, index) => {
+                                    const Icon = typeIcons[item.type] ?? Search;
 
-                                        return (
-                                            <CommandItem
-                                                key={`${item.type}-${index}`}
-                                                value={`${item.type}-${item.title}`}
-                                                onSelect={() =>
-                                                    navigateTo(item.url)
-                                                }
-                                                className="cursor-pointer"
-                                            >
-                                                <Icon data-icon="inline-start" />
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="font-medium">
-                                                        {item.title}
+                                    return (
+                                        <CommandItem
+                                            key={`${item.type}-${index}`}
+                                            value={`${item.type}-${item.title}`}
+                                            onSelect={() =>
+                                                navigateTo(item.url)
+                                            }
+                                            className="cursor-pointer"
+                                        >
+                                            <Icon data-icon="inline-start" />
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-medium">
+                                                    {item.title}
+                                                </span>
+                                                {item.description && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {item.description}
                                                     </span>
-                                                    {item.description && (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {item.description}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </CommandItem>
-                                        );
-                                    })}
-                                </CommandGroup>
-                            </div>
-                        ),
-                    )}
+                                                )}
+                                            </div>
+                                        </CommandItem>
+                                    );
+                                })}
+                            </CommandGroup>
+                        </div>
+                    ))}
 
                 {/* Keyboard hint */}
                 <div className="flex items-center justify-center gap-2 border-t px-3 py-2 text-xs text-muted-foreground">
                     <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
                         ↑↓
                     </kbd>
-                    <span>Navigate</span>
+                    <span>Navigasi</span>
                     <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
                         ↵
                     </kbd>
-                    <span>Open</span>
+                    <span>Buka</span>
                     <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
                         Esc
                     </kbd>
-                    <span>Close</span>
+                    <span>Tutup</span>
                 </div>
             </CommandList>
         </CommandDialog>

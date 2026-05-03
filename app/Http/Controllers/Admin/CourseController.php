@@ -8,10 +8,13 @@ use App\Http\Requests\Admin\ReorderAdminCoursesRequest;
 use App\Http\Requests\Admin\StoreAdminCourseRequest;
 use App\Http\Requests\Admin\TogglePublishAdminCourseRequest;
 use App\Http\Requests\Admin\UpdateAdminCourseRequest;
+use App\Models\Assessment;
+use App\Models\AssessmentQuestion;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
+use App\Models\Topic;
 use App\Services\AuditService;
 use App\Services\CacheService;
 use Illuminate\Http\RedirectResponse;
@@ -33,10 +36,13 @@ class CourseController extends Controller
 
     private const SECTION_TASK = 'task';
 
+    private const SECTION_ASSESSMENT = 'assessment';
+
     private const ALLOWED_SECTIONS = [
         self::SECTION_CATALOG,
         self::SECTION_LESSON,
         self::SECTION_TASK,
+        self::SECTION_ASSESSMENT,
     ];
 
     // ── index ────────────────────────────────────────────────────────────────
@@ -90,7 +96,8 @@ class CourseController extends Controller
             ->values()
             ->all();
 
-        $selectedCourseId = (int) $request->integer('course_id', (int) ($courseOptions->first()?->id ?? 0));
+        $defaultCourseId = in_array($section, [self::SECTION_LESSON, self::SECTION_TASK], true) ? 0 : (int) ($courseOptions->first()?->id ?? 0);
+        $selectedCourseId = (int) $request->integer('course_id', $defaultCourseId);
         $selectedLessonId = (int) $request->integer('lesson_id', 0);
 
         $emptyPaginated = [
@@ -144,14 +151,14 @@ class CourseController extends Controller
         }
 
         if ($section === self::SECTION_TASK) {
-            if ($selectedLessonId === 0 && ! empty($lessons['data'])) {
-                $selectedLessonId = (int) data_get($lessons['data'][0], 'id', 0);
-            }
+            $selectedLesson = null;
 
-            $selectedLesson = Lesson::query()
-                ->with('course:id,slug,title')
-                ->when($selectedLessonId > 0, fn ($q) => $q->whereKey($selectedLessonId))
-                ->first(['id', 'course_id', 'slug', 'title', 'content']);
+            if ($selectedLessonId > 0) {
+                $selectedLesson = Lesson::query()
+                    ->with('course:id,slug,title')
+                    ->whereKey($selectedLessonId)
+                    ->first(['id', 'course_id', 'slug', 'title', 'content']);
+            }
 
             if ($selectedLesson !== null) {
                 if ($selectedLesson->tasks()->exists()) {
@@ -243,6 +250,82 @@ class CourseController extends Controller
             }
         }
 
+        // ── Assessment section data ──────────────────────────────────────────
+        $assessments = $emptyPaginated;
+        $assessmentQuestions = [];
+        $selectedAssessmentId = 0;
+        $assessmentTopics = [];
+        $assessmentFilters = ['search' => '', 'bloom_level' => null];
+
+        if ($section === self::SECTION_ASSESSMENT) {
+            $bloomFilter = $request->input('bloom_level');
+            $assessmentCourseId = $request->has('course_id') ? (int) $request->integer('course_id') : 0;
+
+            $assessmentPaginator = Assessment::query()
+                ->with('course:id,title')
+                ->searchManagement($search)
+                ->when($bloomFilter, fn ($q) => $q->where('bloom_level', $bloomFilter))
+                ->when($assessmentCourseId > 0, fn ($q) => $q->where('course_id', $assessmentCourseId))
+                ->withCount('questions')
+                ->orderBy('sort_order')
+                ->paginate($perPage)
+                ->withQueryString();
+
+            $assessmentPaginator->getCollection()->transform(function (Assessment $a): array {
+                return [
+                    'id' => $a->id,
+                    'slug' => $a->slug,
+                    'title' => $a->title,
+                    'description' => $a->description,
+                    'course_id' => $a->course_id,
+                    'course_title' => $a->course?->title,
+                    'topic_id' => $a->topic_id,
+                    'bloom_level' => $a->bloom_level,
+                    'grading_type' => $a->grading_type,
+                    'passing_score' => $a->passing_score,
+                    'max_attempts' => $a->max_attempts,
+                    'time_limit_minutes' => $a->time_limit_minutes,
+                    'is_published' => $a->is_published,
+                    'available_from' => $a->available_from,
+                    'available_until' => $a->available_until,
+                    'sort_order' => $a->sort_order,
+                    'questions_count' => $a->questions_count,
+                    'created_at' => $a->created_at?->toIso8601String(),
+                    'updated_at' => $a->updated_at?->toIso8601String(),
+                ];
+            });
+
+            $assessments = [
+                'data' => $assessmentPaginator->items(),
+                'current_page' => $assessmentPaginator->currentPage(),
+                'last_page' => $assessmentPaginator->lastPage(),
+                'per_page' => $assessmentPaginator->perPage(),
+                'total' => $assessmentPaginator->total(),
+                'from' => $assessmentPaginator->firstItem(),
+                'to' => $assessmentPaginator->lastItem(),
+            ];
+
+            $selectedAssessmentId = $request->integer('assessment_id');
+
+            if ($selectedAssessmentId > 0) {
+                $assessmentQuestions = AssessmentQuestion::query()
+                    ->where('assessment_id', $selectedAssessmentId)
+                    ->orderBy('sort_order')
+                    ->get()
+                    ->makeVisible('correct_answer')
+                    ->toArray();
+            }
+
+            $assessmentTopics = Topic::orderBy('name')->get(['id', 'name']);
+            $assessmentFilters = [
+                'search' => $search,
+                'bloom_level' => $bloomFilter,
+            ];
+
+            // Override selectedCourseId for assessment section
+            $selectedCourseId = $assessmentCourseId;
+        }
+
         return Inertia::render('admin/courses/index', [
             'section' => $section,
             'courses' => $courses,
@@ -253,6 +336,12 @@ class CourseController extends Controller
             'selectedCourseId' => $selectedCourseId,
             'selectedLessonId' => $selectedLessonId,
             'filters' => ['search' => $search],
+            // Assessment section data
+            'assessments' => $assessments,
+            'assessmentQuestions' => $assessmentQuestions,
+            'selectedAssessmentId' => $selectedAssessmentId,
+            'assessmentTopics' => $assessmentTopics,
+            'assessmentFilters' => $assessmentFilters,
         ]);
     }
 

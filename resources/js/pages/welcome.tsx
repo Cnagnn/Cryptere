@@ -4,7 +4,6 @@ import {
     BookOpenCheck,
     FlaskConical,
     ShieldCheck,
-    Swords,
     Trophy,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -39,43 +38,39 @@ type MilestoneItem = {
 
 const modules: ModuleItem[] = [
     {
-        title: 'Structured courses',
-        description: 'Learn concepts step-by-step with guided lesson progress.',
+        title: 'Kursus terstruktur',
+        description:
+            'Pelajari konsep langkah demi langkah dengan progres pelajaran terpandu.',
         icon: BookOpenCheck,
     },
     {
-        title: 'Standalone challenges',
-        description: 'Sharpen intuition with practical cryptography prompts.',
-        icon: Swords,
-    },
-    {
-        title: 'Global leaderboard',
+        title: 'Papan peringkat global',
         description:
-            'Track points and compare your growth with other learners.',
+            'Lacak poin dan bandingkan perkembangan Anda dengan pelajar lain.',
         icon: Trophy,
     },
     {
-        title: 'Interactive labs',
+        title: 'Laboratorium interaktif',
         description:
-            'Practice Caesar, Vigenere, hashing, and signature concepts.',
+            'Praktikkan konsep Caesar, Vigenere, hashing, dan tanda tangan.',
         icon: FlaskConical,
     },
 ];
 
 const milestones: MilestoneItem[] = [
-    { label: 'Main modules', value: '6' },
-    { label: 'Hands-on focus', value: '100%' },
-    { label: 'Client labs', value: 'Realtime' },
+    { label: 'Modul utama', value: '6' },
+    { label: 'Fokus praktik', value: '100%' },
+    { label: 'Lab klien', value: 'Waktu nyata' },
 ];
 
 export default function Welcome({ canRegister = true }: WelcomeProps) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const ctaHref = auth.user ? dashboard() : login();
-    const ctaLabel = auth.user ? 'Open dashboard' : 'Start learning';
+    const ctaLabel = auth.user ? 'Buka dasbor' : 'Mulai belajar';
 
     return (
         <>
-            <Head title="Welcome" />
+            <Head title="Selamat Datang" />
 
             <div className="relative min-h-screen overflow-hidden bg-background">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.12),transparent_45%),radial-gradient(circle_at_bottom_right,hsl(var(--secondary)/0.2),transparent_40%)]" />
@@ -90,20 +85,20 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                             {auth.user ? (
                                 <Button asChild>
                                     <Link href={dashboard()} prefetch>
-                                        Dashboard
+                                        Dasbor
                                     </Link>
                                 </Button>
                             ) : (
                                 <>
                                     <Button variant="ghost" asChild>
                                         <Link href={login()} prefetch>
-                                            Log in
+                                            Masuk
                                         </Link>
                                     </Button>
                                     {canRegister && (
                                         <Button asChild>
                                             <Link href={register()} prefetch>
-                                                Register
+                                                Daftar
                                             </Link>
                                         </Button>
                                     )}
@@ -115,19 +110,19 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                     <main className="mt-10 grid flex-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                         <section className="flex flex-col gap-6">
                             <Badge variant="secondary" className="w-fit">
-                                Cryptography learning platform
+                                Platform pembelajaran kriptografi
                             </Badge>
 
                             <div className="flex flex-col gap-3">
                                 <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
-                                    Learn cryptography through structured
-                                    courses, challenges, and interactive labs.
+                                    Pelajari kriptografi melalui kursus
+                                    terstruktur dan laboratorium interaktif.
                                 </h1>
                                 <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                                    Crypter brings together structured learning,
-                                    hands-on practice, and real-world security
-                                    concept simulations in one focused
-                                    outcome-driven flow.
+                                    Crypter menggabungkan pembelajaran
+                                    terstruktur, praktik langsung, dan simulasi
+                                    konsep keamanan dunia nyata dalam satu alur
+                                    yang fokus pada hasil.
                                 </p>
                             </div>
 
@@ -142,7 +137,7 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                                 {!auth.user && canRegister && (
                                     <Button size="lg" variant="outline" asChild>
                                         <Link href={register()} prefetch>
-                                            Create account
+                                            Buat akun
                                         </Link>
                                     </Button>
                                 )}
@@ -169,15 +164,16 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                                 <CardHeader>
                                     <div className="inline-flex w-fit items-center gap-2 rounded-md bg-primary/10 px-2.5 py-1 text-sm/5 font-medium text-primary">
                                         <ShieldCheck className="size-3.5" />
-                                        Learning tracks
+                                        Jalur pembelajaran
                                     </div>
                                     <CardTitle>
-                                        Learning tracks for your main sprint
+                                        Jalur pembelajaran untuk sprint utama
+                                        Anda
                                     </CardTitle>
                                     <CardDescription>
-                                        Each module is designed to build
-                                        conceptual understanding and practical
-                                        readiness.
+                                        Setiap modul dirancang untuk membangun
+                                        pemahaman konseptual dan kesiapan
+                                        praktis.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex flex-col gap-3">
@@ -200,26 +196,24 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
 
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>How it flows</CardTitle>
+                                    <CardTitle>Cara kerjanya</CardTitle>
                                     <CardDescription>
-                                        Start with foundations, advance to
-                                        challenges, then validate your knowledge
-                                        in labs.
+                                        Mulai dengan fondasi, lalu validasi
+                                        pengetahuan Anda di laboratorium
+                                        interaktif.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-                                    <p>1. Enroll in a relevant course.</p>
-                                    <Separator />
-                                    <p>2. Complete lessons to collect XP.</p>
+                                    <p>1. Daftar di kursus yang relevan.</p>
                                     <Separator />
                                     <p>
-                                        3. Earn points through standalone
-                                        challenges.
+                                        2. Selesaikan pelajaran untuk
+                                        mengumpulkan XP.
                                     </p>
                                     <Separator />
                                     <p>
-                                        4. Train your intuition in interactive
-                                        client-side labs.
+                                        3. Latih intuisi Anda di laboratorium
+                                        interaktif sisi klien.
                                     </p>
                                 </CardContent>
                             </Card>
@@ -230,7 +224,7 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                         <Separator />
                         <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
                             <span>
-                                Built with Laravel, Inertia, React, and
+                                Dibangun dengan Laravel, Inertia, React, dan
                                 shadcn/ui.
                             </span>
                             <div className="flex items-center gap-3">
@@ -240,7 +234,7 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                                     rel="noopener noreferrer"
                                     className="transition-colors hover:text-foreground"
                                 >
-                                    Laravel docs
+                                    Dokumentasi Laravel
                                 </a>
                                 <a
                                     href="https://inertiajs.com"
@@ -248,7 +242,7 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                                     rel="noopener noreferrer"
                                     className="transition-colors hover:text-foreground"
                                 >
-                                    Inertia docs
+                                    Dokumentasi Inertia
                                 </a>
                             </div>
                         </div>

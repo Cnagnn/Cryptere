@@ -16,7 +16,7 @@ export function UserInfo({
         <>
             <Avatar className="size-8 overflow-hidden rounded-full">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="bg-muted text-foreground rounded-lg">
+                <AvatarFallback className="rounded-lg bg-muted text-foreground">
                     {getInitials(user.name)}
                 </AvatarFallback>
             </Avatar>
@@ -29,7 +29,9 @@ export function UserInfo({
                 )}
                 {user.level && (
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">Lv.{user.level.level}</span>
+                        <span className="text-xs text-muted-foreground">
+                            Lv.{user.level.level}
+                        </span>
                         <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
                             <div
                                 className="h-full rounded-full bg-primary transition-all"

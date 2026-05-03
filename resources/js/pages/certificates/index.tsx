@@ -43,20 +43,20 @@ export default function CertificatesIndex({ certificates }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Certificates', href: '/certificates' },
+                { title: 'Dasbor', href: '/dashboard' },
+                { title: 'Sertifikat', href: '/certificates' },
             ]}
         >
-            <Head title="My Certificates" />
+            <Head title="Sertifikat Saya" />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <section className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                         <GraduationCap className="size-6 text-primary" />
-                        <TypographyH1>My Certificates</TypographyH1>
+                        <TypographyH1>Sertifikat Saya</TypographyH1>
                     </div>
                     <TypographyMuted>
-                        Certificates earned from completed courses.
+                        Sertifikat yang diperoleh dari kursus yang diselesaikan.
                     </TypographyMuted>
                 </section>
 
@@ -66,16 +66,15 @@ export default function CertificatesIndex({ certificates }: Props) {
                             <Award className="size-12 text-muted-foreground/40" />
                             <div>
                                 <p className="font-medium">
-                                    No certificates yet
+                                    Belum ada sertifikat
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    Complete a course to earn your first
-                                    certificate!
+                                    Selesaikan kursus untuk mendapatkan sertifikat pertama Anda!
                                 </p>
                             </div>
                             <Button asChild>
                                 <Link href="/courses" prefetch>
-                                    Browse Courses
+                                    Jelajahi Kursus
                                 </Link>
                             </Button>
                         </CardContent>
@@ -84,22 +83,21 @@ export default function CertificatesIndex({ certificates }: Props) {
                     <Card>
                         <CardHeader>
                             <CardTitle>
-                                {certificates.length} Certificate
-                                {certificates.length !== 1 ? 's' : ''}
+                                {certificates.length} Sertifikat
                             </CardTitle>
                             <CardDescription>
-                                Click a certificate to view details and share.
+                                Klik sertifikat untuk melihat detail dan membagikannya.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Course</TableHead>
-                                        <TableHead>Certificate #</TableHead>
-                                        <TableHead>Issued</TableHead>
+                                        <TableHead>Kursus</TableHead>
+                                        <TableHead>Sertifikat #</TableHead>
+                                        <TableHead>Diterbitkan</TableHead>
                                         <TableHead className="text-right">
-                                            Actions
+                                            Aksi
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>

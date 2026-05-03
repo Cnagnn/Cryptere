@@ -1,9 +1,6 @@
 import { SearchableCombobox } from '@/components/course-searchable-combobox';
-import {
-    createEmptyQuizQuestion
-
-} from '@/components/course-types';
-import type {QuizQuestionForm} from '@/components/course-types';
+import { createEmptyQuizQuestion } from '@/components/course-types';
+import type { QuizQuestionForm } from '@/components/course-types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,10 +14,10 @@ interface QuizQuestionsEditorProps {
 }
 
 const CORRECT_OPTION_OPTIONS = [
-    { value: '0', label: 'Option 1' },
-    { value: '1', label: 'Option 2' },
-    { value: '2', label: 'Option 3' },
-    { value: '3', label: 'Option 4' },
+    { value: '0', label: 'Opsi 1' },
+    { value: '1', label: 'Opsi 2' },
+    { value: '2', label: 'Opsi 3' },
+    { value: '3', label: 'Opsi 4' },
 ];
 
 export function QuizQuestionsEditor({
@@ -61,14 +58,14 @@ export function QuizQuestionsEditor({
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Quiz Questions</p>
+                <p className="text-sm font-medium">Pertanyaan Kuis</p>
                 <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={addQuestion}
                 >
-                    Add question
+                    Tambah pertanyaan
                 </Button>
             </div>
 
@@ -79,7 +76,7 @@ export function QuizQuestionsEditor({
                 >
                     <div className="flex items-center justify-between">
                         <p className="text-sm font-medium">
-                            Question {qIndex + 1}
+                            Pertanyaan {qIndex + 1}
                         </p>
                         {questions.length > 1 ? (
                             <Button
@@ -88,13 +85,13 @@ export function QuizQuestionsEditor({
                                 size="sm"
                                 onClick={() => removeQuestion(qIndex)}
                             >
-                                Remove
+                                Hapus
                             </Button>
                         ) : null}
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <Label>Question text</Label>
+                        <Label>Teks pertanyaan</Label>
                         <Textarea
                             value={question.question}
                             onChange={(e) =>
@@ -111,7 +108,7 @@ export function QuizQuestionsEditor({
                                 key={`${prefix}-option-${qIndex}-${oIndex}`}
                                 className="flex flex-col gap-1"
                             >
-                                <Label>Option {oIndex + 1}</Label>
+                                <Label>Opsi {oIndex + 1}</Label>
                                 <Input
                                     value={option}
                                     onChange={(e) =>
@@ -127,13 +124,13 @@ export function QuizQuestionsEditor({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <Label>Correct option</Label>
+                        <Label>Opsi yang benar</Label>
                         <SearchableCombobox
                             value={String(question.correct_option)}
                             options={CORRECT_OPTION_OPTIONS}
-                            placeholder="Select correct option"
-                            searchPlaceholder="Search option..."
-                            emptyMessage="No option found."
+                            placeholder="Pilih opsi yang benar"
+                            searchPlaceholder="Cari opsi..."
+                            emptyMessage="Opsi tidak ditemukan."
                             className="w-full"
                             onSelect={(value) =>
                                 updateQuestion(qIndex, {
@@ -144,7 +141,7 @@ export function QuizQuestionsEditor({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <Label>Explanation (optional)</Label>
+                        <Label>Penjelasan (opsional)</Label>
                         <Textarea
                             value={question.explanation}
                             onChange={(e) =>

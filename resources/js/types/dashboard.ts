@@ -6,7 +6,6 @@ export type LearnerStats = {
     enrolledCourses: number;
     completedCourses: number;
     completedLessons: number;
-    solvedChallenges: number;
     points: number;
     xp: number;
 };
@@ -54,7 +53,6 @@ export type ActivityBreakdownItem = {
 export type MonthlyProgressEntry = {
     month: string;
     lessonsCompleted: number;
-    challengesSolved: number;
     totalActivity: number;
 };
 
@@ -65,7 +63,11 @@ export type MonthlyProgress = {
     series: MonthlyProgressEntry[];
 };
 
-export type EarningsHistoryEntry = { label: string; points: number; xp: number };
+export type EarningsHistoryEntry = {
+    label: string;
+    points: number;
+    xp: number;
+};
 
 export type EarningsHistory = {
     deltaFromPrevious: number;
@@ -148,7 +150,6 @@ export type DecayWarning = {
 export type AdminStats = {
     totalUsers: number;
     totalCourses: number;
-    totalChallenges: number;
     totalEnrollments: number;
     activeUsers: number;
     newUsersThisMonth: number;
@@ -161,12 +162,6 @@ export type AdminCoursePerformance = {
     title: string;
     enrollments: number;
     completionRate: number;
-};
-
-export type AdminChallengePerformance = {
-    title: string;
-    submissions: number;
-    successRate: number;
 };
 
 export type AdminRecentUser = {
@@ -183,7 +178,6 @@ export type AdminData = {
     enrollmentTrends: AdminEnrollmentTrend[];
     userGrowth: AdminUserGrowth[];
     coursePerformance: AdminCoursePerformance[];
-    challengePerformance: AdminChallengePerformance[];
     recentUsers: AdminRecentUser[];
 };
 

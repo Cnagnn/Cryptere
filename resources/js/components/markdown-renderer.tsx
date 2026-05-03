@@ -14,14 +14,14 @@ type MarkdownRendererProps = {
  *
  * All HTML is sanitized to prevent XSS.
  */
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export function MarkdownRenderer({
+    content,
+    className,
+}: MarkdownRendererProps) {
     const html = useMemo(() => renderMarkdown(content), [content]);
 
     return (
-        <div
-            className={className}
-            dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div className={className} dangerouslySetInnerHTML={{ __html: html }} />
     );
 }
 
@@ -44,10 +44,16 @@ function processInline(text: string): string {
     let result = escapeHtml(text);
 
     // Inline code (must be before bold/italic to avoid conflicts)
-    result = result.replace(/`([^`]+)`/g, '<code class="rounded bg-muted px-1.5 py-0.5 text-sm font-mono">$1</code>');
+    result = result.replace(
+        /`([^`]+)`/g,
+        '<code class="rounded bg-muted px-1.5 py-0.5 text-sm font-mono">$1</code>',
+    );
 
     // Bold + Italic
-    result = result.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    result = result.replace(
+        /\*\*\*(.+?)\*\*\*/g,
+        '<strong><em>$1</em></strong>',
+    );
 
     // Bold
     result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -88,7 +94,9 @@ function renderMarkdown(markdown: string): string {
 
     const flushBlockquote = () => {
         if (blockquoteLines.length > 0) {
-            const content = blockquoteLines.map((l) => processInline(l)).join('<br/>');
+            const content = blockquoteLines
+                .map((l) => processInline(l))
+                .join('<br/>');
             htmlParts.push(
                 `<blockquote class="border-l-4 border-muted-foreground/30 pl-4 my-4 text-muted-foreground italic">${content}</blockquote>`,
             );
@@ -105,7 +113,10 @@ function renderMarkdown(markdown: string): string {
                     ? 'list-disc pl-6 my-3 space-y-1'
                     : 'list-decimal pl-6 my-3 space-y-1';
             const items = listItems
-                .map((item) => `<li class="text-sm leading-relaxed">${processInline(item)}</li>`)
+                .map(
+                    (item) =>
+                        `<li class="text-sm leading-relaxed">${processInline(item)}</li>`,
+                )
                 .join('');
             htmlParts.push(`<${tag} class="${listClass}">${items}</${tag}>`);
             listItems = [];
@@ -121,7 +132,10 @@ function renderMarkdown(markdown: string): string {
             const headerCells = headerRow
                 .split('|')
                 .filter((c) => c.trim())
-                .map((c) => `<th class="border border-border px-3 py-2 text-left text-sm font-semibold">${processInline(c.trim())}</th>`)
+                .map(
+                    (c) =>
+                        `<th class="border border-border px-3 py-2 text-left text-sm font-semibold">${processInline(c.trim())}</th>`,
+                )
                 .join('');
 
             const bodyRows = dataRows
@@ -129,7 +143,10 @@ function renderMarkdown(markdown: string): string {
                     const cells = row
                         .split('|')
                         .filter((c) => c.trim())
-                        .map((c) => `<td class="border border-border px-3 py-2 text-sm">${processInline(c.trim())}</td>`)
+                        .map(
+                            (c) =>
+                                `<td class="border border-border px-3 py-2 text-sm">${processInline(c.trim())}</td>`,
+                        )
                         .join('');
 
                     return `<tr>${cells}</tr>`;

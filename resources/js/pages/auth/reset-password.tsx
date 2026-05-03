@@ -14,7 +14,7 @@ type Props = {
 export default function ResetPassword({ token, email }: Props) {
     return (
         <>
-            <Head title="Reset password" />
+            <Head title="Atur Ulang Kata Sandi" />
 
             <Form
                 {...update.form()}
@@ -31,40 +31,63 @@ export default function ResetPassword({ token, email }: Props) {
                                 name="email"
                                 autoComplete="email"
                                 value={email}
-                                aria-invalid={Boolean(errors.email) || undefined}
+                                aria-invalid={
+                                    Boolean(errors.email) || undefined
+                                }
                                 className="block w-full"
                                 readOnly
                             />
-                            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                            {errors.email && (
+                                <p className="text-sm text-destructive">
+                                    {errors.email}
+                                </p>
+                            )}
                         </Field>
 
                         <Field data-invalid={Boolean(errors.password)}>
-                            <FieldLabel htmlFor="password">Password</FieldLabel>
+                            <FieldLabel htmlFor="password">
+                                Kata Sandi
+                            </FieldLabel>
                             <PasswordInput
                                 id="password"
                                 name="password"
                                 autoComplete="new-password"
-                                aria-invalid={Boolean(errors.password) || undefined}
+                                aria-invalid={
+                                    Boolean(errors.password) || undefined
+                                }
                                 className="block w-full"
                                 autoFocus
-                                placeholder="Password"
+                                placeholder="Kata Sandi"
                             />
-                            {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                            {errors.password && (
+                                <p className="text-sm text-destructive">
+                                    {errors.password}
+                                </p>
+                            )}
                         </Field>
 
-                        <Field data-invalid={Boolean(errors.password_confirmation)}>
+                        <Field
+                            data-invalid={Boolean(errors.password_confirmation)}
+                        >
                             <FieldLabel htmlFor="password_confirmation">
-                                Confirm password
+                                Konfirmasi Kata Sandi
                             </FieldLabel>
                             <PasswordInput
                                 id="password_confirmation"
                                 name="password_confirmation"
                                 autoComplete="new-password"
-                                aria-invalid={Boolean(errors.password_confirmation) || undefined}
+                                aria-invalid={
+                                    Boolean(errors.password_confirmation) ||
+                                    undefined
+                                }
                                 className="block w-full"
-                                placeholder="Confirm password"
+                                placeholder="Konfirmasi Kata Sandi"
                             />
-                            {errors.password_confirmation && <p className="text-sm text-destructive">{errors.password_confirmation}</p>}
+                            {errors.password_confirmation && (
+                                <p className="text-sm text-destructive">
+                                    {errors.password_confirmation}
+                                </p>
+                            )}
                         </Field>
 
                         <Button
@@ -74,7 +97,7 @@ export default function ResetPassword({ token, email }: Props) {
                             data-test="reset-password-button"
                         >
                             {processing && <Spinner />}
-                            Reset password
+                            Atur Ulang Kata Sandi
                         </Button>
                     </div>
                 )}
@@ -84,6 +107,6 @@ export default function ResetPassword({ token, email }: Props) {
 }
 
 ResetPassword.layout = {
-    title: 'Reset password',
-    description: 'Please enter your new password below',
+    title: 'Atur Ulang Kata Sandi',
+    description: 'Silakan masukkan kata sandi baru Anda di bawah ini',
 };

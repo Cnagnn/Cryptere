@@ -1,16 +1,15 @@
 <?php
 
-use App\Http\Controllers\Admin\ChallengeController as AdminChallengeController;
-use App\Http\Controllers\Admin\ChallengeQuestionController as AdminChallengeQuestionController;
+use App\Http\Controllers\Admin\AssessmentController as AdminAssessmentController;
+use App\Http\Controllers\Admin\AssessmentQuestionController as AdminAssessmentQuestionController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Admin\TaskController as AdminTaskController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\Assessment\AssessmentSubmissionController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\CertificateController;
-use App\Http\Controllers\Challenge\ChallengeController;
-use App\Http\Controllers\Challenge\ChallengeSubmissionController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Course\EnrollmentController;
 use App\Http\Controllers\Course\LessonProgressController;
@@ -25,6 +24,7 @@ use App\Http\Controllers\LearningPathController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -78,20 +78,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:quiz-submit')
         ->name('courses.lessons.quiz');
 
-    Route::get('challenges', [ChallengeController::class, 'index'])->name('challenges.index');
-    Route::get('challenges/{challenge:slug}', [ChallengeController::class, 'show'])->name('challenges.show');
-    Route::post('challenges/{challenge:slug}/submit', [ChallengeSubmissionController::class, 'store'])
-        ->middleware('throttle:challenge-submit')
-        ->name('challenges.submit');
-    Route::post('challenges/{challenge:slug}/quick-submit', [ChallengeSubmissionController::class, 'quickStore'])
-        ->middleware('throttle:challenge-submit')
-        ->name('challenges.quick-submit');
-    Route::post('challenges/{challenge:slug}/quiz-submit', [ChallengeSubmissionController::class, 'quizSubmit'])
-        ->middleware('throttle:quiz-submit')
-        ->name('challenges.quiz-submit');
-    Route::post('challenges/{challenge:slug}/session-summary', [ChallengeSubmissionController::class, 'sessionSummary'])
-        ->middleware('throttle:session-summary')
-        ->name('challenges.session-summary');
+
+    // Assessments — all UI now embedded in course detail page
+    // Redirects for old bookmarks / links
+    Route::get('assessments', fn () => redirect()->route('courses.index'))->name('assessments.index');
+    Route::get('assessments/mastery', fn () => redirect()->route('courses.index'))->name('assessments.mastery');
+    Route::get('assessments/{assessment:slug}', function (\App\Models\Assessment $assessment) {
+        if ($assessment->course) {
+            return redirect()->route('courses.show', $assessment->course->slug);
+        }
+        abort(404);
+    })->name('assessments.show');
+    Route::get('assessments/{assessment:slug}/results/{submission}', function (\App\Models\Assessment $assessment) {
+        if ($assessment->course) {
+            return redirect()->route('courses.show', $assessment->course->slug);
+        }
+        abort(404);
+    })->name('assessments.results');
+
+    // Assessment API endpoints (used by embedded assessment panel)
+    Route::post('assessments/{assessment:slug}/start', [AssessmentSubmissionController::class, 'start'])
+        ->middleware('throttle:10,1')
+        ->name('assessments.start');
+    Route::post('assessments/{assessment:slug}/save-answer', [AssessmentSubmissionController::class, 'saveAnswer'])
+        ->middleware('throttle:60,1')
+        ->name('assessments.save-answer');
+    Route::post('assessments/{assessment:slug}/submit', [AssessmentSubmissionController::class, 'submit'])
+        ->middleware('throttle:10,1')
+        ->name('assessments.submit');
 
     Route::get('leaderboard', LeaderboardController::class)->name('leaderboard.index');
     Route::get('labs', LabController::class)->name('labs.index');
@@ -124,7 +138,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('certificates', [CertificateController::class, 'store'])->name('certificates.store');
     Route::get('certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
 
-
     // Discussions
     Route::get('discussions', [DiscussionController::class, 'index'])->name('discussions.index');
     Route::post('discussions', [DiscussionController::class, 'store'])->middleware('throttle:10,1')->name('discussions.store');
@@ -135,7 +148,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('discussions/{discussion}', [DiscussionController::class, 'destroy'])->name('discussions.destroy');
 
     // Story and CTF removed
-
 });
 
 // Public certificate verification — no auth required
@@ -166,18 +178,26 @@ Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin
     Route::delete('courses/tasks/{task}', [AdminTaskController::class, 'destroy'])->name('courses.tasks.destroy');
     Route::get('courses/tasks/{task}/video-status', [AdminTaskController::class, 'videoStatus'])->name('courses.tasks.video-status');
 
-    // Challenges
-    Route::get('challenges', [AdminChallengeController::class, 'index'])->name('challenges.index');
-    Route::post('challenges', [AdminChallengeController::class, 'store'])->name('challenges.store');
-    Route::post('challenges/reorder', [AdminChallengeController::class, 'reorder'])->name('challenges.reorder');
-    Route::patch('challenges/{challenge}', [AdminChallengeController::class, 'update'])->name('challenges.update');
-    Route::delete('challenges/{challenge}', [AdminChallengeController::class, 'destroy'])->name('challenges.destroy');
 
-    // Challenge Questions
-    Route::post('challenges/{challenge}/questions', [AdminChallengeQuestionController::class, 'store'])->name('challenges.questions.store');
-    Route::patch('challenges/{challenge}/questions/{question}', [AdminChallengeQuestionController::class, 'update'])->name('challenges.questions.update');
-    Route::delete('challenges/{challenge}/questions/{question}', [AdminChallengeQuestionController::class, 'destroy'])->name('challenges.questions.destroy');
-    Route::post('challenges/{challenge}/questions/reorder', [AdminChallengeQuestionController::class, 'reorder'])->name('challenges.questions.reorder');
+    // Assessments (Bloom's Taxonomy tiered) — listing now served via CourseController section=assessment
+    Route::get('assessments', fn () => redirect()->route('admin.courses.index', ['section' => 'assessment']))->name('assessments.index');
+    Route::post('assessments', [AdminAssessmentController::class, 'store'])->name('assessments.store');
+    Route::post('assessments/reorder', [AdminAssessmentController::class, 'reorder'])->name('assessments.reorder');
+    Route::patch('assessments/{assessment}', [AdminAssessmentController::class, 'update'])->name('assessments.update');
+    Route::delete('assessments/{assessment}', [AdminAssessmentController::class, 'destroy'])->name('assessments.destroy');
+    Route::patch('assessments/{assessment}/toggle-publish', [AdminAssessmentController::class, 'togglePublish'])->name('assessments.toggle-publish');
+
+    // Assessment Questions
+    Route::post('assessments/{assessment}/questions', [AdminAssessmentQuestionController::class, 'store'])->name('assessments.questions.store');
+    Route::patch('assessments/{assessment}/questions/{question}', [AdminAssessmentQuestionController::class, 'update'])->name('assessments.questions.update');
+    Route::delete('assessments/{assessment}/questions/{question}', [AdminAssessmentQuestionController::class, 'destroy'])->name('assessments.questions.destroy');
+    Route::post('assessments/{assessment}/questions/reorder', [AdminAssessmentQuestionController::class, 'reorder'])->name('assessments.questions.reorder');
 });
 
 require __DIR__.'/settings.php';
+
+// Profile pages — defined after settings.php so /profile/admin is matched first
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('profile', [ProfileController::class, 'showOwn'])->name('profile.show.own');
+    Route::get('profile/{user:username}', [ProfileController::class, 'show'])->name('profile.show');
+});

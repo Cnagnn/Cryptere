@@ -33,7 +33,11 @@ export default function AuthSimpleLayout({
                             </p>
                         </div>
                     </div>
-                    <div id="auth-content" tabIndex={-1} className="outline-none">
+                    <div
+                        id="auth-content"
+                        tabIndex={-1}
+                        className="outline-none"
+                    >
                         {children}
                     </div>
                 </div>

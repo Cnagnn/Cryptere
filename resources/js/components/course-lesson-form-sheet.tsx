@@ -4,10 +4,7 @@ import {
     store as storeLesson,
     update as updateLesson,
 } from '@/actions/App/Http/Controllers/Admin/LessonController';
-import type {
-    LessonFormData,
-    LessonRow,
-} from '@/components/course-types';
+import type { LessonFormData, LessonRow } from '@/components/course-types';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -109,39 +106,46 @@ export function LessonFormSheet({
             <DialogContent className="w-full overflow-y-auto sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {isCreate ? 'Create Lesson' : 'Edit Lesson'}
+                        {isCreate ? 'Buat Topik' : 'Edit Topik'}
                     </DialogTitle>
                     <DialogDescription>
                         {isCreate
-                            ? 'Create a new lesson.'
-                            : 'Update selected lesson details.'}
+                            ? 'Buat topik baru.'
+                            : 'Perbarui detail topik yang dipilih.'}
                     </DialogDescription>
                 </DialogHeader>
 
                 <FieldGroup className="px-4">
                     <Field>
-                        <FieldLabel htmlFor={`${mode}-lesson-title`}>Title</FieldLabel>
+                        <FieldLabel htmlFor={`${mode}-lesson-title`}>
+                            Judul
+                        </FieldLabel>
                         <FieldContent>
-                        <Input
-                            id={`${mode}-lesson-title`}
-                            value={form.data.title}
-                            onChange={(e) =>
-                                form.setData('title', e.target.value)
-                            }
-                            aria-invalid={Boolean(form.errors.title)}
-                        />
+                            <Input
+                                id={`${mode}-lesson-title`}
+                                value={form.data.title}
+                                onChange={(e) =>
+                                    form.setData('title', e.target.value)
+                                }
+                                aria-invalid={Boolean(form.errors.title)}
+                            />
                             <FieldError>{form.errors.title}</FieldError>
                         </FieldContent>
                     </Field>
 
                     <Field>
-                        <FieldLabel htmlFor={`${mode}-lesson-description`}>Description</FieldLabel>
+                        <FieldLabel htmlFor={`${mode}-lesson-description`}>
+                            Deskripsi
+                        </FieldLabel>
                         <FieldContent>
                             <Textarea
                                 id={`${mode}-lesson-description`}
                                 value={form.data.description}
                                 onChange={(event) =>
-                                    form.setData('description', event.target.value)
+                                    form.setData(
+                                        'description',
+                                        event.target.value,
+                                    )
                                 }
                                 maxLength={5000}
                                 rows={4}
@@ -154,8 +158,12 @@ export function LessonFormSheet({
 
                 <DialogFooter className="mt-4 sm:flex-row sm:justify-end">
                     <DialogClose asChild>
-                        <Button type="button" variant="outline" onClick={handleClose}>
-                        Cancel
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleClose}
+                        >
+                            Batal
                         </Button>
                     </DialogClose>
                     <Button
@@ -165,7 +173,7 @@ export function LessonFormSheet({
                         }
                         onClick={handleSubmit}
                     >
-                        {isCreate ? 'Create' : 'Update'}
+                        {isCreate ? 'Buat' : 'Perbarui'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

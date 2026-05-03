@@ -17,7 +17,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { FieldError } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
-import { TypographyLarge, TypographyMuted } from '@/components/ui/typography';
 
 export default function DeleteUser() {
     const passwordInput = useRef<HTMLInputElement>(null);
@@ -25,18 +24,18 @@ export default function DeleteUser() {
     return (
         <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-0.5">
-                <TypographyLarge className="text-base font-medium leading-snug">
-                    Delete account
-                </TypographyLarge>
-                <TypographyMuted className="text-sm/6">
-                    Delete your account and all of its resources
-                </TypographyMuted>
+                <h2 className="text-base leading-snug font-semibold">
+                    Hapus Akun
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                    Hapus akun Anda dan semua sumber dayanya
+                </p>
             </div>
             <div className="flex flex-col gap-4">
                 <Alert variant="destructive">
-                    <AlertTitle>Warning</AlertTitle>
+                    <AlertTitle>Peringatan</AlertTitle>
                     <AlertDescription>
-                        Please proceed with caution, this cannot be undone.
+                        Harap berhati-hati, tindakan ini tidak dapat dibatalkan.
                     </AlertDescription>
                 </Alert>
 
@@ -46,19 +45,18 @@ export default function DeleteUser() {
                             variant="destructive"
                             data-test="delete-user-button"
                         >
-                            Delete account
+                            Hapus Akun
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>
-                                Delete account?
-                            </AlertDialogTitle>
+                            <AlertDialogTitle>Hapus akun?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Once your account is deleted, all of its resources
-                                and data will also be permanently deleted. Please
-                                enter your password to confirm you would like to
-                                permanently delete your account.
+                                Setelah akun Anda dihapus, semua sumber daya dan
+                                data juga akan dihapus secara permanen. Silakan
+                                masukkan kata sandi Anda untuk mengonfirmasi
+                                bahwa Anda ingin menghapus akun Anda secara
+                                permanen.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
 
@@ -78,25 +76,29 @@ export default function DeleteUser() {
                                             htmlFor="password"
                                             className="sr-only"
                                         >
-                                            Password
+                                            Kata Sandi
                                         </Label>
 
                                         <PasswordInput
                                             id="password"
                                             name="password"
                                             ref={passwordInput}
-                                            placeholder="Password"
+                                            placeholder="Kata Sandi"
                                             autoComplete="current-password"
                                         />
 
-                                        <FieldError>{errors.password}</FieldError>
+                                        <FieldError>
+                                            {errors.password}
+                                        </FieldError>
                                     </div>
 
                                     <AlertDialogFooter className="gap-2">
                                         <AlertDialogCancel
-                                            onClick={() => resetAndClearErrors()}
+                                            onClick={() =>
+                                                resetAndClearErrors()
+                                            }
                                         >
-                                            Cancel
+                                            Batal
                                         </AlertDialogCancel>
 
                                         <AlertDialogAction
@@ -104,7 +106,7 @@ export default function DeleteUser() {
                                             disabled={processing}
                                             data-test="confirm-delete-user-button"
                                         >
-                                            Delete account
+                                            Hapus Akun
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </>

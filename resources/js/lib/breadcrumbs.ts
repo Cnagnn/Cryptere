@@ -2,21 +2,21 @@ import { toUrl } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';
 
 const homeBreadcrumb: BreadcrumbItem = {
-    title: 'Home',
+    title: 'Beranda',
     href: '/dashboard',
 };
 
 const segmentTitleMap: Record<string, string> = {
     admin: 'Admin',
-    courses: 'Courses',
-    challenges: 'Challenges',
-    leaderboard: 'Leaderboard',
-    labs: 'Labs',
-    settings: 'Settings',
-    profile: 'Profile',
-    security: 'Security',
-    appearance: 'Appearance',
-    dashboard: 'Dashboard',
+    courses: 'Kursus',
+    challenges: 'Tantangan',
+    leaderboard: 'Papan Peringkat',
+    labs: 'Laboratorium',
+    settings: 'Pengaturan',
+    profile: 'Profil',
+    security: 'Keamanan',
+    appearance: 'Tampilan',
+    dashboard: 'Dasbor',
 };
 
 function toTitleCase(segment: string): string {
@@ -39,7 +39,7 @@ export function buildBreadcrumbsFromUrl(pageUrl: string): BreadcrumbItem[] {
     const segments = pathname.split('/').filter(Boolean);
 
     if (segments.length === 0) {
-        return [{ title: 'Dashboard', href: '/dashboard' }];
+        return [{ title: 'Dasbor', href: '/dashboard' }];
     }
 
     let currentPath = '';
@@ -62,10 +62,15 @@ export function withHomeBreadcrumb(
     }
 
     const isHomeItem = (item: BreadcrumbItem): boolean => {
-        const href = toUrl(item.href).split('?')[0];
         const title = item.title.trim().toLowerCase();
 
-        return title === 'home' || href === '/dashboard' || href === '/';
+        if (!item.href) {
+            return title === 'beranda';
+        }
+
+        const href = toUrl(item.href).split('?')[0];
+
+        return title === 'beranda' || href === '/dashboard' || href === '/';
     };
 
     const withHome = isHomeItem(breadcrumbs[0])

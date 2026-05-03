@@ -57,8 +57,8 @@ export function AchievementToast() {
         processedRef.current = key;
 
         if (flash?.levelUp) {
-            toast.success('Level Up!', {
-                description: `You reached Level ${flash.levelUp.level}!`,
+            toast.success('Naik Level!', {
+                description: `Anda mencapai Level ${flash.levelUp.level}!`,
                 icon: <Shield className="size-5 text-primary" />,
                 duration: 6000,
             });
@@ -68,7 +68,7 @@ export function AchievementToast() {
             flash.newBadges.forEach((badge, i) => {
                 setTimeout(
                     () => {
-                        toast.success('Badge Earned!', {
+                        toast.success('Lencana Diperoleh!', {
                             description: `${badge.name} — ${badge.description}`,
                             icon: <BadgeIcon tier={badge.tier} />,
                             duration: 5000,
@@ -78,7 +78,6 @@ export function AchievementToast() {
                 );
             });
         }
-
     }, [flash?.newBadges, flash?.levelUp]);
 
     return null;

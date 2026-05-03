@@ -22,18 +22,18 @@ export default function TwoFactorChallenge() {
     }>(() => {
         if (showRecoveryInput) {
             return {
-                title: 'Recovery code',
+                title: 'Kode Pemulihan',
                 description:
-                    'Please confirm access to your account by entering one of your emergency recovery codes.',
-                toggleText: 'login using an authentication code',
+                    'Silakan konfirmasi akses ke akun Anda dengan memasukkan salah satu kode pemulihan darurat Anda.',
+                toggleText: 'masuk menggunakan kode autentikasi',
             };
         }
 
         return {
-            title: 'Authentication code',
+            title: 'Kode Autentikasi',
             description:
-                'Enter the authentication code provided by your authenticator application.',
-            toggleText: 'login using a recovery code',
+                'Masukkan kode autentikasi yang disediakan oleh aplikasi autentikator Anda.',
+            toggleText: 'masuk menggunakan kode pemulihan',
         };
     }, [showRecoveryInput]);
 
@@ -50,7 +50,7 @@ export default function TwoFactorChallenge() {
 
     return (
         <>
-            <Head title="Two-factor authentication" />
+            <Head title="Autentikasi Dua Faktor" />
 
             <div className="flex flex-col gap-6">
                 <Form
@@ -66,13 +66,18 @@ export default function TwoFactorChallenge() {
                                     <Input
                                         name="recovery_code"
                                         type="text"
-                                        placeholder="Enter recovery code"
+                                        placeholder="Masukkan kode pemulihan"
                                         autoFocus={showRecoveryInput}
                                         required
-                                        aria-invalid={Boolean(errors.recovery_code) || undefined}
+                                        aria-invalid={
+                                            Boolean(errors.recovery_code) ||
+                                            undefined
+                                        }
                                     />
                                     {errors.recovery_code && (
-                                        <p className="text-sm text-destructive">{errors.recovery_code}</p>
+                                        <p className="text-sm text-destructive">
+                                            {errors.recovery_code}
+                                        </p>
                                     )}
                                 </>
                             ) : (
@@ -99,7 +104,11 @@ export default function TwoFactorChallenge() {
                                             </InputOTPGroup>
                                         </InputOTP>
                                     </div>
-                                    {errors.code && <p className="text-sm text-destructive">{errors.code}</p>}
+                                    {errors.code && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.code}
+                                        </p>
+                                    )}
                                 </div>
                             )}
 
@@ -108,11 +117,11 @@ export default function TwoFactorChallenge() {
                                 className="w-full"
                                 disabled={processing}
                             >
-                                Continue
+                                Lanjutkan
                             </Button>
 
                             <div className="text-center text-sm text-muted-foreground">
-                                <span>or you can </span>
+                                <span>atau Anda dapat </span>
                                 <Button
                                     type="button"
                                     variant="link"

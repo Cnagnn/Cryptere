@@ -18,7 +18,10 @@ class DashboardController extends Controller
     ) {}
 
     /**
-     * Show the dashboard — learner view for members, analytics view for admins.
+     * Show the dashboard — learner view for members, combined view for admins.
+     *
+     * Admins receive both admin analytics data AND learner data so the frontend
+     * can render tabs allowing them to switch between "Home" and "Analytics".
      */
     public function __invoke(Request $request): Response
     {
@@ -27,7 +30,10 @@ class DashboardController extends Controller
         try {
             if ($user->isAdmin()) {
                 \Log::info('Rendering admin dashboard', ['user_id' => $user->id]);
-                $result = $this->traceSpan('dashboard.admin', 'Admin dashboard render', fn () => Inertia::render('dashboard', $this->adminBuilder->build()));
+                $result = $this->traceSpan('dashboard.admin', 'Admin dashboard render', fn () => Inertia::render('dashboard', array_merge(
+                    $this->adminBuilder->build(),
+                    $this->learnerBuilder->build($user),
+                )));
                 \Log::info('Admin dashboard rendered successfully', ['user_id' => $user->id]);
                 return $result;
             }

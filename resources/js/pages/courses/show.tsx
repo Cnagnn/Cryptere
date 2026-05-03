@@ -5,6 +5,7 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    ClipboardCheck,
     Lock,
     Maximize2,
     Minimize2,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { CourseAssessmentPanel } from '@/components/course-assessment-panel';
+import type { AssessmentFullData } from '@/components/course-assessment-panel';
 import { QuizPanel } from '@/components/course-quiz-panel';
 import type { QuizSubmission } from '@/components/course-quiz-panel';
 import { VideoPlayer } from '@/components/course-video-player';
@@ -142,18 +145,19 @@ type Props = {
     course: ServerCourse;
     lessons: ServerLesson[];
     enrollment: EnrollmentData;
+    assessment: AssessmentFullData | null;
 };
 
 function defaultTaskDescription(type: TaskType): string {
     if (type === 'video') {
-        return 'Watch the video until the end to complete this task.';
+        return 'Tonton video hingga selesai untuk menyelesaikan tugas ini.';
     }
 
     if (type === 'read' || type === 'reading') {
-        return 'Read through the material and note the key takeaways.';
+        return 'Baca materi dan catat poin-poin penting.';
     }
 
-    return 'Complete the quiz to test your understanding before moving on.';
+    return 'Selesaikan kuis untuk menguji pemahaman Anda sebelum melanjutkan.';
 }
 
 function normalizeTaskTitle(title: string): string {
@@ -171,7 +175,8 @@ function mapServerLessonsToLessonData(
             const mappedTaskId = task.taskId ?? lesson.id * 1000 + index + 1;
             const displayTaskTitle = normalizeTaskTitle(task.title);
             // Normalize 'reading' → 'read' for consistency
-            const normalizedType: TaskType = task.type === 'reading' ? 'read' : task.type;
+            const normalizedType: TaskType =
+                task.type === 'reading' ? 'read' : task.type;
 
             return {
                 id: mappedTaskId,
@@ -192,7 +197,7 @@ function mapServerLessonsToLessonData(
                     correctIndex: -1,
                     explanation:
                         question.explanation ??
-                        'Answer explanation is available after backend quiz submission.',
+                        'Penjelasan jawaban tersedia setelah pengiriman kuis backend.',
                 })),
                 submission: task.submission ?? null,
             };
@@ -204,6 +209,7 @@ export default function CourseShow({
     course: serverCourse,
     lessons: serverLessons,
     enrollment,
+    assessment,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const isAdmin = auth.user.is_admin || auth.user.role === 'admin';
@@ -226,6 +232,11 @@ export default function CourseShow({
     const lessons = mappedInitialLessons;
     const [isEnrolled, setIsEnrolled] = useState(enrollment !== null);
     const [isEnrolling, setIsEnrolling] = useState(false);
+    const [showAssessment, setShowAssessment] = useState(
+        () =>
+            assessment?.activeSubmission !== null &&
+            assessment?.activeSubmission !== undefined,
+    );
 
     const [completedLessonIds] = useState<number[]>(
         serverLessons
@@ -478,7 +489,7 @@ export default function CourseShow({
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success('Video completed! Lesson marked as done.');
+                    toast.success('Video selesai! Pelajaran ditandai selesai.');
                 },
             },
         );
@@ -537,8 +548,10 @@ export default function CourseShow({
         return { prevTask, nextTask };
     }, [selectedLesson, selectedTask, resolvedSelectedTaskId, lessons]);
 
-    const isCourseCompleted =
+    const allLessonsCompleted =
         lessons.length > 0 && completedCount === lessons.length;
+    const isCourseCompleted =
+        allLessonsCompleted && (!assessment || assessment.passed);
 
     useEffect(() => {
         if (!notice) {
@@ -578,15 +591,15 @@ export default function CourseShow({
                     <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:h-fit">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Course Topics</CardTitle>
+                                <CardTitle>Topik Kursus</CardTitle>
                                 <CardDescription>
-                                    Select a lesson to open its tasks.
+                                    Pilih pelajaran untuk membuka tugasnya.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-1.5">
                                     <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                        <span>Completion</span>
+                                        <span>Penyelesaian</span>
                                         <span>{progressPercentage}%</span>
                                     </div>
                                     <Progress
@@ -613,7 +626,7 @@ export default function CourseShow({
                                                     onSuccess: () => {
                                                         setIsEnrolled(true);
                                                         setNotice(
-                                                            'You are now enrolled in this course!',
+                                                            'Anda sekarang terdaftar di kursus ini!',
                                                         );
                                                     },
                                                     onFinish: () => {
@@ -624,8 +637,8 @@ export default function CourseShow({
                                         }}
                                     >
                                         {isEnrolling
-                                            ? 'Enrolling…'
-                                            : 'Enroll in Course'}
+                                            ? 'Mendaftar…'
+                                            : 'Daftar di Kursus'}
                                     </Button>
                                 ) : null}
 
@@ -633,11 +646,11 @@ export default function CourseShow({
                                     <Empty className="px-3 py-6">
                                         <EmptyHeader>
                                             <EmptyTitle>
-                                                No topics yet
+                                                Belum Ada Topik
                                             </EmptyTitle>
                                             <EmptyDescription>
-                                                Topics and tasks are not
-                                                available for this course yet.
+                                                Topik dan tugas belum tersedia
+                                                untuk kursus ini.
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
@@ -773,8 +786,8 @@ export default function CourseShow({
                                                             </div>
                                                         ) : (
                                                             <p className="text-xs text-muted-foreground">
-                                                                No tasks
-                                                                available yet.
+                                                                Belum ada tugas
+                                                                tersedia.
                                                             </p>
                                                         )}
                                                     </AccordionContent>
@@ -786,6 +799,136 @@ export default function CourseShow({
                             </CardContent>
                         </Card>
 
+                        {/* Final Assessment Card */}
+                        {assessment && (
+                            <Card className="gap-0 border-primary/20">
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <ClipboardCheck className="size-4 text-primary" />
+                                        <CardTitle className="text-sm">
+                                            Penilaian Akhir
+                                        </CardTitle>
+                                    </div>
+                                    <CardDescription className="text-xs">
+                                        {assessment.description ??
+                                            'Selesaikan penilaian ini untuk menyelesaikan kursus.'}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex flex-col gap-3">
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                        <div>
+                                            <span className="font-medium text-foreground">
+                                                {assessment.questionsCount}
+                                            </span>{' '}
+                                            pertanyaan
+                                        </div>
+                                        {assessment.timeLimitMinutes && (
+                                            <div>
+                                                <span className="font-medium text-foreground">
+                                                    {
+                                                        assessment.timeLimitMinutes
+                                                    }
+                                                </span>{' '}
+                                                min
+                                            </div>
+                                        )}
+                                        <div>
+                                            Lulus:{' '}
+                                            <span className="font-medium text-foreground">
+                                                {assessment.passingScore}%
+                                            </span>
+                                        </div>
+                                        {assessment.maxAttempts && (
+                                            <div>
+                                                Percobaan:{' '}
+                                                <span className="font-medium text-foreground">
+                                                    {assessment.attemptCount}/
+                                                    {assessment.maxAttempts}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {assessment.bestScore !== null && (
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-muted-foreground">
+                                                    Skor terbaik
+                                                </span>
+                                                <span
+                                                    className={`font-medium ${assessment.passed ? 'text-emerald-600' : 'text-amber-600'}`}
+                                                >
+                                                    {Math.round(
+                                                        assessment.bestScore,
+                                                    )}
+                                                    %
+                                                </span>
+                                            </div>
+                                            <Progress
+                                                value={assessment.bestScore}
+                                                className="h-1.5"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {assessment.isLocked ? (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled
+                                            className="w-full gap-2"
+                                        >
+                                            <Lock className="size-3.5" />
+                                            Selesaikan Semua Pelajaran Terlebih
+                                            Dahulu
+                                        </Button>
+                                    ) : assessment.passed ? (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 dark:bg-emerald-950/30">
+                                                <CheckCircle2 className="size-4 text-emerald-600" />
+                                                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                                                    Penilaian Lulus!
+                                                </span>
+                                            </div>
+                                            {assessment.latestResults && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="w-full gap-2"
+                                                    onClick={() => {
+                                                        setShowAssessment(true);
+                                                        setSelectedLessonId(
+                                                            null,
+                                                        );
+                                                        setSelectedTaskId(null);
+                                                    }}
+                                                >
+                                                    Lihat Hasil
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            className="w-full gap-2"
+                                            disabled={!assessment.canAttempt}
+                                            onClick={() => {
+                                                setShowAssessment(true);
+                                                setSelectedLessonId(null);
+                                                setSelectedTaskId(null);
+                                            }}
+                                        >
+                                            <ClipboardCheck className="size-3.5" />
+                                            {assessment.attemptCount > 0
+                                                ? 'Coba Lagi Penilaian'
+                                                : 'Mulai Penilaian'}
+                                        </Button>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {isCourseCompleted ? (
                             <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-3 dark:bg-emerald-950/20">
                                 <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
@@ -793,10 +936,11 @@ export default function CourseShow({
                                 </div>
                                 <div className="flex flex-col gap-0">
                                     <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                                        Course Completed! 🎉
+                                        Kursus Selesai! 🎉
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        You&apos;ve finished all lessons.
+                                        Anda telah menyelesaikan semua pelajaran
+                                        dan lulus penilaian.
                                     </p>
                                 </div>
                             </div>
@@ -804,188 +948,251 @@ export default function CourseShow({
                     </div>
 
                     <div className="flex flex-col gap-4">
-                        <Card className="gap-0">
-                            <CardContent className="flex flex-col gap-4">
-                                {selectedTask ? (
-                                    <div className="flex flex-col gap-1">
-                                        <h3 className="text-base font-medium">
-                                            {selectedTask.title}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            {selectedTask.description}
-                                        </p>
-                                    </div>
-                                ) : null}
-
-                                {!selectedLesson ? (
-                                    <Empty className="px-2 py-6">
-                                        <EmptyHeader>
-                                            <EmptyTitle>
-                                                No topic selected
-                                            </EmptyTitle>
-                                            <EmptyDescription>
-                                                Select a topic from the left
-                                                panel to reveal lesson content.
-                                            </EmptyDescription>
-                                        </EmptyHeader>
-                                    </Empty>
-                                ) : !isAdmin &&
-                                  !(
-                                      unlockedLessonIds.get(
-                                          selectedLesson.id,
-                                      ) ?? false
-                                  ) ? (
-                                    <Empty className="px-4 py-10">
-                                        <EmptyHeader>
-                                            <EmptyTitle>
-                                                Lesson is locked
-                                            </EmptyTitle>
-                                            <EmptyDescription>
-                                                Complete previous lessons first.
-                                            </EmptyDescription>
-                                        </EmptyHeader>
-                                    </Empty>
-                                ) : !selectedTask ? (
-                                    <Empty className="px-4 py-10">
-                                        <EmptyHeader>
-                                            <EmptyTitle>No task yet</EmptyTitle>
-                                            <EmptyDescription>
-                                                No task is currently assigned to
-                                                this topic.
-                                            </EmptyDescription>
-                                        </EmptyHeader>
-                                    </Empty>
-                                ) : selectedTask.type === 'video' ? (
-                                    selectedTask.videoUrl || selectedTask.videoProcessingStatus === 'pending' || selectedTask.videoProcessingStatus === 'processing' || selectedTask.videoProcessingStatus === 'failed' ? (
-                                        <VideoPlayer
-                                            key={selectedTask.id}
-                                            url={selectedTask.videoUrl ?? ''}
-                                            processingStatus={selectedTask.videoProcessingStatus as 'pending' | 'processing' | 'ready' | 'converted' | 'failed' | null}
-                                            onEnded={handleVideoEnded}
-                                        />
-                                    ) : (
-                                        <Empty className="px-4 py-10">
-                                            <EmptyHeader>
-                                                <EmptyTitle>
-                                                    Video URL missing
-                                                </EmptyTitle>
-                                                <EmptyDescription>
-                                                    This task has no configured
-                                                    video URL.
-                                                </EmptyDescription>
-                                            </EmptyHeader>
-                                        </Empty>
-                                    )
-                                ) : selectedTask.type === 'read' ? (
-                                    selectedTask.pdfUrl ? (
-                                        <div className="relative overflow-hidden rounded-xl border bg-background">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="absolute top-2 right-2 z-10"
-                                                onClick={() =>
-                                                    setIsPdfExpanded((v) => !v)
-                                                }
-                                            >
-                                                {isPdfExpanded ? (
-                                                    <Minimize2 data-icon />
-                                                ) : (
-                                                    <Maximize2 data-icon />
-                                                )}
-                                            </Button>
-                                            <iframe
-                                                title={`Document viewer for ${selectedTask.title}`}
-                                                src={selectedTask.pdfUrl}
-                                                className={
-                                                    isPdfExpanded
-                                                        ? 'h-[calc(100vh-8rem)] w-full'
-                                                        : 'h-140 w-full'
-                                                }
-                                            />
-                                        </div>
-                                    ) : (() => {
-                                        const serverLesson = serverLessons.find(
-                                            (l) => l.id === selectedLesson?.id,
-                                        );
-
-                                        return serverLesson?.content?.trim() ? (
-                                            <div className="max-h-[calc(100vh-12rem)] overflow-y-auto rounded-xl border bg-background p-6">
-                                                <LessonContent
-                                                    content={serverLesson.content}
-                                                />
+                        {showAssessment && assessment ? (
+                            <CourseAssessmentPanel
+                                assessment={assessment}
+                                onBack={() => setShowAssessment(false)}
+                            />
+                        ) : (
+                            <>
+                                <Card className="gap-0">
+                                    <CardContent className="flex flex-col gap-4">
+                                        {selectedTask ? (
+                                            <div className="flex flex-col gap-1">
+                                                <h3 className="text-base font-medium">
+                                                    {selectedTask.title}
+                                                </h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {selectedTask.description}
+                                                </p>
                                             </div>
-                                        ) : (
-                                            <Empty className="px-4 py-10">
+                                        ) : null}
+
+                                        {!selectedLesson ? (
+                                            <Empty className="px-2 py-6">
                                                 <EmptyHeader>
                                                     <EmptyTitle>
-                                                        No content available
+                                                        Tidak Ada Topik Dipilih
                                                     </EmptyTitle>
                                                     <EmptyDescription>
-                                                        This task has no
-                                                        configured content yet.
+                                                        Pilih topik dari panel
+                                                        kiri untuk menampilkan
+                                                        konten pelajaran.
                                                     </EmptyDescription>
                                                 </EmptyHeader>
                                             </Empty>
-                                        );
-                                    })()
-                                ) : (
-                                    <QuizPanel
-                                        key={`${selectedTask.id}-${selectedTask.quizQuestions.length}`}
-                                        task={selectedTask}
-                                        courseSlug={serverCourse.slug}
-                                        lessonId={selectedLesson?.id ?? 0}
-                                        submission={selectedTask.submission}
-                                        onNextTask={handleNextTask}
+                                        ) : !isAdmin &&
+                                          !(
+                                              unlockedLessonIds.get(
+                                                  selectedLesson.id,
+                                              ) ?? false
+                                          ) ? (
+                                            <Empty className="px-4 py-10">
+                                                <EmptyHeader>
+                                                    <EmptyTitle>
+                                                        Pelajaran Terkunci
+                                                    </EmptyTitle>
+                                                    <EmptyDescription>
+                                                        Selesaikan pelajaran
+                                                        sebelumnya terlebih
+                                                        dahulu.
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        ) : !selectedTask ? (
+                                            <Empty className="px-4 py-10">
+                                                <EmptyHeader>
+                                                    <EmptyTitle>
+                                                        Belum Ada Tugas
+                                                    </EmptyTitle>
+                                                    <EmptyDescription>
+                                                        Tidak ada tugas yang
+                                                        saat ini ditugaskan
+                                                        untuk topik ini.
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        ) : selectedTask.type === 'video' ? (
+                                            selectedTask.videoUrl ||
+                                            selectedTask.videoProcessingStatus ===
+                                                'pending' ||
+                                            selectedTask.videoProcessingStatus ===
+                                                'processing' ||
+                                            selectedTask.videoProcessingStatus ===
+                                                'failed' ? (
+                                                <VideoPlayer
+                                                    key={selectedTask.id}
+                                                    url={
+                                                        selectedTask.videoUrl ??
+                                                        ''
+                                                    }
+                                                    processingStatus={
+                                                        selectedTask.videoProcessingStatus as
+                                                            | 'pending'
+                                                            | 'processing'
+                                                            | 'ready'
+                                                            | 'converted'
+                                                            | 'failed'
+                                                            | null
+                                                    }
+                                                    onEnded={handleVideoEnded}
+                                                />
+                                            ) : (
+                                                <Empty className="px-4 py-10">
+                                                    <EmptyHeader>
+                                                        <EmptyTitle>
+                                                            URL Video Tidak Ada
+                                                        </EmptyTitle>
+                                                        <EmptyDescription>
+                                                            Tugas ini tidak
+                                                            memiliki URL video
+                                                            yang dikonfigurasi.
+                                                        </EmptyDescription>
+                                                    </EmptyHeader>
+                                                </Empty>
+                                            )
+                                        ) : selectedTask.type === 'read' ? (
+                                            selectedTask.pdfUrl ? (
+                                                <div className="relative overflow-hidden rounded-xl border bg-background">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="absolute top-2 right-2 z-10"
+                                                        onClick={() =>
+                                                            setIsPdfExpanded(
+                                                                (v) => !v,
+                                                            )
+                                                        }
+                                                    >
+                                                        {isPdfExpanded ? (
+                                                            <Minimize2
+                                                                data-icon
+                                                            />
+                                                        ) : (
+                                                            <Maximize2
+                                                                data-icon
+                                                            />
+                                                        )}
+                                                    </Button>
+                                                    <iframe
+                                                        title={`Document viewer for ${selectedTask.title}`}
+                                                        src={
+                                                            selectedTask.pdfUrl
+                                                        }
+                                                        className={
+                                                            isPdfExpanded
+                                                                ? 'h-[calc(100vh-8rem)] w-full'
+                                                                : 'h-140 w-full'
+                                                        }
+                                                    />
+                                                </div>
+                                            ) : (
+                                                (() => {
+                                                    const serverLesson =
+                                                        serverLessons.find(
+                                                            (l) =>
+                                                                l.id ===
+                                                                selectedLesson?.id,
+                                                        );
+
+                                                    return serverLesson?.content?.trim() ? (
+                                                        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto rounded-xl border bg-background p-6">
+                                                            <LessonContent
+                                                                content={
+                                                                    serverLesson.content
+                                                                }
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <Empty className="px-4 py-10">
+                                                            <EmptyHeader>
+                                                                <EmptyTitle>
+                                                                    Tidak Ada
+                                                                    Konten
+                                                                    Tersedia
+                                                                </EmptyTitle>
+                                                                <EmptyDescription>
+                                                                    Tugas ini
+                                                                    belum
+                                                                    memiliki
+                                                                    konten yang
+                                                                    dikonfigurasi.
+                                                                </EmptyDescription>
+                                                            </EmptyHeader>
+                                                        </Empty>
+                                                    );
+                                                })()
+                                            )
+                                        ) : (
+                                            <QuizPanel
+                                                key={`${selectedTask.id}-${selectedTask.quizQuestions.length}`}
+                                                task={selectedTask}
+                                                courseSlug={serverCourse.slug}
+                                                lessonId={
+                                                    selectedLesson?.id ?? 0
+                                                }
+                                                submission={
+                                                    selectedTask.submission
+                                                }
+                                                onNextTask={handleNextTask}
+                                            />
+                                        )}
+
+                                        {/* Task navigation bar */}
+                                        {selectedTask ? (
+                                            <div className="flex items-center justify-between">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    disabled={
+                                                        !navContext.prevTask
+                                                    }
+                                                    onClick={handlePreviousTask}
+                                                    className="gap-1"
+                                                >
+                                                    <ChevronLeft data-icon="inline-start" />
+                                                    <span className="hidden sm:inline">
+                                                        {navContext.prevTask
+                                                            ?.title ??
+                                                            'Sebelumnya'}
+                                                    </span>
+                                                    <span className="sm:hidden">
+                                                        Sebelumnya
+                                                    </span>
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    disabled={
+                                                        !navContext.nextTask
+                                                    }
+                                                    onClick={handleNextTask}
+                                                    className="gap-1"
+                                                >
+                                                    <span className="hidden sm:inline">
+                                                        {navContext.nextTask
+                                                            ?.title ??
+                                                            'Berikutnya'}
+                                                    </span>
+                                                    <span className="sm:hidden">
+                                                        Berikutnya
+                                                    </span>
+                                                    <ChevronRight data-icon="inline-end" />
+                                                </Button>
+                                            </div>
+                                        ) : null}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Discussion panel for current lesson */}
+                                {selectedLessonId && isEnrolled && (
+                                    <DiscussionPanel
+                                        discussableType="lesson"
+                                        discussableId={selectedLessonId}
                                     />
                                 )}
-
-                                {/* Task navigation bar */}
-                                {selectedTask ? (
-                                    <div className="flex items-center justify-between">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            disabled={!navContext.prevTask}
-                                            onClick={handlePreviousTask}
-                                            className="gap-1"
-                                        >
-                                            <ChevronLeft data-icon="inline-start" />
-                                            <span className="hidden sm:inline">
-                                                {navContext.prevTask?.title ??
-                                                    'Previous'}
-                                            </span>
-                                            <span className="sm:hidden">
-                                                Previous
-                                            </span>
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            disabled={!navContext.nextTask}
-                                            onClick={handleNextTask}
-                                            className="gap-1"
-                                        >
-                                            <span className="hidden sm:inline">
-                                                {navContext.nextTask?.title ??
-                                                    'Next'}
-                                            </span>
-                                            <span className="sm:hidden">
-                                                Next
-                                            </span>
-                                            <ChevronRight data-icon="inline-end" />
-                                        </Button>
-                                    </div>
-                                ) : null}
-                            </CardContent>
-                        </Card>
-
-                        {/* Discussion panel for current lesson */}
-                        {selectedLessonId && isEnrolled && (
-                            <DiscussionPanel
-                                discussableType="lesson"
-                                discussableId={selectedLessonId}
-                            />
+                            </>
                         )}
                     </div>
                 </section>
@@ -1001,7 +1208,7 @@ function CourseShowLayout({ children }: { children: React.ReactNode }) {
         <AppLayout
             breadcrumbs={[
                 {
-                    title: 'Courses',
+                    title: 'Kursus',
                     href: coursesIndex(),
                 },
                 ...(course

@@ -5,7 +5,6 @@ import {
     LayoutGrid,
     Menu,
     Search,
-    Swords,
     Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -40,7 +39,6 @@ import { useInitials } from '@/hooks/use-initials';
 import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
-import { index as challengesIndex } from '@/routes/challenges';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
@@ -52,27 +50,22 @@ type Props = {
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Dasbor',
         href: dashboard(),
         icon: LayoutGrid,
     },
     {
-        title: 'Courses',
+        title: 'Kursus',
         href: coursesIndex(),
         icon: BookOpenCheck,
     },
     {
-        title: 'Challenges',
-        href: challengesIndex(),
-        icon: Swords,
-    },
-    {
-        title: 'Leaderboard',
+        title: 'Papan Peringkat',
         href: leaderboardIndex(),
         icon: Trophy,
     },
     {
-        title: 'Labs',
+        title: 'Laboratorium',
         href: labsIndex(),
         icon: FlaskConical,
     },
@@ -87,7 +80,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const resolvedBreadcrumbs = withHomeBreadcrumb(
-        breadcrumbs.length > 0 ? breadcrumbs : buildBreadcrumbsFromUrl(page.url),
+        breadcrumbs.length > 0
+            ? breadcrumbs
+            : buildBreadcrumbsFromUrl(page.url),
     );
 
     return (
@@ -111,7 +106,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         >
                             <AlertDialogContent className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar sm:max-w-64">
                                 <AlertDialogTitle className="sr-only">
-                                    Navigation menu
+                                    Menu navigasi
                                 </AlertDialogTitle>
                                 <AlertDialogHeader className="flex justify-start text-left">
                                     <AppLogoIcon className="size-6 fill-current text-black dark:text-white" />
@@ -194,7 +189,14 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 variant="ghost"
                                 size="icon"
                                 className="group size-9 cursor-pointer"
-                                onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+                                onClick={() =>
+                                    document.dispatchEvent(
+                                        new KeyboardEvent('keydown', {
+                                            key: 'k',
+                                            metaKey: true,
+                                        }),
+                                    )
+                                }
                             >
                                 <Search className="size-5! opacity-80 group-hover:opacity-100" />
                             </Button>
@@ -210,7 +212,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             src={auth.user?.avatar}
                                             alt={auth.user?.name}
                                         />
-                                        <AvatarFallback className="bg-muted text-foreground rounded-lg">
+                                        <AvatarFallback className="rounded-lg bg-muted text-foreground">
                                             {getInitials(auth.user?.name ?? '')}
                                         </AvatarFallback>
                                     </Avatar>
@@ -227,7 +229,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             </div>
             {resolvedBreadcrumbs.length > 1 && (
                 <div className="flex w-full border-b border-sidebar-border/70">
-                    <div className="text-muted-foreground mx-auto flex h-12 w-full items-center justify-start px-4 text-sm md:max-w-7xl">
+                    <div className="mx-auto flex h-12 w-full items-center justify-start px-4 text-sm text-muted-foreground md:max-w-7xl">
                         <Breadcrumbs breadcrumbs={resolvedBreadcrumbs} />
                     </div>
                 </div>

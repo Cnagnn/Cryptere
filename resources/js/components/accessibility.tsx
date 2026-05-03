@@ -5,14 +5,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * Skip-to-content link — WCAG 2.1 AA 2.4.1 (Bypass Blocks)
  * Visible on focus, allows keyboard users to skip navigation.
  */
-export function SkipToContent({ targetId = 'main-content' }: { targetId?: string }) {
+export function SkipToContent({
+    targetId = 'main-content',
+}: {
+    targetId?: string;
+}) {
     return (
         <a
             href={`#${targetId}`}
             className={
                 // Hidden visually by default for sighted users, becomes visible and positioned when focused
                 // Uses Tailwind's `sr-only` + `focus:not-sr-only` pattern so keyboard users see the link
-                "sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:transition-transform focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                'sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:transition-transform focus:outline-none'
             }
         >
             Skip to main content
@@ -88,8 +92,8 @@ export function useFocusOnNavigate(targetId = 'main-content') {
 export function useEscapeKey(onEscape: () => void, enabled = true) {
     useEffect(() => {
         if (!enabled) {
-return;
-}
+            return;
+        }
 
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
@@ -109,15 +113,18 @@ return;
 export function usePrefersReducedMotion(): boolean {
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
         if (typeof window === 'undefined') {
-return false;
-}
+            return false;
+        }
 
         return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     });
 
     useEffect(() => {
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-        const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+        const mediaQuery = window.matchMedia(
+            '(prefers-reduced-motion: reduce)',
+        );
+        const handler = (e: MediaQueryListEvent) =>
+            setPrefersReducedMotion(e.matches);
         mediaQuery.addEventListener('change', handler);
 
         return () => mediaQuery.removeEventListener('change', handler);

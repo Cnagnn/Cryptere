@@ -42,7 +42,9 @@ interface UseLeaderboardChannelOptions {
  * });
  * ```
  */
-export function useLeaderboardChannel(options: UseLeaderboardChannelOptions = {}) {
+export function useLeaderboardChannel(
+    options: UseLeaderboardChannelOptions = {},
+) {
     const { timeframe: filterTimeframe = null, onUpdate } = options;
 
     const [top3, setTop3] = useState<LeaderboardEntry[]>([]);
@@ -83,9 +85,12 @@ export function useLeaderboardChannel(options: UseLeaderboardChannelOptions = {}
         const channel = echo.channel('leaderboard');
         setConnected(true);
 
-        channel.listen('.leaderboard.updated', (event: LeaderboardUpdatePayload) => {
-            handleEvent(event);
-        });
+        channel.listen(
+            '.leaderboard.updated',
+            (event: LeaderboardUpdatePayload) => {
+                handleEvent(event);
+            },
+        );
 
         return () => {
             echo.leaveChannel('leaderboard');

@@ -53,14 +53,15 @@ class LeaderboardService
 
     /**
      * Timeframe-based leaderboard using aggregated points from recent activity.
-     * Results are cached for 5 minutes keyed by timeframe and page number.
+     * Results are cached for 5 minutes keyed by timeframe and perPage (not page number).
      */
     public function timeframeLeaders(string $timeframe, int $perPage): LengthAwarePaginator
     {
         $page = request()->input('page', 1);
-        $cacheKey = "leaderboard_timeframe_{$timeframe}_page_{$page}_perpage_{$perPage}";
+        // Cache key based on timeframe and perPage only (not page number)
+        $cacheKey = "leaderboard_timeframe_{$timeframe}_page_1_perpage_{$perPage}";
 
-        return Cache::remember($cacheKey, 300, function () use ($timeframe, $perPage) {
+        $results = Cache::remember($cacheKey, 300, function () use ($timeframe) {
             $since = $this->resolveSinceDate($timeframe);
 
             $challengePoints = DB::table('challenge_submissions')
@@ -83,9 +84,20 @@ class LeaderboardService
                 ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > 0')
                 ->orderByDesc('period_points')
                 ->orderBy('name')
-                ->paginate($perPage, ['users.*'])
-                ->withQueryString();
+                ->get(['users.*']);
         });
+
+        // Paginate the cached collection without re-running the query
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $results->forPage($page, $perPage),
+            $results->count(),
+            $perPage,
+            $page,
+            [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]
+        );
     }
 
     /**

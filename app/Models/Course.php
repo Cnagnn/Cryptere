@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -118,6 +119,15 @@ SVG;
     public function tasks(): HasManyThrough
     {
         return $this->hasManyThrough(LessonTask::class, Lesson::class);
+    }
+
+    /**
+     * Get the final assessment for this course (one-to-one).
+     * Each course may have at most one published assessment as its final evaluation.
+     */
+    public function assessment(): HasOne
+    {
+        return $this->hasOne(Assessment::class);
     }
 
     public function enrollments(): HasMany

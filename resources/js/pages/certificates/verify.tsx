@@ -30,7 +30,7 @@ type Props = {
 export default function CertificateVerify({ valid, certificate }: Props) {
     return (
         <>
-            <Head title="Verify Certificate" />
+            <Head title="Verifikasi Sertifikat" />
 
             <div className="flex min-h-screen items-center justify-center bg-background p-4">
                 <Card className="w-full max-w-md">
@@ -38,9 +38,9 @@ export default function CertificateVerify({ valid, certificate }: Props) {
                         <div className="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-muted">
                             <Shield className="size-7 text-primary" />
                         </div>
-                        <CardTitle>Certificate Verification</CardTitle>
+                        <CardTitle>Verifikasi Sertifikat</CardTitle>
                         <CardDescription>
-                            Crypter Learning Platform
+                            Platform Pembelajaran Crypter
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -49,7 +49,7 @@ export default function CertificateVerify({ valid, certificate }: Props) {
                                 <div className="flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                                     <CheckCircle className="size-5 shrink-0" />
                                     <span className="text-sm font-medium">
-                                        This certificate is valid and verified.
+                                        Sertifikat ini valid dan terverifikasi.
                                     </span>
                                 </div>
 
@@ -58,7 +58,7 @@ export default function CertificateVerify({ valid, certificate }: Props) {
                                 <div className="flex flex-col gap-3 text-sm">
                                     <div>
                                         <p className="text-muted-foreground">
-                                            Recipient
+                                            Penerima
                                         </p>
                                         <p className="font-medium">
                                             {certificate.user_name}
@@ -66,7 +66,7 @@ export default function CertificateVerify({ valid, certificate }: Props) {
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground">
-                                            Course
+                                            Kursus
                                         </p>
                                         <p className="font-medium">
                                             {certificate.course_title}
@@ -74,7 +74,7 @@ export default function CertificateVerify({ valid, certificate }: Props) {
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground">
-                                            Certificate Number
+                                            Nomor Sertifikat
                                         </p>
                                         <p className="font-mono font-medium">
                                             {certificate.certificate_number}
@@ -82,7 +82,7 @@ export default function CertificateVerify({ valid, certificate }: Props) {
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground">
-                                            Date Issued
+                                            Tanggal Terbit
                                         </p>
                                         <p className="flex items-center gap-1 font-medium">
                                             <Calendar className="size-3" />
@@ -104,15 +104,15 @@ export default function CertificateVerify({ valid, certificate }: Props) {
                                 </div>
                                 <div>
                                     <p className="font-medium">
-                                        Certificate Not Found
+                                        Sertifikat Tidak Ditemukan
                                     </p>
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        This verification link is invalid or the
-                                        certificate does not exist.
+                                        Tautan verifikasi ini tidak valid atau
+                                        sertifikat tidak ada.
                                     </p>
                                 </div>
                                 <Button variant="outline" asChild>
-                                    <Link href="/">Go to Homepage</Link>
+                                    <Link href="/">Ke Beranda</Link>
                                 </Button>
                             </div>
                         )}

@@ -27,14 +27,6 @@ export type CourseCard = {
     bestScore?: number;
 };
 
-export type CountdownParts = {
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-    isExpired: boolean;
-};
-
 export type SortValue = 'title-asc' | 'progress-desc';
 
 export type EnrollmentFilterValue = 'all' | 'enrolled' | 'not-enrolled';
@@ -52,7 +44,6 @@ export type CatalogFiltersProps = {
     searchTerm: string;
     onSearchTermChange: (value: string) => void;
     isLabsCatalog: boolean;
-    isChallengesCatalog: boolean;
     enrollmentFilter: EnrollmentFilterValue;
     onEnrollmentFilterChange: (value: EnrollmentFilterValue) => void;
     labsGroupFilter: LabsGroupFilterValue;
@@ -66,7 +57,7 @@ export type CatalogFiltersProps = {
 
 export type CoursesIndexProps = {
     courses: CourseCard[];
-    catalogMode?: 'learning' | 'labs' | 'challenges';
+    catalogMode?: 'learning' | 'labs';
     sidebarMode?: 'filters' | 'statistics';
     statistics?: Array<{
         label: string;

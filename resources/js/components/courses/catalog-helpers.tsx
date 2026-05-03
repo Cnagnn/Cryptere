@@ -12,56 +12,11 @@ import {
 } from '@/components/ui/select';
 import type {
     CatalogFiltersProps,
-    CountdownParts,
     CourseCard,
     EnrollmentFilterValue,
     LabsGroupFilterValue,
     SortValue,
 } from '@/types/courses';
-
-/* ── Countdown helper ── */
-export function getCountdownParts(
-    targetTime: string | null | undefined,
-    nowMs: number,
-): CountdownParts {
-    if (!targetTime) {
-        return {
-            days: 0,
-            hours: 0,
-            minutes: 0,
-            seconds: 0,
-            isExpired: true,
-        };
-    }
-
-    const targetMs = new Date(targetTime).getTime();
-
-    if (Number.isNaN(targetMs)) {
-        return {
-            days: 0,
-            hours: 0,
-            minutes: 0,
-            seconds: 0,
-            isExpired: true,
-        };
-    }
-
-    const diffMs = Math.max(0, targetMs - nowMs);
-    const totalSeconds = Math.floor(diffMs / 1000);
-
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    return {
-        days,
-        hours,
-        minutes,
-        seconds,
-        isExpired: diffMs === 0,
-    };
-}
 
 /* ── Course Thumbnail ── */
 export function CourseThumbnail({ title }: { title: string }) {
@@ -72,7 +27,7 @@ export function CourseThumbnail({ title }: { title: string }) {
                     className="size-5 text-muted-foreground"
                     aria-hidden="true"
                 />
-                <span className="sr-only">{title} thumbnail</span>
+                <span className="sr-only">Gambar mini {title}</span>
             </div>
         </div>
     );
@@ -85,7 +40,7 @@ export const hardcodedCatalogCourses: CourseCard[] = [
         slug: 'caesar-cipher-lab',
         title: 'Caesar Cipher',
         summary:
-            'Visualize classic alphabet shifts to understand monoalphabetic substitution.',
+            'Visualisasikan pergeseran alfabet klasik untuk memahami substitusi monoalfabetik.',
         coverImage: null,
         estimatedMinutes: 20,
         lessonCount: 1,
@@ -99,7 +54,7 @@ export const hardcodedCatalogCourses: CourseCard[] = [
         slug: 'vigenere-cipher-lab',
         title: 'Vigenere Cipher',
         summary:
-            'Simulate keyword-based polyalphabetic encryption to observe dynamic shift patterns.',
+            'Simulasikan enkripsi polialfabetik berbasis kata kunci untuk mengamati pola pergeseran dinamis.',
         coverImage: null,
         estimatedMinutes: 25,
         lessonCount: 1,
@@ -113,7 +68,7 @@ export const hardcodedCatalogCourses: CourseCard[] = [
         slug: 'aes-lab',
         title: 'AES',
         summary:
-            'Explore a modern block cipher with focus on operation modes and plaintext change effects.',
+            'Jelajahi cipher blok modern dengan fokus pada mode operasi dan efek perubahan plaintext.',
         coverImage: null,
         estimatedMinutes: 30,
         lessonCount: 1,
@@ -127,7 +82,7 @@ export const hardcodedCatalogCourses: CourseCard[] = [
         slug: 'rsa-lab',
         title: 'RSA',
         summary:
-            'Visualize public-private key concepts with prime-number-based encryption and decryption.',
+            'Visualisasikan konsep kunci publik-privat dengan enkripsi dan dekripsi berbasis bilangan prima.',
         coverImage: null,
         estimatedMinutes: 30,
         lessonCount: 1,
@@ -141,7 +96,7 @@ export const hardcodedCatalogCourses: CourseCard[] = [
         slug: 'sha-lab',
         title: 'SHA',
         summary:
-            'Simulate one-way hashing to inspect avalanche effects and data integrity.',
+            'Simulasikan hashing satu arah untuk memeriksa efek avalanche dan integritas data.',
         coverImage: null,
         estimatedMinutes: 20,
         lessonCount: 1,
@@ -155,7 +110,7 @@ export const hardcodedCatalogCourses: CourseCard[] = [
         slug: 'digital-signature-lab',
         title: 'Digital Signature',
         summary:
-            'Demonstrate digital signature flow for authentication, integrity, and non-repudiation.',
+            'Demonstrasikan alur tanda tangan digital untuk autentikasi, integritas, dan non-repudiasi.',
         coverImage: null,
         estimatedMinutes: 25,
         lessonCount: 1,
@@ -172,7 +127,6 @@ export function CatalogFilters({
     searchTerm,
     onSearchTermChange,
     isLabsCatalog,
-    isChallengesCatalog,
     enrollmentFilter,
     onEnrollmentFilterChange,
     labsGroupFilter,
@@ -186,7 +140,7 @@ export function CatalogFilters({
     return (
         <div className="flex flex-col gap-4">
             <div className="mt-1 flex flex-col gap-2">
-                <Label htmlFor={`${idPrefix}-search`}>Search</Label>
+                <Label htmlFor={`${idPrefix}-search`}>Cari</Label>
                 <div className="relative">
                     <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -195,80 +149,70 @@ export function CatalogFilters({
                         onChange={(event) =>
                             onSearchTermChange(event.target.value)
                         }
-                        placeholder="Search..."
+                        placeholder="Cari..."
                         className="pr-24 pl-8"
                     />
                     <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
-                        {resultCount} Result
+                        {resultCount} Hasil
                     </span>
                 </div>
             </div>
 
-            {!isChallengesCatalog ? (
-                <div className="flex flex-col gap-2">
-                    <Label>
-                        {isLabsCatalog ? 'Algorithm group' : 'Enrollment'}
-                    </Label>
-                    {isLabsCatalog ? (
-                        <Select
-                            value={labsGroupFilter}
-                            onValueChange={(value) =>
-                                onLabsGroupFilterChange(
-                                    value as LabsGroupFilterValue,
-                                )
-                            }
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="All groups" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All groups</SelectItem>
-                                <SelectItem value="classical">
-                                    Classical
-                                </SelectItem>
-                                <SelectItem value="symmetric">
-                                    Symmetric
-                                </SelectItem>
-                                <SelectItem value="asymmetric">
-                                    Asymmetric
-                                </SelectItem>
-                                <SelectItem value="hashing">Hashing</SelectItem>
-                                <SelectItem value="signature">
-                                    Digital signature
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    ) : (
-                        <Select
-                            value={enrollmentFilter}
-                            onValueChange={(value) =>
-                                onEnrollmentFilterChange(
-                                    value as EnrollmentFilterValue,
-                                )
-                            }
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="All statuses" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    All statuses
-                                </SelectItem>
-                                <SelectItem value="enrolled">
-                                    Enrolled
-                                </SelectItem>
-                                <SelectItem value="not-enrolled">
-                                    Not enrolled
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    )}
-                </div>
-            ) : null}
+            <div className="flex flex-col gap-2">
+                <Label>
+                    {isLabsCatalog ? 'Grup algoritma' : 'Pendaftaran'}
+                </Label>
+                {isLabsCatalog ? (
+                    <Select
+                        value={labsGroupFilter}
+                        onValueChange={(value) =>
+                            onLabsGroupFilterChange(
+                                value as LabsGroupFilterValue,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Semua grup" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua grup</SelectItem>
+                            <SelectItem value="classical">Klasik</SelectItem>
+                            <SelectItem value="symmetric">Simetris</SelectItem>
+                            <SelectItem value="asymmetric">
+                                Asimetris
+                            </SelectItem>
+                            <SelectItem value="hashing">Hashing</SelectItem>
+                            <SelectItem value="signature">
+                                Tanda tangan digital
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                ) : (
+                    <Select
+                        value={enrollmentFilter}
+                        onValueChange={(value) =>
+                            onEnrollmentFilterChange(
+                                value as EnrollmentFilterValue,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Semua status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua status</SelectItem>
+                            <SelectItem value="enrolled">Terdaftar</SelectItem>
+                            <SelectItem value="not-enrolled">
+                                Belum terdaftar
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                )}
+            </div>
 
-            {isLabsCatalog || isChallengesCatalog ? null : (
+            {isLabsCatalog ? null : (
                 <div className="flex flex-col gap-2">
-                    <Label>Sort by</Label>
+                    <Label>Urutkan berdasarkan</Label>
                     <Select
                         value={sortBy}
                         onValueChange={(value) =>
@@ -276,12 +220,12 @@ export function CatalogFilters({
                         }
                     >
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Sort courses" />
+                            <SelectValue placeholder="Urutkan kursus" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="title-asc">Title A-Z</SelectItem>
+                            <SelectItem value="title-asc">Judul A-Z</SelectItem>
                             <SelectItem value="progress-desc">
-                                Progress highest
+                                Progres tertinggi
                             </SelectItem>
                         </SelectContent>
                     </Select>
@@ -296,7 +240,7 @@ export function CatalogFilters({
                     disabled={!hasActiveFilters}
                     onClick={clearFilters}
                 >
-                    Reset controls
+                    Atur ulang kontrol
                 </Button>
             </div>
         </div>

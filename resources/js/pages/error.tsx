@@ -1,5 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle, ArrowLeft, Home, Lock, ServerCrash, Wrench } from 'lucide-react';
+import {
+    AlertTriangle,
+    ArrowLeft,
+    Home,
+    Lock,
+    ServerCrash,
+    Wrench,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,30 +30,32 @@ type ErrorConfig = {
 
 const errorConfigs: Record<number, ErrorConfig> = {
     403: {
-        title: 'Access Denied',
-        description: 'You are not authorized to access this page.',
+        title: 'Akses Ditolak',
+        description: 'Anda tidak memiliki izin untuk mengakses halaman ini.',
         icon: Lock,
     },
     404: {
-        title: 'Page Not Found',
-        description: 'The page you are looking for could not be found.',
+        title: 'Halaman Tidak Ditemukan',
+        description: 'Halaman yang Anda cari tidak dapat ditemukan.',
         icon: AlertTriangle,
     },
     500: {
-        title: 'Server Error',
-        description: 'An unexpected error occurred. Please try again later.',
+        title: 'Kesalahan Server',
+        description:
+            'Terjadi kesalahan yang tidak terduga. Silakan coba lagi nanti.',
         icon: ServerCrash,
     },
     503: {
-        title: 'Under Maintenance',
-        description: 'We are currently performing maintenance. Please check back soon.',
+        title: 'Dalam Pemeliharaan',
+        description:
+            'Kami sedang melakukan pemeliharaan. Silakan periksa kembali nanti.',
         icon: Wrench,
     },
 };
 
 const defaultConfig: ErrorConfig = {
-    title: 'Error',
-    description: 'An unexpected error occurred.',
+    title: 'Kesalahan',
+    description: 'Terjadi kesalahan yang tidak terduga.',
     icon: AlertTriangle,
 };
 
@@ -67,20 +76,26 @@ export default function ErrorPage({ status, message }: ErrorPageProps) {
                         <p className="text-5xl font-bold tracking-tight text-foreground">
                             {status}
                         </p>
-                        <CardTitle className="text-xl">{config.title}</CardTitle>
+                        <CardTitle className="text-xl">
+                            {config.title}
+                        </CardTitle>
                         <CardDescription className="text-sm">
                             {message ?? config.description}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                        <Button variant="outline" size="sm" onClick={() => window.history.back()}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.history.back()}
+                        >
                             <ArrowLeft className="size-4" />
-                            Go Back
+                            Kembali
                         </Button>
                         <Button size="sm" asChild>
                             <Link href="/">
                                 <Home className="size-4" />
-                                Home
+                                Beranda
                             </Link>
                         </Button>
                     </CardContent>

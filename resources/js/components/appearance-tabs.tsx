@@ -9,9 +9,7 @@ type Props = {
     className?: string;
 };
 
-export default function AppearanceToggleTab({
-    className = '',
-}: Props) {
+export function AppearanceTabs({ className = '' }: Props) {
     const { appearance, updateAppearance } = useAppearance();
 
     const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
@@ -51,3 +49,5 @@ export default function AppearanceToggleTab({
         </ToggleGroup>
     );
 }
+
+export default AppearanceTabs;

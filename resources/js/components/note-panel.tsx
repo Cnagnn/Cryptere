@@ -58,7 +58,7 @@ type Note = {
 };
 
 type NotePanelProps = {
-    notableType?: 'lesson' | 'course' | 'challenge';
+    notableType?: 'lesson' | 'course';
     notableId?: number;
     className?: string;
 };
@@ -89,7 +89,6 @@ export function NotePanel({
                 const typeMap: Record<string, string> = {
                     lesson: 'App\\Models\\Lesson',
                     course: 'App\\Models\\Course',
-                    challenge: 'App\\Models\\Challenge',
                 };
                 params.notable_type = typeMap[notableType] ?? notableType;
                 params.notable_id = String(notableId);
@@ -115,8 +114,8 @@ export function NotePanel({
     // Create note
     const handleCreate = async () => {
         if (!newContent.trim()) {
-return;
-}
+            return;
+        }
 
         setSaving(true);
 
@@ -157,8 +156,8 @@ return;
     const handleAutoSave = useCallback(
         (note: Note, title: string, content: string) => {
             if (autoSaveTimer.current) {
-clearTimeout(autoSaveTimer.current);
-}
+                clearTimeout(autoSaveTimer.current);
+            }
 
             autoSaveTimer.current = setTimeout(async () => {
                 try {
@@ -171,9 +170,7 @@ clearTimeout(autoSaveTimer.current);
                             'X-XSRF-TOKEN': decodeURIComponent(
                                 document.cookie
                                     .split('; ')
-                                    .find((c) =>
-                                        c.startsWith('XSRF-TOKEN='),
-                                    )
+                                    .find((c) => c.startsWith('XSRF-TOKEN='))
                                     ?.split('=')[1] ?? '',
                             ),
                         },
@@ -250,10 +247,7 @@ clearTimeout(autoSaveTimer.current);
                         <NotebookPen className="size-4 text-primary" />
                         <CardTitle className="text-sm">Notes</CardTitle>
                         {saving && (
-                            <Badge
-                                variant="secondary"
-                                className="text-[10px]"
-                            >
+                            <Badge variant="secondary" className="text-[10px]">
                                 <Loader2 className="mr-1 size-3 animate-spin" />
                                 Saving...
                             </Badge>
@@ -440,7 +434,7 @@ export function FloatingNoteButton({
     notableType,
     notableId,
 }: {
-    notableType: 'lesson' | 'course' | 'challenge';
+    notableType: 'lesson' | 'course';
     notableId: number;
 }) {
     return (

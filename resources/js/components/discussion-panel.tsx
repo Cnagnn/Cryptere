@@ -76,7 +76,7 @@ type PaginatedResponse = {
 };
 
 type DiscussionPanelProps = {
-    discussableType: 'lesson' | 'challenge';
+    discussableType: 'lesson';
     discussableId: number;
     className?: string;
 };
@@ -98,20 +98,20 @@ function timeAgo(dateStr: string): string {
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
     if (seconds < 60) {
-return 'just now';
-}
+        return 'just now';
+    }
 
     if (seconds < 3600) {
-return `${Math.floor(seconds / 60)}m ago`;
-}
+        return `${Math.floor(seconds / 60)}m ago`;
+    }
 
     if (seconds < 86400) {
-return `${Math.floor(seconds / 3600)}h ago`;
-}
+        return `${Math.floor(seconds / 3600)}h ago`;
+    }
 
     if (seconds < 604800) {
-return `${Math.floor(seconds / 86400)}d ago`;
-}
+        return `${Math.floor(seconds / 86400)}d ago`;
+    }
 
     return date.toLocaleDateString();
 }
@@ -174,8 +174,8 @@ export function DiscussionPanel({
                 });
 
                 if (!res.ok) {
-return;
-}
+                    return;
+                }
 
                 const json: PaginatedResponse = await res.json();
 
@@ -214,8 +214,8 @@ return;
             });
 
             if (!res.ok) {
-return;
-}
+                return;
+            }
 
             const discussion: Discussion = await res.json();
             setDiscussions((prev) =>
@@ -234,8 +234,8 @@ return;
 
     const handleCreateDiscussion = async () => {
         if (!newTitle.trim() || !newBody.trim()) {
-return;
-}
+            return;
+        }
 
         setSubmitting(true);
 
@@ -286,8 +286,8 @@ return;
 
     const handleReply = async (discussionId: number) => {
         if (!replyBody.trim()) {
-return;
-}
+            return;
+        }
 
         setSubmittingReply(true);
 
@@ -335,10 +335,7 @@ return;
 
     // ─── Upvote ──────────────────────────────────────────────────────────────
 
-    const handleUpvote = async (
-        type: 'discussion' | 'reply',
-        id: number,
-    ) => {
+    const handleUpvote = async (type: 'discussion' | 'reply', id: number) => {
         const key = `${type}:${id}`;
 
         try {
@@ -353,8 +350,8 @@ return;
             });
 
             if (!res.ok) {
-return;
-}
+                return;
+            }
 
             const json = await res.json();
             const delta = json.upvoted ? 1 : -1;
@@ -413,8 +410,8 @@ return;
             });
 
             if (!res.ok) {
-return;
-}
+                return;
+            }
 
             const json = await res.json();
             setDiscussions((prev) =>
@@ -424,7 +421,9 @@ return;
                         : d,
                 ),
             );
-            toast.success(json.is_pinned ? 'Discussion pinned' : 'Discussion unpinned');
+            toast.success(
+                json.is_pinned ? 'Discussion pinned' : 'Discussion unpinned',
+            );
         } catch {
             // silently fail
         }
@@ -434,8 +433,8 @@ return;
 
     const handleDelete = async (discussionId: number) => {
         if (!confirm('Are you sure you want to delete this discussion?')) {
-return;
-}
+            return;
+        }
 
         try {
             const res = await fetch(`/discussions/${discussionId}`, {
@@ -453,8 +452,8 @@ return;
                 setTotalCount((prev) => prev - 1);
 
                 if (expandedId === discussionId) {
-setExpandedId(null);
-}
+                    setExpandedId(null);
+                }
 
                 toast.success('Discussion deleted');
             }
@@ -678,7 +677,7 @@ setExpandedId(null);
                                 {expandedId === discussion.id && (
                                     <div className="mt-3 space-y-3 border-t pt-3">
                                         {/* Full body */}
-                                        <p className="whitespace-pre-wrap text-sm">
+                                        <p className="text-sm whitespace-pre-wrap">
                                             {discussion.body}
                                         </p>
 
@@ -803,7 +802,7 @@ setExpandedId(null);
                                                                                 )}
                                                                             </span>
                                                                         </div>
-                                                                        <p className="mt-0.5 whitespace-pre-wrap text-xs">
+                                                                        <p className="mt-0.5 text-xs whitespace-pre-wrap">
                                                                             {
                                                                                 reply.body
                                                                             }

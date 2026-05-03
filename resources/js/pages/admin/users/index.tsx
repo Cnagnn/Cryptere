@@ -1,6 +1,13 @@
 import { Head, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, Shield, Trash2, UserRound } from 'lucide-react';
+import {
+    Eye,
+    MoreHorizontal,
+    Pencil,
+    Shield,
+    Trash2,
+    UserRound,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     AlertDialog,
@@ -16,6 +23,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -46,10 +62,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import { destroy, index as usersIndex, update } from '@/routes/admin/users';
+import { show as showProfile } from '@/routes/profile';
 
 type UserRow = {
     id: number;
@@ -95,36 +113,48 @@ export default function AdminUsersIndex({ users, filters }: Props) {
     const pointsFormatter = useMemo(() => new Intl.NumberFormat('id-ID'), []);
     const [searchInput, setSearchInput] = useState(filters.search);
     const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'member'>(
-        filters.role === 'admin' || filters.role === 'member' ? filters.role : 'all',
+        filters.role === 'admin' || filters.role === 'member'
+            ? filters.role
+            : 'all',
     );
 
     const [editingUser, setEditingUser] = useState<UserRow | null>(null);
     const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
-    const [editingRole, setEditingRole] = useState<'admin' | 'member'>('member');
+    const [editingRole, setEditingRole] = useState<'admin' | 'member'>(
+        'member',
+    );
     const [editingPoints, setEditingPoints] = useState('0');
     const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
     const [isSubmittingDelete, setIsSubmittingDelete] = useState(false);
 
     const hasInitializedAutoFilter = useRef(false);
 
-    const syncFilters = useCallback((searchValue: string, roleValue: 'all' | 'admin' | 'member', page = 1, perPage = users.per_page): void => {
-        router.get(
-            usersIndex.url({
-                query: {
-                    page,
-                    per_page: perPage,
-                    search: searchValue.trim() || undefined,
-                    role: roleValue === 'all' ? undefined : roleValue,
+    const syncFilters = useCallback(
+        (
+            searchValue: string,
+            roleValue: 'all' | 'admin' | 'member',
+            page = 1,
+            perPage = users.per_page,
+        ): void => {
+            router.get(
+                usersIndex.url({
+                    query: {
+                        page,
+                        per_page: perPage,
+                        search: searchValue.trim() || undefined,
+                        role: roleValue === 'all' ? undefined : roleValue,
+                    },
+                }),
+                {},
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
                 },
-            }),
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }, [users.per_page]);
+            );
+        },
+        [users.per_page],
+    );
 
     useEffect(() => {
         if (!hasInitializedAutoFilter.current) {
@@ -145,7 +175,10 @@ export default function AdminUsersIndex({ users, filters }: Props) {
             return 0;
         }
 
-        const parsedValue = Number.parseInt(editingPoints.replace(/\./g, '').trim(), 10);
+        const parsedValue = Number.parseInt(
+            editingPoints.replace(/\./g, '').trim(),
+            10,
+        );
 
         if (Number.isNaN(parsedValue)) {
             return editingUser.points;
@@ -163,7 +196,9 @@ export default function AdminUsersIndex({ users, filters }: Props) {
             return;
         }
 
-        setEditingPoints(pointsFormatter.format(Number.parseInt(digitsOnly, 10)));
+        setEditingPoints(
+            pointsFormatter.format(Number.parseInt(digitsOnly, 10)),
+        );
     };
 
     const submitEdit = (): void => {
@@ -172,14 +207,18 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         }
 
         setIsSubmittingEdit(true);
-        router.patch(update.url({ user: editingUser.id }), {
-            role: editingRole,
-            points: resolvePointsValue(),
-        }, {
-            preserveScroll: true,
-            onFinish: () => setIsSubmittingEdit(false),
-            onSuccess: () => setEditingUser(null),
-        });
+        router.patch(
+            update.url({ user: editingUser.id }),
+            {
+                role: editingRole,
+                points: resolvePointsValue(),
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => setIsSubmittingEdit(false),
+                onSuccess: () => setEditingUser(null),
+            },
+        );
     };
 
     const submitDelete = (): void => {
@@ -195,107 +234,150 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         });
     };
 
-    const columns = useMemo<ColumnDef<UserRow>[]>(() => [
-        {
-            accessorKey: 'name',
-            header: 'User',
-            cell: ({ row }) => (
-                <div className="flex items-center gap-3 text-left">
-                    <Avatar>
-                        <AvatarImage src={row.original.avatar ?? undefined} alt={row.original.name} />
-                        <AvatarFallback>{getInitials(row.original.username ?? row.original.name)}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm">
-                        {row.original.username ? `@${row.original.username}` : '@unknown'}
-                    </p>
-                </div>
-            ),
-        },
-        {
-            accessorKey: 'email',
-            header: 'Email Address',
-            cell: ({ row }) => {
-                const { localPart, domain } = splitEmail(row.original.email);
-
-                return (
-                    <span className="inline-grid grid-cols-[14ch_auto] items-baseline text-sm text-muted-foreground">
-                        <span className="truncate text-right">{localPart}</span>
-                        <span className="pl-1">@{domain}</span>
-                    </span>
-                );
+    const columns = useMemo<ColumnDef<UserRow>[]>(
+        () => [
+            {
+                accessorKey: 'name',
+                header: 'Pengguna',
+                cell: ({ row }) => (
+                    <div className="flex items-center gap-3 text-left">
+                        <Avatar>
+                            <AvatarImage
+                                src={row.original.avatar ?? undefined}
+                                alt={row.original.name}
+                            />
+                            <AvatarFallback>
+                                {getInitials(
+                                    row.original.username ?? row.original.name,
+                                )}
+                            </AvatarFallback>
+                        </Avatar>
+                        <p className="text-sm">
+                            {row.original.username
+                                ? `@${row.original.username}`
+                                : '@unknown'}
+                        </p>
+                    </div>
+                ),
             },
-        },
-        {
-            accessorKey: 'role',
-            header: 'Role',
-            cell: ({ row }) => (
-                <div className="flex justify-center">
-                    <Badge variant="outline" className="capitalize">
-                        {row.original.role === 'admin' ? <Shield /> : <UserRound />}
-                        {row.original.role}
-                    </Badge>
-                </div>
-            ),
-        },
-        {
-            accessorKey: 'points',
-            header: 'Points',
-            cell: ({ row }) => `${pointsFormatter.format(row.original.points)} pts`,
-        },
-        {
-            id: 'actions',
-            header: '',
-            cell: ({ row }) => (
-                <div className="flex justify-center">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button type="button" variant="ghost" size="icon">
-                                <MoreHorizontal />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                                onClick={() => {
-                                    setEditingUser(row.original);
-                                    setEditingRole(row.original.role);
-                                    setEditingPoints(pointsFormatter.format(row.original.points));
-                                }}
-                            >
-                                <Shield data-icon="inline-start" />
-                                Edit access
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                disabled={!row.original.can_delete}
-                                onClick={() => {
-                                    if (!row.original.can_delete) {
-                                        return;
-                                    }
+            {
+                accessorKey: 'email',
+                header: 'Alamat Email',
+                cell: ({ row }) => {
+                    const { localPart, domain } = splitEmail(
+                        row.original.email,
+                    );
 
-                                    setDeletingUser(row.original);
-                                }}
-                            >
-                                <Trash2 data-icon="inline-start" />
-                                Delete
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            ),
-        },
-    ], [getInitials, pointsFormatter]);
+                    return (
+                        <span className="inline-grid grid-cols-[14ch_auto] items-baseline text-sm text-muted-foreground">
+                            <span className="truncate text-right">
+                                {localPart}
+                            </span>
+                            <span className="pl-1">@{domain}</span>
+                        </span>
+                    );
+                },
+            },
+            {
+                accessorKey: 'role',
+                header: 'Peran',
+                cell: ({ row }) => (
+                    <div className="flex justify-center">
+                        <Badge variant="outline" className="capitalize">
+                            {row.original.role === 'admin' ? (
+                                <Shield />
+                            ) : (
+                                <UserRound />
+                            )}
+                            {row.original.role}
+                        </Badge>
+                    </div>
+                ),
+            },
+            {
+                accessorKey: 'points',
+                header: 'Poin',
+                cell: ({ row }) =>
+                    `${pointsFormatter.format(row.original.points)} pts`,
+            },
+            {
+                id: 'actions',
+                header: '',
+                cell: ({ row }) => (
+                    <div className="flex justify-center">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                >
+                                    <MoreHorizontal />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        setEditingUser(row.original);
+                                        setEditingRole(row.original.role);
+                                        setEditingPoints(
+                                            pointsFormatter.format(
+                                                row.original.points,
+                                            ),
+                                        );
+                                    }}
+                                >
+                                    <Pencil data-icon="inline-start" />
+                                    Ubah
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    disabled={!row.original.can_delete}
+                                    onClick={() => {
+                                        if (!row.original.can_delete) {
+                                            return;
+                                        }
+
+                                        setDeletingUser(row.original);
+                                    }}
+                                >
+                                    <Trash2 data-icon="inline-start" />
+                                    Hapus
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        router.visit(
+                                            showProfile(
+                                                row.original.username ??
+                                                    row.original.id.toString(),
+                                            ).url,
+                                        );
+                                    }}
+                                >
+                                    <Eye data-icon="inline-start" />
+                                    Lihat pengguna
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                ),
+            },
+        ],
+        [getInitials, pointsFormatter],
+    );
 
     return (
         <>
-            <Head title="Management - Users" />
+            <Head title="Manajemen - Pengguna" />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex flex-col gap-0">
-                        <TypographyH1>User Management</TypographyH1>
+                        <TypographyH1>Manajemen Pengguna</TypographyH1>
                         <TypographyMuted className="text-sm/6">
-                            Manage user roles and point balances from a single workspace.
+                            Kelola peran pengguna dan saldo poin dari satu ruang
+                            kerja.
                         </TypographyMuted>
                     </div>
 
@@ -304,26 +386,42 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                             <Input
                                 id="user-search"
                                 value={searchInput}
-                                onChange={(event) => setSearchInput(event.target.value)}
+                                onChange={(event) =>
+                                    setSearchInput(event.target.value)
+                                }
                                 onKeyDown={(event) => {
                                     if (event.key === 'Enter') {
                                         event.preventDefault();
                                         syncFilters(searchInput, roleFilter, 1);
                                     }
                                 }}
-                                placeholder="Search username..."
+                                placeholder="Cari nama pengguna..."
                             />
                         </div>
 
-                        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as 'all' | 'admin' | 'member')}>
-                            <SelectTrigger id="role-filter" className="w-full sm:w-40">
-                                <SelectValue placeholder="All roles" />
+                        <Select
+                            value={roleFilter}
+                            onValueChange={(value) =>
+                                setRoleFilter(
+                                    value as 'all' | 'admin' | 'member',
+                                )
+                            }
+                        >
+                            <SelectTrigger
+                                id="role-filter"
+                                className="w-full sm:w-40"
+                            >
+                                <SelectValue placeholder="Semua peran" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="all">All roles</SelectItem>
+                                    <SelectItem value="all">
+                                        Semua peran
+                                    </SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
-                                    <SelectItem value="member">Member</SelectItem>
+                                    <SelectItem value="member">
+                                        Anggota
+                                    </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
@@ -338,9 +436,12 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     <EmptyMedia variant="icon">
                                         <UserRound />
                                     </EmptyMedia>
-                                    <EmptyTitle>No users found</EmptyTitle>
+                                    <EmptyTitle>
+                                        Tidak ada pengguna ditemukan
+                                    </EmptyTitle>
                                     <EmptyDescription>
-                                        Try different filters or keywords.
+                                        Coba filter atau kata kunci yang
+                                        berbeda.
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -356,88 +457,169 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 page={users.current_page}
                                 pageCount={users.last_page}
                                 pageSize={users.per_page}
-                                onPageChange={(nextPage) => syncFilters(searchInput, roleFilter, nextPage)}
-                                onPageSizeChange={(nextPageSize) => syncFilters(searchInput, roleFilter, 1, nextPageSize)}
-                                footerInfo={`Showing ${users.from ?? 0} - ${users.to ?? 0} of ${users.total} users`}
+                                onPageChange={(nextPage) =>
+                                    syncFilters(
+                                        searchInput,
+                                        roleFilter,
+                                        nextPage,
+                                    )
+                                }
+                                onPageSizeChange={(nextPageSize) =>
+                                    syncFilters(
+                                        searchInput,
+                                        roleFilter,
+                                        1,
+                                        nextPageSize,
+                                    )
+                                }
+                                footerInfo={`Menampilkan ${users.from ?? 0} - ${users.to ?? 0} dari ${users.total} pengguna`}
                             />
                         )}
                     </div>
                 </section>
 
-                <AlertDialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
-                    <AlertDialogContent className="sm:max-w-lg">
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Edit User Access</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Update role and points for {editingUser?.username ? `@${editingUser.username}` : editingUser?.name ?? 'this user'}.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
+                <Dialog
+                    open={Boolean(editingUser)}
+                    onOpenChange={(open) => {
+                        if (!open && !isSubmittingEdit) {
+                            setEditingUser(null);
+                        }
+                    }}
+                >
+                    <DialogContent className="*:data-[slot=dialog-close]:top-6 *:data-[slot=dialog-close]:right-6 sm:max-w-sm">
+                        <form
+                            className="flex flex-col gap-5"
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                submitEdit();
+                            }}
+                        >
+                            <DialogHeader className="pr-10">
+                                <DialogTitle>Edit Akses Pengguna</DialogTitle>
+                                <DialogDescription>
+                                    Perbarui peran dan poin untuk{' '}
+                                    {editingUser?.username
+                                        ? `@${editingUser.username}`
+                                        : (editingUser?.name ?? 'pengguna ini')}
+                                    .
+                                </DialogDescription>
+                            </DialogHeader>
 
-                        <FieldGroup>
-                            <Field>
-                                <FieldLabel>Username</FieldLabel>
-                                <Input value={editingUser?.username ?? '-'} readOnly />
-                            </Field>
+                            <FieldGroup className="gap-3">
+                                <Field className="gap-2">
+                                    <FieldLabel>Nama Pengguna</FieldLabel>
+                                    <Input
+                                        value={editingUser?.username ?? '-'}
+                                        readOnly
+                                    />
+                                </Field>
 
-                            <Field>
-                                <FieldLabel>Email</FieldLabel>
-                                <Input value={editingUser?.email ?? ''} readOnly />
-                            </Field>
+                                <Field className="gap-2">
+                                    <FieldLabel>Email</FieldLabel>
+                                    <Input
+                                        value={editingUser?.email ?? ''}
+                                        readOnly
+                                    />
+                                </Field>
 
-                            <Field>
-                                <FieldLabel htmlFor="edit-user-role">Role</FieldLabel>
-                                <Select value={editingRole} onValueChange={(value: 'admin' | 'member') => setEditingRole(value)}>
-                                    <SelectTrigger id="edit-user-role">
-                                        <SelectValue placeholder="Select role" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            <SelectItem value="admin">Admin</SelectItem>
-                                            <SelectItem value="member">Member</SelectItem>
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
+                                <Field className="gap-2">
+                                    <FieldLabel htmlFor="edit-user-role">
+                                        Peran
+                                    </FieldLabel>
+                                    <Select
+                                        value={editingRole}
+                                        onValueChange={(
+                                            value: 'admin' | 'member',
+                                        ) => setEditingRole(value)}
+                                    >
+                                        <SelectTrigger id="edit-user-role">
+                                            <SelectValue placeholder="Pilih peran" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectItem value="admin">
+                                                    Admin
+                                                </SelectItem>
+                                                <SelectItem value="member">
+                                                    Anggota
+                                                </SelectItem>
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
 
-                            <Field>
-                                <FieldLabel htmlFor="edit-user-points">Points</FieldLabel>
-                                <Input
-                                    id="edit-user-points"
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={editingPoints}
-                                    onChange={(event) => handlePointsChange(event.target.value)}
-                                    placeholder="0"
-                                />
-                                <FieldDescription>
-                                    Numbers only. Values are formatted automatically.
-                                </FieldDescription>
-                            </Field>
-                        </FieldGroup>
+                                <Field className="gap-2">
+                                    <FieldLabel htmlFor="edit-user-points">
+                                        Poin
+                                    </FieldLabel>
+                                    <Input
+                                        id="edit-user-points"
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={editingPoints}
+                                        onChange={(event) =>
+                                            handlePointsChange(
+                                                event.target.value,
+                                            )
+                                        }
+                                        placeholder="0"
+                                    />
+                                </Field>
+                            </FieldGroup>
 
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setEditingUser(null)}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={submitEdit} disabled={isSubmittingEdit}>
-                                {isSubmittingEdit ? 'Saving...' : 'Save changes'}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                            <DialogFooter className="pt-1">
+                                <DialogClose asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={isSubmittingEdit}
+                                    >
+                                        Batal
+                                    </Button>
+                                </DialogClose>
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmittingEdit}
+                                >
+                                    {isSubmittingEdit && (
+                                        <Spinner data-icon="inline-start" />
+                                    )}
+                                    Simpan perubahan
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
 
-                <AlertDialog open={Boolean(deletingUser)} onOpenChange={(open) => !open && setDeletingUser(null)}>
+                <AlertDialog
+                    open={Boolean(deletingUser)}
+                    onOpenChange={(open) => !open && setDeletingUser(null)}
+                >
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Delete user?</AlertDialogTitle>
+                            <AlertDialogTitle>Hapus pengguna?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action cannot be undone. {deletingUser?.username ? `@${deletingUser.username}` : deletingUser?.name ?? 'This user'} will lose access permanently.
+                                Tindakan ini tidak dapat dibatalkan.{' '}
+                                {deletingUser?.username
+                                    ? `@${deletingUser.username}`
+                                    : (deletingUser?.name ??
+                                      'Pengguna ini')}{' '}
+                                akan kehilangan akses secara permanen.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel type="button" onClick={() => setDeletingUser(null)}>
-                                Cancel
+                            <AlertDialogCancel
+                                type="button"
+                                onClick={() => setDeletingUser(null)}
+                            >
+                                Batal
                             </AlertDialogCancel>
-                            <AlertDialogAction type="button" onClick={submitDelete} disabled={isSubmittingDelete}>
-                                {isSubmittingDelete ? 'Deleting...' : 'Delete'}
+                            <AlertDialogAction
+                                type="button"
+                                onClick={submitDelete}
+                                disabled={isSubmittingDelete}
+                            >
+                                {isSubmittingDelete ? 'Menghapus...' : 'Hapus'}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

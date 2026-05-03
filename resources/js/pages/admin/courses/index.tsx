@@ -7,6 +7,12 @@ import type {
 } from '@/components/course-types';
 import { dashboard } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
+import type {
+    AdminAssessment,
+    AdminAssessmentQuestion,
+    BloomLevel,
+} from '@/types';
+import AdminCoursesAssessment from './assessment';
 import AdminCoursesTask from './task';
 import AdminCoursesTitle from './title';
 import AdminCoursesTopic from './topic';
@@ -14,7 +20,7 @@ import AdminCoursesTopic from './topic';
 type LessonOption = { id: number; course_id: number; title: string };
 
 type Props = {
-    section: 'catalog' | 'lesson' | 'task';
+    section: 'catalog' | 'lesson' | 'task' | 'assessment';
     courses: Paginated<CourseRow>;
     courseOptions: Array<Pick<CourseRow, 'id' | 'title'>>;
     allLessons: LessonOption[];
@@ -25,12 +31,21 @@ type Props = {
     filters: {
         search: string;
     };
+    // Assessment section data
+    assessments: Paginated<AdminAssessment>;
+    assessmentQuestions: AdminAssessmentQuestion[];
+    selectedAssessmentId: number;
+    assessmentTopics: { id: number; name: string }[];
+    assessmentFilters: {
+        search: string;
+        bloom_level: BloomLevel | null;
+    };
 };
 
 export default function AdminCoursesIndex(props: Props) {
     return (
         <>
-            <Head title="Management - Courses" />
+            <Head title="Manajemen - Kursus" />
 
             {props.section === 'lesson' ? (
                 <AdminCoursesTopic
@@ -54,6 +69,19 @@ export default function AdminCoursesIndex(props: Props) {
             {props.section === 'catalog' ? (
                 <AdminCoursesTitle courses={props.courses} />
             ) : null}
+
+            {props.section === 'assessment' ? (
+                <AdminCoursesAssessment
+                    assessments={props.assessments}
+                    questions={props.assessmentQuestions}
+                    selectedAssessmentId={props.selectedAssessmentId}
+                    courseOptions={props.courseOptions}
+                    selectedCourseId={props.selectedCourseId}
+                    allLessons={props.allLessons ?? []}
+                    topics={props.assessmentTopics}
+                    filters={props.assessmentFilters}
+                />
+            ) : null}
         </>
     );
 }
@@ -61,15 +89,15 @@ export default function AdminCoursesIndex(props: Props) {
 AdminCoursesIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Home',
+            title: 'Beranda',
             href: dashboard(),
         },
         {
-            title: 'Management',
+            title: 'Manajemen',
             href: adminCoursesIndex(),
         },
         {
-            title: 'Courses',
+            title: 'Kursus',
             href: adminCoursesIndex(),
         },
     ],

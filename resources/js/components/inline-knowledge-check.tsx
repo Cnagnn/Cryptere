@@ -100,13 +100,17 @@ export function InlineKnowledgeCheck({
             </div>
 
             {/* Question */}
-            <p className="mb-4 text-sm font-medium leading-relaxed text-foreground">
+            <p className="mb-4 text-sm leading-relaxed font-medium text-foreground">
                 {question}
             </p>
 
             {/* MCQ Options */}
             {type === 'mcq' && options && (
-                <div className="mb-4 flex flex-col gap-2" role="radiogroup" aria-label={question}>
+                <div
+                    className="mb-4 flex flex-col gap-2"
+                    role="radiogroup"
+                    aria-label={question}
+                >
                     {options.map((option, index) => (
                         <label
                             key={index}
@@ -115,7 +119,8 @@ export function InlineKnowledgeCheck({
                                 selectedOption === index
                                     ? 'border-primary bg-primary/5'
                                     : 'border-border hover:bg-muted/50',
-                                state === 'incorrect' && selectedOption === index
+                                state === 'incorrect' &&
+                                    selectedOption === index
                                     ? 'border-red-400 bg-red-50 dark:border-red-600 dark:bg-red-950/20'
                                     : '',
                             )}
@@ -143,7 +148,11 @@ export function InlineKnowledgeCheck({
 
             {/* True/False Options */}
             {type === 'true_false' && (
-                <div className="mb-4 flex gap-3" role="radiogroup" aria-label={question}>
+                <div
+                    className="mb-4 flex gap-3"
+                    role="radiogroup"
+                    aria-label={question}
+                >
                     {['True', 'False'].map((label, index) => (
                         <button
                             key={label}
@@ -160,7 +169,8 @@ export function InlineKnowledgeCheck({
                                 selectedOption === index
                                     ? 'border-primary bg-primary/10 text-primary'
                                     : 'border-border hover:bg-muted/50',
-                                state === 'incorrect' && selectedOption === index
+                                state === 'incorrect' &&
+                                    selectedOption === index
                                     ? 'border-red-400 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-950/20 dark:text-red-400'
                                     : '',
                             )}
@@ -194,7 +204,7 @@ export function InlineKnowledgeCheck({
                         }}
                         placeholder="Type your answer..."
                         className={cn(
-                            'w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition-colors focus:ring-2 focus:ring-primary/20',
+                            'w-full rounded-md border bg-background px-3 py-2 text-sm transition-colors outline-none focus:ring-2 focus:ring-primary/20',
                             state === 'incorrect'
                                 ? 'border-red-400 dark:border-red-600'
                                 : 'border-border',
@@ -226,7 +236,8 @@ export function InlineKnowledgeCheck({
                     onClick={handleCheck}
                     disabled={
                         (type === 'fill_blank' && !textAnswer.trim()) ||
-                        ((type === 'mcq' || type === 'true_false') && selectedOption === null)
+                        ((type === 'mcq' || type === 'true_false') &&
+                            selectedOption === null)
                     }
                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Check answer"

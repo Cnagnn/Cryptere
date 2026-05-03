@@ -19,6 +19,10 @@ export type User = {
     is_admin: boolean;
     role: 'admin' | 'member';
     status: 'active' | 'inactive';
+    bio?: string | null;
+    pronoun?: string | null;
+    location?: string | null;
+    profile_visibility?: 'public' | 'private';
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     level?: UserLevel;

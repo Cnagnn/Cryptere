@@ -39,7 +39,7 @@ export function TaskTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Task
+                        Tugas
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -59,7 +59,7 @@ export function TaskTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Type
+                        Tipe
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -79,7 +79,7 @@ export function TaskTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Lesson
+                        Topik
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -99,7 +99,7 @@ export function TaskTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Duration
+                        Durasi
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -119,7 +119,7 @@ export function TaskTable({
                             column.toggleSorting(column.getIsSorted() === 'asc')
                         }
                     >
-                        Order
+                        Urutan
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -136,7 +136,7 @@ export function TaskTable({
                     if (row.original.is_legacy ?? row.original.id <= 0) {
                         return (
                             <div className="text-center text-sm text-muted-foreground">
-                                Legacy
+                                Lama
                             </div>
                         );
                     }
@@ -154,9 +154,7 @@ export function TaskTable({
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>
-                                        Actions
-                                    </DropdownMenuLabel>
+                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onClick={() => onEdit(row.original)}
                                     >
@@ -165,7 +163,7 @@ export function TaskTable({
                                     <DropdownMenuItem
                                         onClick={() => onDelete(row.original)}
                                     >
-                                        Delete
+                                        Hapus
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -188,7 +186,7 @@ export function TaskTable({
             centered
             showColumnToggle={false}
             showPageInfo={false}
-            footerInfo={`Showing ${tasks.length} tasks.`}
+            footerInfo={`Menampilkan ${tasks.length} tugas.`}
         />
     );
 }

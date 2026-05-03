@@ -52,8 +52,7 @@ class LeaderboardController extends Controller
         );
 
         // Fetch top 3 separately (always from rank 1, regardless of current page) — cached 5 min
-        $top3Users = Cache::remember("leaderboard_top3_{$timeframe}", CacheService::TTL_MEDIUM, fn () => $this->leaderboardService->getTop3Users($timeframe));
-        $top3 = $top3Users->values()->map(function (User $user, int $index) use ($timeframe, $previousRanks): array {
+        $mapTop3 = fn ($users) => $users->values()->map(function (User $user, int $index) use ($timeframe, $previousRanks): array {
             $levelInfo = $this->levelService->getLevelForXp($user->xp);
             $rank = $index + 1;
             $previousRank = $previousRanks[$user->id] ?? null;
@@ -71,6 +70,15 @@ class LeaderboardController extends Controller
                 'rankChange' => $this->leaderboardService->computeRankChange($rank, $previousRank),
             ];
         })->all();
+
+        try {
+            $top3Users = Cache::remember("leaderboard_top3_{$timeframe}", CacheService::TTL_MEDIUM, fn () => $this->leaderboardService->getTop3Users($timeframe));
+            $top3 = $mapTop3($top3Users);
+        } catch (\Throwable) {
+            // Cached object was corrupted (incomplete unserialization) — re-fetch from DB
+            Cache::forget("leaderboard_top3_{$timeframe}");
+            $top3 = $mapTop3($this->leaderboardService->getTop3Users($timeframe));
+        }
 
         $currentUser = $request->user();
         $topScore = $this->leaderboardService->getTopScore($timeframe);

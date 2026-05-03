@@ -37,8 +37,8 @@ import { Textarea } from '@/components/ui/textarea';
 
 const TASK_TYPE_OPTIONS: ComboboxOption[] = [
     { value: 'video', label: 'Video' },
-    { value: 'read', label: 'Read' },
-    { value: 'quiz', label: 'Quiz' },
+    { value: 'read', label: 'Baca' },
+    { value: 'quiz', label: 'Kuis' },
 ];
 
 type VideoSource = 'url' | 'upload';
@@ -72,15 +72,14 @@ export function TaskFormSheet({
     task,
 }: TaskFormSheetProps) {
     const fallbackLessonId = Number(lessonOptions[0]?.value ?? 0);
-    const fallbackCourseId = Number(courseOptions[0]?.value ?? selectedCourseId ?? 0);
+    const fallbackCourseId = Number(
+        courseOptions[0]?.value ?? selectedCourseId ?? 0,
+    );
 
     const [videoSource, setVideoSource] = useState<VideoSource>('url');
 
     const form = useForm<TaskFormData>({
-        lesson_id:
-            selectedLessonId > 0
-                ? selectedLessonId
-                : fallbackLessonId,
+        lesson_id: selectedLessonId > 0 ? selectedLessonId : fallbackLessonId,
         title: '',
         description: '',
         type: 'video',
@@ -114,9 +113,7 @@ export function TaskFormSheet({
         if (mode === 'create' && open) {
             form.setData({
                 lesson_id:
-                    selectedLessonId > 0
-                        ? selectedLessonId
-                        : fallbackLessonId,
+                    selectedLessonId > 0 ? selectedLessonId : fallbackLessonId,
                 title: '',
                 description: '',
                 type: 'video',
@@ -132,16 +129,18 @@ export function TaskFormSheet({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fallbackLessonId, mode, open, selectedLessonId, task]);
 
-    const [selectedCreateCourseId, setSelectedCreateCourseId] = useState<number>(
-        selectedCourseId > 0 ? selectedCourseId : fallbackCourseId,
-    );
+    const [selectedCreateCourseId, setSelectedCreateCourseId] =
+        useState<number>(
+            selectedCourseId > 0 ? selectedCourseId : fallbackCourseId,
+        );
 
     useEffect(() => {
         if (!open || mode !== 'create') {
             return;
         }
 
-        const nextCourseId = selectedCourseId > 0 ? selectedCourseId : fallbackCourseId;
+        const nextCourseId =
+            selectedCourseId > 0 ? selectedCourseId : fallbackCourseId;
         setSelectedCreateCourseId(nextCourseId);
     }, [fallbackCourseId, mode, open, selectedCourseId]);
 
@@ -155,7 +154,12 @@ export function TaskFormSheet({
 
             return lessonCourseMap[lessonId] === selectedCreateCourseId;
         });
-    }, [courseOptions.length, lessonCourseMap, lessonOptions, selectedCreateCourseId]);
+    }, [
+        courseOptions.length,
+        lessonCourseMap,
+        lessonOptions,
+        selectedCreateCourseId,
+    ]);
 
     const handleClose = () => {
         form.reset();
@@ -213,7 +217,10 @@ export function TaskFormSheet({
 
     const isCreate = mode === 'create';
 
-    const availableLessonOptions = filteredLessonOptions.length > 0 ? filteredLessonOptions : lessonOptions;
+    const availableLessonOptions =
+        filteredLessonOptions.length > 0
+            ? filteredLessonOptions
+            : lessonOptions;
 
     const handleCreateCourseChange = (value: string) => {
         const nextCourseId = Number(value);
@@ -232,9 +239,13 @@ export function TaskFormSheet({
 
     // Determine video processing status for display in edit mode
     const videoProcessingStatus = task?.video_processing_status;
-    const isVideoProcessing = videoProcessingStatus === 'pending' || videoProcessingStatus === 'processing';
+    const isVideoProcessing =
+        videoProcessingStatus === 'pending' ||
+        videoProcessingStatus === 'processing';
     const isVideoFailed = videoProcessingStatus === 'failed';
-    const isVideoReady = videoProcessingStatus === 'ready' || videoProcessingStatus === 'converted';
+    const isVideoReady =
+        videoProcessingStatus === 'ready' ||
+        videoProcessingStatus === 'converted';
 
     return (
         <Dialog
@@ -248,26 +259,28 @@ export function TaskFormSheet({
             <DialogContent className="max-h-[85vh] w-full overflow-y-auto sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {isCreate ? 'Create Task' : 'Edit Task'}
+                        {isCreate ? 'Buat Tugas' : 'Edit Tugas'}
                     </DialogTitle>
                     <DialogDescription>
                         {isCreate
-                            ? 'Create a new task in selected topic.'
-                            : 'Update selected task details.'}
+                            ? 'Buat tugas baru dalam topik yang dipilih.'
+                            : 'Perbarui detail tugas yang dipilih.'}
                     </DialogDescription>
                 </DialogHeader>
 
                 <FieldGroup className="px-4">
-                    {isCreate && showLessonFieldOnCreate && courseOptions.length > 0 ? (
+                    {isCreate &&
+                    showLessonFieldOnCreate &&
+                    courseOptions.length > 0 ? (
                         <Field>
-                            <FieldLabel>Course Title</FieldLabel>
+                            <FieldLabel>Judul Kursus</FieldLabel>
                             <FieldContent>
                                 <SearchableCombobox
                                     value={String(selectedCreateCourseId)}
                                     options={courseOptions}
-                                    placeholder="Select course title"
-                                    searchPlaceholder="Search course title..."
-                                    emptyMessage="No course title found."
+                                    placeholder="Pilih judul kursus"
+                                    searchPlaceholder="Cari judul kursus..."
+                                    emptyMessage="Judul kursus tidak ditemukan."
                                     className="w-full"
                                     onSelect={handleCreateCourseChange}
                                 />
@@ -277,51 +290,58 @@ export function TaskFormSheet({
 
                     {isCreate && showLessonFieldOnCreate ? (
                         <Field>
-                            <FieldLabel>Topic</FieldLabel>
+                            <FieldLabel>Topik</FieldLabel>
                             <FieldContent>
-                            <SearchableCombobox
-                                value={
-                                    form.data.lesson_id > 0
-                                        ? String(form.data.lesson_id)
-                                        : undefined
-                                }
-                                options={availableLessonOptions}
-                                placeholder="Select topic"
-                                searchPlaceholder="Search topic..."
-                                emptyMessage="No topic found."
-                                className="w-full"
-                                onSelect={(value) =>
-                                    form.setData('lesson_id', Number(value))
-                                }
-                            />
+                                <SearchableCombobox
+                                    value={
+                                        form.data.lesson_id > 0
+                                            ? String(form.data.lesson_id)
+                                            : undefined
+                                    }
+                                    options={availableLessonOptions}
+                                    placeholder="Pilih topik"
+                                    searchPlaceholder="Cari topik..."
+                                    emptyMessage="Topik tidak ditemukan."
+                                    className="w-full"
+                                    onSelect={(value) =>
+                                        form.setData('lesson_id', Number(value))
+                                    }
+                                />
                                 <FieldError>{form.errors.lesson_id}</FieldError>
                             </FieldContent>
                         </Field>
                     ) : null}
 
                     <Field>
-                        <FieldLabel htmlFor={`${mode}-task-title`}>Title</FieldLabel>
+                        <FieldLabel htmlFor={`${mode}-task-title`}>
+                            Judul
+                        </FieldLabel>
                         <FieldContent>
-                        <Input
-                            id={`${mode}-task-title`}
-                            value={form.data.title}
-                            onChange={(e) =>
-                                form.setData('title', e.target.value)
-                            }
-                            aria-invalid={Boolean(form.errors.title)}
-                        />
+                            <Input
+                                id={`${mode}-task-title`}
+                                value={form.data.title}
+                                onChange={(e) =>
+                                    form.setData('title', e.target.value)
+                                }
+                                aria-invalid={Boolean(form.errors.title)}
+                            />
                             <FieldError>{form.errors.title}</FieldError>
                         </FieldContent>
                     </Field>
 
                     <Field>
-                        <FieldLabel htmlFor={`${mode}-task-description`}>Description</FieldLabel>
+                        <FieldLabel htmlFor={`${mode}-task-description`}>
+                            Deskripsi
+                        </FieldLabel>
                         <FieldContent>
                             <Textarea
                                 id={`${mode}-task-description`}
                                 value={form.data.description}
                                 onChange={(event) =>
-                                    form.setData('description', event.target.value)
+                                    form.setData(
+                                        'description',
+                                        event.target.value,
+                                    )
                                 }
                                 maxLength={5000}
                                 rows={4}
@@ -332,43 +352,57 @@ export function TaskFormSheet({
                     </Field>
 
                     <Field>
-                        <FieldLabel>Type</FieldLabel>
+                        <FieldLabel>Tipe</FieldLabel>
                         <FieldContent>
-                        <SearchableCombobox
-                            value={form.data.type}
-                            options={TASK_TYPE_OPTIONS}
-                            placeholder="Select type"
-                            searchPlaceholder="Search type..."
-                            emptyMessage="No type found."
-                            className="w-full"
-                            onSelect={handleTypeChange}
-                        />
+                            <SearchableCombobox
+                                value={form.data.type}
+                                options={TASK_TYPE_OPTIONS}
+                                placeholder="Pilih tipe"
+                                searchPlaceholder="Cari tipe..."
+                                emptyMessage="Tipe tidak ditemukan."
+                                className="w-full"
+                                onSelect={handleTypeChange}
+                            />
                         </FieldContent>
                     </Field>
 
                     {form.data.type === 'video' ? (
                         <>
                             <Field>
-                                <FieldLabel>Video Source</FieldLabel>
+                                <FieldLabel>Sumber Video</FieldLabel>
                                 <FieldContent>
                                     <div className="flex gap-2">
                                         <Button
                                             type="button"
                                             size="sm"
-                                            variant={videoSource === 'url' ? 'default' : 'outline'}
-                                            onClick={() => handleVideoSourceChange('url')}
+                                            variant={
+                                                videoSource === 'url'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            onClick={() =>
+                                                handleVideoSourceChange('url')
+                                            }
                                         >
                                             <Link className="mr-1.5 size-4" />
-                                            YouTube URL
+                                            URL YouTube
                                         </Button>
                                         <Button
                                             type="button"
                                             size="sm"
-                                            variant={videoSource === 'upload' ? 'default' : 'outline'}
-                                            onClick={() => handleVideoSourceChange('upload')}
+                                            variant={
+                                                videoSource === 'upload'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            onClick={() =>
+                                                handleVideoSourceChange(
+                                                    'upload',
+                                                )
+                                            }
                                         >
                                             <Upload className="mr-1.5 size-4" />
-                                            Upload File
+                                            Unggah File
                                         </Button>
                                     </div>
                                 </FieldContent>
@@ -376,22 +410,35 @@ export function TaskFormSheet({
 
                             {videoSource === 'url' ? (
                                 <Field>
-                                    <FieldLabel htmlFor={`${mode}-task-video-url`}>Video URL</FieldLabel>
+                                    <FieldLabel
+                                        htmlFor={`${mode}-task-video-url`}
+                                    >
+                                        URL Video
+                                    </FieldLabel>
                                     <FieldContent>
                                         <Input
                                             id={`${mode}-task-video-url`}
                                             value={form.data.video_url}
                                             placeholder="https://youtu.be/..."
                                             onChange={(e) =>
-                                                form.setData('video_url', e.target.value)
+                                                form.setData(
+                                                    'video_url',
+                                                    e.target.value,
+                                                )
                                             }
                                         />
-                                        <FieldError>{form.errors.video_url}</FieldError>
+                                        <FieldError>
+                                            {form.errors.video_url}
+                                        </FieldError>
                                     </FieldContent>
                                 </Field>
                             ) : (
                                 <Field>
-                                    <FieldLabel htmlFor={`${mode}-task-video-file`}>Video File</FieldLabel>
+                                    <FieldLabel
+                                        htmlFor={`${mode}-task-video-file`}
+                                    >
+                                        File Video
+                                    </FieldLabel>
                                     <FieldContent>
                                         <Input
                                             id={`${mode}-task-video-file`}
@@ -400,37 +447,44 @@ export function TaskFormSheet({
                                             onChange={(e) => {
                                                 form.setData(
                                                     'video_file',
-                                                    e.currentTarget.files?.[0] ?? null,
+                                                    e.currentTarget
+                                                        .files?.[0] ?? null,
                                                 );
                                             }}
                                         />
                                         <FieldDescription>
-                                            Supported formats: MP4, WebM, MOV, AVI. Max size: 500MB.
+                                            Format yang didukung: MP4, WebM,
+                                            MOV, AVI. Ukuran maks: 500MB.
                                         </FieldDescription>
-                                        <FieldError>{form.errors.video_file}</FieldError>
+                                        <FieldError>
+                                            {form.errors.video_file}
+                                        </FieldError>
                                     </FieldContent>
                                 </Field>
                             )}
 
                             {/* Video processing status indicator (edit mode) */}
-                            {!isCreate && task?.type === 'video' && videoProcessingStatus ? (
+                            {!isCreate &&
+                            task?.type === 'video' &&
+                            videoProcessingStatus ? (
                                 <div className="rounded-lg border p-3">
                                     {isVideoProcessing ? (
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Loader2 className="size-4 animate-spin" />
                                             {videoProcessingStatus === 'pending'
-                                                ? 'Video is queued for processing...'
-                                                : 'Converting video...'}
+                                                ? 'Video sedang dalam antrian untuk diproses...'
+                                                : 'Mengonversi video...'}
                                         </div>
                                     ) : isVideoFailed ? (
                                         <div className="flex items-center gap-2 text-sm text-destructive">
                                             <TriangleAlert className="size-4" />
-                                            Video processing failed. Try re-uploading.
+                                            Pemrosesan video gagal. Coba unggah
+                                            ulang.
                                         </div>
                                     ) : isVideoReady ? (
                                         <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                                             <span className="size-2 rounded-full bg-green-500" />
-                                            Video is ready for playback.
+                                            Video siap untuk diputar.
                                         </div>
                                     ) : null}
                                 </div>
@@ -440,25 +494,27 @@ export function TaskFormSheet({
 
                     {form.data.type === 'read' ? (
                         <Field>
-                            <FieldLabel htmlFor={`${mode}-task-document`}>Document</FieldLabel>
+                            <FieldLabel htmlFor={`${mode}-task-document`}>
+                                Dokumen
+                            </FieldLabel>
                             <FieldContent>
-                            <Input
-                                id={`${mode}-task-document`}
-                                type="file"
-                                onChange={(e) => {
-                                    form.setData(
-                                        'document',
-                                        e.currentTarget.files?.[0] ?? null,
-                                    );
-                                }}
-                            />
+                                <Input
+                                    id={`${mode}-task-document`}
+                                    type="file"
+                                    onChange={(e) => {
+                                        form.setData(
+                                            'document',
+                                            e.currentTarget.files?.[0] ?? null,
+                                        );
+                                    }}
+                                />
                                 <FieldError>{form.errors.document}</FieldError>
-                            {!isCreate ? (
+                                {!isCreate ? (
                                     <FieldDescription>
-                                    Upload dokumen baru jika ingin mengganti
-                                    dokumen saat ini.
+                                        Upload dokumen baru jika ingin mengganti
+                                        dokumen saat ini.
                                     </FieldDescription>
-                            ) : null}
+                                ) : null}
                             </FieldContent>
                         </Field>
                     ) : null}
@@ -476,8 +532,12 @@ export function TaskFormSheet({
 
                 <DialogFooter className="mt-4 sm:flex-row sm:justify-end">
                     <DialogClose asChild>
-                        <Button type="button" variant="outline" onClick={handleClose}>
-                        Cancel
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleClose}
+                        >
+                            Batal
                         </Button>
                     </DialogClose>
                     <Button
@@ -485,7 +545,7 @@ export function TaskFormSheet({
                         disabled={form.processing || (mode === 'edit' && !task)}
                         onClick={handleSubmit}
                     >
-                        {isCreate ? 'Create' : 'Update'}
+                        {isCreate ? 'Buat' : 'Perbarui'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

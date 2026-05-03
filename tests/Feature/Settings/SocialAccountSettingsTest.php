@@ -3,22 +3,17 @@
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-test('social accounts page is displayed', function () {
+test('social accounts page redirects to unified profile settings', function () {
     $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
         ->get(route('social-accounts.edit'));
 
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('settings/social-accounts')
-        ->has('socialAccounts')
-        ->has('hasPassword')
-    );
+    $response->assertRedirect('/profile/admin');
 });
 
-test('social accounts page shows connected accounts', function () {
+test('unified profile settings page shows connected accounts', function () {
     $user = User::factory()->create();
     $user->socialAccounts()->create([
         'provider' => 'google',
@@ -30,11 +25,11 @@ test('social accounts page shows connected accounts', function () {
 
     $response = $this
         ->actingAs($user)
-        ->get(route('social-accounts.edit'));
+        ->get(route('profile.edit'));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
-        ->component('settings/social-accounts')
+        ->component('profile/admin')
         ->has('socialAccounts', 1)
         ->where('socialAccounts.0.provider', 'google')
         ->where('socialAccounts.0.provider_email', 'user@gmail.com')
@@ -131,7 +126,7 @@ test('hasPassword prop is true when user has a password', function () {
 
     $response = $this
         ->actingAs($user)
-        ->get(route('social-accounts.edit'));
+        ->get(route('profile.edit'));
 
     $response->assertInertia(fn ($page) => $page
         ->where('hasPassword', true)
@@ -145,7 +140,7 @@ test('hasPassword prop is false when user has no password', function () {
 
     $response = $this
         ->actingAs($user)
-        ->get(route('social-accounts.edit'));
+        ->get(route('profile.edit'));
 
     $response->assertInertia(fn ($page) => $page
         ->where('hasPassword', false)
