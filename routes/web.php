@@ -16,7 +16,6 @@ use App\Http\Controllers\Course\LessonProgressController;
 use App\Http\Controllers\Course\QuizSubmissionController;
 use App\Http\Controllers\DailyRewardController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\DiscussionController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\LeaderboardController;
@@ -26,6 +25,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
+use App\Models\Assessment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -78,18 +78,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:quiz-submit')
         ->name('courses.lessons.quiz');
 
-
     // Assessments — all UI now embedded in course detail page
     // Redirects for old bookmarks / links
     Route::get('assessments', fn () => redirect()->route('courses.index'))->name('assessments.index');
     Route::get('assessments/mastery', fn () => redirect()->route('courses.index'))->name('assessments.mastery');
-    Route::get('assessments/{assessment:slug}', function (\App\Models\Assessment $assessment) {
+    Route::get('assessments/{assessment:slug}', function (Assessment $assessment) {
         if ($assessment->course) {
             return redirect()->route('courses.show', $assessment->course->slug);
         }
         abort(404);
     })->name('assessments.show');
-    Route::get('assessments/{assessment:slug}/results/{submission}', function (\App\Models\Assessment $assessment) {
+    Route::get('assessments/{assessment:slug}/results/{submission}', function (Assessment $assessment) {
         if ($assessment->course) {
             return redirect()->route('courses.show', $assessment->course->slug);
         }
@@ -138,15 +137,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('certificates', [CertificateController::class, 'store'])->name('certificates.store');
     Route::get('certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
 
-    // Discussions
-    Route::get('discussions', [DiscussionController::class, 'index'])->name('discussions.index');
-    Route::post('discussions', [DiscussionController::class, 'store'])->middleware('throttle:10,1')->name('discussions.store');
-    Route::get('discussions/{discussion}', [DiscussionController::class, 'show'])->name('discussions.show');
-    Route::post('discussions/{discussion}/replies', [DiscussionController::class, 'reply'])->middleware('throttle:20,1')->name('discussions.reply');
-    Route::post('discussions/upvote', [DiscussionController::class, 'upvote'])->middleware('throttle:30,1')->name('discussions.upvote');
-    Route::patch('discussions/{discussion}/pin', [DiscussionController::class, 'togglePin'])->middleware('admin')->name('discussions.pin');
-    Route::delete('discussions/{discussion}', [DiscussionController::class, 'destroy'])->name('discussions.destroy');
-
     // Story and CTF removed
 });
 
@@ -177,7 +167,6 @@ Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin
     Route::patch('courses/tasks/{task}', [AdminTaskController::class, 'update'])->name('courses.tasks.update');
     Route::delete('courses/tasks/{task}', [AdminTaskController::class, 'destroy'])->name('courses.tasks.destroy');
     Route::get('courses/tasks/{task}/video-status', [AdminTaskController::class, 'videoStatus'])->name('courses.tasks.video-status');
-
 
     // Assessments (Bloom's Taxonomy tiered) — listing now served via CourseController section=assessment
     Route::get('assessments', fn () => redirect()->route('admin.courses.index', ['section' => 'assessment']))->name('assessments.index');

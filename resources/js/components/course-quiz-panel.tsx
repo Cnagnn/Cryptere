@@ -42,6 +42,7 @@ export type QuizPanelProps = {
         id: number;
         title: string;
         quizQuestions: Array<{
+            id: number;
             question: string;
             options: [string, string, string, string];
             explanation: string;
@@ -140,6 +141,22 @@ export function QuizPanel({
                 lesson: lessonId,
             });
 
+            // Build answers array with question IDs
+            const answersWithIds = questions.map((question, index) => ({
+                question_id: question.id,
+                answer: normalizedAnswers[index],
+            }));
+
+            // Debug: Log the data being sent
+            console.log('Submitting quiz:', {
+                task_id: task.id,
+                answers: answersWithIds,
+                questions: questions.map((q) => ({
+                    id: q.id,
+                    question: q.question,
+                })),
+            });
+
             fetch(quizUrl, {
                 method: 'POST',
                 headers: {
@@ -154,7 +171,7 @@ export function QuizPanel({
                 },
                 body: JSON.stringify({
                     task_id: task.id,
-                    answers: normalizedAnswers,
+                    answers: answersWithIds,
                 }),
             })
                 .then(async (response) => {

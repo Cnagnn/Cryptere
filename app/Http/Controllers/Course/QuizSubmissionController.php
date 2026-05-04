@@ -14,6 +14,7 @@ use App\Services\AdaptiveQuestionService;
 use App\Services\XpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class QuizSubmissionController extends Controller
 {
@@ -37,11 +38,26 @@ class QuizSubmissionController extends Controller
         $this->authorize('view', $course);
         abort_if($lesson->course_id !== $course->id, 404);
 
-        $validated = $request->validate([
-            'task_id' => ['required', 'integer', 'exists:lesson_tasks,id'],
-            'answers' => ['required', 'array', 'min:1'],
-            'answers.*' => ['required', 'integer', 'min:0', 'max:3'],
+        // Log raw request data
+        \Log::info('Quiz submission raw request', [
+            'all_data' => $request->all(),
+            'answers_data' => $request->input('answers'),
         ]);
+
+        try {
+            $validated = $request->validate([
+                'task_id' => ['required', 'integer', 'exists:lesson_tasks,id'],
+                'answers' => ['required', 'array', 'min:1'],
+                'answers.*.question_id' => ['required', 'integer', 'exists:quiz_questions,id'],
+                'answers.*.answer' => ['required', 'integer', 'min:0', 'max:3'],
+            ]);
+        } catch (ValidationException $e) {
+            \Log::error('Quiz validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all(),
+            ]);
+            throw $e;
+        }
 
         // Verify task belongs to this lesson
         $task = LessonTask::query()
@@ -75,32 +91,61 @@ class QuizSubmissionController extends Controller
             ? 1
             : $existingSubmissions->max('attempt_number') + 1;
 
-        // Get questions per attempt from config
-        $questionsPerAttempt = (int) config('rewards.quiz_questions_per_attempt', 4);
+        // Extract question IDs from the submitted answers
+        $questionIds = collect($validated['answers'])->pluck('question_id')->all();
 
-        // Get total available questions for this task
-        $totalAvailable = $task->quizQuestions()->count();
-
-        // Select questions: random from pool, limited to config amount
-        // If pool is smaller than config, use all questions
-        $questionsToShow = min($questionsPerAttempt, $totalAvailable);
-
-        $questions = $task->quizQuestions()
+        // Get the specific questions that were answered
+        $questions = QuizQuestion::query()
+            ->whereIn('id', $questionIds)
+            ->where('lesson_task_id', $task->id)
             ->with('topic')
-            ->inRandomOrder()
-            ->take($questionsToShow)
-            ->get();
+            ->get()
+            ->keyBy('id'); // Key by ID for easy lookup
 
-        $answers = $validated['answers'];
+        // Verify all question IDs belong to this task
+        if ($questions->count() !== count($questionIds)) {
+            \Log::error('Quiz submission failed: Invalid question IDs', [
+                'task_id' => $task->id,
+                'submitted_question_ids' => $questionIds,
+                'found_question_ids' => $questions->pluck('id')->all(),
+                'expected_count' => count($questionIds),
+                'actual_count' => $questions->count(),
+            ]);
+
+            return response()->json([
+                'error' => 'Invalid question IDs provided.',
+                'debug' => [
+                    'submitted' => $questionIds,
+                    'found' => $questions->pluck('id')->all(),
+                ],
+            ], 422);
+        }
+
         $correctCount = 0;
+        $answerArray = []; // Store just the answer indices for database
 
-        $results = $questions->map(function (QuizQuestion $question, int $index) use ($answers, &$correctCount): array {
-            $givenAnswer = isset($answers[$index]) ? (int) $answers[$index] : -1;
+        $results = collect($validated['answers'])->map(function (array $answerData) use ($questions, &$correctCount, &$answerArray): array {
+            $questionId = $answerData['question_id'];
+            $givenAnswer = (int) $answerData['answer'];
+
+            $question = $questions->get($questionId);
+
+            if (! $question) {
+                return [
+                    'correct' => false,
+                    'explanation' => 'Question not found.',
+                    'remedialLessonSlug' => null,
+                ];
+            }
+
             $isCorrect = $givenAnswer === (int) $question->correct_option;
 
             if ($isCorrect) {
                 $correctCount++;
             }
+
+            // Store answer index for database
+            $answerArray[] = $givenAnswer;
 
             // R2: Update adaptive question statistics
             $this->adaptiveService->updateQuestionStats($question, $isCorrect);
@@ -178,7 +223,7 @@ class QuizSubmissionController extends Controller
             'user_id' => $user->id,
             'lesson_task_id' => $task->id,
             'attempt_number' => $attemptNumber,
-            'answers' => $answers,
+            'answers' => $answerArray,
             'score' => $correctCount,
             'total' => $questions->count(),
             'results' => $results,

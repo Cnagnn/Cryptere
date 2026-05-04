@@ -1372,10 +1372,12 @@ export default function AdminCoursesAssessment({
                                     <EmptyMedia variant="icon">
                                         <Search />
                                     </EmptyMedia>
-                                    <EmptyTitle>Tidak ada penilaian ditemukan</EmptyTitle>
+                                    <EmptyTitle>
+                                        Tidak ada penilaian ditemukan
+                                    </EmptyTitle>
                                     <EmptyDescription>
-                                        Pilih kursus lain atau cari dengan
-                                        kata kunci lain.
+                                        Pilih kursus lain atau cari dengan kata
+                                        kunci lain.
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -1385,7 +1387,9 @@ export default function AdminCoursesAssessment({
                                     <EmptyMedia variant="icon">
                                         <Search />
                                     </EmptyMedia>
-                                    <EmptyTitle>Tidak ada penilaian ditemukan</EmptyTitle>
+                                    <EmptyTitle>
+                                        Tidak ada penilaian ditemukan
+                                    </EmptyTitle>
                                     <EmptyDescription>
                                         Coba kursus atau kata kunci lain.
                                     </EmptyDescription>

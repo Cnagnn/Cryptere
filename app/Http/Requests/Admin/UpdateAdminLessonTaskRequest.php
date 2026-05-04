@@ -27,7 +27,6 @@ class UpdateAdminLessonTaskRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
             'type' => ['required', Rule::in(['video', 'read', 'quiz'])],
-            'minutes' => ['required', 'integer', 'min:1', 'max:240'],
             'video_url' => [
                 'nullable',
                 'url',

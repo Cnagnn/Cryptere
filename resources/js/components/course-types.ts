@@ -84,7 +84,6 @@ export type TaskFormData = {
     title: string;
     description: string;
     type: TaskType;
-    minutes: number;
     video_url: string;
     video_file: File | null;
     document: File | null;

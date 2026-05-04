@@ -36,7 +36,8 @@ class TaskController extends Controller
             $videoUrl = Storage::disk('public')->url($path);
             $videoProcessingStatus = 'pending';
         } elseif ($validated['type'] === 'video' && ! empty($validated['video_url'])) {
-            $videoProcessingStatus = 'pending';
+            // External URLs (YouTube/Vimeo) or direct video URLs don't need processing
+            $videoProcessingStatus = 'ready';
         }
 
         if ($validated['type'] === 'read') {
@@ -59,7 +60,6 @@ class TaskController extends Controller
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'type' => $validated['type'],
-                'minutes' => (int) $validated['minutes'],
                 'video_url' => $videoUrl,
                 'video_processing_status' => $videoProcessingStatus,
                 'video_mp4_url' => null,
@@ -135,9 +135,9 @@ class TaskController extends Controller
                 $videoProcessingStatus = 'pending';
                 $videoMp4Url = null;
             } elseif (! empty($validated['video_url']) && $validated['video_url'] !== $task->video_url) {
-                // URL changed, re-process
+                // URL changed - external URLs don't need processing
                 $videoUrl = $validated['video_url'];
-                $videoProcessingStatus = 'pending';
+                $videoProcessingStatus = 'ready';
                 $videoMp4Url = null;
             }
             // If neither file nor new URL, keep existing values
@@ -152,7 +152,6 @@ class TaskController extends Controller
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'type' => $validated['type'],
-                'minutes' => (int) $validated['minutes'],
                 'video_url' => $videoUrl,
                 'video_processing_status' => $videoProcessingStatus,
                 'video_mp4_url' => $videoMp4Url,

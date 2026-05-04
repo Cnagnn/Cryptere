@@ -6,9 +6,8 @@ import {
     ChevronLeft,
     ChevronRight,
     ClipboardCheck,
+    Clock,
     Lock,
-    Maximize2,
-    Minimize2,
     Trophy,
     Video,
 } from 'lucide-react';
@@ -16,11 +15,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CourseAssessmentPanel } from '@/components/course-assessment-panel';
 import type { AssessmentFullData } from '@/components/course-assessment-panel';
-import { QuizPanel } from '@/components/course-quiz-panel';
 import type { QuizSubmission } from '@/components/course-quiz-panel';
-import { VideoPlayer } from '@/components/course-video-player';
-import { DiscussionPanel } from '@/components/discussion-panel';
-import { LessonContent } from '@/components/lesson-content';
+import { TaskViewer } from '@/components/task/task-viewer';
 import {
     Accordion,
     AccordionContent,
@@ -43,6 +39,7 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 
 import AppLayout from '@/layouts/app-layout';
@@ -64,6 +61,7 @@ const taskTypeIcon: Record<TaskType, React.ComponentType> = {
 type TaskType = 'video' | 'read' | 'reading' | 'quiz';
 
 type LessonQuizQuestion = {
+    id: number;
     question: string;
     options: [string, string, string, string];
     correctIndex: number;
@@ -74,7 +72,6 @@ type LessonTask = {
     id: number;
     type: TaskType;
     title: string;
-    minutes: number;
     description: string;
     videoUrl: string | null;
     videoProcessingStatus: string | null;
@@ -94,6 +91,7 @@ type LessonData = {
 };
 
 type ServerTaskQuestion = {
+    id: number;
     question: string;
     options: [string, string, string, string];
     explanation: string | null;
@@ -178,11 +176,20 @@ function mapServerLessonsToLessonData(
             const normalizedType: TaskType =
                 task.type === 'reading' ? 'read' : task.type;
 
+            // Debug: Log quiz questions to verify IDs
+            if (task.questions && task.questions.length > 0) {
+                console.log(
+                    'Quiz questions for task',
+                    mappedTaskId,
+                    ':',
+                    task.questions,
+                );
+            }
+
             return {
                 id: mappedTaskId,
                 type: normalizedType,
                 title: displayTaskTitle,
-                minutes: Math.max(1, task.minutes || 1),
                 description: defaultTaskDescription(normalizedType),
                 videoUrl: task.videoUrl,
                 videoProcessingStatus: task.videoProcessingStatus ?? null,
@@ -191,6 +198,7 @@ function mapServerLessonsToLessonData(
                 isPublished: task.isPublished,
                 publishedAt: task.publishedAt,
                 quizQuestions: task.questions.map((question) => ({
+                    id: question.id,
                     question: question.question,
                     options: question.options,
                     // Real answers are intentionally not exposed by backend payload.
@@ -238,7 +246,7 @@ export default function CourseShow({
             assessment?.activeSubmission !== undefined,
     );
 
-    const [completedLessonIds] = useState<number[]>(
+    const [completedLessonIds, setCompletedLessonIds] = useState<number[]>(
         serverLessons
             .filter((lesson) => lesson.isCompleted)
             .map((lesson) => lesson.id),
@@ -301,6 +309,26 @@ export default function CourseShow({
     const [expandedTopicValue, setExpandedTopicValue] = useState<
         string | undefined
     >(initLessonId ? String(initLessonId) : undefined);
+
+    // Handler for task completion from TaskViewer
+    const handleTaskComplete = () => {
+        // Refresh page data to get updated progress
+        router.reload({
+            preserveScroll: true,
+            onSuccess: () => {
+                // Update completed lessons state for real-time UI update
+                if (
+                    selectedLesson &&
+                    !completedLessonIds.includes(selectedLesson.id)
+                ) {
+                    setCompletedLessonIds((prev) => [
+                        ...prev,
+                        selectedLesson.id,
+                    ]);
+                }
+            },
+        });
+    };
 
     // Sync URL hash when selected lesson/task changes
     useEffect(() => {
@@ -409,8 +437,6 @@ export default function CourseShow({
             ? Math.round((completedCount / lessons.length) * 100)
             : 0;
 
-    const [isPdfExpanded, setIsPdfExpanded] = useState(false);
-
     const handleNextTask = () => {
         if (!selectedLesson) {
             return;
@@ -469,30 +495,6 @@ export default function CourseShow({
             );
             setExpandedTopicValue(String(prevLesson.id));
         }
-    };
-
-    const handleVideoEnded = () => {
-        if (!selectedLesson || !isEnrolled || isAdmin) {
-            return;
-        }
-
-        if (completedLessonIds.includes(selectedLesson.id)) {
-            return;
-        }
-
-        router.post(
-            completeLesson({
-                course: serverCourse.slug,
-                lesson: selectedLesson.id,
-            }),
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    toast.success('Video selesai! Pelajaran ditandai selesai.');
-                },
-            },
-        );
     };
 
     // Navigation context for Previous/Next buttons
@@ -578,40 +580,52 @@ export default function CourseShow({
                     </Alert>
                 ) : null}
 
-                <section className="flex flex-wrap items-start justify-between gap-3">
+                <section className="flex flex-col gap-3">
                     <div className="flex flex-col gap-0">
                         <TypographyH1>{course.title}</TypographyH1>
-                        <TypographyMuted className="max-w-3xl text-sm/6">
+                        <TypographyMuted className="text-sm/6">
                             {course.summary}
                         </TypographyMuted>
                     </div>
                 </section>
 
-                <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
-                    <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:h-fit">
+                <section className="grid gap-3 lg:grid-cols-[3fr_7fr]">
+                    <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:h-fit lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Topik Kursus</CardTitle>
-                                <CardDescription>
+                            <CardHeader className="space-y-1">
+                                <CardTitle className="text-base">
+                                    Topik Kursus
+                                </CardTitle>
+                                <CardDescription className="text-sm">
                                     Pilih pelajaran untuk membuka tugasnya.
                                 </CardDescription>
                             </CardHeader>
+
                             <CardContent className="flex flex-col gap-4">
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                        <span>Penyelesaian</span>
-                                        <span>{progressPercentage}%</span>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">
+                                            Penyelesaian
+                                        </span>
+                                        <span className="font-medium tabular-nums">
+                                            {progressPercentage}%
+                                        </span>
                                     </div>
                                     <Progress
                                         value={progressPercentage}
-                                        className="h-2"
+                                        className="h-1.5"
                                     />
+                                    <p className="text-xs text-muted-foreground">
+                                        {completedCount} dari {lessons.length}{' '}
+                                        pelajaran
+                                    </p>
                                 </div>
 
                                 {!isAdmin && !isEnrolled ? (
                                     <Button
                                         type="button"
-                                        className="w-full"
+                                        className="w-full gap-2 shadow-sm"
+                                        size="lg"
                                         disabled={isEnrolling}
                                         onClick={() => {
                                             setIsEnrolling(true);
@@ -636,6 +650,7 @@ export default function CourseShow({
                                             );
                                         }}
                                     >
+                                        <BookOpen className="h-4 w-4" />
                                         {isEnrolling
                                             ? 'Mendaftar…'
                                             : 'Daftar di Kursus'}
@@ -666,7 +681,6 @@ export default function CourseShow({
                                                     : value,
                                             );
                                         }}
-                                        className="w-full"
                                     >
                                         {lessons.map((lesson, lessonIndex) => {
                                             const isLocked =
@@ -685,12 +699,12 @@ export default function CourseShow({
                                                 <AccordionItem
                                                     key={lesson.id}
                                                     value={String(lesson.id)}
+                                                    disabled={isLocked}
                                                     className={
                                                         isLocked
                                                             ? 'opacity-50'
-                                                            : undefined
+                                                            : ''
                                                     }
-                                                    disabled={isLocked}
                                                 >
                                                     <AccordionTrigger
                                                         onClick={() => {
@@ -708,32 +722,42 @@ export default function CourseShow({
                                                             );
                                                         }}
                                                     >
-                                                        <div className="flex w-full items-center justify-between gap-2 pr-2">
-                                                            <span className="flex items-center gap-2 truncate">
-                                                                <span className="shrink-0 text-xs text-muted-foreground">
-                                                                    {lessonIndex +
-                                                                        1}
-                                                                    .
-                                                                </span>
-                                                                {lesson.title}
+                                                        <div className="flex items-center gap-3">
+                                                            <span
+                                                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                                                                    isCompleted
+                                                                        ? 'bg-foreground text-background'
+                                                                        : 'bg-muted text-muted-foreground'
+                                                                }`}
+                                                            >
+                                                                {isCompleted ? (
+                                                                    <CheckCircle2 className="h-4 w-4" />
+                                                                ) : (
+                                                                    lessonIndex +
+                                                                    1
+                                                                )}
                                                             </span>
-                                                            {isLocked ? (
-                                                                <Lock
-                                                                    className="shrink-0 text-muted-foreground"
-                                                                    data-icon
-                                                                />
-                                                            ) : isCompleted ? (
-                                                                <CheckCircle2
-                                                                    className="shrink-0 text-emerald-500"
-                                                                    data-icon
-                                                                />
-                                                            ) : null}
+                                                            <div className="flex flex-col gap-0.5 text-left">
+                                                                <span className="text-sm font-medium">
+                                                                    {
+                                                                        lesson.title
+                                                                    }
+                                                                </span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {
+                                                                        lesson
+                                                                            .tasks
+                                                                            .length
+                                                                    }{' '}
+                                                                    tugas
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </AccordionTrigger>
-                                                    <AccordionContent className="flex flex-col gap-3">
+                                                    <AccordionContent>
                                                         {lesson.tasks.length >
                                                         0 ? (
-                                                            <div className="flex flex-col gap-2">
+                                                            <div className="flex flex-col gap-1.5">
                                                                 {lesson.tasks.map(
                                                                     (task) => {
                                                                         const TaskIcon =
@@ -741,45 +765,37 @@ export default function CourseShow({
                                                                                 task
                                                                                     .type
                                                                             ];
+                                                                        const isTaskCompleted =
+                                                                            isCompleted;
+                                                                        const isTaskActive =
+                                                                            selectedTaskId ===
+                                                                            task.id;
 
                                                                         return (
-                                                                            <div
+                                                                            <button
                                                                                 key={`${lesson.id}-${task.id}`}
-                                                                                className="flex items-center gap-1"
+                                                                                type="button"
+                                                                                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                                                                                    isTaskActive
+                                                                                        ? 'bg-secondary font-medium'
+                                                                                        : 'hover:bg-accent'
+                                                                                }`}
+                                                                                onClick={() => {
+                                                                                    setSelectedLessonId(
+                                                                                        lesson.id,
+                                                                                    );
+                                                                                    setSelectedTaskId(
+                                                                                        task.id,
+                                                                                    );
+                                                                                }}
                                                                             >
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={
-                                                                                        selectedTaskId ===
-                                                                                        task.id
-                                                                                            ? 'secondary'
-                                                                                            : 'outline'
+                                                                                <TaskIcon className="h-4 w-4 shrink-0" />
+                                                                                <span className="flex-1 truncate">
+                                                                                    {
+                                                                                        task.title
                                                                                     }
-                                                                                    size="lg"
-                                                                                    className="flex-1 justify-start gap-2"
-                                                                                    onClick={() => {
-                                                                                        setSelectedLessonId(
-                                                                                            lesson.id,
-                                                                                        );
-                                                                                        setSelectedTaskId(
-                                                                                            task.id,
-                                                                                        );
-                                                                                    }}
-                                                                                >
-                                                                                    <TaskIcon data-icon="inline-start" />
-                                                                                    <span className="truncate">
-                                                                                        {
-                                                                                            task.title
-                                                                                        }
-                                                                                    </span>
-                                                                                    {isCompleted && (
-                                                                                        <CheckCircle2
-                                                                                            className="ml-auto shrink-0 text-emerald-500"
-                                                                                            data-icon
-                                                                                        />
-                                                                                    )}
-                                                                                </Button>
-                                                                            </div>
+                                                                                </span>
+                                                                            </button>
                                                                         );
                                                                     },
                                                                 )}
@@ -794,151 +810,224 @@ export default function CourseShow({
                                                 </AccordionItem>
                                             );
                                         })}
+
+                                        {/* Assessment as last accordion item */}
+                                        {assessment && (
+                                            <AccordionItem
+                                                value="assessment"
+                                                disabled={assessment.isLocked}
+                                                className={
+                                                    assessment.isLocked
+                                                        ? 'opacity-50'
+                                                        : ''
+                                                }
+                                            >
+                                                <AccordionTrigger>
+                                                    <div className="flex items-center gap-3">
+                                                        <span
+                                                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                                                                assessment.passed
+                                                                    ? 'bg-emerald-500 text-white'
+                                                                    : 'bg-primary/10 text-primary'
+                                                            }`}
+                                                        >
+                                                            {assessment.passed ? (
+                                                                <CheckCircle2 className="h-4 w-4" />
+                                                            ) : (
+                                                                <ClipboardCheck className="h-4 w-4" />
+                                                            )}
+                                                        </span>
+                                                        <div className="flex flex-col gap-0.5 text-left">
+                                                            <span className="text-sm font-medium">
+                                                                Penilaian Akhir
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {
+                                                                    assessment.questionsCount
+                                                                }{' '}
+                                                                pertanyaan
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent>
+                                                    <div className="flex flex-col gap-3">
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {assessment.description ??
+                                                                'Selesaikan penilaian ini untuk menyelesaikan kursus.'}
+                                                        </p>
+
+                                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-muted-foreground">
+                                                                    Pertanyaan
+                                                                </span>
+                                                                <span className="font-semibold">
+                                                                    {
+                                                                        assessment.questionsCount
+                                                                    }
+                                                                </span>
+                                                            </div>
+                                                            {assessment.timeLimitMinutes && (
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <span className="text-muted-foreground">
+                                                                        Durasi
+                                                                    </span>
+                                                                    <span className="font-semibold">
+                                                                        {
+                                                                            assessment.timeLimitMinutes
+                                                                        }{' '}
+                                                                        min
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-muted-foreground">
+                                                                    Nilai Lulus
+                                                                </span>
+                                                                <span className="font-semibold">
+                                                                    {
+                                                                        assessment.passingScore
+                                                                    }
+                                                                    %
+                                                                </span>
+                                                            </div>
+                                                            {assessment.maxAttempts && (
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <span className="text-muted-foreground">
+                                                                        Percobaan
+                                                                    </span>
+                                                                    <span className="font-semibold">
+                                                                        {
+                                                                            assessment.attemptCount
+                                                                        }
+                                                                        /
+                                                                        {
+                                                                            assessment.maxAttempts
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {assessment.bestScore !==
+                                                            null && (
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="flex items-center justify-between text-xs">
+                                                                    <span className="text-muted-foreground">
+                                                                        Skor
+                                                                        Terbaik
+                                                                    </span>
+                                                                    <span
+                                                                        className={`font-bold tabular-nums ${
+                                                                            assessment.passed
+                                                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                                                : 'text-amber-600 dark:text-amber-400'
+                                                                        }`}
+                                                                    >
+                                                                        {Math.round(
+                                                                            assessment.bestScore,
+                                                                        )}
+                                                                        %
+                                                                    </span>
+                                                                </div>
+                                                                <Progress
+                                                                    value={
+                                                                        assessment.bestScore
+                                                                    }
+                                                                    className="h-1.5"
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {assessment.isLocked ? (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                disabled
+                                                                className="w-full gap-2"
+                                                            >
+                                                                <Lock className="h-4 w-4" />
+                                                                Selesaikan Semua
+                                                                Pelajaran
+                                                            </Button>
+                                                        ) : assessment.passed ? (
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 dark:bg-emerald-950/30">
+                                                                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                                    <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                                                                        Penilaian
+                                                                        Lulus!
+                                                                    </span>
+                                                                </div>
+                                                                {assessment.latestResults && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="w-full"
+                                                                        onClick={() => {
+                                                                            setShowAssessment(
+                                                                                true,
+                                                                            );
+                                                                            setSelectedLessonId(
+                                                                                null,
+                                                                            );
+                                                                            setSelectedTaskId(
+                                                                                null,
+                                                                            );
+                                                                        }}
+                                                                    >
+                                                                        Lihat
+                                                                        Hasil
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <Button
+                                                                variant="default"
+                                                                size="sm"
+                                                                className="w-full gap-2"
+                                                                disabled={
+                                                                    !assessment.canAttempt
+                                                                }
+                                                                onClick={() => {
+                                                                    setShowAssessment(
+                                                                        true,
+                                                                    );
+                                                                    setSelectedLessonId(
+                                                                        null,
+                                                                    );
+                                                                    setSelectedTaskId(
+                                                                        null,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <ClipboardCheck className="h-4 w-4" />
+                                                                {assessment.attemptCount >
+                                                                0
+                                                                    ? 'Coba Lagi'
+                                                                    : 'Mulai Penilaian'}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        )}
                                     </Accordion>
                                 )}
                             </CardContent>
                         </Card>
 
-                        {/* Final Assessment Card */}
-                        {assessment && (
-                            <Card className="gap-0 border-primary/20">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <ClipboardCheck className="size-4 text-primary" />
-                                        <CardTitle className="text-sm">
-                                            Penilaian Akhir
-                                        </CardTitle>
-                                    </div>
-                                    <CardDescription className="text-xs">
-                                        {assessment.description ??
-                                            'Selesaikan penilaian ini untuk menyelesaikan kursus.'}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex flex-col gap-3">
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                        <div>
-                                            <span className="font-medium text-foreground">
-                                                {assessment.questionsCount}
-                                            </span>{' '}
-                                            pertanyaan
-                                        </div>
-                                        {assessment.timeLimitMinutes && (
-                                            <div>
-                                                <span className="font-medium text-foreground">
-                                                    {
-                                                        assessment.timeLimitMinutes
-                                                    }
-                                                </span>{' '}
-                                                min
-                                            </div>
-                                        )}
-                                        <div>
-                                            Lulus:{' '}
-                                            <span className="font-medium text-foreground">
-                                                {assessment.passingScore}%
-                                            </span>
-                                        </div>
-                                        {assessment.maxAttempts && (
-                                            <div>
-                                                Percobaan:{' '}
-                                                <span className="font-medium text-foreground">
-                                                    {assessment.attemptCount}/
-                                                    {assessment.maxAttempts}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {assessment.bestScore !== null && (
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center justify-between text-xs">
-                                                <span className="text-muted-foreground">
-                                                    Skor terbaik
-                                                </span>
-                                                <span
-                                                    className={`font-medium ${assessment.passed ? 'text-emerald-600' : 'text-amber-600'}`}
-                                                >
-                                                    {Math.round(
-                                                        assessment.bestScore,
-                                                    )}
-                                                    %
-                                                </span>
-                                            </div>
-                                            <Progress
-                                                value={assessment.bestScore}
-                                                className="h-1.5"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {assessment.isLocked ? (
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            disabled
-                                            className="w-full gap-2"
-                                        >
-                                            <Lock className="size-3.5" />
-                                            Selesaikan Semua Pelajaran Terlebih
-                                            Dahulu
-                                        </Button>
-                                    ) : assessment.passed ? (
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 dark:bg-emerald-950/30">
-                                                <CheckCircle2 className="size-4 text-emerald-600" />
-                                                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                                                    Penilaian Lulus!
-                                                </span>
-                                            </div>
-                                            {assessment.latestResults && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="w-full gap-2"
-                                                    onClick={() => {
-                                                        setShowAssessment(true);
-                                                        setSelectedLessonId(
-                                                            null,
-                                                        );
-                                                        setSelectedTaskId(null);
-                                                    }}
-                                                >
-                                                    Lihat Hasil
-                                                </Button>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <Button
-                                            variant="default"
-                                            size="sm"
-                                            className="w-full gap-2"
-                                            disabled={!assessment.canAttempt}
-                                            onClick={() => {
-                                                setShowAssessment(true);
-                                                setSelectedLessonId(null);
-                                                setSelectedTaskId(null);
-                                            }}
-                                        >
-                                            <ClipboardCheck className="size-3.5" />
-                                            {assessment.attemptCount > 0
-                                                ? 'Coba Lagi Penilaian'
-                                                : 'Mulai Penilaian'}
-                                        </Button>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
-
                         {isCourseCompleted ? (
-                            <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-3 dark:bg-emerald-950/20">
-                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-                                    <Trophy className="size-4 text-amber-500" />
+                            <div className="flex items-center gap-4 rounded-xl border-2 border-emerald-500/30 bg-gradient-to-br from-emerald-50 to-amber-50/30 p-4 shadow-sm dark:from-emerald-950/20 dark:to-amber-950/10">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-amber-100 shadow-inner dark:from-emerald-900/40 dark:to-amber-900/40">
+                                    <Trophy className="h-6 w-6 text-amber-500" />
                                 </div>
-                                <div className="flex flex-col gap-0">
-                                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
                                         Kursus Selesai! 🎉
                                     </p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs leading-relaxed text-muted-foreground">
                                         Anda telah menyelesaikan semua pelajaran
                                         dan lulus penilaian.
                                     </p>
@@ -947,252 +1036,127 @@ export default function CourseShow({
                         ) : null}
                     </div>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-6">
                         {showAssessment && assessment ? (
                             <CourseAssessmentPanel
                                 assessment={assessment}
                                 onBack={() => setShowAssessment(false)}
                             />
                         ) : (
-                            <>
-                                <Card className="gap-0">
-                                    <CardContent className="flex flex-col gap-4">
-                                        {selectedTask ? (
-                                            <div className="flex flex-col gap-1">
-                                                <h3 className="text-base font-medium">
-                                                    {selectedTask.title}
-                                                </h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {selectedTask.description}
-                                                </p>
-                                            </div>
-                                        ) : null}
-
-                                        {!selectedLesson ? (
-                                            <Empty className="px-2 py-6">
-                                                <EmptyHeader>
-                                                    <EmptyTitle>
-                                                        Tidak Ada Topik Dipilih
-                                                    </EmptyTitle>
-                                                    <EmptyDescription>
-                                                        Pilih topik dari panel
-                                                        kiri untuk menampilkan
-                                                        konten pelajaran.
-                                                    </EmptyDescription>
-                                                </EmptyHeader>
-                                            </Empty>
-                                        ) : !isAdmin &&
-                                          !(
-                                              unlockedLessonIds.get(
-                                                  selectedLesson.id,
-                                              ) ?? false
-                                          ) ? (
-                                            <Empty className="px-4 py-10">
-                                                <EmptyHeader>
-                                                    <EmptyTitle>
-                                                        Pelajaran Terkunci
-                                                    </EmptyTitle>
-                                                    <EmptyDescription>
-                                                        Selesaikan pelajaran
-                                                        sebelumnya terlebih
-                                                        dahulu.
-                                                    </EmptyDescription>
-                                                </EmptyHeader>
-                                            </Empty>
-                                        ) : !selectedTask ? (
-                                            <Empty className="px-4 py-10">
-                                                <EmptyHeader>
-                                                    <EmptyTitle>
-                                                        Belum Ada Tugas
-                                                    </EmptyTitle>
-                                                    <EmptyDescription>
-                                                        Tidak ada tugas yang
-                                                        saat ini ditugaskan
-                                                        untuk topik ini.
-                                                    </EmptyDescription>
-                                                </EmptyHeader>
-                                            </Empty>
-                                        ) : selectedTask.type === 'video' ? (
-                                            selectedTask.videoUrl ||
-                                            selectedTask.videoProcessingStatus ===
-                                                'pending' ||
-                                            selectedTask.videoProcessingStatus ===
-                                                'processing' ||
-                                            selectedTask.videoProcessingStatus ===
-                                                'failed' ? (
-                                                <VideoPlayer
-                                                    key={selectedTask.id}
-                                                    url={
-                                                        selectedTask.videoUrl ??
-                                                        ''
-                                                    }
-                                                    processingStatus={
-                                                        selectedTask.videoProcessingStatus as
-                                                            | 'pending'
-                                                            | 'processing'
-                                                            | 'ready'
-                                                            | 'converted'
-                                                            | 'failed'
-                                                            | null
-                                                    }
-                                                    onEnded={handleVideoEnded}
-                                                />
-                                            ) : (
-                                                <Empty className="px-4 py-10">
-                                                    <EmptyHeader>
-                                                        <EmptyTitle>
-                                                            URL Video Tidak Ada
-                                                        </EmptyTitle>
-                                                        <EmptyDescription>
-                                                            Tugas ini tidak
-                                                            memiliki URL video
-                                                            yang dikonfigurasi.
-                                                        </EmptyDescription>
-                                                    </EmptyHeader>
-                                                </Empty>
-                                            )
-                                        ) : selectedTask.type === 'read' ? (
-                                            selectedTask.pdfUrl ? (
-                                                <div className="relative overflow-hidden rounded-xl border bg-background">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="absolute top-2 right-2 z-10"
-                                                        onClick={() =>
-                                                            setIsPdfExpanded(
-                                                                (v) => !v,
-                                                            )
-                                                        }
-                                                    >
-                                                        {isPdfExpanded ? (
-                                                            <Minimize2
-                                                                data-icon
-                                                            />
-                                                        ) : (
-                                                            <Maximize2
-                                                                data-icon
-                                                            />
-                                                        )}
-                                                    </Button>
-                                                    <iframe
-                                                        title={`Document viewer for ${selectedTask.title}`}
-                                                        src={
-                                                            selectedTask.pdfUrl
-                                                        }
-                                                        className={
-                                                            isPdfExpanded
-                                                                ? 'h-[calc(100vh-8rem)] w-full'
-                                                                : 'h-140 w-full'
-                                                        }
-                                                    />
-                                                </div>
-                                            ) : (
-                                                (() => {
-                                                    const serverLesson =
-                                                        serverLessons.find(
-                                                            (l) =>
-                                                                l.id ===
-                                                                selectedLesson?.id,
-                                                        );
-
-                                                    return serverLesson?.content?.trim() ? (
-                                                        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto rounded-xl border bg-background p-6">
-                                                            <LessonContent
-                                                                content={
-                                                                    serverLesson.content
-                                                                }
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <Empty className="px-4 py-10">
-                                                            <EmptyHeader>
-                                                                <EmptyTitle>
-                                                                    Tidak Ada
-                                                                    Konten
-                                                                    Tersedia
-                                                                </EmptyTitle>
-                                                                <EmptyDescription>
-                                                                    Tugas ini
-                                                                    belum
-                                                                    memiliki
-                                                                    konten yang
-                                                                    dikonfigurasi.
-                                                                </EmptyDescription>
-                                                            </EmptyHeader>
-                                                        </Empty>
-                                                    );
-                                                })()
-                                            )
-                                        ) : (
-                                            <QuizPanel
-                                                key={`${selectedTask.id}-${selectedTask.quizQuestions.length}`}
-                                                task={selectedTask}
-                                                courseSlug={serverCourse.slug}
-                                                lessonId={
-                                                    selectedLesson?.id ?? 0
-                                                }
-                                                submission={
-                                                    selectedTask.submission
-                                                }
-                                                onNextTask={handleNextTask}
-                                            />
-                                        )}
-
-                                        {/* Task navigation bar */}
-                                        {selectedTask ? (
-                                            <div className="flex items-center justify-between">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    disabled={
-                                                        !navContext.prevTask
-                                                    }
-                                                    onClick={handlePreviousTask}
-                                                    className="gap-1"
-                                                >
-                                                    <ChevronLeft data-icon="inline-start" />
-                                                    <span className="hidden sm:inline">
-                                                        {navContext.prevTask
-                                                            ?.title ??
-                                                            'Sebelumnya'}
-                                                    </span>
-                                                    <span className="sm:hidden">
-                                                        Sebelumnya
-                                                    </span>
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    disabled={
-                                                        !navContext.nextTask
-                                                    }
-                                                    onClick={handleNextTask}
-                                                    className="gap-1"
-                                                >
-                                                    <span className="hidden sm:inline">
-                                                        {navContext.nextTask
-                                                            ?.title ??
-                                                            'Berikutnya'}
-                                                    </span>
-                                                    <span className="sm:hidden">
-                                                        Berikutnya
-                                                    </span>
-                                                    <ChevronRight data-icon="inline-end" />
-                                                </Button>
-                                            </div>
-                                        ) : null}
-                                    </CardContent>
-                                </Card>
-
-                                {/* Discussion panel for current lesson */}
-                                {selectedLessonId && isEnrolled && (
-                                    <DiscussionPanel
-                                        discussableType="lesson"
-                                        discussableId={selectedLessonId}
+                            <div className="flex flex-col gap-6">
+                                {!selectedLesson || !selectedTask ? (
+                                    <Empty className="px-2 py-6">
+                                        <EmptyHeader>
+                                            <EmptyTitle>
+                                                Tidak Ada Topik Dipilih
+                                            </EmptyTitle>
+                                            <EmptyDescription>
+                                                Pilih topik dari panel kiri
+                                                untuk menampilkan konten
+                                                pelajaran.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                ) : !isAdmin &&
+                                  !(
+                                      unlockedLessonIds.get(
+                                          selectedLesson.id,
+                                      ) ?? false
+                                  ) ? (
+                                    <Empty className="px-4 py-10">
+                                        <EmptyHeader>
+                                            <EmptyTitle>
+                                                Pelajaran Terkunci
+                                            </EmptyTitle>
+                                            <EmptyDescription>
+                                                Selesaikan pelajaran sebelumnya
+                                                terlebih dahulu.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                ) : !selectedTask ? (
+                                    <Empty className="px-4 py-10">
+                                        <EmptyHeader>
+                                            <EmptyTitle>
+                                                Belum Ada Tugas
+                                            </EmptyTitle>
+                                            <EmptyDescription>
+                                                Tidak ada tugas yang saat ini
+                                                ditugaskan untuk topik ini.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                ) : (
+                                    <TaskViewer
+                                        courseSlug={serverCourse.slug}
+                                        lessonId={selectedLesson.id}
+                                        task={{
+                                            id: selectedTask.id,
+                                            type: selectedTask.type,
+                                            title: selectedTask.title,
+                                            description:
+                                                selectedTask.description,
+                                            videoUrl: selectedTask.videoUrl,
+                                            videoProcessingStatus:
+                                                selectedTask.videoProcessingStatus,
+                                            pdfUrl: selectedTask.pdfUrl,
+                                            content:
+                                                serverLessons.find(
+                                                    (l) =>
+                                                        l.id ===
+                                                        selectedLesson.id,
+                                                )?.content ?? null,
+                                            quizQuestions:
+                                                selectedTask.quizQuestions.map(
+                                                    (q) => ({
+                                                        id: q.id,
+                                                        question: q.question,
+                                                        options: q.options,
+                                                        explanation:
+                                                            q.explanation,
+                                                    }),
+                                                ),
+                                            submission: selectedTask.submission,
+                                        }}
+                                        onComplete={handleTaskComplete}
                                     />
                                 )}
-                            </>
+
+                                {/* Task navigation bar */}
+                                {selectedTask ? (
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={!navContext.prevTask}
+                                            onClick={handlePreviousTask}
+                                            className="gap-2"
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                            <span className="text-xs">
+                                                Sebelumnya
+                                            </span>
+                                        </Button>
+                                        <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                                            {selectedLesson && selectedTask
+                                                ? `${selectedLesson.tasks.findIndex((t) => t.id === selectedTask.id) + 1}/${selectedLesson.tasks.length}`
+                                                : ''}
+                                        </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={!navContext.nextTask}
+                                            onClick={handleNextTask}
+                                            className="gap-2"
+                                        >
+                                            <span className="text-xs">
+                                                Berikutnya
+                                            </span>
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : null}
+                            </div>
                         )}
                     </div>
                 </section>

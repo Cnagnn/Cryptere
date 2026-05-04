@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'title',
     'description',
     'type',
-    'minutes',
     'video_url',
     'video_processing_status',
     'video_mp4_url',
@@ -36,7 +35,6 @@ class LessonTask extends Model
     protected function casts(): array
     {
         return [
-            'minutes' => 'integer',
             'sort_order' => 'integer',
             'published_at' => 'datetime',
             'published_by' => 'integer',

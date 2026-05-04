@@ -132,6 +132,7 @@ class CourseController extends Controller
                         'publishedAt' => optional($task->published_at)->toIso8601String(),
                         // NOTE: correctOption is intentionally NOT sent to frontend (security)
                         'questions' => $task->quizQuestions->map(fn (QuizQuestion $question): array => [
+                            'id' => $question->id,
                             'question' => $question->question,
                             'options' => $question->options,
                             'explanation' => null, // shown only after quiz submission

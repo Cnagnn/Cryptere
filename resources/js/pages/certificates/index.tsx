@@ -69,7 +69,8 @@ export default function CertificatesIndex({ certificates }: Props) {
                                     Belum ada sertifikat
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    Selesaikan kursus untuk mendapatkan sertifikat pertama Anda!
+                                    Selesaikan kursus untuk mendapatkan
+                                    sertifikat pertama Anda!
                                 </p>
                             </div>
                             <Button asChild>
@@ -86,7 +87,8 @@ export default function CertificatesIndex({ certificates }: Props) {
                                 {certificates.length} Sertifikat
                             </CardTitle>
                             <CardDescription>
-                                Klik sertifikat untuk melihat detail dan membagikannya.
+                                Klik sertifikat untuk melihat detail dan
+                                membagikannya.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
