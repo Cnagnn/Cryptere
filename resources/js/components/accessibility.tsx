@@ -16,7 +16,7 @@ export function SkipToContent({
             className={
                 // Hidden visually by default for sighted users, becomes visible and positioned when focused
                 // Uses Tailwind's `sr-only` + `focus:not-sr-only` pattern so keyboard users see the link
-                'sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:transition-transform focus:outline-none'
+                'sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-100 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:transition-transform focus:outline-none'
             }
         >
             Skip to main content
@@ -139,7 +139,7 @@ export function usePrefersReducedMotion(): boolean {
  */
 export function FocusRing({ children }: { children: React.ReactNode }) {
     return (
-        <div className="[&_:focus-visible]:ring-2 [&_:focus-visible]:ring-ring [&_:focus-visible]:ring-offset-2 [&_:focus-visible]:outline-none">
+        <div className="**:focus-visible:ring-2 **:focus-visible:ring-ring **:focus-visible:ring-offset-2 **:focus-visible:outline-none">
             {children}
         </div>
     );

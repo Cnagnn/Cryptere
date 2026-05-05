@@ -6,8 +6,7 @@ import type { User } from './auth';
 
 /**
  * Paginated response envelope returned by Laravel's `paginate()`.
- * NOTE: A narrower copy of this type previously lived in
- * `@/components/course-types.ts`. New code should import from here instead.
+ * New code should import this shared envelope from `@/types/models`.
  */
 export type Paginated<T> = {
     data: T[];

@@ -120,6 +120,7 @@ type Props = {
     selectedAssessmentId: number;
     courseOptions: { id: number; title: string }[];
     selectedCourseId: number;
+    courseFilterSelected: boolean;
     allLessons: LessonOption[];
     topics: { id: number; name: string }[];
     filters: {
@@ -300,6 +301,7 @@ export default function AdminCoursesAssessment({
     selectedAssessmentId,
     courseOptions,
     selectedCourseId,
+    courseFilterSelected,
     allLessons,
     topics,
     filters,
@@ -682,6 +684,10 @@ export default function AdminCoursesAssessment({
                                 >
                                     <span className="truncate">
                                         {(() => {
+                                            if (!courseFilterSelected) {
+                                                return 'Pilih Kursus...';
+                                            }
+
                                             if (selectedCourseId === 0) {
                                                 return 'Semua Kursus';
                                             }
@@ -695,7 +701,7 @@ export default function AdminCoursesAssessment({
                                                 return course.title;
                                             }
 
-                                            return 'Select Course...';
+                                            return 'Pilih Kursus...';
                                         })()}
                                     </span>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -703,7 +709,7 @@ export default function AdminCoursesAssessment({
                             </PopoverTrigger>
                             <PopoverContent className="w-72 p-0" align="start">
                                 <Command>
-                                    <CommandInput placeholder="Search course..." />
+                                    <CommandInput placeholder="Cari kursus..." />
                                     <CommandList
                                         style={{
                                             maxHeight: '16rem',
@@ -711,35 +717,9 @@ export default function AdminCoursesAssessment({
                                         }}
                                     >
                                         <CommandEmpty>
-                                            No results found.
+                                            Tidak ada hasil ditemukan.
                                         </CommandEmpty>
                                         <CommandGroup>
-                                            <CommandItem
-                                                value="Semua Kursus"
-                                                onSelect={() => {
-                                                    router.get(
-                                                        sectionUrl({
-                                                            page: 1,
-                                                            per_page:
-                                                                assessments.per_page,
-                                                        }),
-                                                        {},
-                                                        {
-                                                            preserveState: true,
-                                                            preserveScroll: true,
-                                                        },
-                                                    );
-                                                }}
-                                            >
-                                                Semua Kursus
-                                                <Check
-                                                    className={`ml-auto h-4 w-4 ${
-                                                        selectedCourseId === 0
-                                                            ? 'opacity-100'
-                                                            : 'opacity-0'
-                                                    }`}
-                                                />
-                                            </CommandItem>
                                             {courseOptions.map((course) => (
                                                 <CommandItem
                                                     key={course.id}

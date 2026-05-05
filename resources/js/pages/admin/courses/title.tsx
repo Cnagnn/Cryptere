@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import type { CourseRow, Paginated } from '@/components/course-types';
+import type { CourseRow } from '@/types/course-management';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -68,6 +68,7 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
+import type { Paginated } from '@/types';
 import {
     destroy as coursesDestroy,
     index as adminCoursesIndex,

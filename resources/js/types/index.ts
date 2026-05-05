@@ -1,5 +1,6 @@
 export type * from './assessments';
 export type * from './auth';
+export type * from './course-management';
 export type * from './courses';
 export type * from './dashboard';
 export type * from './labs';

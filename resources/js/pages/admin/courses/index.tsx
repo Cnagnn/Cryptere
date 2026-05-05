@@ -2,15 +2,15 @@ import { Head } from '@inertiajs/react';
 import type {
     CourseRow,
     LessonRow,
-    Paginated,
     TaskRow,
-} from '@/components/course-types';
+} from '@/types/course-management';
 import { dashboard } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import type {
     AdminAssessment,
     AdminAssessmentQuestion,
     BloomLevel,
+    Paginated,
 } from '@/types';
 import AdminCoursesAssessment from './assessment';
 import AdminCoursesTask from './task';
@@ -36,6 +36,7 @@ type Props = {
     assessmentQuestions: AdminAssessmentQuestion[];
     selectedAssessmentId: number;
     assessmentTopics: { id: number; name: string }[];
+    courseFilterSelected: boolean;
     assessmentFilters: {
         search: string;
         bloom_level: BloomLevel | null;
@@ -77,6 +78,7 @@ export default function AdminCoursesIndex(props: Props) {
                     selectedAssessmentId={props.selectedAssessmentId}
                     courseOptions={props.courseOptions}
                     selectedCourseId={props.selectedCourseId}
+                    courseFilterSelected={props.courseFilterSelected}
                     allLessons={props.allLessons ?? []}
                     topics={props.assessmentTopics}
                     filters={props.assessmentFilters}

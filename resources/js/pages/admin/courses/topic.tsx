@@ -12,11 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import type {
-    CourseRow,
-    LessonRow,
-    Paginated,
-} from '@/components/course-types';
+import type { CourseRow, LessonRow } from '@/types/course-management';
 import { Button } from '@/components/ui/button';
 import {
     Command,
@@ -76,6 +72,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
+import type { Paginated } from '@/types';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as lessonsDestroy } from '@/routes/admin/courses/lessons';
 import { reorder as lessonsReorder } from '@/routes/admin/courses/lessons';

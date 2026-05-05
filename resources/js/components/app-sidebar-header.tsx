@@ -7,6 +7,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { Fragment } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
@@ -43,18 +44,18 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
                                         const href = typeof item.href === 'string' ? item.href : item.href?.url;
 
                                         return (
-                                            <BreadcrumbItem key={href ?? index}>
-                                                {isLast ? (
-                                                    <BreadcrumbPage>{item.title}</BreadcrumbPage>
-                                                ) : (
-                                                    <>
+                                            <Fragment key={href ?? index}>
+                                                <BreadcrumbItem>
+                                                    {isLast ? (
+                                                        <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                                    ) : (
                                                         <BreadcrumbLink href={href}>
                                                             {item.title}
                                                         </BreadcrumbLink>
-                                                        <BreadcrumbSeparator />
-                                                    </>
-                                                )}
-                                            </BreadcrumbItem>
+                                                    )}
+                                                </BreadcrumbItem>
+                                                {!isLast ? <BreadcrumbSeparator /> : null}
+                                            </Fragment>
                                         );
                                     })}
                                 </BreadcrumbList>

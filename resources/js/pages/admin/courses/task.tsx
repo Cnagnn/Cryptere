@@ -20,9 +20,8 @@ import { toast } from 'sonner';
 import type {
     CourseRow,
     LessonRow,
-    Paginated,
     TaskRow,
-} from '@/components/course-types';
+} from '@/types/course-management';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -83,6 +82,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
+import type { Paginated } from '@/types';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as tasksDestroy } from '@/routes/admin/courses/tasks';
 import { reorder as tasksReorder } from '@/routes/admin/courses/tasks';
