@@ -100,6 +100,23 @@ class CourseController extends Controller
         $selectedCourseId = (int) $request->integer('course_id', $defaultCourseId);
         $selectedLessonId = (int) $request->integer('lesson_id', 0);
 
+        // Auto-select first lesson if in task section and no lesson is selected
+        if ($section === self::SECTION_TASK && $selectedLessonId === 0 && count($allLessons) > 0) {
+            // If a course is selected, find first lesson from that course
+            if ($selectedCourseId > 0) {
+                $firstLessonInCourse = collect($allLessons)
+                    ->firstWhere('course_id', $selectedCourseId);
+
+                if ($firstLessonInCourse !== null) {
+                    $selectedLessonId = $firstLessonInCourse['id'];
+                }
+            } else {
+                // No course selected, use first lesson overall
+                $selectedLessonId = $allLessons[0]['id'];
+                $selectedCourseId = $allLessons[0]['course_id'];
+            }
+        }
+
         $emptyPaginated = [
             'data' => [],
             'current_page' => 1,

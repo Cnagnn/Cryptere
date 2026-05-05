@@ -754,20 +754,24 @@ export default function AdminCoursesTask({
                                                                             lesson.id &&
                                                                         selectedCourseId ===
                                                                             course.id;
+
+                                                                    // Don't navigate if already selected
+                                                                    if (
+                                                                        isSelected
+                                                                    ) {
+                                                                        return;
+                                                                    }
+
                                                                     router.get(
                                                                         adminCoursesIndex.url(
                                                                             {
                                                                                 query: {
                                                                                     section:
                                                                                         'task',
-                                                                                    ...(isSelected
-                                                                                        ? {}
-                                                                                        : {
-                                                                                              course_id:
-                                                                                                  course.id,
-                                                                                              lesson_id:
-                                                                                                  lesson.id,
-                                                                                          }),
+                                                                                    course_id:
+                                                                                        course.id,
+                                                                                    lesson_id:
+                                                                                        lesson.id,
                                                                                     page: 1,
                                                                                     per_page:
                                                                                         tasks.per_page,

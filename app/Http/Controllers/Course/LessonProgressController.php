@@ -12,9 +12,11 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Models\TaskProgress;
 use App\Services\BadgeService;
 use App\Services\LevelService;
 use App\Services\XpService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,8 +35,13 @@ class LessonProgressController extends Controller
     /**
      * Mark a lesson as completed for the current user.
      */
-    public function store(Request $request, Course $course, Lesson $lesson): RedirectResponse
+    public function store(Request $request, Course $course, Lesson $lesson): RedirectResponse|JsonResponse
     {
+        // Validate optional task_id if provided
+        $validated = $request->validate([
+            'task_id' => ['nullable', 'integer', 'exists:lesson_tasks,id'],
+        ]);
+
         abort_if($lesson->course_id !== $course->id, 404);
 
         $user = $request->user();
@@ -45,6 +52,12 @@ class LessonProgressController extends Controller
             ->first();
 
         if ($enrollment === null) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('You must enroll in this course first.'),
+                ], 403);
+            }
             abort(403);
         }
 
@@ -62,6 +75,13 @@ class LessonProgressController extends Controller
                 ->exists();
 
             if (! $isPreviousLessonCompleted) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('Complete the previous lesson first.'),
+                    ], 422);
+                }
+
                 Inertia::flash('toast', [
                     'type' => 'warning',
                     'message' => __('Complete the previous lesson first.'),
@@ -73,7 +93,20 @@ class LessonProgressController extends Controller
 
         $previousXp = $user->xp;
 
-        $result = DB::transaction(function () use ($course, $enrollment, $lesson, $user): bool {
+        $result = DB::transaction(function () use ($course, $enrollment, $lesson, $user, $validated): bool {
+            // Track task completion if task_id is provided
+            if (isset($validated['task_id'])) {
+                TaskProgress::query()->updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'lesson_task_id' => $validated['task_id'],
+                    ],
+                    [
+                        'completed_at' => now(),
+                    ]
+                );
+            }
+
             $progress = LessonProgress::query()->firstOrNew([
                 'user_id' => $user->id,
                 'lesson_id' => $lesson->id,
@@ -83,7 +116,16 @@ class LessonProgressController extends Controller
 
             $progress->attempts = ($progress->attempts ?? 0) + 1;
 
-            if (! $alreadyCompleted) {
+            // Check if all tasks in the lesson are completed
+            $totalTasks = $lesson->tasks()->count();
+            $completedTasks = TaskProgress::query()
+                ->where('user_id', $user->id)
+                ->whereIn('lesson_task_id', $lesson->tasks()->pluck('id'))
+                ->whereNotNull('completed_at')
+                ->count();
+
+            // Mark lesson as complete only if all tasks are completed
+            if (! $alreadyCompleted && $totalTasks > 0 && $completedTasks >= $totalTasks) {
                 $progress->completed_at = now();
             }
 
@@ -149,6 +191,17 @@ class LessonProgressController extends Controller
                 ['lessons_completed', 'courses_completed', 'points_earned'],
                 $previousXp,
             );
+        }
+
+        // Return JSON for AJAX requests
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $result
+                    ? __('Lesson marked complete. Keep going!')
+                    : __('This lesson was already completed.'),
+                'already_completed' => ! $result,
+            ]);
         }
 
         Inertia::flash('toast', [

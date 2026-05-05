@@ -1,13 +1,20 @@
 import { usePage } from '@inertiajs/react';
-import { Breadcrumbs } from '@/components/breadcrumbs';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import type { Auth } from '@/types/auth';
 
 type Props = {
-    breadcrumbs?: BreadcrumbItem[];
+    breadcrumbs?: BreadcrumbItemType[];
 };
 
 export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
@@ -29,7 +36,29 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
                     ) : null}
                     {resolvedBreadcrumbs.length > 1 ? (
                         <div className="min-w-0 [&_ol]:flex-nowrap [&_ol]:overflow-hidden [&_span[aria-current='page']]:truncate">
-                            <Breadcrumbs breadcrumbs={resolvedBreadcrumbs} />
+                            <Breadcrumb>
+                                <BreadcrumbList>
+                                    {resolvedBreadcrumbs.map((item, index) => {
+                                        const isLast = index === resolvedBreadcrumbs.length - 1;
+                                        const href = typeof item.href === 'string' ? item.href : item.href?.url;
+
+                                        return (
+                                            <BreadcrumbItem key={href ?? index}>
+                                                {isLast ? (
+                                                    <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                                ) : (
+                                                    <>
+                                                        <BreadcrumbLink href={href}>
+                                                            {item.title}
+                                                        </BreadcrumbLink>
+                                                        <BreadcrumbSeparator />
+                                                    </>
+                                                )}
+                                            </BreadcrumbItem>
+                                        );
+                                    })}
+                                </BreadcrumbList>
+                            </Breadcrumb>
                         </div>
                     ) : null}
                 </div>

@@ -130,6 +130,15 @@ SVG;
         return $this->hasOne(Assessment::class);
     }
 
+    /**
+     * Get all assessments for this course (one-to-many).
+     * Supports multiple assessments per course (e.g., C1-C6 Bloom levels).
+     */
+    public function assessments(): HasMany
+    {
+        return $this->hasMany(Assessment::class);
+    }
+
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);

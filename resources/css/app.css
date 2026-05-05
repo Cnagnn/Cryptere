@@ -251,6 +251,16 @@ html {
         @apply bg-background text-base leading-7 text-foreground;
     }
 
+    /* Hide scrollbar but keep functionality */
+    .hide-scrollbar {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+
     h1 {
         @apply text-3xl leading-tight font-semibold tracking-tight md:text-4xl;
     }

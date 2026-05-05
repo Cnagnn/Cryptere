@@ -11,6 +11,7 @@ use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
 use App\Models\QuizSubmission;
+use App\Models\TaskProgress;
 use App\Services\CacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -81,12 +82,6 @@ class CourseController extends Controller
             ->whereBelongsTo($course)
             ->first();
 
-        $completedLessonIds = $request->user()
-            ->lessonProgress()
-            ->whereIn('lesson_id', $course->lessons->pluck('id'))
-            ->whereNotNull('completed_at')
-            ->pluck('lesson_id');
-
         // Load quiz submissions for all tasks in this course (keyed by lesson_task_id)
         $allTaskIds = $course->lessons->flatMap(fn (Lesson $lesson) => $lesson->tasks->pluck('id'));
 
@@ -96,9 +91,22 @@ class CourseController extends Controller
             ->get()
             ->keyBy('lesson_task_id');
 
+        $completedLessonIds = $request->user()
+            ->lessonProgress()
+            ->whereIn('lesson_id', $course->lessons->pluck('id'))
+            ->whereNotNull('completed_at')
+            ->pluck('lesson_id');
+
+        // Load completed task IDs for this user
+        $completedTaskIds = TaskProgress::query()
+            ->where('user_id', $request->user()->id)
+            ->whereIn('lesson_task_id', $allTaskIds)
+            ->whereNotNull('completed_at')
+            ->pluck('lesson_task_id');
+
         $canUnlockNext = true;
 
-        $lessons = $course->lessons->map(function (Lesson $lesson) use (&$canUnlockNext, $completedLessonIds, $isAdmin, $quizSubmissions): array {
+        $lessons = $course->lessons->map(function (Lesson $lesson) use (&$canUnlockNext, $completedLessonIds, $isAdmin, $quizSubmissions, $completedTaskIds): array {
             $isCompleted = $completedLessonIds->contains($lesson->id);
             $isUnlocked = $canUnlockNext;
 
@@ -130,6 +138,7 @@ class CourseController extends Controller
                         'pdfUrl' => $task->pdf_url,
                         'isPublished' => $task->published_at !== null,
                         'publishedAt' => optional($task->published_at)->toIso8601String(),
+                        'isCompleted' => $completedTaskIds->contains($task->id),
                         // NOTE: correctOption is intentionally NOT sent to frontend (security)
                         'questions' => $task->quizQuestions->map(fn (QuizQuestion $question): array => [
                             'id' => $question->id,
@@ -155,14 +164,12 @@ class CourseController extends Controller
             ];
         })->values();
 
-        // Load the course's final assessment (if any)
+        // Load ALL course assessments (C1-C6), not just one
         $user = $request->user();
-        $assessment = $course->assessment()->published()->withCount('questions')->first();
-        $assessmentData = null;
+        $assessments = $course->assessments()->published()->withCount('questions')->orderBy('sort_order')->get();
+        $assessmentsData = [];
 
-        if ($assessment) {
-            $allLessonsCompleted = $enrollment && $enrollment->progress_percentage >= 100;
-
+        foreach ($assessments as $assessment) {
             $bestSubmission = AssessmentSubmission::query()
                 ->where('user_id', $user->id)
                 ->where('assessment_id', $assessment->id)
@@ -264,7 +271,7 @@ class CourseController extends Controller
                 ];
             }
 
-            $assessmentData = [
+            $assessmentsData[] = [
                 'id' => $assessment->id,
                 'slug' => $assessment->slug,
                 'title' => $assessment->title,
@@ -280,8 +287,8 @@ class CourseController extends Controller
                 'bestScore' => $bestSubmission?->total_score,
                 'passed' => $bestSubmission?->passed ?? false,
                 'attemptCount' => $attemptCount,
-                'canAttempt' => $allLessonsCompleted && $assessment->canAttempt($user),
-                'isLocked' => ! $allLessonsCompleted,
+                'canAttempt' => $assessment->canAttempt($user),
+                'isLocked' => false, // Allow access even if lessons not completed
                 'questions' => $questions,
                 'activeSubmission' => $activeSubmission ? [
                     'id' => $activeSubmission->id,
@@ -307,7 +314,7 @@ class CourseController extends Controller
                 'progressPercentage' => $enrollment->progress_percentage,
                 'completedAt' => optional($enrollment->completed_at)->toIso8601String(),
             ] : null,
-            'assessment' => $assessmentData,
+            'assessments' => $assessmentsData,
         ]);
     }
 }

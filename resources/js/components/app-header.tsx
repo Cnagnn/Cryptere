@@ -10,10 +10,6 @@ import {
 import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import { CommandPalette } from '@/components/command-palette';
-import { DailyRewards } from '@/components/daily-rewards';
-import { NotificationCenter } from '@/components/notification-center';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -21,6 +17,14 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -181,9 +185,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center gap-2">
-                        <CommandPalette />
-                        <DailyRewards />
-                        <NotificationCenter />
                         <div className="relative flex items-center">
                             <Button
                                 variant="ghost"
@@ -230,7 +231,29 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             {resolvedBreadcrumbs.length > 1 && (
                 <div className="flex w-full border-b border-sidebar-border/70">
                     <div className="mx-auto flex h-12 w-full items-center justify-start px-4 text-sm text-muted-foreground md:max-w-7xl">
-                        <Breadcrumbs breadcrumbs={resolvedBreadcrumbs} />
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                {resolvedBreadcrumbs.map((item, index) => {
+                                    const isLast = index === resolvedBreadcrumbs.length - 1;
+                                    const href = typeof item.href === 'string' ? item.href : item.href?.url;
+
+                                    return (
+                                        <BreadcrumbItem key={href ?? index}>
+                                            {isLast ? (
+                                                <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                            ) : (
+                                                <>
+                                                    <BreadcrumbLink href={href}>
+                                                        {item.title}
+                                                    </BreadcrumbLink>
+                                                    <BreadcrumbSeparator />
+                                                </>
+                                            )}
+                                        </BreadcrumbItem>
+                                    );
+                                })}
+                            </BreadcrumbList>
+                        </Breadcrumb>
                     </div>
                 </div>
             )}

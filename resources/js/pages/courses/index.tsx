@@ -1,17 +1,7 @@
-import { Head } from '@inertiajs/react';
-import { Filter, X } from 'lucide-react';
+import { Form, Head, Link } from '@inertiajs/react';
+import { ArrowRight, BookOpenCheck, Filter, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-    CatalogFilters,
-    CatalogStatistics,
-    hardcodedCatalogCourses,
-} from '@/components/courses/catalog-helpers';
-import {
-    CourseCardGrid,
-    CourseSkeletonGrid,
-    EmptyLabCatalogGrid,
-} from '@/components/courses/course-card-grid';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -29,6 +19,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Pagination,
     PaginationContent,
@@ -38,10 +30,24 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
+import { Progress } from '@/components/ui/progress';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { dashboard } from '@/routes';
+import { enroll, reset as resetCourseProgress, show } from '@/routes/courses';
 import { index as coursesIndex } from '@/routes/courses';
+import { show as showLab } from '@/routes/labs';
 import type {
+    CatalogFiltersProps,
+    CourseCard,
     CoursesIndexProps,
     EnrollmentFilterValue,
     LabsGroupFilterValue,
@@ -49,6 +55,495 @@ import type {
 } from '@/types/courses';
 
 const COURSES_PER_PAGE = 4;
+
+/* ── Course Thumbnail ── */
+function CourseThumbnail({ title }: { title: string }) {
+    return (
+        <div className="relative aspect-video overflow-hidden border-b bg-muted/40">
+            <div className="flex h-full w-full items-center justify-center">
+                <BookOpenCheck
+                    className="size-5 text-muted-foreground"
+                    aria-hidden="true"
+                />
+                <span className="sr-only">Gambar mini {title}</span>
+            </div>
+        </div>
+    );
+}
+
+/* ── Hardcoded lab catalog courses ── */
+const hardcodedCatalogCourses: CourseCard[] = [
+    {
+        id: 9001,
+        slug: 'caesar-cipher-lab',
+        title: 'Caesar Cipher',
+        summary:
+            'Visualisasikan pergeseran alfabet klasik untuk memahami substitusi monoalfabetik.',
+        coverImage: null,
+        estimatedMinutes: 20,
+        lessonCount: 1,
+        enrollmentCount: 0,
+        isEnrolled: false,
+        progressPercentage: null,
+        labGroup: 'classical',
+    },
+    {
+        id: 9002,
+        slug: 'vigenere-cipher-lab',
+        title: 'Vigenere Cipher',
+        summary:
+            'Simulasikan enkripsi polialfabetik berbasis kata kunci untuk mengamati pola pergeseran dinamis.',
+        coverImage: null,
+        estimatedMinutes: 25,
+        lessonCount: 1,
+        enrollmentCount: 0,
+        isEnrolled: false,
+        progressPercentage: null,
+        labGroup: 'classical',
+    },
+    {
+        id: 9003,
+        slug: 'aes-lab',
+        title: 'AES',
+        summary:
+            'Jelajahi cipher blok modern dengan fokus pada mode operasi dan efek perubahan plaintext.',
+        coverImage: null,
+        estimatedMinutes: 30,
+        lessonCount: 1,
+        enrollmentCount: 0,
+        isEnrolled: false,
+        progressPercentage: null,
+        labGroup: 'symmetric',
+    },
+    {
+        id: 9004,
+        slug: 'rsa-lab',
+        title: 'RSA',
+        summary:
+            'Visualisasikan konsep kunci publik-privat dengan enkripsi dan dekripsi berbasis bilangan prima.',
+        coverImage: null,
+        estimatedMinutes: 30,
+        lessonCount: 1,
+        enrollmentCount: 0,
+        isEnrolled: false,
+        progressPercentage: null,
+        labGroup: 'asymmetric',
+    },
+    {
+        id: 9005,
+        slug: 'sha-lab',
+        title: 'SHA',
+        summary:
+            'Simulasikan hashing satu arah untuk memeriksa efek avalanche dan integritas data.',
+        coverImage: null,
+        estimatedMinutes: 20,
+        lessonCount: 1,
+        enrollmentCount: 0,
+        isEnrolled: false,
+        progressPercentage: null,
+        labGroup: 'hashing',
+    },
+    {
+        id: 9006,
+        slug: 'digital-signature-lab',
+        title: 'Digital Signature',
+        summary:
+            'Demonstrasikan alur tanda tangan digital untuk autentikasi, integritas, dan non-repudiasi.',
+        coverImage: null,
+        estimatedMinutes: 25,
+        lessonCount: 1,
+        enrollmentCount: 0,
+        isEnrolled: false,
+        progressPercentage: null,
+        labGroup: 'signature',
+    },
+];
+
+/* ── Catalog Filters ── */
+function CatalogFilters({
+    idPrefix,
+    searchTerm,
+    onSearchTermChange,
+    isLabsCatalog,
+    enrollmentFilter,
+    onEnrollmentFilterChange,
+    labsGroupFilter,
+    onLabsGroupFilterChange,
+    sortBy,
+    onSortByChange,
+    hasActiveFilters,
+    clearFilters,
+    resultCount,
+}: CatalogFiltersProps) {
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="mt-1 flex flex-col gap-2">
+                <Label htmlFor={`${idPrefix}-search`}>Cari</Label>
+                <div className="relative">
+                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        id={`${idPrefix}-search`}
+                        value={searchTerm}
+                        onChange={(event) =>
+                            onSearchTermChange(event.target.value)
+                        }
+                        placeholder="Cari..."
+                        className="pr-24 pl-8"
+                    />
+                    <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
+                        {resultCount} Hasil
+                    </span>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <Label>
+                    {isLabsCatalog ? 'Grup algoritma' : 'Pendaftaran'}
+                </Label>
+                {isLabsCatalog ? (
+                    <Select
+                        value={labsGroupFilter}
+                        onValueChange={(value) =>
+                            onLabsGroupFilterChange(
+                                value as LabsGroupFilterValue,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Semua grup" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua grup</SelectItem>
+                            <SelectItem value="classical">Klasik</SelectItem>
+                            <SelectItem value="symmetric">Simetris</SelectItem>
+                            <SelectItem value="asymmetric">
+                                Asimetris
+                            </SelectItem>
+                            <SelectItem value="hashing">Hashing</SelectItem>
+                            <SelectItem value="signature">
+                                Tanda tangan digital
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                ) : (
+                    <Select
+                        value={enrollmentFilter}
+                        onValueChange={(value) =>
+                            onEnrollmentFilterChange(
+                                value as EnrollmentFilterValue,
+                            )
+                        }
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Semua status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua status</SelectItem>
+                            <SelectItem value="enrolled">Terdaftar</SelectItem>
+                            <SelectItem value="not-enrolled">
+                                Belum terdaftar
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                )}
+            </div>
+
+            {isLabsCatalog ? null : (
+                <div className="flex flex-col gap-2">
+                    <Label>Urutkan berdasarkan</Label>
+                    <Select
+                        value={sortBy}
+                        onValueChange={(value) =>
+                            onSortByChange(value as SortValue)
+                        }
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Urutkan kursus" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="title-asc">Judul A-Z</SelectItem>
+                            <SelectItem value="progress-desc">
+                                Progres tertinggi
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={!hasActiveFilters}
+                    onClick={clearFilters}
+                >
+                    Atur ulang kontrol
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+/* ── Catalog Statistics ── */
+function CatalogStatistics({
+    statistics,
+}: {
+    statistics: Array<{ label: string; value: string }>;
+}) {
+    return (
+        <div className="flex flex-col gap-3">
+            {statistics.map((item) => (
+                <div
+                    key={item.label}
+                    className="rounded-md border bg-muted/20 p-3"
+                >
+                    <p className="text-sm text-muted-foreground">
+                        {item.label}
+                    </p>
+                    <p className="mt-1 text-lg leading-tight font-semibold tracking-tight">
+                        {item.value}
+                    </p>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+/* ── Skeleton Grid ── */
+function CourseSkeletonGrid() {
+    return (
+        <div
+            className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3"
+            aria-live="polite"
+        >
+            {Array.from({ length: 6 }).map((_, index) => (
+                <Card
+                    key={`course-skeleton-${index}`}
+                    className="overflow-hidden"
+                >
+                    <CardHeader className="flex flex-col gap-3">
+                        <Skeleton className="h-32 w-full rounded-xl" />
+                        <Skeleton className="h-5 w-2/3" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-5/6" />
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-3">
+                        <Skeleton className="h-2 w-full" />
+                        <Skeleton className="h-9 w-full" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+}
+
+/* ── Enrolled Card Footer ── */
+function EnrolledCardFooter({ course }: { course: CourseCard }) {
+    const progressPercentage = course.progressPercentage ?? 0;
+
+    return (
+        <>
+            <Form
+                className="w-full"
+                {...resetCourseProgress.form({ course: course.slug })}
+            >
+                {({ processing }) => (
+                    <Button
+                        type="submit"
+                        variant="outline"
+                        disabled={processing || progressPercentage === 0}
+                        className="w-full"
+                    >
+                        {processing && <Spinner className="size-4" />}
+                        {processing ? 'Mengatur ulang...' : 'Mulai Ulang'}
+                    </Button>
+                )}
+            </Form>
+
+            <Button asChild className="w-full">
+                <Link href={show({ course: course.slug })} prefetch>
+                    Lanjutkan
+                    <ArrowRight className="size-4" />
+                </Link>
+            </Button>
+        </>
+    );
+}
+
+/* ── Course Card Grid ── */
+function CourseCardGrid({
+    courses,
+    isLabsCatalog,
+}: {
+    courses: CourseCard[];
+    isLabsCatalog: boolean;
+}) {
+    return (
+        <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+            {courses.map((course) => (
+                <Card
+                    key={course.id}
+                    className="relative flex h-full flex-col overflow-hidden pt-0"
+                >
+                    <CourseThumbnail title={course.title} />
+
+                    <CardHeader>
+                        <CardTitle className="text-xl leading-tight tracking-tight">
+                            {course.title}
+                        </CardTitle>
+                        <CardDescription className="text-sm leading-relaxed">
+                            {course.summary}
+                        </CardDescription>
+                    </CardHeader>
+
+                    {!isLabsCatalog ? (
+                        <CardContent className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                {(() => {
+                                    const progressPercentage =
+                                        course.progressPercentage ?? 0;
+
+                                    return (
+                                        <>
+                                            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                                <span>
+                                                    {course.isEnrolled
+                                                        ? 'Progres Anda'
+                                                        : 'Belum terdaftar'}
+                                                </span>
+                                                <span>
+                                                    {course.isEnrolled
+                                                        ? progressPercentage
+                                                        : 0}
+                                                    %
+                                                </span>
+                                            </div>
+                                            <Progress
+                                                value={
+                                                    course.isEnrolled
+                                                        ? progressPercentage
+                                                        : 0
+                                                }
+                                                className="h-2"
+                                            />
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        </CardContent>
+                    ) : null}
+
+                    <CardFooter
+                        className={
+                            isLabsCatalog
+                                ? 'mt-auto'
+                                : course.isEnrolled
+                                  ? 'mt-auto grid grid-cols-2 gap-2'
+                                  : 'mt-auto'
+                        }
+                    >
+                        {isLabsCatalog ? (
+                            <Button
+                                asChild
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                            >
+                                <Link
+                                    href={showLab({ lab: course.slug })}
+                                    prefetch
+                                >
+                                    Buka simulasi
+                                    <ArrowRight className="size-4" />
+                                </Link>
+                            </Button>
+                        ) : course.isEnrolled ? (
+                            <EnrolledCardFooter course={course} />
+                        ) : (
+                            <Form
+                                className="w-full"
+                                {...enroll.form({ course: course.slug })}
+                            >
+                                {({ processing }) => (
+                                    <Button
+                                        type="submit"
+                                        variant="secondary"
+                                        disabled={processing}
+                                        className="w-full"
+                                    >
+                                        {processing && (
+                                            <Spinner className="size-4" />
+                                        )}
+                                        {processing
+                                            ? 'Mendaftar...'
+                                            : 'Daftar sekarang'}
+                                    </Button>
+                                )}
+                            </Form>
+                        )}
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+    );
+}
+
+/* ── Empty Lab Catalog Grid ── */
+function EmptyLabCatalogGrid({
+    courses,
+    isLabsCatalog,
+}: {
+    courses: CourseCard[];
+    isLabsCatalog: boolean;
+}) {
+    return (
+        <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+            {courses.map((course) => (
+                <Card
+                    key={course.id}
+                    className="flex h-full flex-col overflow-hidden"
+                >
+                    <CardHeader className="flex flex-col gap-4">
+                        <CourseThumbnail title={course.title} />
+
+                        <div className="flex flex-col gap-2">
+                            <CardTitle className="text-xl leading-tight tracking-tight">
+                                {course.title}
+                            </CardTitle>
+                            <CardDescription className="text-sm leading-relaxed">
+                                {course.summary}
+                            </CardDescription>
+                        </div>
+                    </CardHeader>
+
+                    {!isLabsCatalog ? (
+                        <CardContent className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                    <span>Belum terdaftar</span>
+                                    <span>0%</span>
+                                </div>
+                                <Progress value={0} className="h-2" />
+                            </div>
+                        </CardContent>
+                    ) : null}
+
+                    <CardFooter className="mt-auto">
+                        <Button
+                            type="button"
+                            variant={isLabsCatalog ? 'outline' : 'secondary'}
+                            disabled
+                            className="w-full"
+                        >
+                            {isLabsCatalog ? 'Buka simulasi' : 'Segera hadir'}
+                        </Button>
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+    );
+}
 
 export default function CoursesIndex({
     courses,

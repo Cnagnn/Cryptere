@@ -26,7 +26,7 @@ class AssessmentPolicy
 
     /**
      * Determine whether the user can attempt the assessment.
-     * If the assessment belongs to a course, the user must complete all lessons first.
+     * Assessment can be attempted even if lessons are not completed.
      */
     public function attempt(User $user, Assessment $assessment): bool
     {
@@ -34,14 +34,14 @@ class AssessmentPolicy
             return false;
         }
 
-        // If assessment belongs to a course, user must complete all lessons first
+        // If assessment belongs to a course, user must be enrolled
         if ($assessment->course_id !== null) {
             $enrollment = Enrollment::query()
                 ->where('user_id', $user->id)
                 ->where('course_id', $assessment->course_id)
                 ->first();
 
-            if (! $enrollment || $enrollment->progress_percentage < 100) {
+            if (! $enrollment) {
                 return false;
             }
         }

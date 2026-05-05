@@ -1,6 +1,5 @@
 import { createInertiaApp } from '@inertiajs/react';
 import * as Sentry from '@sentry/react';
-import { ErrorBoundaryFallback } from '@/components/error-boundary-fallback';
 import { DirectionProvider } from '@/components/ui/direction';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -58,7 +57,7 @@ createInertiaApp({
     strictMode: true,
     withApp(app) {
         return (
-            <Sentry.ErrorBoundary fallback={ErrorBoundaryFallback}>
+            <Sentry.ErrorBoundary>
                 <DirectionProvider dir="ltr">
                     <TooltipProvider delayDuration={0}>
                         {app}

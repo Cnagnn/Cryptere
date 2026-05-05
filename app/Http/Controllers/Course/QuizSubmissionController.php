@@ -9,6 +9,7 @@ use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
 use App\Models\QuizSubmission;
+use App\Models\TaskProgress;
 use App\Models\User;
 use App\Services\AdaptiveQuestionService;
 use App\Services\XpService;
@@ -73,7 +74,7 @@ class QuizSubmissionController extends Controller
             ->first();
 
         if ($enrollment === null) {
-            return response()->json(['error' => 'You must be enrolled in this course to take a quiz.'], 403);
+            return back()->withErrors(['error' => 'You must be enrolled in this course to take a quiz.']);
         }
 
         /** @var User $user */
@@ -112,13 +113,7 @@ class QuizSubmissionController extends Controller
                 'actual_count' => $questions->count(),
             ]);
 
-            return response()->json([
-                'error' => 'Invalid question IDs provided.',
-                'debug' => [
-                    'submitted' => $questionIds,
-                    'found' => $questions->pluck('id')->all(),
-                ],
-            ], 422);
+            return back()->withErrors(['error' => 'Invalid question IDs provided.']);
         }
 
         $correctCount = 0;
@@ -233,6 +228,17 @@ class QuizSubmissionController extends Controller
             'submitted_at' => now(),
         ]);
 
+        // Mark task as completed in TaskProgress
+        TaskProgress::query()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'lesson_task_id' => $task->id,
+            ],
+            [
+                'completed_at' => now(),
+            ]
+        );
+
         // Recalculate is_best_attempt across all submissions for this user + task
         $this->recalculateBestAttempt($user->id, $task->id);
 
@@ -255,7 +261,7 @@ class QuizSubmissionController extends Controller
             'xp_earned' => $xpEarned,
             'points_earned' => $pointsEarned,
             'attempt_number' => $attemptNumber,
-            'max_attempts' => null, // unlimited
+            'max_attempts' => null,
             'xp_multiplier' => $xpMultiplier,
             'best_score' => $bestSubmission?->score ?? $correctCount,
             'best_total' => $bestSubmission?->total ?? $questions->count(),

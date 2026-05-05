@@ -8,8 +8,6 @@ import {
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
 import {
     Collapsible,
     CollapsibleContent,
@@ -115,7 +113,29 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} label="Dashboard" />
+                <SidebarGroup className="px-2 py-0">
+                    <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {mainNavItems.map((item) => {
+                                const href = typeof item.href === 'string' ? item.href : item.href.url;
+                                return (
+                                    <SidebarMenuItem key={href}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={isCurrentUrl(item.href)}
+                                        >
+                                            <Link href={item.href} prefetch>
+                                                {item.icon && <item.icon />}
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
                 {auth.user.is_admin ? (
                     <SidebarGroup className="px-2 py-0">
                         <SidebarGroupLabel>Management</SidebarGroupLabel>
@@ -263,7 +283,25 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavUser />
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <div className="flex items-center gap-2 px-2 py-1.5">
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                                <span className="text-xs font-semibold">
+                                    {auth.user.name.charAt(0).toUpperCase()}
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-0.5 leading-none">
+                                <span className="text-sm font-semibold">
+                                    {auth.user.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    {auth.user.email}
+                                </span>
+                            </div>
+                        </div>
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarFooter>
         </Sidebar>
     );
