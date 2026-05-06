@@ -346,7 +346,8 @@ function EnrolledCardFooter({ course }: { course: CourseCard }) {
         <>
             <Form
                 className="w-full"
-                {...resetCourseProgress.form({ course: course.slug })}
+                action={resetCourseProgress.url({ course: course.slug })}
+                method="post"
             >
                 {({ processing }) => (
                     <Button
@@ -463,7 +464,8 @@ function CourseCardGrid({
                         ) : (
                             <Form
                                 className="w-full"
-                                {...enroll.form({ course: course.slug })}
+                                action={enroll.url({ course: course.slug })}
+                                method="post"
                             >
                                 {({ processing }) => (
                                     <Button
@@ -728,7 +730,7 @@ export default function CoursesIndex({
         <>
             <Head title={headTitle} />
 
-            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
+            <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-6">
                 <div className="animate-fade-in-up flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-col gap-0">
                         <TypographyH1>{pageTitle}</TypographyH1>
@@ -802,7 +804,7 @@ export default function CoursesIndex({
                 </div>
 
                 <section
-                    className="animate-fade-in-up grid gap-6 lg:grid-cols-[300px_1fr]"
+                    className="animate-fade-in-up grid gap-3 lg:grid-cols-[300px_1fr]"
                     style={{ animationDelay: '100ms' }}
                 >
                     <Card className="hidden h-fit lg:sticky lg:top-20 lg:block">

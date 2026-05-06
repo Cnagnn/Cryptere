@@ -9,7 +9,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseContentWithChecks } from '../content-parser';
 import type {
-    ContentSegment,
     CheckSegment,
     MarkdownSegment,
 } from '../content-parser';

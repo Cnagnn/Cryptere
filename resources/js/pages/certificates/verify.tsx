@@ -3,7 +3,6 @@ import {
     AlertTriangle,
     Calendar,
     CheckCircle,
-    GraduationCap,
     Shield,
 } from 'lucide-react';
 

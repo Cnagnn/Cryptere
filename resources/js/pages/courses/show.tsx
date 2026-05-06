@@ -1,29 +1,4 @@
 ﻿import { Head, router, usePage } from '@inertiajs/react';
-import Plyr from 'plyr';
-import 'plyr/dist/plyr.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
-
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
-import { saveAnswer as saveAssessmentAnswer, start as startAssessment, submit as submitAssessment } from '@/routes/assessments';
-import { enroll as enrollCourse, index as coursesIndex, show as showCourse } from '@/routes/courses';
-import { complete as completeLesson, quiz as submitQuizRoute } from '@/routes/courses/lessons';
-import type { Auth } from '@/types/auth';
 import {
     AlertCircle,
     BookOpen,
@@ -32,10 +7,9 @@ import {
     ChevronRight,
     Clock,
     ClipboardCheck,
-    Download,
     FileText,
     Loader2,
-    Lock,
+    Menu,
     MessageSquare,
     PlayCircle,
     RotateCcw,
@@ -43,19 +17,86 @@ import {
     Target,
     Trophy,
     XCircle,
-    type LucideIcon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+// @ts-expect-error plyr has no default export in types but works at runtime
+import Plyr from 'plyr';
+import 'plyr/dist/plyr.css';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+import { toast } from 'sonner';
 
-type PlayerSource = { kind: 'youtube' | 'vimeo'; embedId: string } | { kind: 'file'; src: string } | { kind: 'unsupported' };
-type VideoProcessingStatus = 'pending' | 'processing' | 'ready' | 'converted' | 'failed' | null;
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+import { CourseTaskPanel } from '@/components/course-task-panel';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+
+import { Separator } from '@/components/ui/separator';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet';
+import { Textarea } from '@/components/ui/textarea';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
+import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
+import {
+    saveAnswer as saveAssessmentAnswer,
+    start as startAssessment,
+    submit as submitAssessment,
+} from '@/routes/assessments';
+import { index as coursesIndex, show as showCourse } from '@/routes/courses';
+import {
+    complete as completeLesson,
+    heartbeat as heartbeatRoute,
+    quiz as submitQuizRoute,
+} from '@/routes/courses/lessons';
+import type { Auth } from '@/types/auth';
+
+type PlayerSource =
+    | { kind: 'youtube' | 'vimeo'; embedId: string }
+    | { kind: 'file'; src: string }
+    | { kind: 'unsupported' };
+type VideoProcessingStatus =
+    | 'pending'
+    | 'processing'
+    | 'ready'
+    | 'converted'
+    | 'failed'
+    | null;
 type TaskType = 'video' | 'read' | 'reading' | 'quiz';
 
 type QuizSubmission = {
     answers?: unknown;
     score: number;
     total: number;
-    results: Array<{ correct: boolean; explanation: string | null }>;
+    results: Array<{ correct: boolean; correctAnswer?: number; explanation?: string | null }>;
     xpEarned?: number;
     pointsEarned?: number;
     attemptNumber?: number;
@@ -72,12 +113,30 @@ type LessonQuizQuestion = {
     explanation: string;
 };
 
+type ServerTaskQuestion = {
+    id: number;
+    question: string;
+    options: [string, string, string, string];
+    explanation: string | null;
+};
+
+type EnrollmentData = {
+    progressPercentage: number | string;
+    completedAt: string | null;
+} | null;
+type Props = {
+    course: ServerCourse;
+    lessons: ServerLesson[];
+    enrollment: EnrollmentData;
+    assessments: AssessmentFullData[];
+};
+type NormalizedTaskType = Exclude<TaskType, 'reading'>;
+
 type LessonTask = {
     id: number;
-    type: Exclude<TaskType, 'reading'>;
+    type: NormalizedTaskType;
     title: string;
     description: string;
-    minutes: number;
     videoUrl: string | null;
     videoProcessingStatus: string | null;
     pdfUrl: string | null;
@@ -96,12 +155,10 @@ type LessonData = {
     tasks: LessonTask[];
 };
 
-type ServerTaskQuestion = {
-    id: number;
-    question: string;
-    options: [string, string, string, string];
-    explanation: string | null;
-};
+type ActiveContent =
+    | { mode: 'task'; lesson: LessonData; task: LessonTask }
+    | { mode: 'assessment'; assessment: AssessmentFullData }
+    | null;
 
 type ServerTask = {
     taskId: number | null;
@@ -144,9 +201,17 @@ type ServerCourse = {
 type AssessmentQuestion = {
     id: number;
     bloomLevel?: string | null;
-    questionType: 'multiple_choice' | 'essay' | string;
+    questionType:
+        | 'mcq'
+        | 'true_false'
+        | 'short_answer'
+        | 'essay'
+        | 'computation'
+        | 'case_study'
+        | 'design'
+        | string;
     questionText: string;
-    options?: string[] | null;
+    options?: Array<string | { label?: string; value?: string }> | null;
     points: number;
     gradingType?: string | null;
     minWords?: number | null;
@@ -177,7 +242,10 @@ type AssessmentFullData = {
         id: number;
         attemptNumber: number;
         startedAt: string;
-        answers?: Record<number, { selected_option?: number; answer_text?: string }>;
+        answers?: Record<
+            number,
+            { selected_option?: string; answer_text?: string }
+        >;
     } | null;
     pastSubmissions?: Array<{
         id: number;
@@ -209,7 +277,7 @@ type AssessmentFullData = {
             questionType: string;
             bloomLevel?: string | null;
             answerText?: string | null;
-            selectedOption?: number | null;
+            selectedOption?: string | null;
             isCorrect?: boolean | null;
             pointsAwarded?: number | null;
             maxPoints?: number | null;
@@ -220,12 +288,11 @@ type AssessmentFullData = {
     } | null;
 };
 
-type EnrollmentData = { progressPercentage: number | string; completedAt: string | null } | null;
-type Props = { course: ServerCourse; lessons: ServerLesson[]; enrollment: EnrollmentData; assessments: AssessmentFullData[] };
-type ActiveContent = { mode: 'task'; lesson: LessonData; task: LessonTask } | { mode: 'assessment'; assessment: AssessmentFullData } | null;
-
 function csrfToken(): string {
-    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+    return (
+        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.content ?? ''
+    );
 }
 
 function resolvePlayerSource(url: string): PlayerSource {
@@ -234,15 +301,21 @@ function resolvePlayerSource(url: string): PlayerSource {
         const host = parsedUrl.hostname.toLowerCase();
 
         if (host.includes('youtube.com') || host.includes('youtu.be')) {
-            const embedId = parsedUrl.searchParams.get('v') ?? parsedUrl.pathname.split('/').filter(Boolean).pop();
+            const embedId =
+                parsedUrl.searchParams.get('v') ??
+                parsedUrl.pathname.split('/').filter(Boolean).pop();
 
-            return embedId ? { kind: 'youtube', embedId } : { kind: 'unsupported' };
+            return embedId
+                ? { kind: 'youtube', embedId }
+                : { kind: 'unsupported' };
         }
 
         if (host.includes('vimeo.com')) {
             const embedId = parsedUrl.pathname.split('/').filter(Boolean).pop();
 
-            return embedId ? { kind: 'vimeo', embedId } : { kind: 'unsupported' };
+            return embedId
+                ? { kind: 'vimeo', embedId }
+                : { kind: 'unsupported' };
         }
 
         if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
@@ -275,6 +348,24 @@ function normalizeTaskType(type: TaskType): Exclude<TaskType, 'reading'> {
     return type === 'reading' ? 'read' : type;
 }
 
+function normalizePdfUrl(url: string): string {
+    try {
+        const parsed = new URL(url);
+
+        // If same origin or localhost, use just the path
+        if (
+            parsed.origin === window.location.origin ||
+            parsed.hostname === 'localhost'
+        ) {
+            return parsed.pathname;
+        }
+
+        return url;
+    } catch {
+        return url;
+    }
+}
+
 function mapLessons(serverLessons: ServerLesson[]): LessonData[] {
     return serverLessons.map((lesson) => ({
         id: lesson.id,
@@ -288,10 +379,9 @@ function mapLessons(serverLessons: ServerLesson[]): LessonData[] {
                 type,
                 title: normalizeTaskTitle(task.title),
                 description: defaultTaskDescription(type),
-                minutes: task.minutes,
                 videoUrl: task.videoUrl,
                 videoProcessingStatus: task.videoProcessingStatus ?? null,
-                pdfUrl: task.pdfUrl,
+                pdfUrl: task.pdfUrl ? normalizePdfUrl(task.pdfUrl) : null,
                 pdfName: task.documentName,
                 isPublished: task.isPublished,
                 publishedAt: task.publishedAt,
@@ -300,7 +390,9 @@ function mapLessons(serverLessons: ServerLesson[]): LessonData[] {
                     id: question.id,
                     question: question.question,
                     options: question.options,
-                    explanation: question.explanation ?? 'Penjelasan tersedia setelah kuis dikirim.',
+                    explanation:
+                        question.explanation ??
+                        'Penjelasan tersedia setelah kuis dikirim.',
                 })),
                 submission: task.submission ?? null,
             };
@@ -320,29 +412,6 @@ function taskIcon(type: LessonTask['type']): LucideIcon {
     return BookOpen;
 }
 
-function taskLabel(type: LessonTask['type']): string {
-    if (type === 'video') {
-        return 'Video';
-    }
-
-    if (type === 'quiz') {
-        return 'Quiz';
-    }
-
-    return 'Reading';
-}
-
-function formatMinutes(minutes: number): string {
-    if (minutes < 60) {
-        return `${minutes}m`;
-    }
-
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
-
-    return rest > 0 ? `${hours}h ${rest}m` : `${hours}h`;
-}
-
 function formatClock(seconds: number): string {
     const safeSeconds = Math.max(0, seconds);
     const minutes = Math.floor(safeSeconds / 60);
@@ -351,17 +420,53 @@ function formatClock(seconds: number): string {
     return `${minutes}:${rest.toString().padStart(2, '0')}`;
 }
 
-async function markTaskComplete(courseSlug: string, lessonId: number, taskId: number): Promise<void> {
-    const response = await fetch(completeLesson.url({ course: courseSlug, lesson: lessonId }), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrfToken(),
+/**
+ * Send a heartbeat to accumulate watch/reading time for anti-cheat.
+ */
+async function sendHeartbeat(
+    courseSlug: string,
+    lessonId: number,
+    taskId: number,
+    type: 'video' | 'reading',
+    seconds: number,
+): Promise<void> {
+    try {
+        await fetch(
+            heartbeatRoute.url({ course: courseSlug, lesson: lessonId }),
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                body: JSON.stringify({ task_id: taskId, type, seconds }),
+                credentials: 'same-origin',
+            },
+        );
+    } catch {
+        // Silently fail — heartbeat is best-effort
+    }
+}
+
+async function markTaskComplete(
+    courseSlug: string,
+    lessonId: number,
+    taskId: number,
+): Promise<void> {
+    const response = await fetch(
+        completeLesson.url({ course: courseSlug, lesson: lessonId }),
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken(),
+            },
+            body: JSON.stringify({ task_id: taskId }),
+            credentials: 'same-origin',
         },
-        body: JSON.stringify({ task_id: taskId }),
-        credentials: 'same-origin',
-    });
+    );
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -371,7 +476,10 @@ async function markTaskComplete(courseSlug: string, lessonId: number, taskId: nu
     toast.success(data.message || 'Progress tersimpan.');
 }
 
-function submittedQuizAnswers(submission: QuizSubmission | null, questions: LessonQuizQuestion[]): number[] {
+function submittedQuizAnswers(
+    submission: QuizSubmission | null,
+    questions: LessonQuizQuestion[],
+): number[] {
     const empty = questions.map(() => -1);
 
     if (!submission?.answers) {
@@ -381,14 +489,35 @@ function submittedQuizAnswers(submission: QuizSubmission | null, questions: Less
     if (Array.isArray(submission.answers)) {
         const answers = [...empty];
 
+        // Check if it's a flat array of integers (backend format: [2, 1, 3])
+        if (
+            submission.answers.length > 0 &&
+            typeof submission.answers[0] === 'number'
+        ) {
+            submission.answers.forEach((answer, index) => {
+                if (index < answers.length && typeof answer === 'number') {
+                    answers[index] = answer;
+                }
+            });
+
+            return answers;
+        }
+
+        // Object format: [{question_id, answer}, ...]
         submission.answers.forEach((answer) => {
             if (!answer || typeof answer !== 'object') {
                 return;
             }
 
-            const payload = answer as { question_id?: number; questionId?: number; answer?: number };
+            const payload = answer as {
+                question_id?: number;
+                questionId?: number;
+                answer?: number;
+            };
             const questionId = payload.question_id ?? payload.questionId;
-            const questionIndex = questions.findIndex((question) => question.id === questionId);
+            const questionIndex = questions.findIndex(
+                (question) => question.id === questionId,
+            );
 
             if (questionIndex !== -1 && typeof payload.answer === 'number') {
                 answers[questionIndex] = payload.answer;
@@ -401,30 +530,103 @@ function submittedQuizAnswers(submission: QuizSubmission | null, questions: Less
     return empty;
 }
 
-function MetricCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+function MetricCard({
+    icon: Icon,
+    label,
+    value,
+}: {
+    icon: LucideIcon;
+    label: string;
+    value: string;
+}) {
     return (
         <div className="rounded-md border bg-muted/20 p-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Icon className="size-4" />
                 {label}
             </div>
-            <p className="mt-1 text-lg leading-tight font-semibold tracking-tight tabular-nums">{value}</p>
+            <p className="mt-1 text-lg leading-tight font-semibold tracking-tight tabular-nums">
+                {value}
+            </p>
         </div>
     );
 }
 
-function VideoTask({ courseSlug, lessonId, task, onComplete }: { courseSlug: string; lessonId: number; task: LessonTask; onComplete: () => void }) {
+function VideoTask({
+    courseSlug,
+    lessonId,
+    task,
+    onComplete,
+}: {
+    courseSlug: string;
+    lessonId: number;
+    task: LessonTask;
+    onComplete: () => void;
+}) {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const playerRef = useRef<Plyr | null>(null);
     const completionSentRef = useRef(false);
-    const source = useMemo(() => resolvePlayerSource(task.videoUrl ?? ''), [task.videoUrl]);
+    const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const watchSecondsRef = useRef(0);
+    const isPlayingRef = useRef(false);
+    const maxWatchedTimeRef = useRef(0);
+    const source = useMemo(
+        () => resolvePlayerSource(task.videoUrl ?? ''),
+        [task.videoUrl],
+    );
     const status = task.videoProcessingStatus as VideoProcessingStatus;
     const isWaiting = status === 'pending' || status === 'processing';
+
+    // Video heartbeat: track actual play time and send every 30s
+    useEffect(() => {
+        const HEARTBEAT_INTERVAL = 30; // seconds
+        let accumulatedSinceLastSend = 0;
+
+        const ticker = setInterval(() => {
+            if (isPlayingRef.current) {
+                accumulatedSinceLastSend++;
+                watchSecondsRef.current++;
+            }
+
+            if (accumulatedSinceLastSend >= HEARTBEAT_INTERVAL) {
+                sendHeartbeat(
+                    courseSlug,
+                    lessonId,
+                    task.id,
+                    'video',
+                    accumulatedSinceLastSend,
+                );
+                accumulatedSinceLastSend = 0;
+            }
+        }, 1000);
+
+        heartbeatRef.current = ticker;
+
+        return () => {
+            clearInterval(ticker);
+
+            // Send remaining seconds on unmount
+            if (accumulatedSinceLastSend > 0) {
+                sendHeartbeat(
+                    courseSlug,
+                    lessonId,
+                    task.id,
+                    'video',
+                    accumulatedSinceLastSend,
+                );
+            }
+        };
+    }, [courseSlug, lessonId, task.id]);
 
     useEffect(() => {
         const container = containerRef.current;
 
-        if (!container || source.kind === 'unsupported' || isWaiting || status === 'failed') {
+        if (
+            !container ||
+            source.kind === 'unsupported' ||
+            isWaiting ||
+            status === 'failed'
+        ) {
             return;
         }
 
@@ -437,7 +639,18 @@ function VideoTask({ courseSlug, lessonId, task, onComplete }: { courseSlug: str
                 target.setAttribute('data-plyr-provider', source.kind);
                 target.setAttribute('data-plyr-embed-id', source.embedId);
                 container.appendChild(target);
-                player = new Plyr(target);
+                player = new Plyr(target, {
+                    controls: [
+                        'play-large',
+                        'play',
+                        'progress',
+                        'current-time',
+                        'fullscreen',
+                    ],
+                    disableContextMenu: true,
+                    keyboard: { focused: false, global: false },
+                    seekTime: 0,
+                });
             }
 
             if (source.kind === 'file') {
@@ -449,24 +662,75 @@ function VideoTask({ courseSlug, lessonId, task, onComplete }: { courseSlug: str
                 sourceElement.type = 'video/mp4';
                 video.appendChild(sourceElement);
                 container.appendChild(video);
-                player = new Plyr(video);
+                player = new Plyr(video, {
+                    controls: [
+                        'play-large',
+                        'play',
+                        'progress',
+                        'current-time',
+                        'fullscreen',
+                    ],
+                    disableContextMenu: true,
+                    keyboard: { focused: false, global: false },
+                    seekTime: 0,
+                });
             }
 
             if (player) {
                 playerRef.current = player;
+
+                // Anti-cheat: prevent seeking forward
+                let maxTime = 0;
+                player.on('timeupdate', () => {
+                    const current = player!.currentTime;
+
+                    if (current > maxTime) {
+                        maxTime = current;
+                    }
+                });
+                player.on('seeking', () => {
+                    const current = player!.currentTime;
+
+                    if (current > maxTime + 1) {
+                        player!.currentTime = maxTime;
+                    }
+                });
+
+                // Track play/pause state for heartbeat
+                player.on('playing', () => {
+                    isPlayingRef.current = true;
+                });
+                player.on('pause', () => {
+                    isPlayingRef.current = false;
+                });
                 player.on('ended', async () => {
+                    isPlayingRef.current = false;
+
                     if (completionSentRef.current) {
                         return;
                     }
 
                     completionSentRef.current = true;
 
+                    // Send final heartbeat before completion
+                    await sendHeartbeat(
+                        courseSlug,
+                        lessonId,
+                        task.id,
+                        'video',
+                        Math.min(watchSecondsRef.current, 60),
+                    );
+
                     try {
                         await markTaskComplete(courseSlug, lessonId, task.id);
                         onComplete();
                     } catch (error) {
                         completionSentRef.current = false;
-                        toast.error(error instanceof Error ? error.message : 'Gagal menyimpan progress.');
+                        toast.error(
+                            error instanceof Error
+                                ? error.message
+                                : 'Gagal menyimpan progress.',
+                        );
                     }
                 });
             }
@@ -483,102 +747,213 @@ function VideoTask({ courseSlug, lessonId, task, onComplete }: { courseSlug: str
 
     if (isWaiting) {
         return (
-            <Card className="overflow-hidden">
-                <CardHeader className="border-b">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <CardTitle>{task.title}</CardTitle>
-                            <CardDescription>{task.description}</CardDescription>
-                        </div>
-                        <Badge variant="secondary">{status === 'pending' ? 'Queued' : 'Processing'}</Badge>
+            <div className="space-y-4">
+                <div className="flex aspect-video flex-col items-center justify-center gap-4 rounded-2xl border bg-black p-6 text-center text-white">
+                    <Loader2 className="size-10 animate-spin text-white/70" />
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium">
+                            Video sedang diproses.
+                        </p>
+                        <p className="text-xs text-white/60">
+                            Refresh halaman setelah proses selesai.
+                        </p>
                     </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <div className="flex aspect-video flex-col items-center justify-center gap-4 bg-black p-6 text-center text-white">
-                        <Loader2 className="size-10 animate-spin text-white/70" />
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium">Video sedang diproses.</p>
-                            <p className="text-xs text-white/60">Refresh halaman setelah proses selesai.</p>
-                        </div>
-                        <Progress value={status === 'pending' ? 15 : 55} className="max-w-xs" />
-                    </div>
-                </CardContent>
-            </Card>
+                    <Progress
+                        value={status === 'pending' ? 15 : 55}
+                        className="max-w-xs"
+                    />
+                </div>
+            </div>
         );
     }
 
     if (status === 'failed') {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>{task.title}</CardTitle>
-                    <CardDescription>{task.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Alert variant="destructive">
-                        <AlertCircle className="size-4" />
-                        <AlertDescription>Video gagal diproses. Coba refresh atau hubungi admin.</AlertDescription>
-                    </Alert>
-                </CardContent>
-                <CardFooter>
-                    <Button variant="outline" onClick={() => window.location.reload()}>
-                        <RotateCcw className="mr-2 size-4" />
-                        Retry
-                    </Button>
-                </CardFooter>
-            </Card>
+            <div className="space-y-4">
+                <Alert variant="destructive">
+                    <AlertCircle className="size-4" />
+                    <AlertDescription>
+                        Video gagal diproses. Coba refresh atau hubungi admin.
+                    </AlertDescription>
+                </Alert>
+                <Button
+                    variant="outline"
+                    onClick={() => window.location.reload()}
+                    className="w-fit"
+                >
+                    <RotateCcw className="mr-2 size-4" />
+                    Coba Lagi
+                </Button>
+            </div>
         );
     }
 
     if (!task.videoUrl || source.kind === 'unsupported') {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>{task.title}</CardTitle>
-                    <CardDescription>{task.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Alert variant="destructive">
-                        <AlertCircle className="size-4" />
-                        <AlertDescription>URL video tidak valid atau belum tersedia.</AlertDescription>
-                    </Alert>
-                </CardContent>
-            </Card>
+            <div className="space-y-4">
+                <Alert variant="destructive">
+                    <AlertCircle className="size-4" />
+                    <AlertDescription>
+                        URL video tidak valid atau belum tersedia.
+                    </AlertDescription>
+                </Alert>
+            </div>
         );
     }
 
     return (
-        <Card className="overflow-hidden border-0 bg-black shadow-xl shadow-black/10">
-            <CardContent className="p-0">
-                <div ref={containerRef} className="aspect-video w-full bg-black" />
-            </CardContent>
-        </Card>
+        <div className="overflow-hidden rounded-2xl border bg-black shadow-xl shadow-black/10">
+            <div ref={containerRef} className="aspect-video w-full bg-black" />
+        </div>
     );
 }
 
-function PdfPanel({ task }: { task: LessonTask }) {
-    return (
-        <div className="space-y-4">
-            <div className="flex flex-col gap-3 rounded-2xl border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <FileText className="size-5" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{task.pdfName ?? 'Course document'}</p>
-                        <p className="text-xs text-muted-foreground">PDF document</p>
-                    </div>
-                </div>
-                {task.pdfUrl ? (
-                    <Button asChild variant="outline">
-                        <a href={task.pdfUrl} download target="_blank" rel="noopener noreferrer">
-                            <Download className="mr-2 size-4" />
-                            Download
-                        </a>
-                    </Button>
-                ) : null}
+function PdfStreamViewer({
+    url,
+    scrollRef,
+    onProgressChange,
+}: {
+    url: string;
+    scrollRef: React.RefObject<HTMLDivElement | null>;
+    onProgressChange?: (progress: number) => void;
+}) {
+    const [numPages, setNumPages] = useState<number>(0);
+    const [loadError, setLoadError] = useState(false);
+    const [pdfData, setPdfData] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const maxProgressRef = useRef(0);
+    const containerRef = scrollRef;
+
+    // Fetch PDF via XHR to bypass IDM interception
+    useEffect(() => {
+        let cancelled = false;
+        const controller = new AbortController();
+
+        fetch(url, {
+            credentials: 'same-origin',
+            signal: controller.signal,
+        })
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error('Failed to fetch PDF');
+                }
+
+                return res.blob();
+            })
+            .then((blob) => {
+                if (cancelled) {
+                    return;
+                }
+
+                const blobUrl = URL.createObjectURL(blob);
+                setPdfData(blobUrl);
+                setLoading(false);
+            })
+            .catch(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                setLoadError(true);
+                setLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+            controller.abort();
+        };
+    }, [url]);
+
+    // Cleanup blob URL on unmount
+    useEffect(() => {
+        return () => {
+            if (pdfData) {
+                URL.revokeObjectURL(pdfData);
+            }
+        };
+    }, [pdfData]);
+
+    function onDocumentLoadSuccess({ numPages: total }: { numPages: number }) {
+        setNumPages(total);
+    }
+
+    useEffect(() => {
+        const element = containerRef.current;
+
+        if (!element || !onProgressChange || numPages === 0) {
+            return;
+        }
+
+        const handleScroll = () => {
+            const maxScroll = element.scrollHeight - element.clientHeight;
+            // If content fits without scrolling, it's fully visible = 100%
+            const current =
+                maxScroll <= 0 ? 100 : (element.scrollTop / maxScroll) * 100;
+            const rounded = Math.min(100, Math.round(current));
+
+            if (rounded > maxProgressRef.current) {
+                maxProgressRef.current = rounded;
+                onProgressChange(rounded);
+            }
+        };
+
+        element.addEventListener('scroll', handleScroll);
+
+        // Delay initial calculation to let pages render
+        const timer = setTimeout(handleScroll, 500);
+
+        return () => {
+            element.removeEventListener('scroll', handleScroll);
+            clearTimeout(timer);
+        };
+    }, [containerRef, onProgressChange, numPages]);
+
+    if (loadError) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border bg-muted/20 py-14">
+                <FileText className="size-10 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                    Gagal memuat dokumen PDF. Silakan muat ulang halaman.
+                </p>
             </div>
-            {task.pdfUrl ? <iframe src={task.pdfUrl} className="h-155 w-full rounded-2xl border" title={task.pdfName ?? task.title} /> : null}
+        );
+    }
+
+    if (loading || !pdfData) {
+        return (
+            <div className="flex items-center justify-center rounded-2xl border bg-muted/30 py-20">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    return (
+        <div
+            ref={containerRef}
+            className="h-155 overflow-y-auto rounded-2xl border bg-muted/30 p-4"
+            onContextMenu={(e) => e.preventDefault()}
+        >
+            <Document
+                file={pdfData}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={() => setLoadError(true)}
+                loading={
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                    </div>
+                }
+            >
+                {Array.from({ length: numPages }, (_, index) => (
+                    <Page
+                        key={`page_${index + 1}`}
+                        pageNumber={index + 1}
+                        width={680}
+                        className="mx-auto mb-4 shadow-sm last:mb-0"
+                        renderTextLayer
+                        renderAnnotationLayer
+                    />
+                ))}
+            </Document>
         </div>
     );
 }
@@ -587,20 +962,62 @@ function ReadingTask({
     courseSlug,
     lesson,
     task,
-    sourceContent,
     onComplete,
 }: {
     courseSlug: string;
     lesson: LessonData;
     task: LessonTask;
-    sourceContent?: string;
     onComplete: () => void;
 }) {
-    const scrollRef = useRef<HTMLDivElement | null>(null);
-    const [readingProgress, setReadingProgress] = useState(0);
+    const pdfScrollRef = useRef<HTMLDivElement | null>(null);
+    const [readingProgress, setReadingProgress] = useState(task.isCompleted ? 100 : 0);
     const [completed, setCompleted] = useState(task.isCompleted);
-    const hasHtml = Boolean(sourceContent);
     const hasPdf = Boolean(task.pdfUrl);
+
+    // Reading heartbeat: track time spent on page, send every 15s
+    useEffect(() => {
+        const HEARTBEAT_INTERVAL = 15;
+        let accumulatedSinceLastSend = 0;
+        let isVisible = true;
+
+        const handleVisibility = () => {
+            isVisible = document.visibilityState === 'visible';
+        };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        const ticker = setInterval(() => {
+            if (isVisible) {
+                accumulatedSinceLastSend++;
+            }
+
+            if (accumulatedSinceLastSend >= HEARTBEAT_INTERVAL) {
+                sendHeartbeat(
+                    courseSlug,
+                    lesson.id,
+                    task.id,
+                    'reading',
+                    accumulatedSinceLastSend,
+                );
+                accumulatedSinceLastSend = 0;
+            }
+        }, 1000);
+
+        return () => {
+            clearInterval(ticker);
+            document.removeEventListener('visibilitychange', handleVisibility);
+
+            if (accumulatedSinceLastSend > 0) {
+                sendHeartbeat(
+                    courseSlug,
+                    lesson.id,
+                    task.id,
+                    'reading',
+                    accumulatedSinceLastSend,
+                );
+            }
+        };
+    }, [courseSlug, lesson.id, task.id]);
 
     const finishReading = useCallback(async () => {
         if (completed) {
@@ -614,110 +1031,106 @@ function ReadingTask({
             onComplete();
         } catch (error) {
             setCompleted(false);
-            toast.error(error instanceof Error ? error.message : 'Gagal menyimpan progress.');
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Gagal menyimpan progress.',
+            );
         }
     }, [completed, courseSlug, lesson.id, onComplete, task.id]);
 
-    useEffect(() => {
-        const element = scrollRef.current;
-
-        if (!element || !hasHtml) {
-            return;
-        }
-
-        const handleScroll = () => {
-            const maxScroll = element.scrollHeight - element.clientHeight;
-            const progress = maxScroll > 0 ? (element.scrollTop / maxScroll) * 100 : 100;
-            setReadingProgress(Math.min(100, Math.round(progress)));
+    const handleProgressChange = useCallback(
+        (progress: number) => {
+            setReadingProgress(progress);
 
             if (progress >= 90) {
                 finishReading();
             }
-        };
+        },
+        [finishReading],
+    );
 
-        element.addEventListener('scroll', handleScroll);
-        handleScroll();
-
-        return () => element.removeEventListener('scroll', handleScroll);
-    }, [finishReading, hasHtml]);
-
-    if (!hasHtml && !hasPdf) {
+    if (!hasPdf) {
         return (
-            <Card>
-                <CardContent className="py-14">
-                    <Empty>
-                        <EmptyHeader>
-                            <FileText className="mx-auto size-10 text-muted-foreground" />
-                            <EmptyTitle>Materi belum tersedia</EmptyTitle>
-                            <EmptyDescription>Konten bacaan untuk tugas ini belum diunggah.</EmptyDescription>
-                        </EmptyHeader>
-                    </Empty>
-                </CardContent>
-            </Card>
+            <div className="rounded-2xl border bg-background py-14">
+                <Empty>
+                    <EmptyHeader>
+                        <FileText className="mx-auto size-10 text-muted-foreground" />
+                        <EmptyTitle>Dokumen belum tersedia</EmptyTitle>
+                        <EmptyDescription>
+                            File PDF untuk tugas ini belum diunggah.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
+            </div>
         );
     }
 
     return (
-        <Card className="overflow-hidden">
-            <CardHeader className="border-b">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <CardTitle>{task.title}</CardTitle>
-                        <CardDescription>{task.description}</CardDescription>
-                    </div>
-                    <Badge variant={completed ? 'default' : 'outline'}>{completed ? 'Completed' : 'Reading'}</Badge>
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Progress membaca</span>
+                    <span className="font-medium text-foreground tabular-nums">
+                        {readingProgress}%
+                    </span>
                 </div>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4 sm:p-6">
-                {hasHtml ? (
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Reading progress</span>
-                            <span className="font-medium tabular-nums text-foreground">{readingProgress}%</span>
-                        </div>
-                        <Progress value={readingProgress} className="h-2" />
-                    </div>
-                ) : null}
+                <Progress value={readingProgress} className="h-2" />
+            </div>
 
-                {hasHtml && hasPdf ? (
-                    <Tabs defaultValue="content">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="content">Materi</TabsTrigger>
-                            <TabsTrigger value="pdf">PDF</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="content" className="mt-4">
-                            <div ref={scrollRef} className="h-145 overflow-y-auto rounded-2xl border bg-background p-5">
-                                <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sourceContent ?? '' }} />
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="pdf" className="mt-4">
-                            <PdfPanel task={task} />
-                        </TabsContent>
-                    </Tabs>
-                ) : hasHtml ? (
-                    <div ref={scrollRef} className="h-155 overflow-y-auto rounded-2xl border bg-background p-5">
-                        <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sourceContent ?? '' }} />
-                    </div>
-                ) : (
-                    <PdfPanel task={task} />
-                )}
-            </CardContent>
+            <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">
+                    {task.pdfName ?? 'Dokumen PDF'}
+                </p>
+            </div>
+
+            <PdfStreamViewer
+                url={task.pdfUrl!}
+                scrollRef={pdfScrollRef}
+                onProgressChange={handleProgressChange}
+            />
+
             {!completed ? (
-                <CardFooter className="border-t bg-muted/20">
-                    <Button onClick={finishReading} className="ml-auto">
-                        Mark as complete
+                <div className="flex justify-end border-t pt-4">
+                    <Button onClick={finishReading}>
+                        Tandai selesai dibaca
                     </Button>
-                </CardFooter>
+                </div>
             ) : null}
-        </Card>
+        </div>
     );
 }
 
-function QuizTask({ courseSlug, lesson, task, onComplete }: { courseSlug: string; lesson: LessonData; task: LessonTask; onComplete: () => void }) {
+function QuizTask({
+    courseSlug,
+    lesson,
+    task,
+    onComplete,
+    onActiveChange,
+}: {
+    courseSlug: string;
+    lesson: LessonData;
+    task: LessonTask;
+    onComplete: () => void;
+    onActiveChange?: (active: boolean) => void;
+}) {
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const questions = task.quizQuestions;
+    const [started, setStarted] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [showResults, setShowResults] = useState(Boolean(task.submission));
+    const [showResults, setShowResults] = useState(false);
+
+    // Shuffle option order per question (stable per mount)
+    const [shuffledIndices] = useState<number[][]>(() =>
+        questions.map((q) => {
+            const indices = q.options.map((_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            return indices;
+        }),
+    );
     const [submitting, setSubmitting] = useState(false);
     const [answers, setAnswers] = useState<number[]>(() => {
         if (typeof window === 'undefined') {
@@ -730,7 +1143,10 @@ function QuizTask({ courseSlug, lesson, task, onComplete }: { courseSlug: string
             try {
                 const parsed = JSON.parse(saved) as number[];
 
-                if (Array.isArray(parsed) && parsed.length === questions.length) {
+                if (
+                    Array.isArray(parsed) &&
+                    parsed.length === questions.length
+                ) {
                     return parsed;
                 }
             } catch {
@@ -740,6 +1156,10 @@ function QuizTask({ courseSlug, lesson, task, onComplete }: { courseSlug: string
 
         return submittedQuizAnswers(task.submission, questions);
     });
+
+    useEffect(() => {
+        onActiveChange?.(started && !showResults);
+    }, [started, showResults, onActiveChange]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -752,19 +1172,22 @@ function QuizTask({ courseSlug, lesson, task, onComplete }: { courseSlug: string
             return;
         }
 
-        window.localStorage.setItem(`quiz-${task.id}-answers`, JSON.stringify(answers));
+        window.localStorage.setItem(
+            `quiz-${task.id}-answers`,
+            JSON.stringify(answers),
+        );
     }, [answers, showResults, task.id]);
 
     if (questions.length === 0) {
         return (
-            <Card>
-                <CardContent className="py-10">
-                    <Alert>
-                        <AlertCircle className="size-4" />
-                        <AlertDescription>Kuis belum memiliki pertanyaan.</AlertDescription>
-                    </Alert>
-                </CardContent>
-            </Card>
+            <div className="rounded-2xl border py-10">
+                <Alert>
+                    <AlertCircle className="size-4" />
+                    <AlertDescription>
+                        Kuis belum memiliki pertanyaan.
+                    </AlertDescription>
+                </Alert>
+            </div>
         );
     }
 
@@ -781,277 +1204,605 @@ function QuizTask({ courseSlug, lesson, task, onComplete }: { courseSlug: string
         }
 
         setSubmitting(true);
-        router.post(
-            submitQuizRoute.url({ course: courseSlug, lesson: lesson.id }),
-            {
+
+        fetch(submitQuizRoute.url({ course: courseSlug, lesson: lesson.id }), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
                 task_id: task.id,
-                answers: questions.map((question, index) => ({ question_id: question.id, answer: answers[index] })),
-            },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setShowResults(true);
-                    toast.success('Quiz submitted successfully!');
-                    onComplete();
-                },
-                onError: (formErrors) => {
-                    toast.error(formErrors.message || formErrors.answers || 'Quiz submission failed. Please try again.');
-                },
-                onFinish: () => setSubmitting(false),
-            },
-        );
+                answers: questions.map((question, index) => ({
+                    question_id: question.id,
+                    answer: answers[index],
+                })),
+            }),
+        })
+            .then(async (response) => {
+                if (!response.ok) {
+                    const error = await response.json();
+
+                    throw new Error(error.message || 'Quiz submission failed');
+                }
+
+                return response.json();
+            })
+            .then(() => {
+                setShowResults(true);
+                toast.success('Kuis berhasil dikirim!');
+                onComplete();
+            })
+            .catch((error) => {
+                toast.error(error.message || 'Gagal mengirim kuis. Silakan coba lagi.');
+            })
+            .finally(() => {
+                setSubmitting(false);
+            });
     };
 
     if (showResults && task.submission) {
-        const scorePercentage = Math.round((task.submission.score / task.submission.total) * 100);
+        const scorePercentage = Math.round(
+            (task.submission.score / task.submission.total) * 100,
+        );
         const passed = scorePercentage >= 70;
 
         return (
-            <Card className="overflow-hidden">
-                <CardHeader className="border-b bg-muted/20">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-4">
+                <div className="grid gap-4 rounded-2xl border bg-muted/30 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div className="flex items-start gap-3">
+                        {passed ? (
+                            <CheckCircle2 className="mt-1 size-6 text-emerald-600" />
+                        ) : (
+                            <XCircle className="mt-1 size-6 text-destructive" />
+                        )}
                         <div>
-                            <CardTitle>{task.title}</CardTitle>
-                            <CardDescription>{task.description}</CardDescription>
-                        </div>
-                        <Badge variant={passed ? 'default' : 'destructive'}>{scorePercentage}% Score</Badge>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-6 p-4 sm:p-6">
-                    <div className="grid gap-4 rounded-2xl border bg-muted/30 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
-                        <div className="flex items-start gap-3">
-                            {passed ? <CheckCircle2 className="mt-1 size-6 text-emerald-600" /> : <XCircle className="mt-1 size-6 text-destructive" />}
-                            <div>
-                                <h3 className="text-lg font-semibold">{passed ? 'Great job!' : 'Keep trying!'}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    You scored {task.submission.score} of {task.submission.total}.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="text-left sm:text-right">
-                            <div className="flex items-center gap-2 text-xl font-semibold sm:justify-end">
-                                <Trophy className="size-5 text-amber-500" />+{task.submission.xpEarned ?? 0} XP
-                            </div>
-                            <p className="text-xs text-muted-foreground">Points: {task.submission.pointsEarned ?? task.submission.score}</p>
+                            <h3 className="text-lg font-semibold">
+                                {passed ? 'Kerja bagus!' : 'Terus berusaha!'}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                Skor kamu {task.submission.score} dari{' '}
+                                {task.submission.total}.
+                            </p>
                         </div>
                     </div>
+                    <div className="text-left sm:text-right">
+                        <div className="flex items-center gap-2 text-xl font-semibold sm:justify-end">
+                            <Trophy className="size-5 text-amber-500" />+
+                            {task.submission.xpEarned ?? 0} XP
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Poin:{' '}
+                            {task.submission.pointsEarned ??
+                                task.submission.score}
+                        </p>
+                    </div>
+                </div>
 
-                    <div className="space-y-3">
-                        <h4 className="text-sm font-semibold">Review answers</h4>
-                        {questions.map((question, index) => {
-                            const result = task.submission?.results[index];
-                            const selectedAnswer = answers[index];
+                <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Tinjauan jawaban</h4>
+                    {questions.map((question, index) => {
+                        const result = task.submission?.results[index];
+                        const selectedAnswer = answers[index];
 
-                            return (
-                                <div
-                                    key={question.id}
-                                    className={cn(
-                                        'rounded-2xl border p-4',
-                                        result?.correct
-                                            ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/20'
-                                            : 'border-red-200 bg-red-50/70 dark:border-red-900 dark:bg-red-950/20',
+                        return (
+                            <div
+                                key={question.id}
+                                className={cn(
+                                    'rounded-2xl border p-4',
+                                    result?.correct
+                                        ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/20'
+                                        : 'border-red-200 bg-red-50/70 dark:border-red-900 dark:bg-red-950/20',
+                                )}
+                            >
+                                <div className="flex gap-3">
+                                    {result?.correct ? (
+                                        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
+                                    ) : (
+                                        <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
                                     )}
-                                >
-                                    <div className="flex gap-3">
-                                        {result?.correct ? <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" /> : <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />}
-                                        <div className="space-y-2 text-sm">
-                                            <p className="font-medium">
-                                                {index + 1}. {question.question}
+                                    <div className="space-y-2 text-sm">
+                                        <p className="font-medium">
+                                            {index + 1}. {question.question}
+                                        </p>
+                                        <p>
+                                            <span className="font-medium">
+                                                Jawaban kamu:{' '}
+                                            </span>
+                                            {selectedAnswer >= 0
+                                                ? question.options[
+                                                      selectedAnswer
+                                                  ]
+                                                : 'Jawaban tersimpan di server.'}
+                                        </p>
+                                        {!result?.correct &&
+                                            result?.correctAnswer != null ? (
+                                            <p className="text-emerald-600 dark:text-emerald-400">
+                                                <span className="font-medium">
+                                                    Jawaban benar:{' '}
+                                                </span>
+                                                {question.options[
+                                                    result.correctAnswer
+                                                ]}
                                             </p>
-                                            <p>
-                                                <span className="font-medium">Your answer: </span>
-                                                {selectedAnswer >= 0 ? question.options[selectedAnswer] : 'Jawaban tersimpan di server.'}
-                                            </p>
-                                            {result?.explanation ? <p className="text-muted-foreground">{result.explanation}</p> : null}
-                                        </div>
+                                        ) : null}
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-                </CardContent>
-                {task.submission.canRetry ? (
-                    <CardFooter className="border-t bg-muted/20">
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="flex gap-3 border-t pt-4">
+                    <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                            setShowResults(false);
+                            setStarted(false);
+                        }}
+                    >
+                        Kembali
+                    </Button>
+                    {task.submission.canRetry ? (
                         <Button
+                            className="flex-1"
                             onClick={() => {
                                 setShowResults(false);
                                 setAnswers(questions.map(() => -1));
                                 setCurrentIndex(0);
+                                setStarted(true);
                             }}
-                            className="w-full"
                         >
-                            Try again
+                            Mulai Ulang
                         </Button>
-                    </CardFooter>
-                ) : null}
-            </Card>
+                    ) : null}
+                </div>
+            </div>
         );
     }
 
-    return (
-        <Card className="overflow-hidden">
-            <CardHeader className="gap-4 border-b bg-muted/20">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <CardTitle>{task.title}</CardTitle>
-                        <CardDescription>{task.description}</CardDescription>
-                    </div>
-                    <Badge variant="outline">
-                        Question {currentIndex + 1} of {questions.length}
-                    </Badge>
-                </div>
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>
-                            Answered {answeredCount}/{questions.length}
-                        </span>
-                        <span className="font-medium tabular-nums text-foreground">{Math.round(progress)}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-6 p-4 sm:p-6">
-                <div className="rounded-2xl border bg-background p-5">
-                    <h3 className="text-lg font-semibold">
-                        {currentIndex + 1}. {currentQuestion.question}
-                    </h3>
-                    <RadioGroup
-                        value={answers[currentIndex] !== -1 ? String(answers[currentIndex]) : undefined}
-                        onValueChange={(value) => {
-                            const nextAnswers = [...answers];
-                            nextAnswers[currentIndex] = Number(value);
-                            setAnswers(nextAnswers);
-                        }}
-                        className="mt-5 space-y-3"
-                    >
-                        {currentQuestion.options.map((option, index) => (
-                            <div key={option} className={cn('flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors hover:bg-muted/50', answers[currentIndex] === index && 'border-primary bg-primary/5')}>
-                                <RadioGroupItem value={String(index)} id={`quiz-${task.id}-${index}`} />
-                                <Label htmlFor={`quiz-${task.id}-${index}`} className="flex-1 cursor-pointer text-sm leading-relaxed">
-                                    {option}
-                                </Label>
-                            </div>
-                        ))}
-                    </RadioGroup>
-                </div>
-
-                {errors.answers ? (
-                    <Alert variant="destructive">
-                        <AlertCircle className="size-4" />
-                        <AlertDescription>{errors.answers}</AlertDescription>
-                    </Alert>
-                ) : null}
-            </CardContent>
-            <CardFooter className="border-t bg-muted/20">
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <Button variant="outline" onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))} disabled={currentIndex === 0}>
-                        <ChevronLeft className="mr-2 size-4" />
-                        Previous
-                    </Button>
-                    {currentIndex < questions.length - 1 ? (
-                        <Button onClick={() => setCurrentIndex((index) => Math.min(questions.length - 1, index + 1))} disabled={answers[currentIndex] === -1}>
-                            Next
-                            <ChevronRight className="ml-2 size-4" />
-                        </Button>
-                    ) : (
-                        <Button onClick={submitQuiz} disabled={!allAnswered || submitting}>
-                            {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                            Submit quiz
-                        </Button>
-                    )}
-                </div>
-            </CardFooter>
-        </Card>
-    );
-}
-
-function AssessmentPanel({ assessment, onClose }: { assessment: AssessmentFullData; onClose: () => void }) {
-    const initialView = assessment.activeSubmission ? 'attempt' : assessment.latestResults ? 'results' : 'overview';
-    const [view, setView] = useState<'overview' | 'attempt' | 'results'>(initialView);
-
-    if (view === 'attempt' && assessment.activeSubmission) {
-        return <AssessmentAttempt assessment={assessment} />;
-    }
-
-    if (view === 'results' && assessment.latestResults) {
-        return <AssessmentResults assessment={assessment} onBack={() => setView('overview')} />;
-    }
-
-    return <AssessmentOverview assessment={assessment} onClose={onClose} onViewResults={() => setView('results')} />;
-}
-
-function AssessmentOverview({ assessment, onClose, onViewResults }: { assessment: AssessmentFullData; onClose: () => void; onViewResults: () => void }) {
-    const [starting, setStarting] = useState(false);
-    const totalPoints = assessment.totalPoints ?? assessment.questions.reduce((sum, question) => sum + question.points, 0);
-
-    return (
-        <Card className="overflow-hidden">
-            <CardHeader className="border-b bg-muted/20">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                        <CardTitle>{assessment.title}</CardTitle>
-                        <CardDescription>{assessment.description ?? 'Assessment pemahaman kursus.'}</CardDescription>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={onClose}>
-                        <ChevronLeft className="mr-2 size-4" />
-                        Back
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-6 p-4 sm:p-6">
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <MetricCard icon={Target} label="Passing" value={`${assessment.passingScore}%`} />
-                    <MetricCard icon={BookOpen} label="Points" value={String(totalPoints)} />
-                    <MetricCard icon={ClipboardCheck} label="Questions" value={String(assessment.questions.length)} />
-                    <MetricCard icon={Clock} label="Limit" value={assessment.timeLimitMinutes ? `${assessment.timeLimitMinutes}m` : 'None'} />
+    if (!started) {
+        return (
+            <div className="space-y-6">
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <MetricCard
+                        icon={BookOpen}
+                        label="Pertanyaan"
+                        value={String(questions.length)}
+                    />
+                    <MetricCard icon={Target} label="Passing" value="70%" />
+                    <MetricCard
+                        icon={ClipboardCheck}
+                        label="Tipe"
+                        value="Pilihan Ganda"
+                    />
                 </div>
 
                 <Separator />
 
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-semibold">Question map</h3>
-                        <Badge variant="secondary">{assessment.bloomLabel ?? 'Assessment'}</Badge>
-                    </div>
-                    <div className="grid gap-2">
-                        {assessment.questions.map((question, index) => (
-                            <div key={question.id} className="flex items-center justify-between rounded-2xl border bg-muted/20 px-4 py-3">
-                                <div className="flex min-w-0 items-center gap-3">
-                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{index + 1}</span>
-                                    <span className="truncate text-sm">{question.questionType === 'multiple_choice' ? 'Multiple choice' : 'Essay'}</span>
-                                </div>
-                                <Badge variant="outline">{question.points} pts</Badge>
-                            </div>
-                        ))}
-                    </div>
+                    <h4 className="text-sm font-semibold">Petunjuk</h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                            Jawab semua pertanyaan sebelum mengirim.
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                            Anda bisa berpindah antar pertanyaan.
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                            Skor minimal 70% untuk lulus.
+                        </li>
+                    </ul>
                 </div>
-            </CardContent>
-            <CardFooter className="flex-col gap-2 border-t bg-muted/20">
+
+                {task.submission ? (
+                    <div className="flex gap-3 border-t pt-4">
+                        <Button
+                            variant="outline"
+                            className="flex-1"
+                            size="lg"
+                            onClick={() => {
+                                setShowResults(true);
+                                setStarted(true);
+                            }}
+                        >
+                            Tinjau
+                        </Button>
+                        {task.submission.canRetry ? (
+                            <Button
+                                className="flex-1"
+                                size="lg"
+                                onClick={() => setStarted(true)}
+                            >
+                                Mulai Ulang
+                            </Button>
+                        ) : null}
+                    </div>
+                ) : (
+                    <div className="border-t pt-4">
+                        <Button
+                            className="w-full"
+                            size="lg"
+                            onClick={() => setStarted(true)}
+                        >
+                            Mulai Kuis
+                        </Button>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                        Dijawab {answeredCount}/{questions.length}
+                    </span>
+                    <span className="font-medium text-foreground tabular-nums">
+                        {Math.round(progress)}%
+                    </span>
+                </div>
+                <Progress value={progress} className="h-2" />
+            </div>
+            <div className="rounded-2xl border bg-background p-5">
+                <h3 className="text-lg font-semibold">
+                    {currentIndex + 1}. {currentQuestion.question}
+                </h3>
+                <div className="mt-5 space-y-3">
+                    {shuffledIndices[currentIndex].map((originalIndex) => (
+                        <button
+                            key={originalIndex}
+                            type="button"
+                            onClick={() => {
+                                const nextAnswers = [...answers];
+                                nextAnswers[currentIndex] = nextAnswers[currentIndex] === originalIndex ? -1 : originalIndex;
+                                setAnswers(nextAnswers);
+                            }}
+                            className={cn(
+                                'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted/50',
+                                answers[currentIndex] === originalIndex
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-border',
+                            )}
+                        >
+                            <span
+                                className={cn(
+                                    'flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                                    answers[currentIndex] === originalIndex
+                                        ? 'border-primary bg-primary'
+                                        : 'border-muted-foreground/40',
+                                )}
+                            >
+                                {answers[currentIndex] === originalIndex ? (
+                                    <span className="size-2 rounded-full bg-white" />
+                                ) : null}
+                            </span>
+                            <span className="flex-1 text-sm leading-relaxed">
+                                {currentQuestion.options[originalIndex]}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {errors.answers ? (
+                <Alert variant="destructive">
+                    <AlertCircle className="size-4" />
+                    <AlertDescription>{errors.answers}</AlertDescription>
+                </Alert>
+            ) : null}
+
+            <div className="flex w-full flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <Button
-                    disabled={starting || assessment.canAttempt === false}
+                    variant="outline"
+                    onClick={() =>
+                        setCurrentIndex((index) => Math.max(0, index - 1))
+                    }
+                    disabled={currentIndex === 0}
+                >
+                    <ChevronLeft className="mr-2 size-4" />
+                    Sebelumnya
+                </Button>
+                {currentIndex < questions.length - 1 ? (
+                    <Button
+                        onClick={() =>
+                            setCurrentIndex((index) =>
+                                Math.min(questions.length - 1, index + 1),
+                            )
+                        }
+                        disabled={answers[currentIndex] === -1}
+                    >
+                        Berikutnya
+                        <ChevronRight className="ml-2 size-4" />
+                    </Button>
+                ) : (
+                    <Button
+                        onClick={submitQuiz}
+                        disabled={!allAnswered || submitting}
+                    >
+                        {submitting ? (
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : null}
+                        Kirim Kuis
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function AssessmentPanel({
+    assessment,
+    onClose,
+}: {
+    assessment: AssessmentFullData;
+    onClose: () => void;
+}) {
+    const initialView = assessment.activeSubmission
+        ? 'continue'
+        : assessment.latestResults
+          ? 'results'
+          : 'overview';
+    const [view, setView] = useState<
+        'overview' | 'continue' | 'attempt' | 'results'
+    >(initialView);
+
+    if (view === 'attempt' && assessment.activeSubmission) {
+        return <AssessmentAttempt assessment={assessment} />;
+    }
+
+    if (view === 'continue' && assessment.activeSubmission) {
+        return (
+            <AssessmentContinue
+                assessment={assessment}
+                onContinue={() => setView('attempt')}
+            />
+        );
+    }
+
+    if (view === 'results' && assessment.latestResults) {
+        return (
+            <AssessmentResults
+                assessment={assessment}
+                onBack={() => setView('overview')}
+            />
+        );
+    }
+
+    return (
+        <AssessmentOverview
+            assessment={assessment}
+            onClose={onClose}
+            onViewResults={() => setView('results')}
+        />
+    );
+}
+
+function AssessmentContinue({
+    assessment,
+    onContinue,
+}: {
+    assessment: AssessmentFullData;
+    onContinue: () => void;
+}) {
+    const submission = assessment.activeSubmission!;
+    const answeredCount = Object.keys(submission.answers ?? {}).length;
+    const totalQuestions = assessment.questions.length;
+    const progress =
+        totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+
+    const elapsedSeconds = Math.max(
+        0,
+        Math.floor(
+            (Date.now() - new Date(submission.startedAt).getTime()) / 1000,
+        ),
+    );
+    const timeLimitSeconds = assessment.timeLimitMinutes
+        ? assessment.timeLimitMinutes * 60
+        : null;
+    const timeRemaining =
+        timeLimitSeconds !== null ? timeLimitSeconds - elapsedSeconds : null;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-start gap-3 rounded-2xl border bg-amber-50/70 p-4 dark:bg-amber-950/20">
+                <Clock className="mt-0.5 size-5 shrink-0 text-amber-600" />
+                <div>
+                    <h3 className="font-semibold">
+                        Assessment sedang berlangsung
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Anda memiliki percobaan ke-{submission.attemptNumber}{' '}
+                        yang belum selesai.
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+                <MetricCard
+                    icon={BookOpen}
+                    label="Dijawab"
+                    value={`${answeredCount}/${totalQuestions}`}
+                />
+                <MetricCard
+                    icon={Target}
+                    label="Progress"
+                    value={`${Math.round(progress)}%`}
+                />
+                <MetricCard
+                    icon={Clock}
+                    label="Sisa Waktu"
+                    value={
+                        timeRemaining !== null
+                            ? formatClock(timeRemaining)
+                            : 'Tanpa batas'
+                    }
+                />
+            </div>
+
+            <div className="space-y-2">
+                <Progress value={progress} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                    {totalQuestions - answeredCount} pertanyaan belum dijawab
+                </p>
+            </div>
+
+            <div className="border-t pt-4">
+                <Button
                     className="w-full"
                     size="lg"
-                    onClick={() => {
-                        setStarting(true);
-                        router.post(startAssessment.url({ assessment: assessment.slug }), {}, { preserveScroll: true, onFinish: () => setStarting(false) });
-                    }}
+                    onClick={onContinue}
                 >
-                    {starting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <BookOpen className="mr-2 size-4" />}
-                    {assessment.canAttempt === false ? 'Attempt limit reached' : 'Start assessment'}
+                    Lanjutkan Assessment
+                    <ChevronRight className="ml-2 size-4" />
                 </Button>
-                {assessment.latestResults ? (
-                    <Button variant="outline" onClick={onViewResults} className="w-full">
-                        View previous results
+            </div>
+        </div>
+    );
+}
+
+function AssessmentOverview({
+    assessment,
+    onClose,
+    onViewResults,
+}: {
+    assessment: AssessmentFullData;
+    onClose: () => void;
+    onViewResults: () => void;
+}) {
+    const [starting, setStarting] = useState(false);
+
+    return (
+        <div className="space-y-6">
+            <div className="grid gap-3 sm:grid-cols-3">
+                <MetricCard
+                    icon={BookOpen}
+                    label="Pertanyaan"
+                    value={String(assessment.questions.length)}
+                />
+                <MetricCard
+                    icon={Target}
+                    label="Passing"
+                    value={`${assessment.passingScore}%`}
+                />
+                <MetricCard
+                    icon={Clock}
+                    label="Waktu"
+                    value={
+                        assessment.timeLimitMinutes
+                            ? `${assessment.timeLimitMinutes} menit`
+                            : 'Tanpa batas'
+                    }
+                />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+                <h4 className="text-sm font-semibold">Petunjuk</h4>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                        Jawab semua pertanyaan sebelum mengirim.
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                        Anda bisa berpindah antar pertanyaan.
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                        Skor minimal {assessment.passingScore}% untuk lulus.
+                    </li>
+                    {assessment.timeLimitMinutes ? (
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                            Batas waktu {assessment.timeLimitMinutes} menit.
+                        </li>
+                    ) : null}
+                </ul>
+            </div>
+
+            {assessment.latestResults ? (
+                <div className="flex gap-3 border-t pt-4">
+                    <Button
+                        variant="outline"
+                        className="flex-1"
+                        size="lg"
+                        onClick={onViewResults}
+                    >
+                        Tinjau
                     </Button>
-                ) : null}
-            </CardFooter>
-        </Card>
+                    {assessment.canAttempt !== false ? (
+                        <Button
+                            disabled={starting}
+                            className="flex-1"
+                            size="lg"
+                            onClick={() => {
+                                setStarting(true);
+                                router.post(
+                                    startAssessment.url({
+                                        assessment: assessment.slug,
+                                    }),
+                                    {},
+                                    {
+                                        preserveScroll: true,
+                                        onFinish: () => setStarting(false),
+                                    },
+                                );
+                            }}
+                        >
+                            {starting ? (
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                            ) : null}
+                            Mulai Ulang
+                        </Button>
+                    ) : null}
+                </div>
+            ) : (
+                <div className="border-t pt-4">
+                    <Button
+                        disabled={starting || assessment.canAttempt === false}
+                        className="w-full"
+                        size="lg"
+                        onClick={() => {
+                            setStarting(true);
+                            router.post(
+                                startAssessment.url({
+                                    assessment: assessment.slug,
+                                }),
+                                {},
+                                {
+                                    preserveScroll: true,
+                                    onFinish: () => setStarting(false),
+                                },
+                            );
+                        }}
+                    >
+                        {starting ? (
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : null}
+                        {assessment.canAttempt === false
+                            ? 'Batas percobaan tercapai'
+                            : 'Mulai Assessment'}
+                    </Button>
+                </div>
+            )}
+        </div>
     );
 }
 
 function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
     const submission = assessment.activeSubmission;
-    const [answers, setAnswers] = useState<Record<number, { selected_option?: number; answer_text?: string }>>(submission?.answers ?? {});
+    const [answers, setAnswers] = useState<
+        Record<number, { selected_option?: string; answer_text?: string }>
+    >(submission?.answers ?? {});
     const [currentIndex, setCurrentIndex] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1060,13 +1811,24 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
             return 0;
         }
 
-        return Math.max(0, Math.floor((Date.now() - new Date(submission.startedAt).getTime()) / 1000));
+        return Math.max(
+            0,
+            Math.floor(
+                (Date.now() - new Date(submission.startedAt).getTime()) / 1000,
+            ),
+        );
     });
     const currentQuestion = assessment.questions[currentIndex];
     const answeredCount = Object.keys(answers).length;
-    const progress = assessment.questions.length > 0 ? (answeredCount / assessment.questions.length) * 100 : 0;
-    const timeLimitSeconds = assessment.timeLimitMinutes ? assessment.timeLimitMinutes * 60 : null;
-    const timeRemaining = timeLimitSeconds !== null ? timeLimitSeconds - elapsedSeconds : null;
+    const progress =
+        assessment.questions.length > 0
+            ? (answeredCount / assessment.questions.length) * 100
+            : 0;
+    const timeLimitSeconds = assessment.timeLimitMinutes
+        ? assessment.timeLimitMinutes * 60
+        : null;
+    const timeRemaining =
+        timeLimitSeconds !== null ? timeLimitSeconds - elapsedSeconds : null;
 
     const handleSubmit = useCallback(() => {
         if (submitting) {
@@ -1074,26 +1836,39 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
         }
 
         setSubmitting(true);
-        router.post(submitAssessment.url({ assessment: assessment.slug }), {}, { preserveScroll: true, onFinish: () => setSubmitting(false) });
+        router.post(
+            submitAssessment.url({ assessment: assessment.slug }),
+            {},
+            { preserveScroll: true, onFinish: () => setSubmitting(false) },
+        );
     }, [assessment.slug, submitting]);
 
     const saveAnswer = useCallback(
-        (questionId: number, value: { selected_option?: number; answer_text?: string }) => {
+        (
+            questionId: number,
+            value: { selected_option?: string; answer_text?: string },
+        ) => {
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
             }
 
             saveTimeoutRef.current = setTimeout(() => {
-                fetch(saveAssessmentAnswer.url({ assessment: assessment.slug }), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN': csrfToken(),
+                fetch(
+                    saveAssessmentAnswer.url({ assessment: assessment.slug }),
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Accept: 'application/json',
+                            'X-CSRF-TOKEN': csrfToken(),
+                        },
+                        body: JSON.stringify({
+                            question_id: questionId,
+                            ...value,
+                        }),
                     },
-                    body: JSON.stringify({ question_id: questionId, ...value }),
-                }).catch(() => {
-                    toast.error('Auto-save failed.');
+                ).catch(() => {
+                    toast.error('Gagal menyimpan otomatis.');
                 });
             }, 800);
         },
@@ -1101,7 +1876,10 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
     );
 
     useEffect(() => {
-        const interval = window.setInterval(() => setElapsedSeconds((seconds) => seconds + 1), 1000);
+        const interval = window.setInterval(
+            () => setElapsedSeconds((seconds) => seconds + 1),
+            1000,
+        );
 
         return () => window.clearInterval(interval);
     }, []);
@@ -1123,140 +1901,257 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
 
     return (
         <div className="space-y-4">
-            <Card>
-                <CardContent className="p-4">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                        <div className="flex-1 space-y-2">
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>Assessment progress</span>
-                                <span className="font-medium text-foreground">
-                                    {answeredCount}/{assessment.questions.length}
-                                </span>
-                            </div>
-                            <Progress value={progress} className="h-2" />
-                        </div>
+            {/* Progress bar — identical to QuizTask */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                        Dijawab {answeredCount}/{assessment.questions.length}
+                    </span>
+                    <span className="flex items-center gap-2">
                         {timeRemaining !== null ? (
-                            <Badge variant={timeRemaining < 60 ? 'destructive' : 'outline'}>
-                                <Clock className="mr-1.5 size-3.5" />
+                            <Badge
+                                variant={
+                                    timeRemaining < 60
+                                        ? 'destructive'
+                                        : 'outline'
+                                }
+                                className="text-xs"
+                            >
+                                <Clock className="mr-1 size-3" />
                                 {formatClock(timeRemaining)}
                             </Badge>
                         ) : null}
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="flex flex-wrap gap-2">
-                {assessment.questions.map((question, index) => (
-                    <Button key={question.id} type="button" variant={index === currentIndex ? 'default' : answers[question.id] ? 'secondary' : 'outline'} size="icon" onClick={() => setCurrentIndex(index)}>
-                        {index + 1}
-                    </Button>
-                ))}
+                        <span className="font-medium text-foreground tabular-nums">
+                            {Math.round(progress)}%
+                        </span>
+                    </span>
+                </div>
+                <Progress value={progress} className="h-2" />
             </div>
 
+            {/* Question card */}
             {currentQuestion ? (
-                <Card className="overflow-hidden">
-                    <CardHeader className="border-b bg-muted/20">
-                        <div className="flex items-start justify-between gap-4">
-                            <div>
-                                <CardTitle>Question {currentIndex + 1}</CardTitle>
-                                <CardDescription className="mt-2">{currentQuestion.questionText}</CardDescription>
-                            </div>
-                            <Badge variant="secondary">{currentQuestion.points} pts</Badge>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6">
+                <div className="rounded-2xl border bg-background p-5">
+                    <h3 className="text-lg font-semibold">
+                        {currentIndex + 1}. {currentQuestion.questionText}
+                    </h3>
+                    <div className="mt-5">
                         <AssessmentAnswerInput
                             question={currentQuestion}
                             value={answers[currentQuestion.id]}
                             onChange={(value) => {
-                                setAnswers((previous) => ({ ...previous, [currentQuestion.id]: value }));
+                                setAnswers((previous) => ({
+                                    ...previous,
+                                    [currentQuestion.id]: value,
+                                }));
                                 saveAnswer(currentQuestion.id, value);
                             }}
                         />
-                    </CardContent>
-                    <CardFooter className="border-t bg-muted/20">
-                        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <Button variant="outline" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}>
-                                <ChevronLeft className="mr-2 size-4" />
-                                Previous
-                            </Button>
-                            {currentIndex < assessment.questions.length - 1 ? (
-                                <Button onClick={() => setCurrentIndex((index) => index + 1)}>
-                                    Next
-                                    <ChevronRight className="ml-2 size-4" />
-                                </Button>
-                            ) : (
-                                <Button onClick={handleSubmit} disabled={submitting}>
-                                    {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Trophy className="mr-2 size-4" />}
-                                    Submit assessment
-                                </Button>
-                            )}
-                        </div>
-                    </CardFooter>
-                </Card>
+                    </div>
+                </div>
             ) : null}
+
+            {/* Navigation — identical to QuizTask */}
+            <div className="flex w-full flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <Button
+                    variant="outline"
+                    disabled={currentIndex === 0}
+                    onClick={() =>
+                        setCurrentIndex((index) => Math.max(0, index - 1))
+                    }
+                >
+                    <ChevronLeft className="mr-2 size-4" />
+                    Sebelumnya
+                </Button>
+                {currentIndex < assessment.questions.length - 1 ? (
+                    <Button
+                        onClick={() =>
+                            setCurrentIndex((index) => index + 1)
+                        }
+                    >
+                        Berikutnya
+                        <ChevronRight className="ml-2 size-4" />
+                    </Button>
+                ) : (
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                    >
+                        {submitting ? (
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : null}
+                        Kirim Assessment
+                    </Button>
+                )}
+            </div>
         </div>
     );
 }
 
-function AssessmentAnswerInput({ question, value, onChange }: { question: AssessmentQuestion; value?: { selected_option?: number; answer_text?: string }; onChange: (value: { selected_option?: number; answer_text?: string }) => void }) {
-    if (question.questionType === 'multiple_choice' && question.options) {
+function AssessmentAnswerInput({
+    question,
+    value,
+    onChange,
+}: {
+    question: AssessmentQuestion;
+    value?: { selected_option?: string; answer_text?: string };
+    onChange: (value: {
+        selected_option?: string;
+        answer_text?: string;
+    }) => void;
+}) {
+    const hasOptions =
+        (question.questionType === 'mcq' ||
+            question.questionType === 'true_false') &&
+        question.options &&
+        question.options.length > 0;
+    const options = (question.options ?? []).map((option, index) => {
+        if (typeof option === 'string') {
+            return {
+                key: `${index}-${option}`,
+                label: option,
+                value: option,
+            };
+        }
+
+        const label = String(option.label ?? option.value ?? '');
+        const optionValue = String(option.value ?? label);
+
+        return {
+            key: `${index}-${optionValue}`,
+            label,
+            value: optionValue,
+        };
+    });
+
+    if (hasOptions) {
         return (
-            <RadioGroup value={value?.selected_option !== undefined ? String(value.selected_option) : undefined} onValueChange={(selected) => onChange({ selected_option: Number(selected) })} className="space-y-3">
-                {question.options.map((option, index) => (
-                    <div key={option} className={cn('flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors hover:bg-muted/50', value?.selected_option === index && 'border-primary bg-primary/5')}>
-                        <RadioGroupItem value={String(index)} id={`assessment-${question.id}-${index}`} />
-                        <Label htmlFor={`assessment-${question.id}-${index}`} className="flex-1 cursor-pointer text-sm leading-relaxed">
-                            {option}
-                        </Label>
-                    </div>
+            <div className="space-y-3">
+                {options.map((option, index) => (
+                    <button
+                        key={option.key}
+                        type="button"
+                        onClick={() =>
+                            onChange({
+                                selected_option:
+                                    value?.selected_option === option.value
+                                        ? undefined
+                                        : option.value,
+                            })
+                        }
+                        className={cn(
+                            'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted/50',
+                            value?.selected_option === option.value
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border',
+                        )}
+                    >
+                        <span
+                            className={cn(
+                                'flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                                value?.selected_option === option.value
+                                    ? 'border-primary bg-primary'
+                                    : 'border-muted-foreground/40',
+                            )}
+                        >
+                            {value?.selected_option === option.value ? (
+                                <span className="size-2 rounded-full bg-white" />
+                            ) : null}
+                        </span>
+                        <span className="flex-1 text-sm leading-relaxed">
+                            {option.label}
+                        </span>
+                    </button>
                 ))}
-            </RadioGroup>
+            </div>
         );
     }
 
     return (
         <div className="space-y-3">
-            <Label htmlFor={`assessment-${question.id}`}>Your response</Label>
-            <Textarea id={`assessment-${question.id}`} rows={10} value={value?.answer_text ?? ''} onChange={(event) => onChange({ answer_text: event.target.value })} placeholder="Write your response here..." className="resize-y" />
-            <p className="text-xs text-muted-foreground">Word count: {value?.answer_text?.trim() ? value.answer_text.trim().split(/\s+/).length : 0}</p>
+            <Textarea
+                id={`assessment-${question.id}`}
+                rows={6}
+                value={value?.answer_text ?? ''}
+                onChange={(event) =>
+                    onChange({ answer_text: event.target.value })
+                }
+                placeholder="Tulis jawaban Anda di sini..."
+                className="resize-y"
+            />
+            <p className="text-xs text-muted-foreground">
+                Jumlah kata:{' '}
+                {value?.answer_text?.trim()
+                    ? value.answer_text.trim().split(/\s+/).length
+                    : 0}
+            </p>
         </div>
     );
 }
 
-function AssessmentResults({ assessment, onBack }: { assessment: AssessmentFullData; onBack: () => void }) {
+function AssessmentResults({
+    assessment,
+    onBack,
+}: {
+    assessment: AssessmentFullData;
+    onBack: () => void;
+}) {
     const results = assessment.latestResults;
 
     if (!results) {
         return null;
     }
 
-    const pointsEarned = results.submission.pointsEarned ?? results.submission.totalScore ?? 0;
-    const pointsPossible = results.submission.pointsPossible ?? assessment.totalPoints ?? 0;
-    const percentage = pointsPossible > 0 ? Math.round((pointsEarned / pointsPossible) * 100) : 0;
+    const pointsEarned =
+        results.submission.pointsEarned ?? results.submission.totalScore ?? 0;
+    const pointsPossible =
+        results.submission.pointsPossible ?? assessment.totalPoints ?? 0;
+    const percentage =
+        pointsPossible > 0
+            ? Math.round((pointsEarned / pointsPossible) * 100)
+            : 0;
 
     return (
         <div className="space-y-4">
-            <Card className={cn('overflow-hidden', results.submission.passed ? 'border-emerald-300' : 'border-amber-300')}>
-                <CardHeader className="border-b bg-muted/20">
+            <div
+                className={cn(
+                    'overflow-hidden rounded-2xl border',
+                    results.submission.passed
+                        ? 'border-emerald-300'
+                        : 'border-amber-300',
+                )}
+            >
+                <div className="border-b bg-muted/20 p-4 sm:p-6">
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <CardTitle>{results.submission.passed ? 'Assessment passed' : 'Assessment result'}</CardTitle>
-                            <CardDescription>{assessment.title}</CardDescription>
+                            <h3 className="text-lg font-semibold">
+                                {results.submission.passed
+                                    ? 'Assessment Lulus'
+                                    : 'Hasil Assessment'}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                {assessment.title}
+                            </p>
                         </div>
                         <Button variant="ghost" size="sm" onClick={onBack}>
                             <ChevronLeft className="mr-2 size-4" />
-                            Back
+                            Kembali
                         </Button>
                     </div>
-                </CardHeader>
-                <CardContent className="space-y-5 p-6">
+                </div>
+                <div className="space-y-5 p-4 sm:p-6">
                     <div className="flex flex-col items-center gap-3 text-center">
-                        {results.submission.passed ? <Trophy className="size-14 text-amber-500" /> : <AlertCircle className="size-14 text-amber-500" />}
+                        {results.submission.passed ? (
+                            <Trophy className="size-14 text-amber-500" />
+                        ) : (
+                            <AlertCircle className="size-14 text-amber-500" />
+                        )}
                         <div>
-                            <p className="text-5xl font-bold tabular-nums">{percentage}%</p>
+                            <p className="text-5xl font-bold tabular-nums">
+                                {percentage}%
+                            </p>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                {pointsEarned} / {pointsPossible} points
+                                {pointsEarned} / {pointsPossible} poin
                             </p>
                         </div>
                     </div>
@@ -1264,45 +2159,55 @@ function AssessmentResults({ assessment, onBack }: { assessment: AssessmentFullD
                     {results.submission.overallFeedback ? (
                         <Alert>
                             <MessageSquare className="size-4" />
-                            <AlertDescription>{results.submission.overallFeedback}</AlertDescription>
+                            <AlertDescription>
+                                {results.submission.overallFeedback}
+                            </AlertDescription>
                         </Alert>
                     ) : null}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             <div className="space-y-3">
-                <h3 className="text-lg font-semibold">Answer details</h3>
+                <h3 className="text-lg font-semibold">Detail jawaban</h3>
                 {assessment.questions.map((question, index) => {
-                    const answer = results.answers.find((result) => result.questionId === question.id);
+                    const answer = results.answers.find(
+                        (result) => result.questionId === question.id,
+                    );
 
                     if (!answer) {
                         return null;
                     }
 
                     return (
-                        <Card key={question.id}>
-                            <CardHeader>
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <CardTitle className="text-base">Question {index + 1}</CardTitle>
-                                        <CardDescription className="mt-1">{question.questionText}</CardDescription>
-                                    </div>
-                                    <Badge variant="secondary">
-                                        {answer.pointsAwarded ?? 0}/{question.points} pts
-                                    </Badge>
+                        <div
+                            key={question.id}
+                            className="rounded-2xl border p-4 sm:p-6"
+                        >
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <h4 className="text-base font-semibold">
+                                        Pertanyaan {index + 1}
+                                    </h4>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        {question.questionText}
+                                    </p>
                                 </div>
-                            </CardHeader>
+                                <Badge variant="secondary">
+                                    {answer.pointsAwarded ?? 0}/
+                                    {question.points} pts
+                                </Badge>
+                            </div>
                             {answer.feedback ? (
-                                <CardContent>
-                                    <div className="rounded-2xl border-l-4 border-primary bg-primary/5 p-4">
-                                        <div className="flex gap-2">
-                                            <MessageSquare className="mt-0.5 size-4 shrink-0 text-primary" />
-                                            <p className="text-sm leading-relaxed">{answer.feedback}</p>
-                                        </div>
+                                <div className="mt-4 rounded-2xl border-l-4 border-primary bg-primary/5 p-4">
+                                    <div className="flex gap-2">
+                                        <MessageSquare className="mt-0.5 size-4 shrink-0 text-primary" />
+                                        <p className="text-sm leading-relaxed">
+                                            {answer.feedback}
+                                        </p>
                                     </div>
-                                </CardContent>
+                                </div>
                             ) : null}
-                        </Card>
+                        </div>
                     );
                 })}
             </div>
@@ -1310,12 +2215,16 @@ function AssessmentResults({ assessment, onBack }: { assessment: AssessmentFullD
     );
 }
 
-export default function CourseShow({ course: serverCourse, lessons: serverLessons, enrollment, assessments = [] }: Props) {
+export default function CourseShow({
+    course: serverCourse,
+    lessons: serverLessons,
+    enrollment,
+    assessments = [],
+}: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const isAdmin = auth.user.is_admin || auth.user.role === 'admin';
+    const isEnrolled = enrollment !== null;
     const lessons = useMemo(() => mapLessons(serverLessons), [serverLessons]);
-    const [isEnrolled, setIsEnrolled] = useState(enrollment !== null);
-    const [isEnrolling, setIsEnrolling] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
     const hashSelection = useMemo(() => {
         if (typeof window === 'undefined') {
@@ -1326,35 +2235,97 @@ export default function CourseShow({ course: serverCourse, lessons: serverLesson
         const lessonId = params.get('lesson');
         const taskId = params.get('task');
 
-        return { lessonId: lessonId ? Number(lessonId) : null, taskId: taskId ? Number(taskId) : null };
+        return {
+            lessonId: lessonId ? Number(lessonId) : null,
+            taskId: taskId ? Number(taskId) : null,
+        };
     }, []);
-    const firstLessonId = lessons[0]?.id ?? null;
-    const initialLessonId = lessons.some((lesson) => lesson.id === hashSelection.lessonId) ? hashSelection.lessonId : firstLessonId;
-    const initialTaskId = (() => {
-        const lesson = lessons.find((item) => item.id === initialLessonId);
+    // Auto-resume: find first incomplete task if no hash selection
+    const resumeTarget = (() => {
+        // If hash specifies a task, use that
+        if (hashSelection.lessonId && hashSelection.taskId) {
+            const lesson = lessons.find(
+                (l) => l.id === hashSelection.lessonId,
+            );
 
-        if (lesson?.tasks.some((task) => task.id === hashSelection.taskId)) {
-            return hashSelection.taskId;
+            if (lesson?.tasks.some((t) => t.id === hashSelection.taskId)) {
+                return {
+                    lessonId: hashSelection.lessonId,
+                    taskId: hashSelection.taskId,
+                };
+            }
         }
 
-        return lesson?.tasks[0]?.id ?? null;
-    })();
-    const [selectedLessonId, setSelectedLessonId] = useState<number | null>(initialLessonId);
-    const [selectedTaskId, setSelectedTaskId] = useState<number | null>(initialTaskId);
-    const [selectedAssessmentId, setSelectedAssessmentId] = useState<number | null>(null);
-    const [activeMode, setActiveMode] = useState<'task' | 'assessment'>('task');
-    const [openOutlineItem, setOpenOutlineItem] = useState<string | undefined>(initialLessonId ? String(initialLessonId) : undefined);
-    const [completedLessonIds, setCompletedLessonIds] = useState<number[]>(serverLessons.filter((lesson) => lesson.isCompleted).map((lesson) => lesson.id));
+        // Find first incomplete task
+        for (const lesson of lessons) {
+            const incompleteTask = lesson.tasks.find((t) => !t.isCompleted);
 
-    const selectedLesson = lessons.find((lesson) => lesson.id === selectedLessonId) ?? null;
-    const selectedTask = selectedLesson?.tasks.find((task) => task.id === selectedTaskId) ?? null;
-    const selectedAssessment = assessments.find((assessment) => assessment.id === selectedAssessmentId) ?? null;
-    const completedCount = lessons.filter((lesson) => completedLessonIds.includes(lesson.id)).length;
-    const progressPercentage = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
-    const totalTasks = lessons.reduce((sum, lesson) => sum + lesson.tasks.length, 0);
-    const allLessonsCompleted = lessons.length > 0 && completedCount === lessons.length;
-    const assessmentsPassed = assessments.filter((assessment) => assessment.passed).length;
-    const courseCompleted = allLessonsCompleted && assessments.every((assessment) => assessment.passed);
+            if (incompleteTask) {
+                return { lessonId: lesson.id, taskId: incompleteTask.id };
+            }
+        }
+
+        // All complete — default to first task
+        const firstLesson = lessons[0];
+
+        return {
+            lessonId: firstLesson?.id ?? null,
+            taskId: firstLesson?.tasks[0]?.id ?? null,
+        };
+    })();
+
+    const initialLessonId = resumeTarget.lessonId;
+    const initialTaskId = resumeTarget.taskId;
+    const [selectedLessonId, setSelectedLessonId] = useState<number | null>(
+        initialLessonId,
+    );
+    const [selectedTaskId, setSelectedTaskId] = useState<number | null>(
+        initialTaskId,
+    );
+    // Auto-select assessment if one has an active submission (in-progress)
+    const activeAssessment = assessments.find((a) => a.activeSubmission);
+    const [selectedAssessmentId, setSelectedAssessmentId] = useState<
+        number | null
+    >(activeAssessment?.id ?? null);
+    const [activeMode, setActiveMode] = useState<'task' | 'assessment'>(
+        activeAssessment ? 'assessment' : 'task',
+    );
+    const [openOutlineItem, setOpenOutlineItem] = useState<string | undefined>(
+        activeAssessment
+            ? 'assessments'
+            : initialLessonId
+              ? String(initialLessonId)
+              : undefined,
+    );
+    const [completedLessonIds, setCompletedLessonIds] = useState<number[]>(
+        serverLessons
+            .filter((lesson) => lesson.isCompleted)
+            .map((lesson) => lesson.id),
+    );
+
+    const selectedLesson =
+        lessons.find((lesson) => lesson.id === selectedLessonId) ?? null;
+    const selectedTask =
+        selectedLesson?.tasks.find((task) => task.id === selectedTaskId) ??
+        null;
+    const selectedAssessment =
+        assessments.find(
+            (assessment) => assessment.id === selectedAssessmentId,
+        ) ?? null;
+    const completedCount = lessons.filter((lesson) =>
+        completedLessonIds.includes(lesson.id),
+    ).length;
+    const progressPercentage =
+        lessons.length > 0
+            ? Math.round((completedCount / lessons.length) * 100)
+            : 0;
+    const totalTasks = lessons.reduce(
+        (sum, lesson) => sum + lesson.tasks.length,
+        0,
+    );
+    const assessmentsPassed = assessments.filter(
+        (assessment) => assessment.passed,
+    ).length;
 
     const unlockedLessonIds = useMemo(() => {
         const map = new Map<number, boolean>();
@@ -1367,7 +2338,12 @@ export default function CourseShow({ course: serverCourse, lessons: serverLesson
             }
 
             const previousLesson = lessons[index - 1];
-            map.set(lesson.id, isEnrolled && previousLesson ? completedLessonIds.includes(previousLesson.id) : false);
+            map.set(
+                lesson.id,
+                isEnrolled && previousLesson
+                    ? completedLessonIds.includes(previousLesson.id)
+                    : false,
+            );
         });
 
         return map;
@@ -1387,25 +2363,47 @@ export default function CourseShow({ course: serverCourse, lessons: serverLesson
 
     const navigation = useMemo(() => {
         if (!selectedLesson || !selectedTask) {
-            return { previous: null as LessonTask | null, next: null as LessonTask | null };
+            return {
+                previous: null as LessonTask | null,
+                next: null as LessonTask | null,
+            };
         }
 
-        const lessonIndex = lessons.findIndex((lesson) => lesson.id === selectedLesson.id);
-        const taskIndex = selectedLesson.tasks.findIndex((task) => task.id === selectedTask.id);
-        const previous = taskIndex > 0 ? selectedLesson.tasks[taskIndex - 1] : (lessons[lessonIndex - 1]?.tasks.at(-1) ?? null);
-        const next = taskIndex < selectedLesson.tasks.length - 1 ? selectedLesson.tasks[taskIndex + 1] : (lessons[lessonIndex + 1]?.tasks[0] ?? null);
+        const lessonIndex = lessons.findIndex(
+            (lesson) => lesson.id === selectedLesson.id,
+        );
+        const taskIndex = selectedLesson.tasks.findIndex(
+            (task) => task.id === selectedTask.id,
+        );
+        const previous =
+            taskIndex > 0
+                ? selectedLesson.tasks[taskIndex - 1]
+                : (lessons[lessonIndex - 1]?.tasks.at(-1) ?? null);
+        const next =
+            taskIndex < selectedLesson.tasks.length - 1
+                ? selectedLesson.tasks[taskIndex + 1]
+                : (lessons[lessonIndex + 1]?.tasks[0] ?? null);
 
         return { previous, next };
     }, [lessons, selectedLesson, selectedTask]);
 
     const assessmentNavigation = useMemo(() => {
         if (!selectedAssessment) {
-            return { previous: null as AssessmentFullData | null, next: null as AssessmentFullData | null };
+            return {
+                previous: null as AssessmentFullData | null,
+                next: null as AssessmentFullData | null,
+            };
         }
 
-        const index = assessments.findIndex((assessment) => assessment.id === selectedAssessment.id);
+        const index = assessments.findIndex(
+            (assessment) => assessment.id === selectedAssessment.id,
+        );
 
-        return { previous: index > 0 ? assessments[index - 1] : null, next: index < assessments.length - 1 ? assessments[index + 1] : null };
+        return {
+            previous: index > 0 ? assessments[index - 1] : null,
+            next:
+                index < assessments.length - 1 ? assessments[index + 1] : null,
+        };
     }, [assessments, selectedAssessment]);
 
     useEffect(() => {
@@ -1436,52 +2434,127 @@ export default function CourseShow({ course: serverCourse, lessons: serverLesson
         return () => window.clearTimeout(timer);
     }, [notice]);
 
-    const selectTask = (lesson: LessonData, task: LessonTask) => {
+    const selectTask = useCallback((lesson: LessonData, task: LessonTask) => {
         setActiveMode('task');
         setSelectedAssessmentId(null);
         setSelectedLessonId(lesson.id);
         setSelectedTaskId(task.id);
         setOpenOutlineItem(String(lesson.id));
-    };
+    }, []);
 
-    const selectAssessment = (assessment: AssessmentFullData) => {
+    const selectAssessment = (assessment: { id: number }) => {
         setActiveMode('assessment');
         setSelectedAssessmentId(assessment.id);
         setOpenOutlineItem('assessments');
     };
 
-    const moveToTask = (targetTask: LessonTask | null) => {
-        if (!targetTask) {
-            return;
-        }
+    // Quiz navigation confirmation
+    const [quizInProgress, setQuizInProgress] = useState(false);
+    const [pendingNavigation, setPendingNavigation] = useState<{
+        lesson: LessonData;
+        task: LessonTask;
+    } | null>(null);
+    const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
-        const targetLesson = lessons.find((lesson) => lesson.tasks.some((task) => task.id === targetTask.id));
+    const safeSelectTask = useCallback(
+        (lesson: { id: number; [key: string]: unknown }, task: { id: number; [key: string]: unknown }) => {
+            if (
+                quizInProgress &&
+                (lesson.id !== selectedLessonId || task.id !== selectedTaskId)
+            ) {
+                setPendingNavigation({ lesson: lesson as LessonData, task: task as LessonTask });
 
-        if (targetLesson) {
-            selectTask(targetLesson, targetTask);
+                return;
+            }
+
+            selectTask(lesson as LessonData, task as LessonTask);
+            setMobileSheetOpen(false);
+        },
+        [quizInProgress, selectedLessonId, selectedTaskId, selectTask],
+    );
+
+    const confirmNavigation = () => {
+        if (pendingNavigation) {
+            setQuizInProgress(false);
+            selectTask(pendingNavigation.lesson, pendingNavigation.task);
+            setPendingNavigation(null);
+            setMobileSheetOpen(false);
         }
     };
+
+    const cancelNavigation = () => {
+        setPendingNavigation(null);
+    };
+
+    const moveToTask = useCallback(
+        (targetTask: LessonTask | null) => {
+            if (!targetTask) {
+                return;
+            }
+
+            const targetLesson = lessons.find((lesson) =>
+                lesson.tasks.some((task) => task.id === targetTask.id),
+            );
+
+            if (targetLesson) {
+                safeSelectTask(targetLesson, targetTask);
+            }
+        },
+        [lessons, safeSelectTask],
+    );
+
+    // Keyboard shortcuts: ← → for navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Skip if user is typing in an input/textarea
+            const tag = (e.target as HTMLElement)?.tagName;
+
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+                return;
+            }
+
+            if (activeMode !== 'task') {
+                return;
+            }
+
+            if (e.key === 'ArrowLeft' && navigation.previous) {
+                e.preventDefault();
+                moveToTask(navigation.previous);
+            } else if (e.key === 'ArrowRight' && navigation.next) {
+                e.preventDefault();
+                moveToTask(navigation.next);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [activeMode, moveToTask, navigation]);
 
     const refreshProgress = () => {
         router.reload({
             only: ['lessons', 'enrollment'],
-            onSuccess: () => {
-                if (selectedLesson && !completedLessonIds.includes(selectedLesson.id)) {
-                    setCompletedLessonIds((current) => [...current, selectedLesson.id]);
-                }
+            onSuccess: (page) => {
+                const freshLessons = (page.props as unknown as Props).lessons;
+                setCompletedLessonIds(
+                    freshLessons
+                        .filter((lesson) => lesson.isCompleted)
+                        .map((lesson) => lesson.id),
+                );
             },
         });
     };
 
-    const ActiveIcon = activeContent?.mode === 'assessment' ? Trophy : activeContent?.task ? taskIcon(activeContent.task.type) : FileText;
-    const activeTitle = activeContent?.mode === 'assessment' ? activeContent.assessment.title : (activeContent?.task.title ?? 'Pilih materi');
-    const activeSubtitle = activeContent?.mode === 'assessment' ? 'Assessment kursus' : activeContent ? `${activeContent.lesson.title} • ${taskLabel(activeContent.task.type)}` : 'Pilih materi dari outline.';
+    const activeTitle =
+        activeContent?.mode === 'assessment'
+            ? activeContent.assessment.title
+            : (activeContent?.task.title ?? 'Pilih materi');
 
     return (
         <>
             <Head title={`${serverCourse.title} - Course Detail`} />
 
-            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
+            <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-6">
                 {notice ? (
                     <Alert className="border-primary/20 bg-primary/5">
                         <Sparkles className="size-4" />
@@ -1489,232 +2562,270 @@ export default function CourseShow({ course: serverCourse, lessons: serverLesson
                     </Alert>
                 ) : null}
 
+
                 <div className="animate-fade-in-up flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex max-w-4xl flex-col gap-1">
+                    <div className="flex w-full flex-col gap-1">
                         <TypographyH1>{serverCourse.title}</TypographyH1>
-                        <TypographyMuted>{serverCourse.summary}</TypographyMuted>
+                        <TypographyMuted>
+                            {serverCourse.summary}
+                        </TypographyMuted>
                     </div>
                 </div>
 
-                <section className="animate-fade-in-up grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start" style={{ animationDelay: '100ms' }}>
-                    <Card className="min-w-0 overflow-hidden lg:sticky lg:top-20 lg:h-fit">
-                        <CardHeader>
-                            <CardTitle className="text-base">Kontrol Belajar</CardTitle>
-                            <CardDescription>
-                                {completedCount}/{lessons.length} materi selesai • {totalTasks} tugas
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-5 overflow-hidden">
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                    <span>Progres Anda</span>
-                                    <span className="font-medium tabular-nums text-foreground">{progressPercentage}%</span>
-                                </div>
-                                <Progress value={progressPercentage} className="h-2" />
+                {/* Mobile sidebar trigger */}
+                <div className="lg:hidden">
+                    <Sheet
+                        open={mobileSheetOpen}
+                        onOpenChange={setMobileSheetOpen}
+                    >
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Menu className="mr-2 size-4" />
+                                Outline Materi
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="w-85 p-0">
+                            <SheetHeader className="border-b px-4 py-3">
+                                <SheetTitle>Outline Kursus</SheetTitle>
+                            </SheetHeader>
+                            <div className="overflow-y-auto p-2">
+                                <CourseTaskPanel
+                                    lessons={lessons}
+                                    assessments={assessments}
+                                    activeMode={activeMode}
+                                    selectedLessonId={selectedLessonId}
+                                    selectedTaskId={selectedTaskId}
+                                    selectedAssessmentId={
+                                        selectedAssessmentId
+                                    }
+                                    completedCount={completedCount}
+                                    totalTasks={totalTasks}
+                                    assessmentsPassed={assessmentsPassed}
+                                    completedLessonIds={completedLessonIds}
+                                    unlockedLessonIds={unlockedLessonIds}
+                                    openOutlineItem={openOutlineItem}
+                                    progressPercentage={progressPercentage}
+                                    selectTask={safeSelectTask}
+                                    selectAssessment={selectAssessment}
+                                    setOpenOutlineItem={setOpenOutlineItem}
+                                />
                             </div>
+                        </SheetContent>
+                    </Sheet>
+                </div>
 
-                            {!isEnrolled ? (
-                                <Button
-                                    disabled={isEnrolling}
-                                    onClick={() => {
-                                        setIsEnrolling(true);
-                                        router.post(enrollCourse.url({ course: serverCourse.slug }), {}, {
-                                            preserveScroll: true,
-                                            onSuccess: () => {
-                                                setIsEnrolled(true);
-                                                setNotice('Anda sekarang terdaftar di kursus ini!');
-                                            },
-                                            onFinish: () => setIsEnrolling(false),
-                                        });
-                                    }}
-                                    className="w-full"
-                                >
-                                    {isEnrolling ? <Loader2 className="mr-2 size-4 animate-spin" /> : <BookOpen className="mr-2 size-4" />}
-                                    {isEnrolling ? 'Mendaftar...' : 'Daftar sekarang'}
-                                </Button>
-                            ) : null}
-
-                            <Separator />
-
-                            <div className="space-y-3">
-                                <ScrollArea className="h-[min(70vh,34rem)] lg:h-[calc(100vh-24rem)]">
-                                <Accordion
-                                    type="single"
-                                    collapsible
-                                    value={openOutlineItem}
-                                    onValueChange={(value) => {
-                                        setOpenOutlineItem(value || undefined);
-
-                                        if (!value || value === 'assessments') {
-                                            return;
-                                        }
-
-                                        const lesson = lessons.find((item) => item.id === Number(value));
-
-                                        if (lesson?.tasks[0]) {
-                                            selectTask(lesson, lesson.tasks[0]);
-                                        }
-                                    }}
-                                    className="w-full pr-3"
-                                >
-                                    {lessons.map((lesson, index) => {
-                                        const locked = !(unlockedLessonIds.get(lesson.id) ?? false);
-                                        const completed = completedLessonIds.includes(lesson.id);
-                                        const completedTasks = lesson.tasks.filter((task) => task.isCompleted).length;
-
-                                        return (
-                                            <AccordionItem key={lesson.id} value={String(lesson.id)} className={cn(locked && 'opacity-60')}>
-                                                <AccordionTrigger disabled={locked} className="py-4 text-left hover:no-underline [&>svg]:ml-2">
-                                                    <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
-                                                        <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-md border text-xs font-semibold', completed ? 'border-emerald-500 bg-emerald-500 text-white' : locked ? 'bg-muted text-muted-foreground' : 'bg-background text-primary')}>
-                                                            {locked ? <Lock className="size-4" /> : completed ? <CheckCircle2 className="size-4" /> : index + 1}
-                                                        </span>
-                                                        <span className="min-w-0 flex-1">
-                                                            <span className="line-clamp-2 text-sm leading-snug font-medium">{lesson.title}</span>
-                                                            <span className="mt-0.5 block text-xs text-muted-foreground">
-                                                                {completedTasks}/{lesson.tasks.length} tasks
-                                                            </span>
-                                                        </span>
-                                                    </div>
-                                                </AccordionTrigger>
-                                                <AccordionContent>
-                                                    <div className="space-y-1 pl-10 sm:pl-11">
-                                                        {lesson.tasks.map((task) => {
-                                                            const Icon = taskIcon(task.type);
-                                                            const active = activeMode === 'task' && selectedLessonId === lesson.id && selectedTaskId === task.id;
-
-                                                            return (
-                                                                <button key={task.id} type="button" onClick={() => selectTask(lesson, task)} className={cn('group flex w-full min-w-0 items-start gap-2 overflow-hidden rounded-md px-3 py-2 text-left text-sm transition-colors', active ? 'bg-primary text-primary-foreground' : 'hover:bg-background')}>
-                                                                    <span className={cn('mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border', task.isCompleted ? 'border-emerald-500 bg-emerald-500 text-white' : active ? 'border-primary-foreground/70' : 'border-muted-foreground/30')}>
-                                                                        {task.isCompleted ? <CheckCircle2 className="size-3" /> : null}
-                                                                    </span>
-                                                                    <Icon className={cn('mt-0.5 size-4 shrink-0', active ? 'text-primary-foreground' : 'text-muted-foreground')} />
-                                                                    <span className="min-w-0 flex-1 whitespace-normal wrap-break-word leading-snug">{task.title}</span>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        );
-                                    })}
-
-                                    {assessments.length > 0 ? (
-                                        <AccordionItem value="assessments">
-                                            <AccordionTrigger className="py-4 text-left hover:no-underline [&>svg]:ml-2">
-                                                <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
-                                                    <span className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-amber-600">
-                                                        <Trophy className="size-4" />
-                                                    </span>
-                                                    <span className="min-w-0 flex-1">
-                                                        <span className="line-clamp-2 text-sm leading-snug font-medium">Assessments</span>
-                                                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                                                            {assessmentsPassed}/{assessments.length} passed
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent>
-                                                <div className="space-y-1 pl-10 sm:pl-11">
-                                                    {assessments.map((assessment) => {
-                                                        const active = activeMode === 'assessment' && selectedAssessmentId === assessment.id;
-
-                                                        return (
-                                                            <button key={assessment.id} type="button" onClick={() => selectAssessment(assessment)} className={cn('flex w-full min-w-0 items-start gap-2 overflow-hidden rounded-md px-3 py-2 text-left text-sm transition-colors', active ? 'bg-primary text-primary-foreground' : 'hover:bg-background')}>
-                                                                <span className={cn('mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border', assessment.passed ? 'border-emerald-500 bg-emerald-500 text-white' : active ? 'border-primary-foreground/70' : 'border-muted-foreground/30')}>
-                                                                    {assessment.passed ? <CheckCircle2 className="size-3" /> : null}
-                                                                </span>
-                                                                <ClipboardCheck className={cn('mt-0.5 size-4 shrink-0', active ? 'text-primary-foreground' : 'text-muted-foreground')} />
-                                                                <span className="min-w-0 flex-1 whitespace-normal wrap-break-word leading-snug">{assessment.title}</span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ) : null}
-                                </Accordion>
-                                </ScrollArea>
-                            </div>
-                        </CardContent>
-                    </Card>
+                <section
+                    className="animate-fade-in-up grid gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start"
+                    style={{ animationDelay: '100ms' }}
+                >
+                    <div className="hidden lg:block">
+                        <CourseTaskPanel
+                            lessons={lessons}
+                            assessments={assessments}
+                            activeMode={activeMode}
+                            selectedLessonId={selectedLessonId}
+                            selectedTaskId={selectedTaskId}
+                            selectedAssessmentId={selectedAssessmentId}
+                            completedCount={completedCount}
+                            totalTasks={totalTasks}
+                            assessmentsPassed={assessmentsPassed}
+                            completedLessonIds={completedLessonIds}
+                            unlockedLessonIds={unlockedLessonIds}
+                            openOutlineItem={openOutlineItem}
+                            progressPercentage={progressPercentage}
+                            selectTask={safeSelectTask}
+                            selectAssessment={selectAssessment}
+                            setOpenOutlineItem={setOpenOutlineItem}
+                        />
+                    </div>
 
                     <main className="min-w-0 space-y-4">
-                        <Card className="relative flex h-full flex-col overflow-hidden pt-0">
-                            <div className="relative border-b bg-muted/40 p-5 sm:p-6">
-                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                    <div className="flex min-w-0 gap-3">
-                                        <div className="flex size-12 shrink-0 items-center justify-center rounded-md border bg-background text-primary">
-                                            <ActiveIcon className="size-5" />
-                                        </div>
-                                        <div className="min-w-0 space-y-1">
-                                            <div className="flex flex-wrap gap-2">
-                                                <Badge variant="outline">
-                                                    {activeContent?.mode === 'assessment' ? 'Assessment' : activeContent?.task ? taskLabel(activeContent.task.type) : 'Content'}
-                                                </Badge>
-                                                {activeContent?.mode === 'task' ? (
-                                                    <Badge variant="secondary">
-                                                        Lesson {lessons.findIndex((lesson) => lesson.id === activeContent.lesson.id) + 1}
-                                                    </Badge>
-                                                ) : null}
-                                            </div>
-                                            <CardTitle className="line-clamp-2 text-xl leading-tight tracking-tight sm:text-2xl">{activeTitle}</CardTitle>
-                                            <CardDescription className="line-clamp-2 text-sm leading-relaxed">{activeSubtitle}</CardDescription>
-                                        </div>
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                        <span className="font-medium tabular-nums text-foreground">{completedCount}/{lessons.length}</span> materi selesai
-                                    </div>
-                                </div>
+                        <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border pt-0">
+                            <div className="border-b px-4 py-4 sm:px-5">
+                                <h2 className="text-base font-semibold">
+                                    {activeTitle}
+                                </h2>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    {activeContent?.mode === 'assessment'
+                                        ? (activeContent.assessment
+                                              .description ??
+                                          'Assessment pemahaman kursus.')
+                                        : (activeContent?.task.description ??
+                                          'Pilih materi dari outline.')}
+                                </p>
                             </div>
-                            <CardContent className="p-3 sm:p-5">
-                                {activeContent?.mode === 'task' && activeContent.task.type === 'video' ? <VideoTask courseSlug={serverCourse.slug} lessonId={activeContent.lesson.id} task={activeContent.task} onComplete={refreshProgress} /> : null}
-                                {activeContent?.mode === 'task' && activeContent.task.type === 'read' ? <ReadingTask courseSlug={serverCourse.slug} lesson={activeContent.lesson} task={activeContent.task} sourceContent={serverLessons.find((lesson) => lesson.id === activeContent.lesson.id)?.content} onComplete={refreshProgress} /> : null}
-                                {activeContent?.mode === 'task' && activeContent.task.type === 'quiz' ? <QuizTask courseSlug={serverCourse.slug} lesson={activeContent.lesson} task={activeContent.task} onComplete={refreshProgress} /> : null}
-                                {activeContent?.mode === 'assessment' ? <AssessmentPanel assessment={activeContent.assessment} onClose={() => { setActiveMode('task'); setSelectedAssessmentId(null); setOpenOutlineItem(selectedLessonId ? String(selectedLessonId) : undefined); }} /> : null}
+                            <div className="p-3 sm:p-5">
+                                {activeContent?.mode === 'task' &&
+                                activeContent.task.type === 'video' ? (
+                                    <VideoTask
+                                        courseSlug={serverCourse.slug}
+                                        lessonId={activeContent.lesson.id}
+                                        task={activeContent.task}
+                                        onComplete={refreshProgress}
+                                    />
+                                ) : null}
+                                {activeContent?.mode === 'task' &&
+                                activeContent.task.type === 'read' ? (
+                                    <ReadingTask
+                                        courseSlug={serverCourse.slug}
+                                        lesson={activeContent.lesson}
+                                        task={activeContent.task}
+                                        onComplete={refreshProgress}
+                                    />
+                                ) : null}
+                                {activeContent?.mode === 'task' &&
+                                activeContent.task.type === 'quiz' ? (
+                                    <QuizTask
+                                        courseSlug={serverCourse.slug}
+                                        lesson={activeContent.lesson}
+                                        task={activeContent.task}
+                                        onComplete={refreshProgress}
+                                        onActiveChange={setQuizInProgress}
+                                    />
+                                ) : null}
+                                {activeContent?.mode === 'assessment' ? (
+                                    <AssessmentPanel
+                                        assessment={activeContent.assessment}
+                                        onClose={() => {
+                                            setActiveMode('task');
+                                            setSelectedAssessmentId(null);
+                                            setOpenOutlineItem(
+                                                selectedLessonId
+                                                    ? String(selectedLessonId)
+                                                    : undefined,
+                                            );
+                                        }}
+                                    />
+                                ) : null}
 
                                 {!activeContent ? (
                                     <Empty className="py-16">
                                         <EmptyHeader>
-                                            <EmptyTitle>Tidak ada konten dipilih</EmptyTitle>
-                                            <EmptyDescription>Pilih materi atau assessment dari course outline.</EmptyDescription>
+                                            <EmptyTitle>
+                                                Tidak ada konten dipilih
+                                            </EmptyTitle>
+                                            <EmptyDescription>
+                                                Pilih materi atau assessment
+                                                dari course outline.
+                                            </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
                                 ) : null}
-                            </CardContent>
+                            </div>
                             {activeContent ? (
-                                <CardFooter className="border-t bg-muted/20">
+                                <div className="border-t bg-muted/20 p-4 sm:p-5">
                                     {activeContent.mode === 'assessment' ? (
                                         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                            <Button variant="outline" disabled={!assessmentNavigation.previous} onClick={() => { if (assessmentNavigation.previous) { selectAssessment(assessmentNavigation.previous); } }}>
+                                            <Button
+                                                variant="outline"
+                                                disabled={
+                                                    !assessmentNavigation.previous
+                                                }
+                                                onClick={() => {
+                                                    if (
+                                                        assessmentNavigation.previous
+                                                    ) {
+                                                        selectAssessment(
+                                                            assessmentNavigation.previous,
+                                                        );
+                                                    }
+                                                }}
+                                            >
                                                 <ChevronLeft className="mr-2 size-4" />
                                                 Sebelumnya
                                             </Button>
-                                            <span className="text-xs text-muted-foreground">{assessments.findIndex((assessment) => assessment.id === selectedAssessmentId) + 1}/{assessments.length}</span>
-                                            <Button variant="outline" disabled={!assessmentNavigation.next} onClick={() => { if (assessmentNavigation.next) { selectAssessment(assessmentNavigation.next); } }}>
+                                            <span className="text-xs text-muted-foreground">
+                                                {assessments.findIndex(
+                                                    (assessment) =>
+                                                        assessment.id ===
+                                                        selectedAssessmentId,
+                                                ) + 1}
+                                                /{assessments.length}
+                                            </span>
+                                            <Button
+                                                variant="outline"
+                                                disabled={
+                                                    !assessmentNavigation.next
+                                                }
+                                                onClick={() => {
+                                                    if (
+                                                        assessmentNavigation.next
+                                                    ) {
+                                                        selectAssessment(
+                                                            assessmentNavigation.next,
+                                                        );
+                                                    }
+                                                }}
+                                            >
                                                 Berikutnya
                                                 <ChevronRight className="ml-2 size-4" />
                                             </Button>
                                         </div>
                                     ) : (
                                         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                            <Button variant="outline" disabled={!navigation.previous} onClick={() => moveToTask(navigation.previous)}>
+                                            <Button
+                                                variant="outline"
+                                                disabled={!navigation.previous}
+                                                onClick={() =>
+                                                    moveToTask(
+                                                        navigation.previous,
+                                                    )
+                                                }
+                                            >
                                                 <ChevronLeft className="mr-2 size-4" />
                                                 Sebelumnya
                                             </Button>
-                                            <span className="text-xs text-muted-foreground">{selectedLesson && selectedTask ? `${selectedLesson.tasks.findIndex((task) => task.id === selectedTask.id) + 1}/${selectedLesson.tasks.length}` : null}</span>
-                                            <Button variant="outline" disabled={!navigation.next} onClick={() => moveToTask(navigation.next)}>
+                                            <span className="text-xs text-muted-foreground">
+                                                {selectedLesson && selectedTask
+                                                    ? `${selectedLesson.tasks.findIndex((task) => task.id === selectedTask.id) + 1}/${selectedLesson.tasks.length}`
+                                                    : null}
+                                            </span>
+                                            <Button
+                                                variant="outline"
+                                                disabled={!navigation.next}
+                                                onClick={() =>
+                                                    moveToTask(navigation.next)
+                                                }
+                                            >
                                                 Berikutnya
                                                 <ChevronRight className="ml-2 size-4" />
                                             </Button>
                                         </div>
                                     )}
-                                </CardFooter>
+                                </div>
                             ) : null}
-                        </Card>
+                        </div>
                     </main>
                 </section>
             </div>
+
+            {/* Quiz navigation confirmation dialog */}
+            <AlertDialog
+                open={pendingNavigation !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        cancelNavigation();
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Tinggalkan Kuis?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Kuis sedang berlangsung. Jika kamu pindah ke materi
+                            lain, progres kuis saat ini akan hilang.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Kembali ke Kuis</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmNavigation}>
+                            Tinggalkan
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
@@ -1726,7 +2837,14 @@ function CourseShowLayout({ children }: { children: ReactNode }) {
         <AppLayout
             breadcrumbs={[
                 { title: 'Kursus', href: coursesIndex() },
-                ...(course ? [{ title: course.title, href: showCourse({ course: course.slug }) }] : []),
+                ...(course
+                    ? [
+                          {
+                              title: course.title,
+                              href: showCourse({ course: course.slug }),
+                          },
+                      ]
+                    : []),
             ]}
         >
             {children}
@@ -1734,4 +2852,6 @@ function CourseShowLayout({ children }: { children: ReactNode }) {
     );
 }
 
-CourseShow.layout = (page: ReactNode) => <CourseShowLayout>{page}</CourseShowLayout>;
+CourseShow.layout = (page: ReactNode) => (
+    <CourseShowLayout>{page}</CourseShowLayout>
+);

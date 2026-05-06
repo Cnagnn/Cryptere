@@ -2,7 +2,6 @@ import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
     Check,
-    ChevronDown,
     ChevronsUpDown,
     Download,
     Eye,
@@ -74,8 +73,6 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-
 import {
     Select,
     SelectContent,
@@ -297,14 +294,9 @@ function parseQuizImportText(text: string): QuizImportQuestion[] {
 
 export default function AdminCoursesAssessment({
     assessments,
-    questions,
-    selectedAssessmentId,
     courseOptions,
     selectedCourseId,
     courseFilterSelected,
-    allLessons,
-    topics,
-    filters,
 }: Props) {
     const [filterValue, setFilterValue] = useState('');
     const [rows, setRows] = useState<AdminAssessment[]>(assessments.data);
@@ -1285,7 +1277,7 @@ export default function AdminCoursesAssessment({
                                                         toast.success(
                                                             `Berhasil mengimpor ${parsedRows.length} soal.`,
                                                         );
-                                                    } catch (error) {
+                                                    } catch {
                                                         toast.error(
                                                             'Gagal membaca file. Silakan gunakan format template.',
                                                         );

@@ -4,7 +4,6 @@ import {
     BookOpen,
     Check,
     ChevronsUpDown,
-    ChevronDown,
     CircleHelp,
     Download,
     Eye,
@@ -17,11 +16,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import type {
-    CourseRow,
-    LessonRow,
-    TaskRow,
-} from '@/types/course-management';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -82,12 +76,13 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import type { Paginated } from '@/types';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as tasksDestroy } from '@/routes/admin/courses/tasks';
 import { reorder as tasksReorder } from '@/routes/admin/courses/tasks';
 import { store as tasksStore } from '@/routes/admin/courses/tasks';
 import { update as tasksUpdate } from '@/routes/admin/courses/tasks';
+import type { Paginated } from '@/types';
+import type { CourseRow, LessonRow, TaskRow } from '@/types/course-management';
 
 type LessonOption = { id: number; course_id: number; title: string };
 
@@ -376,7 +371,6 @@ export default function AdminCoursesTask({
         [lessons.data, selectedCourseId],
     );
 
-    // Group all lessons by course for the combobox
     const groupedLessons = useMemo(() => {
         const groups: Record<
             number,
@@ -399,32 +393,6 @@ export default function AdminCoursesTask({
 
         return groups;
     }, [allLessons, courseOptions]);
-
-    const lessonComboboxOptions = useMemo(
-        () =>
-            lessons.data.map((lesson) => ({
-                value: String(lesson.id),
-                label: lesson.title,
-            })),
-        [lessons.data],
-    );
-
-    const courseComboboxOptions = useMemo(
-        () =>
-            courseOptions.map((course) => ({
-                value: String(course.id),
-                label: course.title,
-            })),
-        [courseOptions],
-    );
-
-    const lessonCourseMap = useMemo(
-        () =>
-            Object.fromEntries(
-                lessons.data.map((lesson) => [lesson.id, lesson.course_id]),
-            ),
-        [lessons.data],
-    );
 
     const columns = useMemo<ColumnDef<TaskRow>[]>(
         () => [

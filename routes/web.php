@@ -6,14 +6,15 @@ use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Admin\TaskController as AdminTaskController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Assessment\AssessmentSubmissionController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Course\CourseController;
+use App\Http\Controllers\Course\DocumentController;
 use App\Http\Controllers\Course\EnrollmentController;
 use App\Http\Controllers\Course\LessonProgressController;
 use App\Http\Controllers\Course\QuizSubmissionController;
+use App\Http\Controllers\Course\TaskHeartbeatController;
 use App\Http\Controllers\DailyRewardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthCheckController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SystemStatsController;
 use App\Models\Assessment;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -72,6 +74,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('courses/{course:slug}/lessons/{lesson}/complete', [LessonProgressController::class, 'store'])
         ->middleware('throttle:lesson-complete')
         ->name('courses.lessons.complete');
+
+    // Serve lesson documents inline (prevents IDM interception)
+    Route::get('courses/documents/{task}', [DocumentController::class, 'show'])
+        ->name('courses.documents.show');
+
+    // Anti-cheat heartbeat — accumulates watch/reading time
+    Route::post('courses/{course:slug}/lessons/{lesson}/heartbeat', [TaskHeartbeatController::class, 'store'])
+        ->middleware('throttle:heartbeat')
+        ->name('courses.lessons.heartbeat');
 
     // Quiz submission — returns JSON, not an Inertia redirect
     Route::post('courses/{course:slug}/lessons/{lesson}/quiz', [QuizSubmissionController::class, 'store'])
@@ -127,8 +138,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
     Route::get('notes/export', [NoteController::class, 'export'])->name('notes.export');
 
-    Route::get('analytics', AnalyticsController::class)->name('analytics');
-
     Route::get('onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
     Route::post('onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
@@ -181,6 +190,9 @@ Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin
     Route::patch('assessments/{assessment}/questions/{question}', [AdminAssessmentQuestionController::class, 'update'])->name('assessments.questions.update');
     Route::delete('assessments/{assessment}/questions/{question}', [AdminAssessmentQuestionController::class, 'destroy'])->name('assessments.questions.destroy');
     Route::post('assessments/{assessment}/questions/reorder', [AdminAssessmentQuestionController::class, 'reorder'])->name('assessments.questions.reorder');
+
+    // System Stats API
+    Route::get('system-stats', SystemStatsController::class)->name('system-stats');
 });
 
 require __DIR__.'/settings.php';

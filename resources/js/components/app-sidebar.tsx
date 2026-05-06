@@ -12,6 +12,7 @@ import {
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     Collapsible,
     CollapsibleContent,
@@ -42,7 +43,6 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard, logout } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
@@ -94,10 +94,12 @@ export function UserMenuContent({ user }: { user: UserType }) {
     const levelProgress = level
         ? Math.round(Math.min(Math.max(level.progress, 0), 100))
         : 0;
-    const hasNextLevel = level?.next_level_xp !== null && level?.next_level_xp !== undefined;
-    const levelXpLabel = level && hasNextLevel
-        ? `${level.current_xp}/${level.next_level_xp} XP`
-        : `${level?.current_xp ?? user.xp} XP`;
+    const hasNextLevel =
+        level?.next_level_xp !== null && level?.next_level_xp !== undefined;
+    const levelXpLabel =
+        level && hasNextLevel
+            ? `${level.current_xp}/${level.next_level_xp} XP`
+            : `${level?.current_xp ?? user.xp} XP`;
 
     return (
         <>
@@ -129,42 +131,38 @@ export function UserMenuContent({ user }: { user: UserType }) {
                             Level {level.level}
                         </span>
                         <span className="text-muted-foreground">
-                            {levelProgress}%
+                            {levelXpLabel}
                         </span>
                     </div>
                     <Progress
                         value={levelProgress}
                         aria-label={`Level ${level.level} progress`}
                     />
-                    <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
-                        <span>{levelXpLabel}</span>
-                        {hasNextLevel ? (
-                            <span>Level berikutnya</span>
-                        ) : (
-                            <span>Level maksimum</span>
-                        )}
-                    </div>
                 </div>
             ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                    <Link href={profileShow.url({ user: user.username ?? String(user.id) })}>
+                    <Link
+                        href={profileShow.url({
+                            user: user.username ?? String(user.id),
+                        })}
+                    >
                         <User className="mr-2 size-4" />
-                        <span>Profil</span>
+                        <span>Profile</span>
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link href={settingsProfileEdit.url()}>
                         <Settings className="mr-2 size-4" />
-                        <span>Pengaturan</span>
+                        <span>Settings</span>
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 size-4" />
-                <span>Keluar</span>
+                <span>Log out</span>
             </DropdownMenuItem>
         </>
     );
@@ -219,7 +217,11 @@ export function AppSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {mainNavItems.map((item) => {
-                                const href = typeof item.href === 'string' ? item.href : item.href.url;
+                                const href =
+                                    typeof item.href === 'string'
+                                        ? item.href
+                                        : item.href.url;
+
                                 return (
                                     <SidebarMenuItem key={href}>
                                         <SidebarMenuButton
@@ -353,7 +355,7 @@ export function AppSidebar() {
                                                             prefetch
                                                         >
                                                             <span>
-                                                                Penilaian
+                                                                Assessment
                                                             </span>
                                                         </Link>
                                                     </SidebarMenuSubButton>
@@ -398,12 +400,16 @@ export function AppSidebar() {
                                             alt={auth.user.name}
                                         />
                                         <AvatarFallback className="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                            {auth.user.name.charAt(0).toUpperCase()}
+                                            {auth.user.name
+                                                .charAt(0)
+                                                .toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                                         <span className="truncate font-semibold">
-                                            @{auth.user.username ?? auth.user.name}
+                                            @
+                                            {auth.user.username ??
+                                                auth.user.name}
                                         </span>
                                         <span className="truncate text-xs text-muted-foreground">
                                             {auth.user.email}

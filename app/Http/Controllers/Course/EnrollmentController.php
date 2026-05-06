@@ -4,10 +4,16 @@ namespace App\Http\Controllers\Course;
 
 use App\Concerns\FlashesAchievements;
 use App\Http\Controllers\Controller;
+use App\Models\Assessment;
+use App\Models\AssessmentAnswer;
+use App\Models\AssessmentSubmission;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Models\LessonTask;
+use App\Models\QuizSubmission;
+use App\Models\TaskProgress;
 use App\Services\BadgeService;
 use App\Services\LevelService;
 use Illuminate\Http\RedirectResponse;
@@ -116,12 +122,63 @@ class EnrollmentController extends Controller
                 ->whereIn('lesson_id', $lessonIds)
                 ->delete();
 
+            // Delete task progress and quiz submissions
+            $taskIds = LessonTask::query()
+                ->whereIn('lesson_id', $lessonIds)
+                ->pluck('id');
+
+            TaskProgress::query()
+                ->where('user_id', $user->id)
+                ->whereIn('lesson_task_id', $taskIds)
+                ->delete();
+
+            // Revert quiz XP before deleting submissions
+            $quizXpToRevert = QuizSubmission::query()
+                ->where('user_id', $user->id)
+                ->whereIn('lesson_task_id', $taskIds)
+                ->sum('xp_earned');
+
+            $quizPointsToRevert = QuizSubmission::query()
+                ->where('user_id', $user->id)
+                ->whereIn('lesson_task_id', $taskIds)
+                ->sum('points_earned');
+
+            QuizSubmission::query()
+                ->where('user_id', $user->id)
+                ->whereIn('lesson_task_id', $taskIds)
+                ->delete();
+
+            if ($quizXpToRevert > 0 || $quizPointsToRevert > 0) {
+                $user->forceFill([
+                    'xp' => max((int) $user->xp - (int) $quizXpToRevert, 0),
+                    'points' => max((int) $user->points - (int) $quizPointsToRevert, 0),
+                ])->save();
+            }
+
             if ($pointsToRevert > 0) {
                 $user->forceFill([
                     'points' => max((int) $user->points - $pointsToRevert, 0),
                     'xp' => max((int) $user->xp - $xpToRevert, 0),
                 ])->save();
             }
+
+            // Delete assessment submissions and answers
+            $assessmentIds = Assessment::query()
+                ->where('course_id', $course->id)
+                ->pluck('id');
+
+            $assessmentSubmissionIds = AssessmentSubmission::query()
+                ->where('user_id', $user->id)
+                ->whereIn('assessment_id', $assessmentIds)
+                ->pluck('id');
+
+            AssessmentAnswer::query()
+                ->whereIn('submission_id', $assessmentSubmissionIds)
+                ->delete();
+
+            AssessmentSubmission::query()
+                ->whereIn('id', $assessmentSubmissionIds)
+                ->delete();
 
             // Revert course completion bonus if it was completed
             if ($enrollment->completed_at !== null) {

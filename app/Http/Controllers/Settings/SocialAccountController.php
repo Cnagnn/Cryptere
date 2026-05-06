@@ -47,7 +47,7 @@ class SocialAccountController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$providerName} account disconnected."]);
 
-        return to_route('social-accounts.edit');
+        return to_route('settings.social-accounts.edit');
     }
 
     /**

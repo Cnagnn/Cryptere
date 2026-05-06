@@ -12,6 +12,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Models\LessonTask;
 use App\Models\TaskProgress;
 use App\Services\BadgeService;
 use App\Services\LevelService;
@@ -85,6 +86,27 @@ class LessonProgressController extends Controller
                 Inertia::flash('toast', [
                     'type' => 'warning',
                     'message' => __('Complete the previous lesson first.'),
+                ]);
+
+                return back();
+            }
+        }
+
+        // Anti-cheat: validate minimum engagement time for task
+        if (isset($validated['task_id'])) {
+            $antiCheatError = $this->validateAntiCheat($user, (int) $validated['task_id']);
+
+            if ($antiCheatError !== null) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $antiCheatError,
+                    ], 422);
+                }
+
+                Inertia::flash('toast', [
+                    'type' => 'warning',
+                    'message' => $antiCheatError,
                 ]);
 
                 return back();
@@ -212,5 +234,55 @@ class LessonProgressController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Validate anti-cheat requirements for a task before allowing completion.
+     *
+     * Returns an error message string if validation fails, null if OK.
+     */
+    private function validateAntiCheat($user, int $taskId): ?string
+    {
+        $task = LessonTask::query()->find($taskId);
+
+        if ($task === null) {
+            return null; // Let normal validation handle missing task
+        }
+
+        $type = $task->type;
+
+        // Quiz tasks don't need heartbeat validation (handled by QuizSubmissionController)
+        if ($type === 'quiz') {
+            return null;
+        }
+
+        $progress = TaskProgress::query()
+            ->where('user_id', $user->id)
+            ->where('lesson_task_id', $taskId)
+            ->first();
+
+        // Must have a heartbeat record (started_at) before completing
+        if ($progress === null || $progress->started_at === null) {
+            return __('You must engage with this content before marking it complete.');
+        }
+
+        // Video: require minimum 80% watch time (minimum 30 seconds)
+        if ($type === 'video') {
+            $minimumWatchSeconds = max(30, (int) config('anti_cheat.video_min_seconds', 30));
+
+            if ($progress->watch_seconds < $minimumWatchSeconds) {
+                return __('Please watch more of the video before completing.');
+            }
+        }
+
+        // Server-side elapsed time check: started_at must be at least N seconds ago
+        $elapsedSeconds = (int) abs(now()->diffInSeconds($progress->started_at));
+        $minimumElapsed = (int) config('anti_cheat.min_elapsed_seconds', 10);
+
+        if ($elapsedSeconds < $minimumElapsed) {
+            return __('You must engage with this content before marking it complete.');
+        }
+
+        return null;
     }
 }

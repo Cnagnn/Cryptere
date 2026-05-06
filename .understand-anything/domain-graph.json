@@ -1,0 +1,679 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "Crypter",
+    "analyzedAt": "2026-05-06T14:30:00.000Z"
+  },
+  "domains": [
+    {
+      "id": "domain:auth",
+      "name": "Authentication & User Management",
+      "description": "User registration, login, social OAuth, 2FA, password management, profile settings, onboarding, and account security.",
+      "color": "#6366f1"
+    },
+    {
+      "id": "domain:courses",
+      "name": "Course Management & Learning",
+      "description": "Course catalog, enrollment, lessons, tasks, quizzes, progress tracking, notes, and learning path recommendations.",
+      "color": "#0ea5e9"
+    },
+    {
+      "id": "domain:assessment",
+      "name": "Assessment & Evaluation",
+      "description": "Bloom's Taxonomy tiered assessments, adaptive question selection, grading, mastery tracking, and analytics.",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "domain:gamification",
+      "name": "Gamification",
+      "description": "XP system, levels, badges, leaderboard rankings, real-time updates, point decay, and A/B testing of reward variants.",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "domain:challenges",
+      "name": "Challenges",
+      "description": "Cryptography challenges with scoring, daily challenge rotation, and submission tracking.",
+      "color": "#ef4444"
+    },
+    {
+      "id": "domain:labs",
+      "name": "Labs & Simulations",
+      "description": "Interactive client-side cryptography simulations (Caesar, Vigenère, etc.) with visit tracking.",
+      "color": "#10b981"
+    },
+    {
+      "id": "domain:certificates",
+      "name": "Certificates",
+      "description": "Course completion certificates with generation, listing, and public verification.",
+      "color": "#14b8a6"
+    },
+    {
+      "id": "domain:admin",
+      "name": "Admin Panel",
+      "description": "Content management (courses, lessons, tasks, assessments, users), system stats, and audit logging.",
+      "color": "#64748b"
+    },
+    {
+      "id": "domain:engagement",
+      "name": "Daily Rewards & Engagement",
+      "description": "Daily login rewards, streak tracking, notifications, and re-engagement mechanisms.",
+      "color": "#ec4899"
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow:user-registration",
+      "domainId": "domain:auth",
+      "name": "User Registration",
+      "description": "New user signs up via email or social OAuth, completes onboarding.",
+      "steps": [
+        {
+          "id": "step:visit-register",
+          "name": "Visit Register Page",
+          "description": "User navigates to registration page.",
+          "nodeIds": ["resources/js/pages/auth/register.tsx"],
+          "type": "action"
+        },
+        {
+          "id": "step:submit-registration",
+          "name": "Submit Registration Form",
+          "description": "Form data validated and user created via Fortify CreateNewUser action.",
+          "nodeIds": ["app/Actions/Fortify/CreateNewUser.php", "app/Providers/FortifyServiceProvider.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:social-auth-alternative",
+          "name": "Social OAuth Alternative",
+          "description": "User chooses GitHub/Google login instead, redirected to provider.",
+          "nodeIds": ["app/Http/Controllers/Auth/SocialAuthController.php", "app/Services/SocialAvatarService.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:onboarding",
+          "name": "Complete Onboarding",
+          "description": "New user goes through onboarding flow to set preferences.",
+          "nodeIds": ["app/Http/Controllers/OnboardingController.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:user-login",
+      "domainId": "domain:auth",
+      "name": "User Login",
+      "description": "Existing user authenticates via credentials or social OAuth, optionally with 2FA.",
+      "steps": [
+        {
+          "id": "step:login-page",
+          "name": "Visit Login Page",
+          "description": "User navigates to login form.",
+          "nodeIds": ["resources/js/pages/auth/login.tsx"],
+          "type": "action"
+        },
+        {
+          "id": "step:authenticate",
+          "name": "Authenticate Credentials",
+          "description": "Fortify validates credentials with rate limiting.",
+          "nodeIds": ["app/Providers/FortifyServiceProvider.php", "config/fortify.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:two-factor-check",
+          "name": "2FA Challenge",
+          "description": "If 2FA enabled, user must provide TOTP code or recovery code.",
+          "nodeIds": ["resources/js/hooks/use-two-factor-auth.ts", "app/Http/Controllers/Settings/SecurityController.php"],
+          "type": "decision"
+        },
+        {
+          "id": "step:redirect-dashboard",
+          "name": "Redirect to Dashboard",
+          "description": "Authenticated user lands on personalized dashboard.",
+          "nodeIds": ["app/Http/Controllers/DashboardController.php", "resources/js/pages/dashboard.tsx"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:account-security",
+      "domainId": "domain:auth",
+      "name": "Account Security Management",
+      "description": "User manages password, 2FA, and linked social accounts.",
+      "steps": [
+        {
+          "id": "step:security-settings",
+          "name": "Open Security Settings",
+          "description": "User navigates to security settings page.",
+          "nodeIds": ["resources/js/pages/settings/security.tsx", "app/Http/Controllers/Settings/SecurityController.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:change-password",
+          "name": "Change Password",
+          "description": "User updates password with validation.",
+          "nodeIds": ["app/Actions/Fortify/ResetUserPassword.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:manage-2fa",
+          "name": "Enable/Disable 2FA",
+          "description": "User enables TOTP 2FA, scans QR code, confirms with code.",
+          "nodeIds": ["resources/js/hooks/use-two-factor-auth.ts"],
+          "type": "action"
+        },
+        {
+          "id": "step:manage-social",
+          "name": "Link/Unlink Social Accounts",
+          "description": "User connects or disconnects OAuth providers.",
+          "nodeIds": ["app/Http/Controllers/Settings/SocialAccountController.php", "app/Models/SocialAccount.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:course-enrollment",
+      "domainId": "domain:courses",
+      "name": "Course Enrollment & Learning",
+      "description": "User browses courses, enrolls, progresses through lessons and tasks.",
+      "steps": [
+        {
+          "id": "step:browse-courses",
+          "name": "Browse Course Catalog",
+          "description": "User views available courses with filtering/search.",
+          "nodeIds": ["app/Http/Controllers/Course/CourseController.php", "resources/js/pages/courses/index.tsx"],
+          "type": "action"
+        },
+        {
+          "id": "step:view-course",
+          "name": "View Course Detail",
+          "description": "User sees course overview, lessons, and requirements.",
+          "nodeIds": ["resources/js/pages/courses/show.tsx", "app/Models/Course.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:enroll",
+          "name": "Enroll in Course",
+          "description": "User enrolls, creating enrollment record.",
+          "nodeIds": ["app/Http/Controllers/Course/EnrollmentController.php", "app/Models/Enrollment.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:complete-tasks",
+          "name": "Complete Lesson Tasks",
+          "description": "User works through read/code/video tasks within lessons.",
+          "nodeIds": ["app/Models/LessonTask.php", "app/Models/TaskProgress.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:take-quiz",
+          "name": "Take Lesson Quiz",
+          "description": "User answers quiz questions for knowledge check.",
+          "nodeIds": ["app/Http/Controllers/Course/QuizSubmissionController.php", "app/Models/QuizQuestion.php", "app/Models/QuizSubmission.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:complete-lesson",
+          "name": "Complete Lesson",
+          "description": "All tasks done, lesson marked complete, XP awarded, events fired.",
+          "nodeIds": ["app/Http/Controllers/Course/LessonProgressController.php", "app/Models/LessonProgress.php", "app/Events/LessonCompleted.php"],
+          "type": "event"
+        },
+        {
+          "id": "step:course-complete",
+          "name": "Complete Course",
+          "description": "All lessons done, course completion event fired.",
+          "nodeIds": ["app/Events/CourseCompleted.php", "app/Models/Enrollment.php"],
+          "type": "event"
+        }
+      ]
+    },
+    {
+      "id": "flow:learning-path",
+      "domainId": "domain:courses",
+      "name": "Personalized Learning Path",
+      "description": "System recommends next courses/lessons based on progress and mastery.",
+      "steps": [
+        {
+          "id": "step:analyze-progress",
+          "name": "Analyze User Progress",
+          "description": "System evaluates completed courses, mastery levels, and gaps.",
+          "nodeIds": ["app/Services/Dashboard/LearningPathBuilder.php", "app/Services/MasteryService.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:generate-recommendations",
+          "name": "Generate Recommendations",
+          "description": "Learning path builder creates ordered recommendations.",
+          "nodeIds": ["app/Http/Controllers/LearningPathController.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:display-path",
+          "name": "Display Learning Path",
+          "description": "User sees personalized path on dashboard.",
+          "nodeIds": ["app/Services/Dashboard/LearnerDashboardBuilder.php", "resources/js/pages/dashboard.tsx"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:study-notes",
+      "domainId": "domain:courses",
+      "name": "Study Notes",
+      "description": "User creates, manages, and exports study notes linked to lessons.",
+      "steps": [
+        {
+          "id": "step:create-note",
+          "name": "Create Note",
+          "description": "User writes a note while studying a lesson.",
+          "nodeIds": ["app/Http/Controllers/NoteController.php", "app/Models/Note.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:manage-notes",
+          "name": "Manage & Export Notes",
+          "description": "User views, edits, deletes, or exports notes.",
+          "nodeIds": ["app/Http/Controllers/NoteController.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:assessment-attempt",
+      "domainId": "domain:assessment",
+      "name": "Assessment Attempt",
+      "description": "User takes a Bloom's Taxonomy assessment with adaptive questions and receives graded results.",
+      "steps": [
+        {
+          "id": "step:start-assessment",
+          "name": "Start Assessment",
+          "description": "User initiates assessment, submission record created.",
+          "nodeIds": ["app/Http/Controllers/Assessment/AssessmentSubmissionController.php", "app/Models/AssessmentSubmission.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:adaptive-questions",
+          "name": "Receive Adaptive Questions",
+          "description": "System selects questions based on user's performance level.",
+          "nodeIds": ["app/Services/AdaptiveQuestionService.php", "app/Models/AssessmentQuestion.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:answer-questions",
+          "name": "Answer Questions",
+          "description": "User submits answers at various Bloom's levels.",
+          "nodeIds": ["app/Models/AssessmentAnswer.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:grade-submission",
+          "name": "Grade Submission",
+          "description": "AssessmentGradingService scores using Bloom's rubrics.",
+          "nodeIds": ["app/Services/AssessmentGradingService.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:update-mastery",
+          "name": "Update Mastery Level",
+          "description": "MasteryService updates user's topic mastery based on results.",
+          "nodeIds": ["app/Services/MasteryService.php", "app/Services/MasteryAnalyticsService.php"],
+          "type": "event"
+        }
+      ]
+    },
+    {
+      "id": "flow:xp-award",
+      "domainId": "domain:gamification",
+      "name": "XP Award & Level Up",
+      "description": "User earns XP from activities, potentially levels up and earns badges.",
+      "steps": [
+        {
+          "id": "step:trigger-activity",
+          "name": "Complete Activity",
+          "description": "User completes lesson, challenge, or assessment triggering XP.",
+          "nodeIds": ["app/Http/Controllers/Course/LessonProgressController.php", "app/Http/Controllers/Challenge/ChallengeSubmissionController.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:calculate-xp",
+          "name": "Calculate XP Amount",
+          "description": "XpService determines points based on activity type and config.",
+          "nodeIds": ["app/Services/XpService.php", "config/rewards.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:award-xp",
+          "name": "Award XP",
+          "description": "XP added to user, XpAwarded event fired.",
+          "nodeIds": ["app/Events/XpAwarded.php", "app/Listeners/LogXpAward.php"],
+          "type": "event"
+        },
+        {
+          "id": "step:check-level-up",
+          "name": "Check Level Up",
+          "description": "LevelService checks if XP crosses level threshold.",
+          "nodeIds": ["app/Services/LevelService.php", "config/levels.php"],
+          "type": "decision"
+        },
+        {
+          "id": "step:check-badges",
+          "name": "Check Badge Criteria",
+          "description": "BadgeService evaluates if new badges are earned.",
+          "nodeIds": ["app/Services/BadgeService.php", "app/Events/BadgeEarned.php", "app/Models/Badge.php"],
+          "type": "decision"
+        },
+        {
+          "id": "step:update-leaderboard",
+          "name": "Update Leaderboard",
+          "description": "LeaderboardService recalculates rankings, broadcasts update.",
+          "nodeIds": ["app/Services/LeaderboardService.php", "app/Events/LeaderboardUpdated.php", "app/Listeners/BroadcastLeaderboardUpdate.php"],
+          "type": "event"
+        }
+      ]
+    },
+    {
+      "id": "flow:leaderboard-view",
+      "domainId": "domain:gamification",
+      "name": "Leaderboard View",
+      "description": "User views real-time XP rankings with WebSocket updates.",
+      "steps": [
+        {
+          "id": "step:load-leaderboard",
+          "name": "Load Leaderboard",
+          "description": "Controller fetches cached rankings from LeaderboardService.",
+          "nodeIds": ["app/Http/Controllers/LeaderboardController.php", "app/Services/LeaderboardService.php", "app/Services/CacheService.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:render-rankings",
+          "name": "Render Rankings",
+          "description": "Frontend displays leaderboard with user positions.",
+          "nodeIds": ["resources/js/pages/leaderboard/index.tsx"],
+          "type": "action"
+        },
+        {
+          "id": "step:subscribe-realtime",
+          "name": "Subscribe to Real-Time Updates",
+          "description": "React hook connects to Reverb WebSocket channel for live updates.",
+          "nodeIds": ["resources/js/hooks/useLeaderboardChannel.ts", "routes/channels.php", "config/reverb.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:point-decay",
+      "domainId": "domain:gamification",
+      "name": "Point Decay (Inactive Users)",
+      "description": "Scheduled process warns and decays XP for inactive users.",
+      "steps": [
+        {
+          "id": "step:warn-decay",
+          "name": "Send Decay Warning",
+          "description": "Scheduled command notifies users about upcoming point decay.",
+          "nodeIds": ["app/Console/Commands/WarnPointDecay.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:decay-points",
+          "name": "Decay Inactive Points",
+          "description": "Scheduled command reduces XP for users inactive beyond threshold.",
+          "nodeIds": ["app/Console/Commands/DecayInactivePoints.php", "app/Models/User.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:challenge-attempt",
+      "domainId": "domain:challenges",
+      "name": "Challenge Attempt",
+      "description": "User attempts a cryptography challenge and receives score.",
+      "steps": [
+        {
+          "id": "step:browse-challenges",
+          "name": "Browse Challenges",
+          "description": "User views available challenges by difficulty/topic.",
+          "nodeIds": ["app/Http/Controllers/Challenge/ChallengeController.php", "app/Models/Challenge.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:solve-challenge",
+          "name": "Solve Challenge",
+          "description": "User submits answers to challenge questions.",
+          "nodeIds": ["app/Http/Controllers/Challenge/ChallengeSubmissionController.php", "app/Models/ChallengeQuestion.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:score-challenge",
+          "name": "Score Submission",
+          "description": "ChallengeScoreService evaluates correctness and timing.",
+          "nodeIds": ["app/Services/ChallengeScoreService.php", "app/Models/ChallengeSubmission.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:challenge-solved-event",
+          "name": "Fire ChallengeSolved Event",
+          "description": "Event triggers XP award and badge checks.",
+          "nodeIds": ["app/Events/ChallengeSolved.php"],
+          "type": "event"
+        }
+      ]
+    },
+    {
+      "id": "flow:daily-challenge",
+      "domainId": "domain:challenges",
+      "name": "Daily Challenge Rotation",
+      "description": "System rotates daily challenge via scheduled command.",
+      "steps": [
+        {
+          "id": "step:rotate-challenge",
+          "name": "Rotate Daily Challenge",
+          "description": "Scheduled command selects new daily challenge.",
+          "nodeIds": ["app/Console/Commands/RotateDailyChallenge.php", "app/Services/DailyChallengeService.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:lab-simulation",
+      "domainId": "domain:labs",
+      "name": "Lab Simulation",
+      "description": "User interacts with client-side cryptography simulations.",
+      "steps": [
+        {
+          "id": "step:browse-labs",
+          "name": "Browse Labs",
+          "description": "User views available lab simulations.",
+          "nodeIds": ["app/Http/Controllers/Lab/LabController.php", "resources/js/pages/labs/index.tsx"],
+          "type": "action"
+        },
+        {
+          "id": "step:open-lab",
+          "name": "Open Lab Simulation",
+          "description": "User enters interactive lab, visit tracked.",
+          "nodeIds": ["resources/js/pages/labs/show.tsx", "app/Models/LabVisit.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:run-simulation",
+          "name": "Run Cipher Simulation",
+          "description": "User experiments with cipher algorithms client-side.",
+          "nodeIds": ["resources/js/lib/lab-simulations.ts"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:certificate-generation",
+      "domainId": "domain:certificates",
+      "name": "Certificate Generation & Verification",
+      "description": "Certificate issued on course completion, publicly verifiable.",
+      "steps": [
+        {
+          "id": "step:course-completed",
+          "name": "Course Completed",
+          "description": "User finishes all course requirements.",
+          "nodeIds": ["app/Events/CourseCompleted.php"],
+          "type": "event"
+        },
+        {
+          "id": "step:generate-certificate",
+          "name": "Generate Certificate",
+          "description": "Certificate created with unique verification code.",
+          "nodeIds": ["app/Http/Controllers/CertificateController.php", "app/Models/Certificate.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:verify-certificate",
+          "name": "Public Verification",
+          "description": "Anyone can verify certificate authenticity via public URL.",
+          "nodeIds": ["app/Http/Controllers/CertificateController.php"],
+          "type": "external"
+        }
+      ]
+    },
+    {
+      "id": "flow:admin-content-management",
+      "domainId": "domain:admin",
+      "name": "Content Management",
+      "description": "Admin creates and manages courses, lessons, tasks, and assessments.",
+      "steps": [
+        {
+          "id": "step:admin-auth",
+          "name": "Admin Authorization",
+          "description": "CheckAdmin middleware verifies admin role.",
+          "nodeIds": ["app/Http/Middleware/CheckAdmin.php"],
+          "type": "decision"
+        },
+        {
+          "id": "step:manage-courses",
+          "name": "Manage Courses",
+          "description": "Admin creates, edits, reorders, publishes courses.",
+          "nodeIds": ["app/Http/Controllers/Admin/CourseController.php", "resources/js/pages/admin/courses/index.tsx"],
+          "type": "action"
+        },
+        {
+          "id": "step:manage-lessons",
+          "name": "Manage Lessons",
+          "description": "Admin creates and organizes lessons within courses.",
+          "nodeIds": ["app/Http/Controllers/Admin/LessonController.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:manage-tasks",
+          "name": "Manage Tasks",
+          "description": "Admin adds read/code/video tasks to lessons.",
+          "nodeIds": ["app/Http/Controllers/Admin/TaskController.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:manage-assessments",
+          "name": "Manage Assessments",
+          "description": "Admin creates Bloom's Taxonomy assessments and questions.",
+          "nodeIds": ["app/Http/Controllers/Admin/AssessmentController.php", "app/Http/Controllers/Admin/AssessmentQuestionController.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:content-processing",
+          "name": "Content Processing",
+          "description": "Uploaded documents/videos processed via queue jobs.",
+          "nodeIds": ["app/Jobs/ConvertLessonDocument.php", "app/Jobs/ConvertLessonVideo.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:admin-user-management",
+      "domainId": "domain:admin",
+      "name": "User Management",
+      "description": "Admin manages users, roles, and views system stats.",
+      "steps": [
+        {
+          "id": "step:manage-users",
+          "name": "Manage Users",
+          "description": "Admin lists users, updates roles, removes accounts.",
+          "nodeIds": ["app/Http/Controllers/Admin/UserController.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:view-stats",
+          "name": "View System Stats",
+          "description": "Admin sees platform-wide statistics.",
+          "nodeIds": ["app/Http/Controllers/SystemStatsController.php", "app/Services/Dashboard/AdminDashboardBuilder.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:audit-log",
+          "name": "Audit Logging",
+          "description": "Admin actions logged for accountability.",
+          "nodeIds": ["app/Services/AuditService.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:daily-reward-claim",
+      "domainId": "domain:engagement",
+      "name": "Daily Reward Claim",
+      "description": "User claims daily login reward to maintain streak.",
+      "steps": [
+        {
+          "id": "step:view-rewards",
+          "name": "View Available Rewards",
+          "description": "User sees daily reward calendar and current streak.",
+          "nodeIds": ["app/Http/Controllers/DailyRewardController.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:claim-reward",
+          "name": "Claim Daily Reward",
+          "description": "User claims reward, streak incremented, XP/bonus granted.",
+          "nodeIds": ["app/Http/Controllers/DailyRewardController.php", "app/Models/DailyReward.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:notifications",
+      "domainId": "domain:engagement",
+      "name": "Notifications",
+      "description": "User receives and manages notifications about achievements, decay warnings, etc.",
+      "steps": [
+        {
+          "id": "step:receive-notification",
+          "name": "Receive Notification",
+          "description": "System sends notification (badge earned, decay warning, etc.).",
+          "nodeIds": ["app/Http/Controllers/NotificationController.php"],
+          "type": "event"
+        },
+        {
+          "id": "step:view-notifications",
+          "name": "View & Dismiss Notifications",
+          "description": "User reads and marks notifications as read.",
+          "nodeIds": ["app/Http/Controllers/NotificationController.php"],
+          "type": "action"
+        }
+      ]
+    },
+    {
+      "id": "flow:feature-flags",
+      "domainId": "domain:admin",
+      "name": "Feature Flags & Experiments",
+      "description": "Platform uses Pennant feature flags for gradual rollouts and A/B testing.",
+      "steps": [
+        {
+          "id": "step:define-flag",
+          "name": "Define Feature Flag",
+          "description": "Class-based feature flags defined in app/Features/.",
+          "nodeIds": ["app/Features/GamificationRewardVariant.php", "app/Features/IndonesianLocale.php", "app/Features/RealtimeLeaderboard.php"],
+          "type": "action"
+        },
+        {
+          "id": "step:evaluate-flag",
+          "name": "Evaluate Flag for User",
+          "description": "ExperimentService checks flag state scoped to user.",
+          "nodeIds": ["app/Services/ExperimentService.php", "config/pennant.php"],
+          "type": "decision"
+        }
+      ]
+    }
+  ]
+}

@@ -53,7 +53,10 @@ export function useLeaderboardChannel(
 
     // Keep a stable ref to the onUpdate callback to avoid re-subscribing.
     const onUpdateRef = useRef(onUpdate);
-    onUpdateRef.current = onUpdate;
+
+    useEffect(() => {
+        onUpdateRef.current = onUpdate;
+    }, [onUpdate]);
 
     const handleEvent = useCallback(
         (payload: LeaderboardUpdatePayload) => {

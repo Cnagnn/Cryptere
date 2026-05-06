@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Version control
+.git/
+
+# Build outputs
+dist/
+build/
+public/build/
+
+# Laravel framework cache/storage
+storage/framework/
+storage/logs/
+bootstrap/cache/
+bootstrap/ssr/
+
+# Lock files
+*.lock
+pnpm-lock.yaml
+composer.lock
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+
+# Testing artifacts
+coverage/
+.phpunit.result.cache
+test-results/
+
+# Compiled assets
+*.map
+
+# Understand output (self)
+.understand-anything/intermediate/
+.understand-anything/tmp/

@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Skip-to-content link — WCAG 2.1 AA 2.4.1 (Bypass Blocks)
@@ -32,7 +32,7 @@ export function RouteAnnouncer() {
     const [announcement, setAnnouncement] = useState('');
 
     useEffect(() => {
-        const removeListener = router.on('navigate', (event) => {
+        const removeListener = router.on('navigate', () => {
             // Extract page title from the document after navigation
             requestAnimationFrame(() => {
                 const title = document.title || 'Page loaded';

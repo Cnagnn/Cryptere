@@ -10,11 +10,10 @@ import {
     Flame,
     GraduationCap,
     Home,
-    TrendingUp,
     Users,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -56,6 +55,7 @@ import { index as leaderboardIndex } from '@/routes/leaderboard';
 import type { Auth, UserLevel } from '@/types/auth';
 import type {
     AcademyData,
+    AdminChallengePerformance,
     AdminCoursePerformance,
     AdminData,
     AdminRecentUser,
@@ -78,6 +78,7 @@ const formatNumber = (num: number): string => {
 
 const getTimeGreeting = (name: string) => {
     const hour = new Date().getHours();
+
     if (hour < 12) {
         return {
             text: `Selamat Pagi, ${name}`,
@@ -85,6 +86,7 @@ const getTimeGreeting = (name: string) => {
             subtitle: 'Semangat memulai hari dengan belajar!',
         };
     }
+
     if (hour < 18) {
         return {
             text: `Selamat Siang, ${name}`,
@@ -92,6 +94,7 @@ const getTimeGreeting = (name: string) => {
             subtitle: 'Terus tingkatkan kemampuanmu!',
         };
     }
+
     return {
         text: `Selamat Malam, ${name}`,
         emoji: '🌙',
@@ -110,7 +113,11 @@ const initials = (name: string): string => {
 
 const ACTIVITY_TAG_CONFIG: Record<
     string,
-    { icon: React.ComponentType<{ className?: string }>; label: string; color: string }
+    {
+        icon: React.ComponentType<{ className?: string }>;
+        label: string;
+        color: string;
+    }
 > = {
     course_completed: {
         icon: GraduationCap,
@@ -138,7 +145,13 @@ const DEFAULT_ACTIVITY_TAG = {
 const GradientBar = ({ prefix }: { prefix: string }) => (
     <svg width="0" height="0">
         <defs>
-            <linearGradient id={`gradient-${prefix}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient
+                id={`gradient-${prefix}`}
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="0%"
+            >
                 <stop offset="0%" stopColor="hsl(var(--chart-1))" />
                 <stop offset="100%" stopColor="hsl(var(--chart-2))" />
             </linearGradient>
@@ -945,10 +958,14 @@ function LearnerDashboard({
 /* ── Inline Component: AdminDashboard ── */
 
 const enrollmentTrendsConfig: ChartConfig = {
-    enrollments: { label: 'Enrollments', color: 'var(--chart-1)' },
+    enrollments: { label: 'Pendaftaran', color: 'var(--chart-1)' },
 };
 const userGrowthConfig: ChartConfig = {
-    users: { label: 'New Users', color: 'var(--chart-2)' },
+    users: { label: 'Pengguna baru', color: 'var(--chart-2)' },
+};
+const adminOverviewConfig: ChartConfig = {
+    enrollments: { label: 'Pendaftaran', color: 'var(--chart-1)' },
+    users: { label: 'Pengguna baru', color: 'var(--chart-2)' },
 };
 
 function normalizeArray<T>(value: unknown): T[] {
@@ -1022,6 +1039,79 @@ const courseColumns: ColumnDef<AdminCoursePerformance>[] = [
     },
 ];
 
+const challengeColumns: ColumnDef<AdminChallengePerformance>[] = [
+    {
+        accessorKey: 'title',
+        header: ({ column }) => (
+            <Button
+                variant="ghost"
+                onClick={() =>
+                    column.toggleSorting(column.getIsSorted() === 'asc')
+                }
+            >
+                Tantangan
+                <ArrowUpDown className="size-4" />
+            </Button>
+        ),
+        cell: ({ row }) => (
+            <span className="max-w-40 truncate font-medium">
+                {row.original.title}
+            </span>
+        ),
+    },
+    {
+        accessorKey: 'submissions',
+        header: ({ column }) => (
+            <Button
+                variant="ghost"
+                onClick={() =>
+                    column.toggleSorting(column.getIsSorted() === 'asc')
+                }
+            >
+                Submission
+                <ArrowUpDown className="size-4" />
+            </Button>
+        ),
+    },
+    {
+        accessorKey: 'successRate',
+        header: ({ column }) => (
+            <Button
+                variant="ghost"
+                onClick={() =>
+                    column.toggleSorting(column.getIsSorted() === 'asc')
+                }
+            >
+                Sukses
+                <ArrowUpDown className="size-4" />
+            </Button>
+        ),
+        cell: ({ row }) => (
+            <Badge
+                variant={
+                    row.original.successRate >= 50 ? 'default' : 'secondary'
+                }
+            >
+                {row.original.successRate}%
+            </Badge>
+        ),
+    },
+    {
+        accessorKey: 'avgScore',
+        header: ({ column }) => (
+            <Button
+                variant="ghost"
+                onClick={() =>
+                    column.toggleSorting(column.getIsSorted() === 'asc')
+                }
+            >
+                Skor rata-rata
+                <ArrowUpDown className="size-4" />
+            </Button>
+        ),
+    },
+];
+
 const userColumns: ColumnDef<AdminRecentUser>[] = [
     {
         accessorKey: 'name',
@@ -1036,7 +1126,7 @@ const userColumns: ColumnDef<AdminRecentUser>[] = [
                 <ArrowUpDown className="size-4" />
             </Button>
         ),
-        cell: ({ row}) => (
+        cell: ({ row }) => (
             <div className="flex items-center gap-2">
                 <Avatar size="sm">
                     <AvatarFallback>
@@ -1122,6 +1212,24 @@ function AdminDashboard({
     admin: AdminData;
     adminTabs?: React.ReactNode;
 }) {
+    const { auth } = usePage<{ auth: Auth }>().props;
+
+    const getTimeGreeting = (name: string) => {
+        const hour = new Date().getHours();
+
+        if (hour < 12) {
+            return { text: `Selamat Pagi, ${name}`, emoji: '☀️' };
+        }
+
+        if (hour < 18) {
+            return { text: `Selamat Siang, ${name}`, emoji: '🌤️' };
+        }
+
+        return { text: `Selamat Malam, ${name}`, emoji: '🌙' };
+    };
+
+    const greeting = getTimeGreeting(auth.user.name);
+
     const enrollmentTrends = normalizeArray<
         AdminData['enrollmentTrends'][number]
     >(admin.enrollmentTrends);
@@ -1131,76 +1239,222 @@ function AdminDashboard({
     const coursePerformance = normalizeArray<
         AdminData['coursePerformance'][number]
     >(admin.coursePerformance);
+    const challengePerformance = normalizeArray<
+        AdminData['challengePerformance'][number]
+    >(admin.challengePerformance);
     const recentUsers = normalizeArray<AdminData['recentUsers'][number]>(
         admin.recentUsers,
     );
 
+    const overviewSeries = enrollmentTrends.map((entry, index) => ({
+        month: entry.month,
+        enrollments: entry.enrollments,
+        users: userGrowth[index]?.users ?? 0,
+    }));
+
+    const averageCourseCompletion = coursePerformance.length
+        ? Math.round(
+              coursePerformance.reduce(
+                  (total, course) => total + course.completionRate,
+                  0,
+              ) / coursePerformance.length,
+          )
+        : 0;
+
+    const averageChallengeSuccess = challengePerformance.length
+        ? Math.round(
+              challengePerformance.reduce(
+                  (total, challenge) => total + challenge.successRate,
+                  0,
+              ) / challengePerformance.length,
+          )
+        : 0;
+
+    const topCourse = coursePerformance[0];
+    const topChallenge = challengePerformance[0];
+
     const statCards = [
-        { label: 'Total Pengguna', value: admin.stats.totalUsers, icon: Users },
+        {
+            label: 'Total Pengguna',
+            value: admin.stats.totalUsers,
+            icon: Users,
+            helper: `${admin.stats.newUsersThisMonth} baru bulan ini`,
+        },
         {
             label: 'Total Kursus',
             value: admin.stats.totalCourses,
             icon: BookOpen,
+            helper: `${averageCourseCompletion}% rata-rata selesai`,
         },
         {
             label: 'Total Pendaftaran',
             value: admin.stats.totalEnrollments,
             icon: GraduationCap,
+            helper: topCourse ? `${topCourse.title} teratas` : 'Belum ada data',
         },
         {
             label: 'Pengguna Aktif (30h)',
             value: admin.stats.activeUsers,
             icon: Activity,
+            helper: 'Aktif dalam 30 hari terakhir',
         },
         {
-            label: 'Baru Bulan Ini',
-            value: admin.stats.newUsersThisMonth,
-            icon: TrendingUp,
+            label: 'Total Tantangan',
+            value: admin.stats.totalChallenges,
+            icon: Flame,
+            helper: `${averageChallengeSuccess}% rata-rata sukses`,
         },
     ];
 
     return (
-        <div className="relative flex flex-col gap-4 px-4 py-4 lg:gap-6 lg:py-6">
-            <section className="animate-fade-in-up relative flex flex-col gap-2">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <TypographyH1>Dasbor Analitik</TypographyH1>
-                    {adminTabs}
+        <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-6">
+            {/* Header Section */}
+            <section className="animate-fade-in-up relative flex flex-col gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex flex-col gap-1">
+                        <TypographyH1>
+                            {greeting.text} {greeting.emoji}
+                        </TypographyH1>
+                        <TypographyMuted className="text-sm/6">
+                            Ringkasan pertumbuhan, engagement, dan performa
+                            konten platform
+                        </TypographyMuted>
+                    </div>
+                    {adminTabs && <div>{adminTabs}</div>}
                 </div>
-                <TypographyMuted>
-                    Ringkasan platform dan metrik kinerja.
-                </TypographyMuted>
             </section>
 
+            {/* Stats Cards - 4 columns */}
             <section
-                className="animate-fade-in-up grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6"
-                style={{ animationDelay: '50ms' }}
-            >
-                {statCards.map((s) => (
-                    <Card key={s.label}>
-                        <CardHeader className="flex flex-row items-center justify-between gap-0 pb-1">
-                            <CardDescription className="text-sm font-medium">
-                                {s.label}
-                            </CardDescription>
-                            <s.icon className="size-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold tabular-nums">
-                                {formatNumber(s.value)}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </section>
-
-            <section
-                className="animate-fade-in-up grid gap-4 xl:grid-cols-2"
-                style={{ animationDelay: '150ms' }}
+                className="animate-fade-in-up grid grid-cols-2 gap-3 md:grid-cols-4"
+                style={{ animationDelay: '100ms' }}
             >
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Tren Pendaftaran</CardTitle>
+                    <CardHeader className="gap-1">
+                        <CardTitle>Total Pengguna</CardTitle>
                         <CardDescription>
-                            Pendaftaran baru per bulan (6 bulan terakhir)
+                            Pertumbuhan pengguna platform
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold tabular-nums">
+                            {formatNumber(admin.stats.totalUsers)}{' '}
+                            <span className="text-sm font-medium text-muted-foreground">
+                                pengguna
+                            </span>
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="gap-1">
+                        <CardTitle>Total Kursus</CardTitle>
+                        <CardDescription>
+                            Konten pembelajaran tersedia
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold tabular-nums">
+                            {formatNumber(admin.stats.totalCourses)}{' '}
+                            <span className="text-sm font-medium text-muted-foreground">
+                                kursus
+                            </span>
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="gap-1">
+                        <CardTitle>Total Pendaftaran</CardTitle>
+                        <CardDescription>Engagement pengguna</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold tabular-nums">
+                            {formatNumber(admin.stats.totalEnrollments)}{' '}
+                            <span className="text-sm font-medium text-muted-foreground">
+                                enrollment
+                            </span>
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="gap-1">
+                        <CardTitle>Pengguna Aktif</CardTitle>
+                        <CardDescription>
+                            Aktif 30 hari terakhir
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-semibold tabular-nums">
+                            {formatNumber(admin.stats.activeUsers)}{' '}
+                            <span className="text-sm font-medium text-muted-foreground">
+                                aktif
+                            </span>
+                        </p>
+                    </CardContent>
+                </Card>
+            </section>
+
+            {/* Main Content Grid */}
+            <section
+                className="animate-fade-in-up grid gap-3 lg:grid-cols-12"
+                style={{ animationDelay: '200ms' }}
+            >
+                {/* Large Chart - 8 cols */}
+                <Card className="col-span-2 md:col-span-4 lg:col-span-8">
+                    <CardHeader className="flex items-center gap-2 border-b py-5 sm:flex-row">
+                        <div className="grid flex-1 gap-1">
+                            <CardTitle>Pertumbuhan Platform</CardTitle>
+                            <CardDescription>
+                                Pendaftaran dan pengguna baru selama 6 bulan
+                                terakhir
+                            </CardDescription>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+                        <ChartContainer
+                            config={adminOverviewConfig}
+                            className="aspect-auto h-62.5 w-full"
+                        >
+                            <BarChart data={overviewSeries} accessibilityLayer>
+                                <CartesianGrid vertical={false} />
+                                <XAxis
+                                    dataKey="month"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    tickFormatter={(v: string) => v.slice(0, 3)}
+                                />
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent />}
+                                />
+                                <ChartLegend content={<ChartLegendContent />} />
+                                <Bar
+                                    dataKey="enrollments"
+                                    fill="var(--color-enrollments)"
+                                />
+                                <Bar
+                                    dataKey="users"
+                                    fill="var(--color-users)"
+                                />
+                            </BarChart>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
+            </section>
+
+            {/* Secondary Charts - 2 columns */}
+            <section
+                className="animate-fade-in-up grid gap-3 lg:grid-cols-2"
+                style={{ animationDelay: '300ms' }}
+            >
+                <Card>
+                    <CardHeader className="gap-1 pb-4">
+                        <CardTitle>Tren Pendaftaran</CardTitle>
+                        <CardDescription className="text-xs">
+                            Pendaftaran baru per bulan
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1233,10 +1487,10 @@ function AdminDashboard({
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="gap-1 pb-4">
                         <CardTitle>Pertumbuhan Pengguna</CardTitle>
-                        <CardDescription>
-                            Registrasi baru per bulan (6 bulan terakhir)
+                        <CardDescription className="text-xs">
+                            Registrasi baru per bulan
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1295,25 +1549,20 @@ function AdminDashboard({
                 </Card>
             </section>
 
+            {/* Data Tables - 2 columns */}
             <section
-                className="animate-fade-in-up grid gap-4 xl:grid-cols-2"
-                style={
-                    {
-                        animationDelay: '250ms',
-                        contentVisibility: 'auto',
-                        containIntrinsicSize: 'auto 400px',
-                    } as React.CSSProperties
-                }
+                className="animate-fade-in-up grid gap-3 lg:grid-cols-2"
+                style={{ animationDelay: '400ms' }}
             >
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="gap-1 pb-4">
                         <CardTitle>Kursus Teratas</CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-xs">
                             Berdasarkan jumlah pendaftaran
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {admin.coursePerformance.length === 0 ? (
+                        {coursePerformance.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
                                 Belum ada kursus yang dipublikasikan.
                             </p>
@@ -1329,17 +1578,36 @@ function AdminDashboard({
                         )}
                     </CardContent>
                 </Card>
+                <Card>
+                    <CardHeader className="gap-1 pb-4">
+                        <CardTitle>Tantangan Teratas</CardTitle>
+                        <CardDescription className="text-xs">
+                            Berdasarkan submission dan rasio sukses
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {challengePerformance.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                Belum ada tantangan yang dikerjakan.
+                            </p>
+                        ) : (
+                            <DataTable
+                                columns={challengeColumns}
+                                data={challengePerformance}
+                                centered
+                                showFilterInput={false}
+                                showFooter={false}
+                                enableDefaultIdSort={false}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
             </section>
 
+            {/* Recent Users Table */}
             <section
                 className="animate-fade-in-up"
-                style={
-                    {
-                        animationDelay: '350ms',
-                        contentVisibility: 'auto',
-                        containIntrinsicSize: 'auto 400px',
-                    } as React.CSSProperties
-                }
+                style={{ animationDelay: '500ms' }}
             >
                 <Card>
                     <CardHeader>
@@ -1349,7 +1617,7 @@ function AdminDashboard({
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {admin.recentUsers.length === 0 ? (
+                        {recentUsers.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
                                 Belum ada pengguna yang terdaftar.
                             </p>

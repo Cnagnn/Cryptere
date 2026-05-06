@@ -1,0 +1,372 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Crypter API",
+        "version": "1.0.0",
+        "description": "Crypter e-learning platform API. This documents all JSON-returning endpoints used by the frontend SPA."
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api"
+        }
+    ],
+    "paths": {
+        "/daily-rewards": {
+            "get": {
+                "operationId": "daily-rewards.index",
+                "summary": "Get the user's daily reward status and calendar data",
+                "tags": [
+                    "DailyReward"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "claimed_today": {
+                                            "type": "boolean"
+                                        },
+                                        "day_number": {
+                                            "type": "integer"
+                                        },
+                                        "today_reward": {
+                                            "type": "string"
+                                        },
+                                        "tiers": {
+                                            "type": "string"
+                                        },
+                                        "calendar": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "date": {
+                                                        "type": "string"
+                                                    },
+                                                    "day_number": {
+                                                        "type": "integer"
+                                                    },
+                                                    "xp": {
+                                                        "type": "integer"
+                                                    },
+                                                    "points": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "date",
+                                                    "day_number",
+                                                    "xp",
+                                                    "points"
+                                                ]
+                                            }
+                                        },
+                                        "current_streak": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "claimed_today",
+                                        "day_number",
+                                        "today_reward",
+                                        "tiers",
+                                        "calendar",
+                                        "current_streak"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/daily-rewards/claim": {
+            "post": {
+                "operationId": "daily-rewards.claim",
+                "summary": "Claim today's daily reward",
+                "tags": [
+                    "DailyReward"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "day_number": {
+                                            "type": "integer"
+                                        },
+                                        "xp_earned": {
+                                            "type": "string"
+                                        },
+                                        "points_earned": {
+                                            "type": "string"
+                                        },
+                                        "total_xp": {
+                                            "type": "string"
+                                        },
+                                        "total_points": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "day_number",
+                                        "xp_earned",
+                                        "points_earned",
+                                        "total_xp",
+                                        "total_points"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "You have already claimed today's reward!"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "operationId": "health",
+                "description": "Returns status of DB, cache, and storage subsystems.",
+                "summary": "Application health check endpoint",
+                "tags": [
+                    "HealthCheck"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/courses/{course}/lessons/{lesson}/quiz": {
+            "post": {
+                "operationId": "courses.lessons.quiz",
+                "description": "Supports multiple attempts with diminishing XP rewards:\n- Attempt 1: 100% XP on perfect score\n- Attempt 2: 50% XP on perfect score\n- Attempt 3: 25% XP on perfect score\n- Attempt 4+: 10% XP on perfect score",
+                "summary": "Validate quiz answers server-side and return per-question results.\nCorrect answers are never exposed \u2014 only correctness flags + explanations",
+                "tags": [
+                    "QuizSubmission"
+                ],
+                "parameters": [
+                    {
+                        "name": "course",
+                        "in": "path",
+                        "required": true,
+                        "description": "The course slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "lesson",
+                        "in": "path",
+                        "required": true,
+                        "description": "The lesson ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "task_id": {
+                                        "type": "integer"
+                                    },
+                                    "answers": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "question_id": {
+                                                    "type": "integer"
+                                                },
+                                                "answer": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3
+                                                }
+                                            },
+                                            "required": [
+                                                "question_id",
+                                                "answer"
+                                            ]
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "required": [
+                                    "task_id",
+                                    "answers"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "responses": {
+            "AuthorizationException": {
+                "description": "Authorization error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

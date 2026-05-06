@@ -147,7 +147,7 @@ class QuizSubmissionController extends Controller
 
             return [
                 'correct' => $isCorrect,
-                'explanation' => $question->explanation,
+                'correctAnswer' => (int) $question->correct_option,
                 'remedialLessonSlug' => ! $isCorrect ? $question->topic?->relatedLessonSlug() : null,
             ];
         })->values()->all();

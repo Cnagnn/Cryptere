@@ -1,4 +1,5 @@
 import { usePage } from '@inertiajs/react';
+import { Fragment } from 'react';
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -7,7 +8,6 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Fragment } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
@@ -40,21 +40,32 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
                             <Breadcrumb>
                                 <BreadcrumbList>
                                     {resolvedBreadcrumbs.map((item, index) => {
-                                        const isLast = index === resolvedBreadcrumbs.length - 1;
-                                        const href = typeof item.href === 'string' ? item.href : item.href?.url;
+                                        const isLast =
+                                            index ===
+                                            resolvedBreadcrumbs.length - 1;
+                                        const href =
+                                            typeof item.href === 'string'
+                                                ? item.href
+                                                : item.href?.url;
 
                                         return (
                                             <Fragment key={href ?? index}>
                                                 <BreadcrumbItem>
                                                     {isLast ? (
-                                                        <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                                        <BreadcrumbPage>
+                                                            {item.title}
+                                                        </BreadcrumbPage>
                                                     ) : (
-                                                        <BreadcrumbLink href={href}>
+                                                        <BreadcrumbLink
+                                                            href={href}
+                                                        >
                                                             {item.title}
                                                         </BreadcrumbLink>
                                                     )}
                                                 </BreadcrumbItem>
-                                                {!isLast ? <BreadcrumbSeparator /> : null}
+                                                {!isLast ? (
+                                                    <BreadcrumbSeparator />
+                                                ) : null}
                                             </Fragment>
                                         );
                                     })}

@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import {
     Award,
     Calendar,
@@ -15,14 +15,10 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
 
 type Props = {
     certificate: {
@@ -88,7 +84,7 @@ export default function CertificateShow({ certificate }: Props) {
 
                 {/* Certificate Card */}
                 <Card className="mx-auto w-full max-w-2xl overflow-hidden">
-                    <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
+                    <div className="bg-linear-to-br from-primary/10 via-primary/5 to-transparent p-8">
                         <div className="flex flex-col items-center gap-4 text-center">
                             <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
                                 <GraduationCap className="size-8 text-primary" />

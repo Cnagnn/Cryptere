@@ -22,7 +22,6 @@ class LessonTaskFactory extends Factory
             'lesson_id' => Lesson::factory(),
             'title' => fake()->sentence(3),
             'type' => fake()->randomElement(['video', 'read', 'quiz']),
-            'minutes' => fake()->numberBetween(3, 40),
             'video_url' => fake()->optional()->url(),
             'document_name' => null,
             'conversion_status' => null,

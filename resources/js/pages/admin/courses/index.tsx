@@ -1,9 +1,4 @@
 import { Head } from '@inertiajs/react';
-import type {
-    CourseRow,
-    LessonRow,
-    TaskRow,
-} from '@/types/course-management';
 import { dashboard } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import type {
@@ -12,6 +7,7 @@ import type {
     BloomLevel,
     Paginated,
 } from '@/types';
+import type { CourseRow, LessonRow, TaskRow } from '@/types/course-management';
 import AdminCoursesAssessment from './assessment';
 import AdminCoursesTask from './task';
 import AdminCoursesTitle from './title';

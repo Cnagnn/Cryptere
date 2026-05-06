@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'lesson_task_id', 'completed_at'])]
+#[Fillable(['user_id', 'lesson_task_id', 'completed_at', 'watch_seconds', 'reading_seconds', 'started_at'])]
 class TaskProgress extends Model
 {
     use HasFactory;
@@ -28,6 +28,9 @@ class TaskProgress extends Model
     {
         return [
             'completed_at' => 'datetime',
+            'started_at' => 'datetime',
+            'watch_seconds' => 'integer',
+            'reading_seconds' => 'integer',
         ];
     }
 

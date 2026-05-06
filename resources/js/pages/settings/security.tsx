@@ -158,10 +158,7 @@ type TwoFactorCardProps = {
     requiresConfirmation: boolean;
 };
 
-function TwoFactorCard({
-    enabled,
-    requiresConfirmation,
-}: TwoFactorCardProps) {
+function TwoFactorCard({ enabled, requiresConfirmation }: TwoFactorCardProps) {
     const [isEnabled, setIsEnabled] = useState(enabled);
     const [showSetupModal, setShowSetupModal] = useState(false);
     const twoFactor = useTwoFactorAuth();

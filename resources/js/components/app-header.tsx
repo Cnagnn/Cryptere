@@ -10,6 +10,7 @@ import {
 import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { UserMenuContent } from '@/components/app-sidebar';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -37,7 +38,6 @@ import {
     NavigationMenuList,
     navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
-import { UserMenuContent } from '@/components/app-sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
@@ -54,22 +54,22 @@ type Props = {
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dasbor',
+        title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
     },
     {
-        title: 'Kursus',
+        title: 'Courses',
         href: coursesIndex(),
         icon: BookOpenCheck,
     },
     {
-        title: 'Papan Peringkat',
+        title: 'Leaderboard',
         href: leaderboardIndex(),
         icon: Trophy,
     },
     {
-        title: 'Laboratorium',
+        title: 'Labs',
         href: labsIndex(),
         icon: FlaskConical,
     },
@@ -234,13 +234,20 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <Breadcrumb>
                             <BreadcrumbList>
                                 {resolvedBreadcrumbs.map((item, index) => {
-                                    const isLast = index === resolvedBreadcrumbs.length - 1;
-                                    const href = typeof item.href === 'string' ? item.href : item.href?.url;
+                                    const isLast =
+                                        index ===
+                                        resolvedBreadcrumbs.length - 1;
+                                    const href =
+                                        typeof item.href === 'string'
+                                            ? item.href
+                                            : item.href?.url;
 
                                     return (
                                         <BreadcrumbItem key={href ?? index}>
                                             {isLast ? (
-                                                <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                                <BreadcrumbPage>
+                                                    {item.title}
+                                                </BreadcrumbPage>
                                             ) : (
                                                 <>
                                                     <BreadcrumbLink href={href}>

@@ -69,8 +69,8 @@ import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import { cn } from '@/lib/utils';
-import { disable } from '@/routes/two-factor';
 import { redirect as socialRedirect } from '@/routes/social';
+import { disable } from '@/routes/two-factor';
 
 type ProfileBadge = {
     id: number;
@@ -485,10 +485,7 @@ type TwoFactorCardProps = {
     requiresConfirmation: boolean;
 };
 
-function TwoFactorCard({
-    enabled,
-    requiresConfirmation,
-}: TwoFactorCardProps) {
+function TwoFactorCard({ enabled, requiresConfirmation }: TwoFactorCardProps) {
     const [isEnabled, setIsEnabled] = useState(enabled);
     const [showSetupModal, setShowSetupModal] = useState(false);
     const twoFactor = useTwoFactorAuth();

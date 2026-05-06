@@ -12,6 +12,7 @@ use Dedoc\Scramble\Scramble;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -62,9 +63,9 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Quiz question submissions — higher limit for rapid-fire quiz mode (1 per second max)
+        // Quiz question submissions — tightened to prevent brute-force
         RateLimiter::for('quiz-submit', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });
 
         // Session summary — only called once per quiz session
@@ -77,8 +78,13 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(2)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Lesson completion — prevent rapid-fire completion spam
+        // Lesson completion — strict limit to prevent rapid-fire completion
         RateLimiter::for('lesson-complete', function (Request $request) {
+            return Limit::perMinute(5)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Anti-cheat heartbeat — allow frequent pings but cap per user
+        RateLimiter::for('heartbeat', function (Request $request) {
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
         });
 
@@ -105,7 +111,7 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureApiDocumentation(): void
     {
-        Scramble::routes(function (\Illuminate\Routing\Route $route) {
+        Scramble::routes(function (Route $route) {
             $jsonRoutes = [
                 'health',
                 'daily-rewards.index',

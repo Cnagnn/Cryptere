@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import type { CourseRow, LessonRow } from '@/types/course-management';
 import { Button } from '@/components/ui/button';
 import {
     Command,
@@ -61,23 +60,16 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import type { Paginated } from '@/types';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as lessonsDestroy } from '@/routes/admin/courses/lessons';
 import { reorder as lessonsReorder } from '@/routes/admin/courses/lessons';
 import { store as lessonsStore } from '@/routes/admin/courses/lessons';
 import { update as lessonsUpdate } from '@/routes/admin/courses/lessons';
+import type { Paginated } from '@/types';
+import type { CourseRow, LessonRow } from '@/types/course-management';
 
 type Props = {
     lessons: Paginated<LessonRow>;
