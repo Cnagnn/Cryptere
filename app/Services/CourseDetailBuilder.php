@@ -50,9 +50,15 @@ class CourseDetailBuilder
             ->whereNotNull('completed_at')
             ->pluck('lesson_task_id');
 
+        $taskProgressByTaskId = TaskProgress::query()
+            ->where('user_id', $user->id)
+            ->whereIn('lesson_task_id', $allTaskIds)
+            ->get()
+            ->keyBy('lesson_task_id');
+
         $canUnlockNext = true;
 
-        return $course->lessons->map(function (Lesson $lesson) use (&$canUnlockNext, $completedLessonIds, $isAdmin, $quizSubmissions, $completedTaskIds): array {
+        return $course->lessons->map(function (Lesson $lesson) use (&$canUnlockNext, $completedLessonIds, $isAdmin, $quizSubmissions, $completedTaskIds, $taskProgressByTaskId): array {
             $isCompleted = $completedLessonIds->contains($lesson->id);
             $isUnlocked = $canUnlockNext;
 
@@ -72,7 +78,7 @@ class CourseDetailBuilder
                 'position' => $lesson->position,
                 'content' => $lesson->content,
                 'tasks' => $visibleTasks->isNotEmpty()
-                    ? $visibleTasks->map(fn (LessonTask $task): array => $this->buildTask($task, $quizSubmissions, $completedTaskIds))->values()->all()
+                    ? $visibleTasks->map(fn (LessonTask $task): array => $this->buildTask($task, $quizSubmissions, $completedTaskIds, $taskProgressByTaskId))->values()->all()
                     : ($isAdmin ? $this->extractLegacyTaskPayloads($lesson->content) : []),
                 'isCompleted' => $isCompleted,
                 'isUnlocked' => $isUnlocked,
@@ -85,9 +91,12 @@ class CourseDetailBuilder
      *
      * @param  Collection<int, QuizSubmission>  $quizSubmissions
      * @param  Collection<int, int>  $completedTaskIds
+     * @param  Collection<int, TaskProgress>  $taskProgressByTaskId
      */
-    private function buildTask(LessonTask $task, Collection $quizSubmissions, Collection $completedTaskIds): array
+    private function buildTask(LessonTask $task, Collection $quizSubmissions, Collection $completedTaskIds, Collection $taskProgressByTaskId): array
     {
+        $progress = $taskProgressByTaskId->get($task->id);
+
         return [
             'taskId' => $task->id,
             'type' => $task->type,
@@ -95,6 +104,7 @@ class CourseDetailBuilder
             'minutes' => $task->minutes,
             'videoUrl' => $task->video_mp4_url ?? $task->video_url,
             'videoProcessingStatus' => $task->video_processing_status,
+            'videoPositionSeconds' => $progress?->video_position_seconds ?? 0,
             'documentName' => $task->document_name,
             'conversionStatus' => $task->conversion_status,
             'pdfUrl' => $task->pdf_url ? route('courses.documents.show', $task) : null,

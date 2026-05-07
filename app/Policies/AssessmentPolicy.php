@@ -21,7 +21,7 @@ class AssessmentPolicy
      */
     public function view(User $user, Assessment $assessment): bool
     {
-        return $assessment->is_published || $user->isAdmin();
+        return $assessment->status === 'published' || $user->isAdmin();
     }
 
     /**

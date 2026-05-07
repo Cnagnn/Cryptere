@@ -1,10 +1,9 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Loader2, Save, ShieldCheck, ShieldOff } from 'lucide-react';
-import type { FormEventHandler } from 'react';
+import { Eye, EyeOff, Loader2, Save, ShieldCheck, ShieldOff } from 'lucide-react';
+import type { ComponentProps, FormEventHandler, ReactNode, Ref } from 'react';
 import { useState } from 'react';
 
 import { update } from '@/actions/App/Http/Controllers/Settings/SecurityController';
-import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,9 +15,58 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import { disable } from '@/routes/two-factor';
+
+function PasswordInput({
+    className,
+    ref,
+    icon,
+    ...props
+}: Omit<ComponentProps<'input'>, 'type'> & {
+    ref?: Ref<HTMLInputElement>;
+    icon?: ReactNode;
+}) {
+    const [showPassword, setShowPassword] = useState(false);
+
+    return (
+        <InputGroup>
+            {icon ? (
+                <InputGroupAddon align="inline-start">{icon}</InputGroupAddon>
+            ) : null}
+
+            <InputGroupInput
+                type={showPassword ? 'text' : 'password'}
+                className={cn(className)}
+                ref={ref}
+                {...props}
+            />
+
+            <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={
+                        showPassword ? 'Hide password' : 'Show password'
+                    }
+                    tabIndex={-1}
+                >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                </InputGroupButton>
+            </InputGroupAddon>
+        </InputGroup>
+    );
+}
 
 type Props = {
     canManageTwoFactor?: boolean;

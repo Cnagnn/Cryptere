@@ -1,11 +1,15 @@
-import { Form, Head, Link } from '@inertiajs/react';
-import { ArrowRight, BookOpenCheck, Filter, Search, X } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowRight, BookOpenCheck, CheckCircle2, Filter, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import {
     AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
+    AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
@@ -174,6 +178,7 @@ function CatalogFilters({
     hasActiveFilters,
     clearFilters,
     resultCount,
+    isSearchSyncing,
 }: CatalogFiltersProps) {
     return (
         <div className="flex flex-col gap-4">
@@ -187,12 +192,16 @@ function CatalogFilters({
                         onChange={(event) =>
                             onSearchTermChange(event.target.value)
                         }
-                        placeholder="Cari..."
+                        placeholder="Cari kursus... (tekan / untuk fokus)"
                         className="pr-24 pl-8"
                     />
-                    <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
-                        {resultCount} Hasil
-                    </span>
+                    {isSearchSyncing ? (
+                        <Spinner className="absolute top-1/2 right-16 size-4 -translate-y-1/2 text-muted-foreground" />
+                    ) : (
+                        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
+                            {resultCount} Hasil
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -341,26 +350,55 @@ function CourseSkeletonGrid() {
 /* ── Enrolled Card Footer ── */
 function EnrolledCardFooter({ course }: { course: CourseCard }) {
     const progressPercentage = course.progressPercentage ?? 0;
+    const [resetting, setResetting] = useState(false);
+    const [showResetDialog, setShowResetDialog] = useState(false);
+
+    const handleReset = async () => {
+        if (resetting) return;
+        setResetting(true);
+
+        try {
+            const response = await fetch(
+                resetCourseProgress.url({ course: course.slug }),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN':
+                            document
+                                .querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute('content') ?? '',
+                    },
+                },
+            );
+
+            if (response.ok) {
+                toast.success('Progress berhasil direset');
+                setShowResetDialog(false);
+                router.reload({ only: ['courses'] });
+            } else {
+                toast.error('Gagal mereset progress');
+            }
+        } catch (error) {
+            toast.error('Terjadi kesalahan');
+        } finally {
+            setResetting(false);
+        }
+    };
 
     return (
         <>
-            <Form
+            <Button
+                type="button"
+                variant="outline"
+                disabled={resetting || progressPercentage === 0}
                 className="w-full"
-                action={resetCourseProgress.url({ course: course.slug })}
-                method="post"
+                onClick={() => setShowResetDialog(true)}
             >
-                {({ processing }) => (
-                    <Button
-                        type="submit"
-                        variant="outline"
-                        disabled={processing || progressPercentage === 0}
-                        className="w-full"
-                    >
-                        {processing && <Spinner className="size-4" />}
-                        {processing ? 'Mengatur ulang...' : 'Mulai Ulang'}
-                    </Button>
-                )}
-            </Form>
+                {resetting && <Spinner className="size-4" />}
+                {resetting ? 'Mengatur ulang...' : 'Mulai Ulang'}
+            </Button>
 
             <Button asChild className="w-full">
                 <Link href={show({ course: course.slug })} prefetch>
@@ -368,6 +406,39 @@ function EnrolledCardFooter({ course }: { course: CourseCard }) {
                     <ArrowRight className="size-4" />
                 </Link>
             </Button>
+
+            <AlertDialog
+                open={showResetDialog}
+                onOpenChange={setShowResetDialog}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Mulai Ulang Course?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Semua progress kamu di course ini akan dihapus dan
+                            kamu akan memulai dari awal. Tindakan ini tidak
+                            dapat dibatalkan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={resetting}>
+                            Batal
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleReset();
+                            }}
+                            disabled={resetting}
+                        >
+                            {resetting && <Spinner className="size-4" />}
+                            {resetting
+                                ? 'Mengatur ulang...'
+                                : 'Ya, Mulai Ulang'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
@@ -380,6 +451,41 @@ function CourseCardGrid({
     courses: CourseCard[];
     isLabsCatalog: boolean;
 }) {
+    const [enrollingCourseId, setEnrollingCourseId] = useState<number | null>(
+        null,
+    );
+
+    const handleEnroll = async (course: CourseCard) => {
+        if (enrollingCourseId) return;
+        setEnrollingCourseId(course.id);
+
+        try {
+            const response = await fetch(enroll.url({ course: course.slug }), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN':
+                        document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.getAttribute('content') ?? '',
+                },
+            });
+
+            if (response.ok) {
+                toast.success('Berhasil mendaftar!');
+                router.reload({ only: ['courses'] });
+            } else {
+                toast.error('Gagal mendaftar');
+            }
+        } catch (error) {
+            toast.error('Terjadi kesalahan');
+        } finally {
+            setEnrollingCourseId(null);
+        }
+    };
+
     return (
         <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
             {courses.map((course) => (
@@ -390,6 +496,12 @@ function CourseCardGrid({
                     <CourseThumbnail title={course.title} />
 
                     <CardHeader>
+                        {course.isEnrolled && (
+                            <Badge variant="secondary" className="w-fit mb-2">
+                                <CheckCircle2 className="mr-1 size-3" />
+                                Terdaftar
+                            </Badge>
+                        )}
                         <CardTitle className="text-xl leading-tight tracking-tight">
                             {course.title}
                         </CardTitle>
@@ -462,27 +574,20 @@ function CourseCardGrid({
                         ) : course.isEnrolled ? (
                             <EnrolledCardFooter course={course} />
                         ) : (
-                            <Form
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                disabled={enrollingCourseId === course.id}
                                 className="w-full"
-                                action={enroll.url({ course: course.slug })}
-                                method="post"
+                                onClick={() => handleEnroll(course)}
                             >
-                                {({ processing }) => (
-                                    <Button
-                                        type="submit"
-                                        variant="secondary"
-                                        disabled={processing}
-                                        className="w-full"
-                                    >
-                                        {processing && (
-                                            <Spinner className="size-4" />
-                                        )}
-                                        {processing
-                                            ? 'Mendaftar...'
-                                            : 'Daftar sekarang'}
-                                    </Button>
+                                {enrollingCourseId === course.id && (
+                                    <Spinner className="size-4" />
                                 )}
-                            </Form>
+                                {enrollingCourseId === course.id
+                                    ? 'Mendaftar...'
+                                    : 'Daftar sekarang'}
+                            </Button>
                         )}
                     </CardFooter>
                 </Card>
@@ -708,6 +813,7 @@ export default function CoursesIndex({
         hasActiveFilters,
         clearFilters,
         resultCount: visibleCourses.length,
+        isSearchSyncing,
         onSearchTermChange: (value: string) => {
             setSearchTerm(value);
             setCurrentPage(1);

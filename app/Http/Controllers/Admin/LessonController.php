@@ -40,6 +40,11 @@ class LessonController extends Controller
             'description' => $validated['description'],
             'content' => '',
             'position' => $nextPosition,
+            'topic_id' => $validated['topic_id'] ?? null,
+            'prerequisite_lesson_id' => $validated['prerequisite_lesson_id'] ?? null,
+            'status' => $validated['status'] ?? 'draft',
+            'version' => 1,
+            'published_by' => null,
         ]);
 
         app(AuditService::class)->log($request->user(), 'created', $lesson);
@@ -59,6 +64,25 @@ class LessonController extends Controller
         if (isset($validated['course_id'])) {
             $updateData['course_id'] = (int) $validated['course_id'];
         }
+
+        if (isset($validated['topic_id'])) {
+            $updateData['topic_id'] = $validated['topic_id'];
+        }
+
+        if (isset($validated['prerequisite_lesson_id'])) {
+            // Validate no circular dependency
+            if ($this->wouldCreateCircularDependency($lesson, $validated['prerequisite_lesson_id'])) {
+                return back()->withErrors(['prerequisite_lesson_id' => 'Circular dependency detected.']);
+            }
+            $updateData['prerequisite_lesson_id'] = $validated['prerequisite_lesson_id'];
+        }
+
+        if (isset($validated['status'])) {
+            $updateData['status'] = $validated['status'];
+        }
+
+        // Increment version on update
+        $updateData['version'] = $lesson->version + 1;
 
         $lesson->update($updateData);
 
@@ -97,5 +121,49 @@ class LessonController extends Controller
         $lesson->delete();
 
         return back();
+    }
+
+    /**
+     * Publish a lesson (set status to published).
+     */
+    public function publishLesson(Lesson $lesson): RedirectResponse
+    {
+        $lesson->update([
+            'status' => 'published',
+            'published_by' => request()->user()->id,
+        ]);
+
+        app(AuditService::class)->log(request()->user(), 'published', $lesson);
+
+        return back()->with('success', 'Lesson published.');
+    }
+
+    /**
+     * Check if setting a prerequisite would create a circular dependency.
+     */
+    private function wouldCreateCircularDependency(Lesson $lesson, ?int $prerequisiteId): bool
+    {
+        if ($prerequisiteId === null || $prerequisiteId === $lesson->id) {
+            return false;
+        }
+
+        $visited = [];
+        $current = $prerequisiteId;
+
+        while ($current !== null) {
+            if ($current === $lesson->id) {
+                return true;
+            }
+
+            if (in_array($current, $visited)) {
+                break;
+            }
+
+            $visited[] = $current;
+            $prerequisite = Lesson::find($current);
+            $current = $prerequisite?->prerequisite_lesson_id;
+        }
+
+        return false;
     }
 }

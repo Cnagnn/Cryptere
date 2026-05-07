@@ -53,6 +53,7 @@ export type CatalogFiltersProps = {
     hasActiveFilters: boolean;
     clearFilters: () => void;
     resultCount: number;
+    isSearchSyncing: boolean;
 };
 
 export type CoursesIndexProps = {

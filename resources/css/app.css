@@ -6,8 +6,6 @@
 
 @import 'shadcn/tailwind.css';
 
-@import '@fontsource-variable/geist';
-
 /* Anti-cheat: show progress bar but disable seeking via click/drag */
 .plyr__progress input[type='range'],
 .plyr__progress__buffer {
@@ -21,7 +19,7 @@
 
 @theme {
     --font-sans:
-        'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
         'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
     --radius-lg: var(--radius);
@@ -158,84 +156,6 @@
 .animate-fade-in-up {
     animation: fade-in-up 0.4s ease-out both;
     animation-delay: var(--stagger, 0ms);
-}
-
-/* ── Custom scrollbar — overlay style (replaces native browser scrollbar) ── */
-
-/* Firefox — thin overlay-style scrollbar */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: oklch(0.55 0 0 / 0.3) transparent;
-}
-
-.dark * {
-    scrollbar-color: oklch(0.72 0 0 / 0.3) transparent;
-}
-
-/* Webkit (Chrome, Edge, Safari, Opera) — overlay scrollbar on top of content */
-*::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-    background: transparent;
-}
-
-*::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-    background-color: oklch(0.55 0 0 / 0.35);
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.55 0 0 / 0.55);
-}
-
-*::-webkit-scrollbar-thumb:active {
-    background-color: oklch(0.55 0 0 / 0.7);
-}
-
-*::-webkit-scrollbar-corner {
-    background: transparent;
-}
-
-.dark *::-webkit-scrollbar-thumb {
-    background-color: oklch(0.72 0 0 / 0.35);
-}
-
-.dark *::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.72 0 0 / 0.55);
-}
-
-.dark *::-webkit-scrollbar-thumb:active {
-    background-color: oklch(0.72 0 0 / 0.7);
-}
-
-html {
-    overflow-y: auto;
-    scrollbar-gutter: stable;
-}
-
-body[data-scroll-locked] {
-    --removed-body-scroll-bar-size: 0px !important;
-
-    margin-right: 0 !important;
-    padding-right: 0 !important;
-}
-
-body[data-scroll-locked] .right-scroll-bar-position {
-    right: 0 !important;
-}
-
-body[data-scroll-locked] .width-before-scroll-bar {
-    margin-right: 0 !important;
-}
-
-.with-scroll-bars-hidden {
-    padding-right: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

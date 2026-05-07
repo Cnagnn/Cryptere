@@ -26,6 +26,9 @@ class UpdateAdminLessonRequest extends FormRequest
             'course_id' => ['sometimes', 'integer', 'exists:courses,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
+            'topic_id' => ['nullable', 'integer', 'exists:topics,id'],
+            'prerequisite_lesson_id' => ['nullable', 'integer', 'exists:lessons,id'],
+            'status' => ['nullable', 'string', 'in:draft,published,archived'],
         ];
     }
 }

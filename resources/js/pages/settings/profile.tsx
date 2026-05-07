@@ -3,6 +3,8 @@ import type { LucideIcon } from 'lucide-react';
 import {
     Award,
     CalendarDays,
+    Eye,
+    EyeOff,
     Github,
     KeyRound,
     Link2,
@@ -20,12 +22,11 @@ import {
     Sun,
     Users,
 } from 'lucide-react';
-import type { FormEventHandler } from 'react';
+import type { ComponentProps, FormEventHandler, ReactNode, Ref } from 'react';
 import { useMemo, useState } from 'react';
 
 import { update } from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import { destroy } from '@/actions/App/Http/Controllers/Settings/SocialAccountController';
-import PasswordInput from '@/components/password-input';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -55,6 +56,12 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -70,6 +77,48 @@ import { useInitials } from '@/hooks/use-initials';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import { cn } from '@/lib/utils';
 import { redirect as socialRedirect } from '@/routes/social';
+
+function PasswordInput({
+    className,
+    ref,
+    icon,
+    ...props
+}: Omit<ComponentProps<'input'>, 'type'> & {
+    ref?: Ref<HTMLInputElement>;
+    icon?: ReactNode;
+}) {
+    const [showPassword, setShowPassword] = useState(false);
+
+    return (
+        <InputGroup>
+            {icon ? (
+                <InputGroupAddon align="inline-start">{icon}</InputGroupAddon>
+            ) : null}
+
+            <InputGroupInput
+                type={showPassword ? 'text' : 'password'}
+                className={cn(className)}
+                ref={ref}
+                {...props}
+            />
+
+            <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={
+                        showPassword ? 'Hide password' : 'Show password'
+                    }
+                    tabIndex={-1}
+                >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                </InputGroupButton>
+            </InputGroupAddon>
+        </InputGroup>
+    );
+}
 import { disable } from '@/routes/two-factor';
 
 type ProfileBadge = {

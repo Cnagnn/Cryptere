@@ -9,6 +9,7 @@ import {
     ClipboardCheck,
     FileText,
     Loader2,
+    Lock,
     Menu,
     MessageSquare,
     PlayCircle,
@@ -31,7 +32,12 @@ import { toast } from 'sonner';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-import { CourseTaskPanel } from '@/components/course-task-panel';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
     AlertDialog,
@@ -96,7 +102,11 @@ type QuizSubmission = {
     answers?: unknown;
     score: number;
     total: number;
-    results: Array<{ correct: boolean; correctAnswer?: number; explanation?: string | null }>;
+    results: Array<{
+        correct: boolean;
+        correctAnswer?: number;
+        explanation?: string | null;
+    }>;
     xpEarned?: number;
     pointsEarned?: number;
     attemptNumber?: number;
@@ -139,6 +149,7 @@ type LessonTask = {
     description: string;
     videoUrl: string | null;
     videoProcessingStatus: string | null;
+    videoPositionSeconds: number;
     pdfUrl: string | null;
     pdfName: string | null;
     isPublished: boolean;
@@ -167,6 +178,7 @@ type ServerTask = {
     minutes: number;
     videoUrl: string | null;
     videoProcessingStatus: string | null;
+    videoPositionSeconds?: number;
     documentName: string | null;
     conversionStatus: string | null;
     pdfUrl: string | null;
@@ -381,6 +393,7 @@ function mapLessons(serverLessons: ServerLesson[]): LessonData[] {
                 description: defaultTaskDescription(type),
                 videoUrl: task.videoUrl,
                 videoProcessingStatus: task.videoProcessingStatus ?? null,
+                videoPositionSeconds: task.videoPositionSeconds ?? 0,
                 pdfUrl: task.pdfUrl ? normalizePdfUrl(task.pdfUrl) : null,
                 pdfName: task.documentName,
                 isPublished: task.isPublished,
@@ -422,6 +435,7 @@ function formatClock(seconds: number): string {
 
 /**
  * Send a heartbeat to accumulate watch/reading time for anti-cheat.
+ * Includes retry logic with exponential backoff.
  */
 async function sendHeartbeat(
     courseSlug: string,
@@ -429,23 +443,51 @@ async function sendHeartbeat(
     taskId: number,
     type: 'video' | 'reading',
     seconds: number,
+    currentTime?: number,
 ): Promise<void> {
-    try {
-        await fetch(
-            heartbeatRoute.url({ course: courseSlug, lesson: lessonId }),
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken(),
+    const MAX_RETRIES = 3;
+    let attempt = 0;
+
+    while (attempt < MAX_RETRIES) {
+        try {
+            const body: Record<string, unknown> = {
+                task_id: taskId,
+                type,
+                seconds,
+            };
+
+            if (type === 'video' && currentTime !== undefined) {
+                body.current_time = Math.floor(currentTime);
+            }
+
+            await fetch(
+                heartbeatRoute.url({ course: courseSlug, lesson: lessonId }),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken(),
+                    },
+                    body: JSON.stringify(body),
+                    credentials: 'same-origin',
                 },
-                body: JSON.stringify({ task_id: taskId, type, seconds }),
-                credentials: 'same-origin',
-            },
-        );
-    } catch {
-        // Silently fail — heartbeat is best-effort
+            );
+
+            return; // Success
+        } catch (error) {
+            attempt++;
+
+            if (attempt >= MAX_RETRIES) {
+                // Silently fail after max retries
+                return;
+            }
+
+            // Exponential backoff: 1s, 2s, 4s
+            await new Promise((resolve) =>
+                setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
+            );
+        }
     }
 }
 
@@ -570,6 +612,7 @@ function VideoTask({
     const watchSecondsRef = useRef(0);
     const isPlayingRef = useRef(false);
     const maxWatchedTimeRef = useRef(0);
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const source = useMemo(
         () => resolvePlayerSource(task.videoUrl ?? ''),
         [task.videoUrl],
@@ -577,7 +620,21 @@ function VideoTask({
     const status = task.videoProcessingStatus as VideoProcessingStatus;
     const isWaiting = status === 'pending' || status === 'processing';
 
-    // Video heartbeat: track actual play time and send every 30s
+    // Online/offline detection
+    useEffect(() => {
+        const handleOnline = () => setIsOffline(false);
+        const handleOffline = () => setIsOffline(true);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    // Video heartbeat: track actual play time and send every 30s with position
     useEffect(() => {
         const HEARTBEAT_INTERVAL = 30; // seconds
         let accumulatedSinceLastSend = 0;
@@ -589,12 +646,14 @@ function VideoTask({
             }
 
             if (accumulatedSinceLastSend >= HEARTBEAT_INTERVAL) {
+                const currentTime = playerRef.current?.currentTime ?? 0;
                 sendHeartbeat(
                     courseSlug,
                     lessonId,
                     task.id,
                     'video',
                     accumulatedSinceLastSend,
+                    currentTime,
                 );
                 accumulatedSinceLastSend = 0;
             }
@@ -607,12 +666,14 @@ function VideoTask({
 
             // Send remaining seconds on unmount
             if (accumulatedSinceLastSend > 0) {
+                const currentTime = playerRef.current?.currentTime ?? 0;
                 sendHeartbeat(
                     courseSlug,
                     lessonId,
                     task.id,
                     'video',
                     accumulatedSinceLastSend,
+                    currentTime,
                 );
             }
         };
@@ -679,8 +740,15 @@ function VideoTask({
             if (player) {
                 playerRef.current = player;
 
+                // Restore last position from backend
+                player.on('ready', () => {
+                    if (task.videoPositionSeconds > 0 && player) {
+                        player.currentTime = task.videoPositionSeconds;
+                    }
+                });
+
                 // Anti-cheat: prevent seeking forward
-                let maxTime = 0;
+                let maxTime = task.videoPositionSeconds || 0;
                 player.on('timeupdate', () => {
                     const current = player!.currentTime;
 
@@ -719,6 +787,7 @@ function VideoTask({
                         task.id,
                         'video',
                         Math.min(watchSecondsRef.current, 60),
+                        player!.currentTime,
                     );
 
                     try {
@@ -743,7 +812,16 @@ function VideoTask({
             playerRef.current = null;
             container.innerHTML = '';
         };
-    }, [courseSlug, isWaiting, lessonId, onComplete, source, status, task.id]);
+    }, [
+        courseSlug,
+        isWaiting,
+        lessonId,
+        onComplete,
+        source,
+        status,
+        task.id,
+        task.videoPositionSeconds,
+    ]);
 
     if (isWaiting) {
         return (
@@ -802,8 +880,21 @@ function VideoTask({
     }
 
     return (
-        <div className="overflow-hidden rounded-2xl border bg-black shadow-xl shadow-black/10">
-            <div ref={containerRef} className="aspect-video w-full bg-black" />
+        <div className="space-y-3">
+            {isOffline && (
+                <Alert variant="destructive">
+                    <AlertCircle className="size-4" />
+                    <AlertDescription>
+                        Anda sedang offline. Progress tidak akan tersimpan.
+                    </AlertDescription>
+                </Alert>
+            )}
+            <div className="overflow-hidden rounded-2xl border bg-black shadow-xl shadow-black/10">
+                <div
+                    ref={containerRef}
+                    className="aspect-video w-full bg-black"
+                />
+            </div>
         </div>
     );
 }
@@ -821,6 +912,8 @@ function PdfStreamViewer({
     const [loadError, setLoadError] = useState(false);
     const [pdfData, setPdfData] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [containerWidth, setContainerWidth] = useState(680);
+    const [currentPage, setCurrentPage] = useState(1);
     const maxProgressRef = useRef(0);
     const containerRef = scrollRef;
 
@@ -872,6 +965,39 @@ function PdfStreamViewer({
             }
         };
     }, [pdfData]);
+
+    // Detect container width for responsive PDF
+    useEffect(() => {
+        const element = containerRef.current;
+        if (!element) return;
+
+        const updateWidth = () => {
+            const width = element.clientWidth - 32; // padding
+            setContainerWidth(Math.min(680, width));
+        };
+
+        updateWidth();
+        const observer = new ResizeObserver(updateWidth);
+        observer.observe(element);
+
+        return () => observer.disconnect();
+    }, [containerRef]);
+
+    // Track current page on scroll
+    useEffect(() => {
+        const element = containerRef.current;
+        if (!element || numPages === 0) return;
+
+        const handleScroll = () => {
+            const scrollTop = element.scrollTop;
+            const pageHeight = element.scrollHeight / numPages;
+            const page = Math.floor(scrollTop / pageHeight) + 1;
+            setCurrentPage(Math.min(page, numPages));
+        };
+
+        element.addEventListener('scroll', handleScroll);
+        return () => element.removeEventListener('scroll', handleScroll);
+    }, [containerRef, numPages]);
 
     function onDocumentLoadSuccess({ numPages: total }: { numPages: number }) {
         setNumPages(total);
@@ -928,32 +1054,41 @@ function PdfStreamViewer({
     }
 
     return (
-        <div
-            ref={containerRef}
-            className="h-155 overflow-y-auto rounded-2xl border bg-muted/30 p-4"
-            onContextMenu={(e) => e.preventDefault()}
-        >
-            <Document
-                file={pdfData}
-                onLoadSuccess={onDocumentLoadSuccess}
-                onLoadError={() => setLoadError(true)}
-                loading={
-                    <div className="flex items-center justify-center py-20">
-                        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                    </div>
-                }
+        <div className="relative">
+            {numPages > 0 && (
+                <div className="sticky top-0 z-10 mb-2 flex items-center justify-between rounded-lg border bg-background/95 px-3 py-2 text-xs backdrop-blur">
+                    <span className="text-muted-foreground">
+                        Halaman {currentPage} / {numPages}
+                    </span>
+                </div>
+            )}
+            <div
+                ref={containerRef}
+                className="h-155 overflow-y-auto rounded-2xl border bg-muted/30 p-4"
+                onContextMenu={(e) => e.preventDefault()}
             >
-                {Array.from({ length: numPages }, (_, index) => (
-                    <Page
-                        key={`page_${index + 1}`}
-                        pageNumber={index + 1}
-                        width={680}
-                        className="mx-auto mb-4 shadow-sm last:mb-0"
-                        renderTextLayer
-                        renderAnnotationLayer
-                    />
-                ))}
-            </Document>
+                <Document
+                    file={pdfData}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    onLoadError={() => setLoadError(true)}
+                    loading={
+                        <div className="flex items-center justify-center py-20">
+                            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                        </div>
+                    }
+                >
+                    {Array.from({ length: numPages }, (_, index) => (
+                        <Page
+                            key={`page_${index + 1}`}
+                            pageNumber={index + 1}
+                            width={containerWidth}
+                            className="mx-auto mb-4 shadow-sm last:mb-0"
+                            renderTextLayer
+                            renderAnnotationLayer
+                        />
+                    ))}
+                </Document>
+            </div>
         </div>
     );
 }
@@ -970,7 +1105,9 @@ function ReadingTask({
     onComplete: () => void;
 }) {
     const pdfScrollRef = useRef<HTMLDivElement | null>(null);
-    const [readingProgress, setReadingProgress] = useState(task.isCompleted ? 100 : 0);
+    const [readingProgress, setReadingProgress] = useState(
+        task.isCompleted ? 100 : 0,
+    );
     const [completed, setCompleted] = useState(task.isCompleted);
     const hasPdf = Boolean(task.pdfUrl);
 
@@ -1107,18 +1244,21 @@ function QuizTask({
     task,
     onComplete,
     onActiveChange,
+    setAriaLiveMessage,
 }: {
     courseSlug: string;
     lesson: LessonData;
     task: LessonTask;
     onComplete: () => void;
     onActiveChange?: (active: boolean) => void;
+    setAriaLiveMessage: (msg: string) => void;
 }) {
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const questions = task.quizQuestions;
     const [started, setStarted] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showResults, setShowResults] = useState(false);
+    const [showReview, setShowReview] = useState(false);
 
     // Shuffle option order per question (stable per mount)
     const [shuffledIndices] = useState<number[][]>(() =>
@@ -1158,8 +1298,8 @@ function QuizTask({
     });
 
     useEffect(() => {
-        onActiveChange?.(started && !showResults);
-    }, [started, showResults, onActiveChange]);
+        onActiveChange?.(started && !showResults && !showReview);
+    }, [started, showResults, showReview, onActiveChange]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -1210,7 +1350,7 @@ function QuizTask({
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken(),
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
             body: JSON.stringify({
                 task_id: task.id,
@@ -1231,11 +1371,21 @@ function QuizTask({
             })
             .then(() => {
                 setShowResults(true);
+                setShowReview(false);
                 toast.success('Kuis berhasil dikirim!');
+                setAriaLiveMessage('Kuis berhasil dikirim!');
                 onComplete();
             })
             .catch((error) => {
-                toast.error(error.message || 'Gagal mengirim kuis. Silakan coba lagi.');
+                toast.error(
+                    error.message || 'Gagal mengirim kuis. Silakan coba lagi.',
+                    {
+                        action: {
+                            label: 'Coba Lagi',
+                            onClick: submitQuiz,
+                        },
+                    },
+                );
             })
             .finally(() => {
                 setSubmitting(false);
@@ -1271,6 +1421,15 @@ function QuizTask({
                         <div className="flex items-center gap-2 text-xl font-semibold sm:justify-end">
                             <Trophy className="size-5 text-amber-500" />+
                             {task.submission.xpEarned ?? 0} XP
+                            {task.submission.xpMultiplier &&
+                            task.submission.xpMultiplier < 1 ? (
+                                <span
+                                    className="text-xs font-normal text-muted-foreground"
+                                    title={`XP dikurangi karena percobaan ke-${task.submission.attemptNumber ?? 1}. Multiplier: ${task.submission.xpMultiplier}x`}
+                                >
+                                    ({task.submission.xpMultiplier}x)
+                                </span>
+                            ) : null}
                         </div>
                         <p className="text-xs text-muted-foreground">
                             Poin:{' '}
@@ -1317,14 +1476,16 @@ function QuizTask({
                                                 : 'Jawaban tersimpan di server.'}
                                         </p>
                                         {!result?.correct &&
-                                            result?.correctAnswer != null ? (
+                                        result?.correctAnswer != null ? (
                                             <p className="text-emerald-600 dark:text-emerald-400">
                                                 <span className="font-medium">
                                                     Jawaban benar:{' '}
                                                 </span>
-                                                {question.options[
-                                                    result.correctAnswer
-                                                ]}
+                                                {
+                                                    question.options[
+                                                        result.correctAnswer
+                                                    ]
+                                                }
                                             </p>
                                         ) : null}
                                     </div>
@@ -1355,9 +1516,72 @@ function QuizTask({
                                 setStarted(true);
                             }}
                         >
-                            Mulai Ulang
+                            Mulai Ulang{task.submission.attemptNumber ? ` (${task.submission.attemptNumber}/${task.maxAttempts ?? '∞'})` : ''}
                         </Button>
                     ) : null}
+                </div>
+            </div>
+        );
+    }
+
+    // Review mode: show all questions and answers before submit
+    if (showReview) {
+        return (
+            <div className="space-y-4">
+                <div className="rounded-2xl border bg-muted/30 p-4">
+                    <h3 className="text-lg font-semibold">Tinjau Jawaban</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Periksa jawaban Anda sebelum mengirim kuis.
+                    </p>
+                </div>
+
+                <div className="space-y-3">
+                    {questions.map((question, index) => {
+                        const selectedAnswer = answers[index];
+
+                        return (
+                            <div
+                                key={question.id}
+                                className="rounded-2xl border bg-background p-4"
+                            >
+                                <p className="text-sm font-medium">
+                                    {index + 1}. {question.question}
+                                </p>
+                                <p className="mt-2 text-sm">
+                                    <span className="font-medium">
+                                        Jawaban:{' '}
+                                    </span>
+                                    {selectedAnswer >= 0 ? (
+                                        question.options[selectedAnswer]
+                                    ) : (
+                                        <span className="text-destructive">
+                                            Belum dijawab
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="flex gap-3 border-t pt-4">
+                    <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setShowReview(false)}
+                    >
+                        Kembali Edit
+                    </Button>
+                    <Button
+                        className="flex-1"
+                        onClick={submitQuiz}
+                        disabled={!allAnswered || submitting}
+                    >
+                        {submitting ? (
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : null}
+                        Kirim Kuis
+                    </Button>
                 </div>
             </div>
         );
@@ -1419,7 +1643,7 @@ function QuizTask({
                                 size="lg"
                                 onClick={() => setStarted(true)}
                             >
-                                Mulai Ulang
+                                Mulai Ulang{task.submission.attemptNumber ? ` (${task.submission.attemptNumber}/${task.maxAttempts ?? '∞'})` : ''}
                             </Button>
                         ) : null}
                     </div>
@@ -1451,6 +1675,33 @@ function QuizTask({
                 </div>
                 <Progress value={progress} className="h-2" />
             </div>
+
+            {/* Question Navigator */}
+            <div className="flex flex-wrap gap-2">
+                {questions.map((_, index) => (
+                    <button
+                        key={index}
+                        type="button"
+                        onClick={() => setCurrentIndex(index)}
+                        className={cn(
+                            'flex size-9 items-center justify-center rounded-lg border text-xs font-medium transition-colors hover:bg-muted',
+                            index === currentIndex &&
+                                'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+                            index !== currentIndex &&
+                                answers[index] !== -1 &&
+                                'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+                            index !== currentIndex &&
+                                answers[index] === -1 &&
+                                'border-border bg-background',
+                        )}
+                        aria-label={`Pertanyaan ${index + 1}${answers[index] !== -1 ? ' (dijawab)' : ''}`}
+                        aria-current={index === currentIndex ? 'step' : undefined}
+                    >
+                        {index + 1}
+                    </button>
+                ))}
+            </div>
+
             <div className="rounded-2xl border bg-background p-5">
                 <h3 className="text-lg font-semibold">
                     {currentIndex + 1}. {currentQuestion.question}
@@ -1460,13 +1711,33 @@ function QuizTask({
                         <button
                             key={originalIndex}
                             type="button"
+                            role="radio"
+                            aria-checked={
+                                answers[currentIndex] === originalIndex
+                            }
+                            aria-label={`Pilihan ${originalIndex + 1}: ${currentQuestion.options[originalIndex]}`}
                             onClick={() => {
                                 const nextAnswers = [...answers];
-                                nextAnswers[currentIndex] = nextAnswers[currentIndex] === originalIndex ? -1 : originalIndex;
+                                nextAnswers[currentIndex] =
+                                    nextAnswers[currentIndex] === originalIndex
+                                        ? -1
+                                        : originalIndex;
                                 setAnswers(nextAnswers);
                             }}
+                            onKeyDown={(e) => {
+                                if (e.key === ' ' || e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const nextAnswers = [...answers];
+                                    nextAnswers[currentIndex] =
+                                        nextAnswers[currentIndex] ===
+                                        originalIndex
+                                            ? -1
+                                            : originalIndex;
+                                    setAnswers(nextAnswers);
+                                }
+                            }}
                             className={cn(
-                                'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted/50',
+                                'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted/50 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none',
                                 answers[currentIndex] === originalIndex
                                     ? 'border-primary bg-primary/5'
                                     : 'border-border',
@@ -1499,9 +1770,11 @@ function QuizTask({
                 </Alert>
             ) : null}
 
-            <div className="flex w-full flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex w-full flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                 <Button
                     variant="outline"
+                    size="lg"
+                    className="sm:size-default"
                     onClick={() =>
                         setCurrentIndex((index) => Math.max(0, index - 1))
                     }
@@ -1512,6 +1785,8 @@ function QuizTask({
                 </Button>
                 {currentIndex < questions.length - 1 ? (
                     <Button
+                        size="lg"
+                        className="sm:size-default"
                         onClick={() =>
                             setCurrentIndex((index) =>
                                 Math.min(questions.length - 1, index + 1),
@@ -1524,6 +1799,8 @@ function QuizTask({
                     </Button>
                 ) : (
                     <Button
+                        size="lg"
+                        className="sm:size-default"
                         onClick={submitQuiz}
                         disabled={!allAnswered || submitting}
                     >
@@ -1534,6 +1811,18 @@ function QuizTask({
                     </Button>
                 )}
             </div>
+
+            {allAnswered && (
+                <div className="border-t pt-4">
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowReview(true)}
+                    >
+                        Tinjau Semua Jawaban
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
@@ -1655,11 +1944,7 @@ function AssessmentContinue({
             </div>
 
             <div className="border-t pt-4">
-                <Button
-                    className="w-full"
-                    size="lg"
-                    onClick={onContinue}
-                >
+                <Button className="w-full" size="lg" onClick={onContinue}>
                     Lanjutkan Assessment
                     <ChevronRight className="ml-2 size-4" />
                 </Button>
@@ -1761,7 +2046,7 @@ function AssessmentOverview({
                             {starting ? (
                                 <Loader2 className="mr-2 size-4 animate-spin" />
                             ) : null}
-                            Mulai Ulang
+                            Mulai Ulang{assessment.latestResults?.submission.attemptNumber ? ` (${assessment.latestResults.submission.attemptNumber}/${assessment.attemptCount ?? '∞'})` : ''}
                         </Button>
                     ) : null}
                 </div>
@@ -1802,9 +2087,27 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
     const submission = assessment.activeSubmission;
     const [answers, setAnswers] = useState<
         Record<number, { selected_option?: string; answer_text?: string }>
-    >(submission?.answers ?? {});
+    >(() => {
+        // Try localStorage first (offline fallback)
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem(
+                `assessment-${assessment.id}-answers`,
+            );
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch {
+                    // Ignore parse errors
+                }
+            }
+        }
+        return submission?.answers ?? {};
+    });
     const [currentIndex, setCurrentIndex] = useState(0);
     const [submitting, setSubmitting] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [warningShown, setWarningShown] = useState(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [elapsedSeconds, setElapsedSeconds] = useState(() => {
         if (!submission?.startedAt) {
@@ -1852,6 +2155,7 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
                 clearTimeout(saveTimeoutRef.current);
             }
 
+            setSaving(true);
             saveTimeoutRef.current = setTimeout(() => {
                 fetch(
                     saveAssessmentAnswer.url({ assessment: assessment.slug }),
@@ -1867,26 +2171,78 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
                             ...value,
                         }),
                     },
-                ).catch(() => {
-                    toast.error('Gagal menyimpan otomatis.');
-                });
-            }, 800);
+                )
+                    .then(() => {
+                        setSaving(false);
+                        setLastSaved(new Date());
+                    })
+                    .catch(() => {
+                        setSaving(false);
+                        toast.error('Gagal menyimpan otomatis.');
+                    });
+            }, 2000);
         },
         [assessment.slug],
     );
 
+    // localStorage backup for offline fallback
     useEffect(() => {
-        const interval = window.setInterval(
-            () => setElapsedSeconds((seconds) => seconds + 1),
-            1000,
-        );
+        const key = `assessment-${assessment.id}-answers`;
+        if (Object.keys(answers).length > 0) {
+            localStorage.setItem(key, JSON.stringify(answers));
+        }
+        return () => {
+            if (submitting) {
+                localStorage.removeItem(key);
+            }
+        };
+    }, [answers, assessment.id, submitting]);
 
-        return () => window.clearInterval(interval);
+    // Restore from localStorage on mount
+    useEffect(() => {
+        const key = `assessment-${assessment.id}-answers`;
+        const saved = localStorage.getItem(key);
+        if (saved && Object.keys(answers).length === 0) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (typeof parsed === 'object' && parsed !== null) {
+                    setAnswers(parsed);
+                }
+            } catch {
+                localStorage.removeItem(key);
+            }
+        }
+    }, [assessment.id]);
+
+    // Pause timer when tab inactive
+    useEffect(() => {
+        let isVisible = document.visibilityState === 'visible';
+        const handleVisibility = () => {
+            isVisible = document.visibilityState === 'visible';
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        const interval = window.setInterval(() => {
+            if (isVisible) {
+                setElapsedSeconds((seconds) => seconds + 1);
+            }
+        }, 1000);
+
+        return () => {
+            window.clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
     }, []);
 
+    // 1-minute warning + auto-submit
     useEffect(() => {
-        if (timeRemaining !== null && timeRemaining <= 0) {
-            handleSubmit();
+        if (timeRemaining !== null) {
+            if (timeRemaining === 60) {
+                toast.warning('⏰ Sisa waktu 1 menit!');
+            }
+            if (timeRemaining <= 0) {
+                handleSubmit();
+            }
         }
     }, [handleSubmit, timeRemaining]);
 
@@ -1927,6 +2283,21 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
                     </span>
                 </div>
                 <Progress value={progress} className="h-2" />
+
+                {/* Auto-save indicator */}
+                <div className="flex items-center justify-end gap-1 text-xs">
+                    {saving ? (
+                        <>
+                            <Loader2 className="size-3 animate-spin text-muted-foreground" />
+                            <span className="text-muted-foreground">Menyimpan...</span>
+                        </>
+                    ) : lastSaved ? (
+                        <>
+                            <CheckCircle2 className="size-3 text-emerald-600" />
+                            <span className="text-emerald-600">Tersimpan</span>
+                        </>
+                    ) : null}
+                </div>
             </div>
 
             {/* Question card */}
@@ -1952,9 +2323,11 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
             ) : null}
 
             {/* Navigation — identical to QuizTask */}
-            <div className="flex w-full flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex w-full flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                 <Button
                     variant="outline"
+                    size="lg"
+                    className="sm:size-default"
                     disabled={currentIndex === 0}
                     onClick={() =>
                         setCurrentIndex((index) => Math.max(0, index - 1))
@@ -1965,15 +2338,17 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
                 </Button>
                 {currentIndex < assessment.questions.length - 1 ? (
                     <Button
-                        onClick={() =>
-                            setCurrentIndex((index) => index + 1)
-                        }
+                        size="lg"
+                        className="sm:size-default"
+                        onClick={() => setCurrentIndex((index) => index + 1)}
                     >
                         Berikutnya
                         <ChevronRight className="ml-2 size-4" />
                     </Button>
                 ) : (
                     <Button
+                        size="lg"
+                        className="sm:size-default"
                         onClick={handleSubmit}
                         disabled={submitting}
                     >
@@ -2026,11 +2401,18 @@ function AssessmentAnswerInput({
 
     if (hasOptions) {
         return (
-            <div className="space-y-3">
+            <div
+                className="space-y-3"
+                role="radiogroup"
+                aria-label={question.questionText}
+            >
                 {options.map((option, index) => (
                     <button
                         key={option.key}
                         type="button"
+                        role="radio"
+                        aria-checked={value?.selected_option === option.value}
+                        aria-label={option.label}
                         onClick={() =>
                             onChange({
                                 selected_option:
@@ -2039,8 +2421,19 @@ function AssessmentAnswerInput({
                                         : option.value,
                             })
                         }
+                        onKeyDown={(e) => {
+                            if (e.key === ' ' || e.key === 'Enter') {
+                                e.preventDefault();
+                                onChange({
+                                    selected_option:
+                                        value?.selected_option === option.value
+                                            ? undefined
+                                            : option.value,
+                                });
+                            }
+                        }}
                         className={cn(
-                            'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted/50',
+                            'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted/50 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none',
                             value?.selected_option === option.value
                                 ? 'border-primary bg-primary/5'
                                 : 'border-border',
@@ -2080,10 +2473,19 @@ function AssessmentAnswerInput({
                 className="resize-y"
             />
             <p className="text-xs text-muted-foreground">
-                Jumlah kata:{' '}
-                {value?.answer_text?.trim()
-                    ? value.answer_text.trim().split(/\s+/).length
-                    : 0}
+                {(() => {
+                    const wordCount = value?.answer_text?.trim()
+                        ? value.answer_text.trim().split(/\s+/).length
+                        : 0;
+                    const parts = [`${wordCount} kata`];
+                    if (question.minWords) {
+                        parts.push(`min: ${question.minWords}`);
+                    }
+                    if (question.maxWords) {
+                        parts.push(`max: ${question.maxWords}`);
+                    }
+                    return parts.join(' • ');
+                })()}
             </p>
         </div>
     );
@@ -2215,6 +2617,254 @@ function AssessmentResults({
     );
 }
 
+type CourseTaskPanelProps = {
+    lessons: LessonData[];
+    assessments: AssessmentFullData[];
+    activeMode: 'task' | 'assessment';
+    selectedLessonId: number | null;
+    selectedTaskId: number | null;
+    selectedAssessmentId: number | null;
+    completedCount: number;
+    totalTasks: number;
+    assessmentsPassed: number;
+    completedLessonIds: number[];
+    unlockedLessonIds: Map<number, boolean>;
+    openOutlineItem: string | undefined;
+    progressPercentage: number;
+    selectTask: (lesson: LessonData, task: LessonTask) => void;
+    selectAssessment: (assessment: AssessmentFullData) => void;
+    setOpenOutlineItem: (value: string | undefined) => void;
+};
+
+function CourseTaskPanel({
+    lessons,
+    assessments,
+    activeMode,
+    selectedLessonId,
+    selectedTaskId,
+    selectedAssessmentId,
+    completedCount,
+    totalTasks,
+    assessmentsPassed,
+    completedLessonIds,
+    unlockedLessonIds,
+    openOutlineItem,
+    progressPercentage,
+    selectTask,
+    selectAssessment,
+    setOpenOutlineItem,
+}: CourseTaskPanelProps) {
+    return (
+        <div className="min-w-0 overflow-hidden rounded-2xl border bg-background lg:sticky lg:top-20 lg:h-fit">
+            <div className="border-b px-4 py-4 sm:px-5">
+                <h2 className="text-base font-semibold">Kontrol Belajar</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    {completedCount}/{lessons.length} materi selesai •{' '}
+                    {totalTasks} tugas
+                </p>
+            </div>
+            <div className="space-y-4 p-4 sm:p-5">
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-medium tabular-nums">
+                            {Math.round(progressPercentage)}%
+                        </span>
+                    </div>
+                    <Progress value={progressPercentage} className="h-2" />
+                </div>
+
+                <Accordion
+                    type="single"
+                    collapsible
+                    value={openOutlineItem}
+                    onValueChange={(value) => {
+                        setOpenOutlineItem(value || undefined);
+
+                        if (!value || value === 'assessments') {
+                            return;
+                        }
+
+                        const lesson = lessons.find(
+                            (item) => item.id === Number(value),
+                        );
+
+                        if (lesson?.tasks[0]) {
+                            selectTask(lesson, lesson.tasks[0]);
+                        }
+                    }}
+                    className="w-full pr-3"
+                >
+                    {lessons.map((lesson, index) => {
+                        const locked = !(
+                            unlockedLessonIds.get(lesson.id) ?? false
+                        );
+                        const completed = completedLessonIds.includes(
+                            lesson.id,
+                        );
+                        const completedTasks = lesson.tasks.filter(
+                            (task) => task.isCompleted,
+                        ).length;
+
+                        return (
+                            <AccordionItem
+                                key={lesson.id}
+                                value={String(lesson.id)}
+                                className={cn(locked && 'opacity-60')}
+                            >
+                                <AccordionTrigger
+                                    disabled={locked}
+                                    className="py-3 text-left hover:no-underline [&>svg]:ml-2"
+                                >
+                                    <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
+                                        <span
+                                            className={cn(
+                                                'flex size-7 shrink-0 items-center justify-center rounded-md border text-xs font-semibold transition-colors',
+                                                completed
+                                                    ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                    : locked
+                                                      ? 'border-muted bg-muted text-muted-foreground'
+                                                      : 'border-sidebar-border bg-sidebar text-sidebar-foreground',
+                                            )}
+                                        >
+                                            {locked ? (
+                                                <Lock className="size-3.5" />
+                                            ) : completed ? (
+                                                <CheckCircle2 className="size-3.5" />
+                                            ) : (
+                                                index + 1
+                                            )}
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="line-clamp-2 text-sm leading-snug font-medium">
+                                                {lesson.title}
+                                            </span>
+                                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                                                {completedTasks}/
+                                                {lesson.tasks.length} tasks
+                                            </span>
+                                        </span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <div className="space-y-0.5 pl-9 sm:pl-10">
+                                        {lesson.tasks.map((task) => {
+                                            const active =
+                                                activeMode === 'task' &&
+                                                selectedLessonId ===
+                                                    lesson.id &&
+                                                selectedTaskId === task.id;
+
+                                            return (
+                                                <button
+                                                    key={task.id}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        selectTask(lesson, task)
+                                                    }
+                                                    className={cn(
+                                                        'group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-left text-sm transition-colors',
+                                                        active
+                                                            ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                                                            : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                                    )}
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            'flex size-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
+                                                            task.isCompleted
+                                                                ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                                : active
+                                                                  ? 'border-sidebar-accent-foreground/50'
+                                                                  : 'border-sidebar-border',
+                                                        )}
+                                                    >
+                                                        {task.isCompleted ? (
+                                                            <CheckCircle2 className="size-2.5" />
+                                                        ) : null}
+                                                    </span>
+                                                    <span className="min-w-0 flex-1 truncate leading-snug">
+                                                        {task.title}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        );
+                    })}
+
+                    {assessments.length > 0 ? (
+                        <AccordionItem value="assessments">
+                            <AccordionTrigger className="py-3 text-left hover:no-underline [&>svg]:ml-2">
+                                <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
+                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-amber-600">
+                                        <Trophy className="size-3.5" />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="line-clamp-2 text-sm leading-snug font-medium">
+                                            Assessments
+                                        </span>
+                                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                                            {assessmentsPassed}/
+                                            {assessments.length} passed
+                                        </span>
+                                    </span>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-0.5 pl-9 sm:pl-10">
+                                    {assessments.map((assessment) => {
+                                        const active =
+                                            activeMode === 'assessment' &&
+                                            selectedAssessmentId ===
+                                                assessment.id;
+
+                                        return (
+                                            <button
+                                                key={assessment.id}
+                                                type="button"
+                                                onClick={() =>
+                                                    selectAssessment(assessment)
+                                                }
+                                                className={cn(
+                                                    'flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-left text-sm transition-colors',
+                                                    active
+                                                        ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                                                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                                )}
+                                            >
+                                                <span
+                                                    className={cn(
+                                                        'flex size-3.5 shrink-0 items-center justify-center rounded-full border transition-colors',
+                                                        assessment.passed
+                                                            ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                            : active
+                                                              ? 'border-sidebar-accent-foreground/50'
+                                                              : 'border-sidebar-border',
+                                                    )}
+                                                >
+                                                    {assessment.passed ? (
+                                                        <CheckCircle2 className="size-2.5" />
+                                                    ) : null}
+                                                </span>
+                                                <span className="min-w-0 flex-1 truncate leading-snug">
+                                                    {assessment.title}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ) : null}
+                </Accordion>
+            </div>
+        </div>
+    );
+}
+
 export default function CourseShow({
     course: serverCourse,
     lessons: serverLessons,
@@ -2226,6 +2876,7 @@ export default function CourseShow({
     const isEnrolled = enrollment !== null;
     const lessons = useMemo(() => mapLessons(serverLessons), [serverLessons]);
     const [notice, setNotice] = useState<string | null>(null);
+    const [ariaLiveMessage, setAriaLiveMessage] = useState<string>('');
     const hashSelection = useMemo(() => {
         if (typeof window === 'undefined') {
             return { lessonId: null, taskId: null };
@@ -2244,9 +2895,7 @@ export default function CourseShow({
     const resumeTarget = (() => {
         // If hash specifies a task, use that
         if (hashSelection.lessonId && hashSelection.taskId) {
-            const lesson = lessons.find(
-                (l) => l.id === hashSelection.lessonId,
-            );
+            const lesson = lessons.find((l) => l.id === hashSelection.lessonId);
 
             if (lesson?.tasks.some((t) => t.id === hashSelection.taskId)) {
                 return {
@@ -2457,12 +3106,18 @@ export default function CourseShow({
     const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
     const safeSelectTask = useCallback(
-        (lesson: { id: number; [key: string]: unknown }, task: { id: number; [key: string]: unknown }) => {
+        (
+            lesson: { id: number; [key: string]: unknown },
+            task: { id: number; [key: string]: unknown },
+        ) => {
             if (
                 quizInProgress &&
                 (lesson.id !== selectedLessonId || task.id !== selectedTaskId)
             ) {
-                setPendingNavigation({ lesson: lesson as LessonData, task: task as LessonTask });
+                setPendingNavigation({
+                    lesson: lesson as LessonData,
+                    task: task as LessonTask,
+                });
 
                 return;
             }
@@ -2536,11 +3191,25 @@ export default function CourseShow({
             only: ['lessons', 'enrollment'],
             onSuccess: (page) => {
                 const freshLessons = (page.props as unknown as Props).lessons;
-                setCompletedLessonIds(
-                    freshLessons
-                        .filter((lesson) => lesson.isCompleted)
-                        .map((lesson) => lesson.id),
+                const newCompletedIds = freshLessons
+                    .filter((lesson) => lesson.isCompleted)
+                    .map((lesson) => lesson.id);
+                const unlockedLessons = newCompletedIds.filter(
+                    (id) => !completedLessonIds.includes(id),
                 );
+
+                setCompletedLessonIds(newCompletedIds);
+
+                if (unlockedLessons.length > 0) {
+                    const lessonTitles = unlockedLessons
+                        .map(
+                            (id) =>
+                                freshLessons.find((l) => l.id === id)?.title,
+                        )
+                        .filter(Boolean)
+                        .join(', ');
+                    setAriaLiveMessage(`Lesson baru terbuka: ${lessonTitles}`);
+                }
             },
         });
     };
@@ -2554,6 +3223,15 @@ export default function CourseShow({
         <>
             <Head title={`${serverCourse.title} - Course Detail`} />
 
+            <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+            >
+                {ariaLiveMessage}
+            </div>
+
             <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-6">
                 {notice ? (
                     <Alert className="border-primary/20 bg-primary/5">
@@ -2561,7 +3239,6 @@ export default function CourseShow({
                         <AlertDescription>{notice}</AlertDescription>
                     </Alert>
                 ) : null}
-
 
                 <div className="animate-fade-in-up flex flex-wrap items-start justify-between gap-3">
                     <div className="flex w-full flex-col gap-1">
@@ -2595,9 +3272,7 @@ export default function CourseShow({
                                     activeMode={activeMode}
                                     selectedLessonId={selectedLessonId}
                                     selectedTaskId={selectedTaskId}
-                                    selectedAssessmentId={
-                                        selectedAssessmentId
-                                    }
+                                    selectedAssessmentId={selectedAssessmentId}
                                     completedCount={completedCount}
                                     totalTasks={totalTasks}
                                     assessmentsPassed={assessmentsPassed}
@@ -2681,6 +3356,7 @@ export default function CourseShow({
                                         task={activeContent.task}
                                         onComplete={refreshProgress}
                                         onActiveChange={setQuizInProgress}
+                                        setAriaLiveMessage={setAriaLiveMessage}
                                     />
                                 ) : null}
                                 {activeContent?.mode === 'assessment' ? (
@@ -2810,9 +3486,7 @@ export default function CourseShow({
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Tinggalkan Kuis?
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Tinggalkan Kuis?</AlertDialogTitle>
                         <AlertDialogDescription>
                             Kuis sedang berlangsung. Jika kamu pindah ke materi
                             lain, progres kuis saat ini akan hilang.

@@ -26,6 +26,9 @@ use Illuminate\Support\Str;
     'category',
     'difficulty',
     'path_position',
+    'status',
+    'version',
+    'published_by',
 ])]
 class Course extends Model
 {
@@ -38,12 +41,33 @@ class Course extends Model
         return [
             'estimated_minutes' => 'integer',
             'is_published' => 'boolean',
+            'status' => 'string',
+            'version' => 'integer',
         ];
     }
 
+    /**
+     * Scope to published courses (using status field).
+     */
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('is_published', true);
+        return $query->where('status', 'published');
+    }
+
+    /**
+     * Scope to draft courses.
+     */
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->where('status', 'draft');
+    }
+
+    /**
+     * Scope to archived courses.
+     */
+    public function scopeArchived(Builder $query): Builder
+    {
+        return $query->where('status', 'archived');
     }
 
     public function scopeSearchManagement(Builder $query, string $search): Builder
@@ -106,6 +130,14 @@ SVG;
         return $this->belongsTo(self::class, 'prerequisite_course_id');
     }
 
+    /**
+     * Get the user who published this course.
+     */
+    public function publishedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'published_by');
+    }
+
     public function dependents(): HasMany
     {
         return $this->hasMany(self::class, 'prerequisite_course_id');
@@ -166,5 +198,29 @@ SVG;
             ->where('course_id', $this->prerequisite_course_id)
             ->whereNotNull('completed_at')
             ->exists();
+    }
+
+    /**
+     * Check if course is published.
+     */
+    public function isPublished(): bool
+    {
+        return $this->status === 'published';
+    }
+
+    /**
+     * Check if course is draft.
+     */
+    public function isDraft(): bool
+    {
+        return $this->status === 'draft';
+    }
+
+    /**
+     * Check if course is archived.
+     */
+    public function isArchived(): bool
+    {
+        return $this->status === 'archived';
     }
 }

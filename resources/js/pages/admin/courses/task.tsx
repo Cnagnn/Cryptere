@@ -1,9 +1,13 @@
 import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
+    Archive,
+    ArrowRightLeft,
+    BadgeCheck,
     BookOpen,
     Check,
     ChevronsUpDown,
+    CircleDashed,
     CircleHelp,
     Download,
     Eye,
@@ -14,8 +18,14 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +53,9 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -84,6 +97,40 @@ import { update as tasksUpdate } from '@/routes/admin/courses/tasks';
 import type { Paginated } from '@/types';
 import type { CourseRow, LessonRow, TaskRow } from '@/types/course-management';
 
+type ContentStatus = 'draft' | 'published' | 'archived';
+
+function StatusBadge({ status, className }: { status: ContentStatus; className?: string }) {
+    const config = {
+        draft: {
+            icon: CircleDashed,
+            label: 'Draf',
+            variant: 'outline' as const,
+            iconClass: 'text-amber-500',
+        },
+        published: {
+            icon: BadgeCheck,
+            label: 'Diterbitkan',
+            variant: 'outline' as const,
+            iconClass: 'text-emerald-500',
+        },
+        archived: {
+            icon: Archive,
+            label: 'Diarsipkan',
+            variant: 'destructive' as const,
+            iconClass: 'text-red-500',
+        },
+    };
+
+    const { icon: Icon, label, variant, iconClass } = config[status];
+
+    return (
+        <Badge variant={variant} className={className}>
+            <Icon className={iconClass} />
+            {label}
+        </Badge>
+    );
+}
+
 type LessonOption = { id: number; course_id: number; title: string };
 
 type Props = {
@@ -99,13 +146,10 @@ function formatTaskCode(order: number): string {
     return `TSK-${String(order).padStart(4, '0')}`;
 }
 
-type QuizImportQuestion = {
+type QuizQuestion = {
     question: string;
-    optionA: string;
-    optionB: string;
-    optionC: string;
-    optionD: string;
-    correctOption: number;
+    options: [string, string, string, string];
+    correct_option: number;
     explanation: string;
 };
 
@@ -145,7 +189,7 @@ function normalizeDelimiter(text: string): ',' | ';' | '\t' {
     return ',';
 }
 
-function parseQuizImportText(text: string): QuizImportQuestion[] {
+function parseQuizImportText(text: string): QuizQuestion[] {
     const delimiter = normalizeDelimiter(text);
     const rows = text
         .split(/\r?\n/)
@@ -194,11 +238,13 @@ function parseQuizImportText(text: string): QuizImportQuestion[] {
 
             return {
                 question: columns[getIndex('question')] ?? '',
-                optionA: columns[getIndex('option_a')] ?? '',
-                optionB: columns[getIndex('option_b')] ?? '',
-                optionC: columns[getIndex('option_c')] ?? '',
-                optionD: columns[getIndex('option_d')] ?? '',
-                correctOption: Math.min(
+                options: [
+                    columns[getIndex('option_a')] ?? '',
+                    columns[getIndex('option_b')] ?? '',
+                    columns[getIndex('option_c')] ?? '',
+                    columns[getIndex('option_d')] ?? '',
+                ] as [string, string, string, string],
+                correct_option: Math.min(
                     Math.max(normalizedCorrectOption, 0),
                     3,
                 ),
@@ -218,7 +264,7 @@ export default function AdminCoursesTask({
 }: Props) {
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [filterValue, setFilterValue] = useState('');
-    const [rows, setRows] = useState<TaskRow[]>(tasks.data);
+    const [rows, setRows] = useState<TaskRow[]>(() => tasks.data);
     const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<
         string | null
     >(null);
@@ -228,30 +274,33 @@ export default function AdminCoursesTask({
     const isEditMode = editingTask !== null;
     const [topicComboboxOpen, setTopicComboboxOpen] = useState(false);
     const [quizImportFileName, setQuizImportFileName] = useState('');
-    const [quizQuestions, setQuizQuestions] = useState<QuizImportQuestion[]>(
-        [],
+    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+
+    // Question editor state
+    const [questionEditorOpen, setQuestionEditorOpen] = useState(false);
+    const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
+    const [questionForm, setQuestionForm] = useState<QuizQuestion>({
+        question: '',
+        options: ['', '', '', ''],
+        correct_option: 0,
+        explanation: '',
+    });
+
+    const lessonOptions = lessons.data.filter(
+        (lesson) => lesson.course_id === selectedCourseId,
     );
+
     const [taskForm, setTaskForm] = useState({
-        lesson_id: selectedLessonId || 0,
+        lesson_id: selectedLessonId || lessonOptions[0]?.id || 0,
         title: '',
         description: '',
         type: 'video' as 'video' | 'read' | 'quiz',
         video_url: '',
+        estimated_minutes: '',
+        prerequisite_task_id: '',
+        status: 'draft' as 'draft' | 'published' | 'archived',
         document: null as File | null,
     });
-
-    useEffect(() => {
-        setRows(tasks.data);
-    }, [tasks.data]);
-
-    useEffect(() => {
-        if (selectedLessonId > 0) {
-            setTaskForm((current) => ({
-                ...current,
-                lesson_id: selectedLessonId,
-            }));
-        }
-    }, [selectedLessonId]);
 
     const taskTitleHasError = Boolean(errors.title);
     const taskDescriptionHasError = Boolean(errors.description);
@@ -269,6 +318,9 @@ export default function AdminCoursesTask({
             description: '',
             type: 'video',
             video_url: '',
+            estimated_minutes: '',
+            prerequisite_task_id: '',
+            status: 'draft',
             document: null,
         });
         setQuizImportFileName('');
@@ -283,17 +335,23 @@ export default function AdminCoursesTask({
             description: task.description,
             type: task.type as 'video' | 'read' | 'quiz',
             video_url: task.video_url ?? '',
+            estimated_minutes:
+                task.estimated_minutes != null
+                    ? String(task.estimated_minutes)
+                    : '',
+            prerequisite_task_id:
+                task.prerequisite_task_id != null
+                    ? String(task.prerequisite_task_id)
+                    : '',
+            status: task.status || 'draft',
             document: null,
         });
         setQuizImportFileName('');
         setQuizQuestions(
             (task.quiz_questions ?? []).map((q) => ({
                 question: q.question,
-                optionA: q.options[0] ?? '',
-                optionB: q.options[1] ?? '',
-                optionC: q.options[2] ?? '',
-                optionD: q.options[3] ?? '',
-                correctOption: q.correct_option,
+                options: q.options as [string, string, string, string],
+                correct_option: q.correct_option,
                 explanation: q.explanation,
             })),
         );
@@ -315,6 +373,64 @@ export default function AdminCoursesTask({
             );
         });
     }, [filterValue, rows]);
+
+    // Question editor handlers
+    const openQuestionEditor = (index?: number) => {
+        if (index !== undefined) {
+            setEditingQuestionIndex(index);
+            setQuestionForm(quizQuestions[index]);
+        } else {
+            setEditingQuestionIndex(null);
+            setQuestionForm({
+                question: '',
+                options: ['', '', '', ''],
+                correct_option: 0,
+                explanation: '',
+            });
+        }
+
+        setQuestionEditorOpen(true);
+    };
+
+    const saveQuestion = () => {
+        if (!questionForm.question.trim()) {
+            toast.error('Pertanyaan tidak boleh kosong.');
+
+            return;
+        }
+
+        if (questionForm.options.some(opt => !opt.trim())) {
+            toast.error('Semua opsi harus diisi.');
+
+            return;
+        }
+
+        if (editingQuestionIndex !== null) {
+            // Edit existing
+            setQuizQuestions(prev => {
+                const updated = [...prev];
+                updated[editingQuestionIndex] = questionForm;
+
+                return updated;
+            });
+            toast.success('Pertanyaan berhasil diperbarui.');
+        } else {
+            // Add new
+            setQuizQuestions(prev => [...prev, questionForm]);
+            toast.success('Pertanyaan berhasil ditambahkan.');
+        }
+
+        setQuestionEditorOpen(false);
+    };
+
+    const deleteQuestion = (index: number) => {
+        if (!confirm('Hapus pertanyaan ini?')) {
+            return;
+        }
+
+        setQuizQuestions(prev => prev.filter((_, i) => i !== index));
+        toast.success('Pertanyaan berhasil dihapus.');
+    };
 
     const reorderRows = (sourceRowId: string, targetRowId: string) => {
         if (sourceRowId === targetRowId) {
@@ -363,14 +479,6 @@ export default function AdminCoursesTask({
         });
     };
 
-    const lessonOptions = useMemo(
-        () =>
-            lessons.data.filter(
-                (lesson) => lesson.course_id === selectedCourseId,
-            ),
-        [lessons.data, selectedCourseId],
-    );
-
     const groupedLessons = useMemo(() => {
         const groups: Record<
             number,
@@ -393,6 +501,69 @@ export default function AdminCoursesTask({
 
         return groups;
     }, [allLessons, courseOptions]);
+
+    const updateTaskStatus = (task: TaskRow, status: 'draft' | 'published') => {
+        const payload = new FormData();
+        payload.append('_method', 'PATCH');
+        payload.append('title', task.title);
+        payload.append('description', task.description);
+        payload.append('type', task.type);
+        payload.append('status', status);
+
+        if (task.type === 'video' && task.video_url) {
+            payload.append('video_url', task.video_url);
+        }
+
+        if (task.estimated_minutes != null) {
+            payload.append('estimated_minutes', String(task.estimated_minutes));
+        }
+
+        if (task.prerequisite_task_id != null) {
+            payload.append(
+                'prerequisite_task_id',
+                String(task.prerequisite_task_id),
+            );
+        }
+
+        if (task.type === 'quiz') {
+            (task.quiz_questions ?? []).forEach((question, index) => {
+                payload.append(
+                    `quiz_questions[${index}][question]`,
+                    question.question,
+                );
+                question.options.forEach((option, optionIndex) => {
+                    payload.append(
+                        `quiz_questions[${index}][options][${optionIndex}]`,
+                        option,
+                    );
+                });
+                payload.append(
+                    `quiz_questions[${index}][correct_option]`,
+                    String(question.correct_option),
+                );
+                payload.append(
+                    `quiz_questions[${index}][explanation]`,
+                    question.explanation,
+                );
+            });
+        }
+
+        router.post(tasksUpdate.url({ task: task.id }), payload, {
+            forceFormData: true,
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () =>
+                toast.success(
+                    status === 'published'
+                        ? 'Tugas diterbitkan.'
+                        : 'Tugas diubah menjadi draf.',
+                ),
+            onError: (formErrors) => {
+                const messages = Object.values(formErrors).flat().join(', ');
+                toast.error(messages || 'Gagal mengubah status tugas.');
+            },
+        });
+    };
 
     const columns = useMemo<ColumnDef<TaskRow>[]>(
         () => [
@@ -486,6 +657,43 @@ export default function AdminCoursesTask({
                 },
             },
             {
+                accessorKey: 'status',
+                header: 'Status',
+                cell: ({ row }) => {
+                    const status =
+                        row.original.status ||
+                        (row.original.is_published ? 'published' : 'draft');
+
+                    return (
+                        <div className="flex justify-center">
+                            <StatusBadge status={status} />
+                        </div>
+                    );
+                },
+            },
+            {
+                accessorKey: 'version',
+                header: 'Versi',
+                cell: ({ row }) => (
+                    <div className="text-center">
+                        {row.original.version
+                            ? `v${row.original.version}`
+                            : '—'}
+                    </div>
+                ),
+            },
+            {
+                accessorKey: 'estimated_minutes',
+                header: 'Estimasi (menit)',
+                cell: ({ row }) => (
+                    <div className="text-center">
+                        {row.original.estimated_minutes ??
+                            row.original.minutes ??
+                            '—'}
+                    </div>
+                ),
+            },
+            {
                 accessorKey: 'created_at',
                 header: 'Dibuat Pada',
                 cell: ({ row }) => {
@@ -553,6 +761,44 @@ export default function AdminCoursesTask({
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                            <ArrowRightLeft data-icon="inline-start" />
+                                            Status
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent>
+                                            <DropdownMenuItem
+                                                disabled={
+                                                    (row.original.status ||
+                                                        'draft') === 'published'
+                                                }
+                                                onClick={() =>
+                                                    updateTaskStatus(
+                                                        row.original,
+                                                        'published',
+                                                    )
+                                                }
+                                            >
+                                                <BadgeCheck data-icon="inline-start" />
+                                                Diterbitkan
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                disabled={
+                                                    (row.original.status ||
+                                                        'draft') === 'draft'
+                                                }
+                                                onClick={() =>
+                                                    updateTaskStatus(
+                                                        row.original,
+                                                        'draft',
+                                                    )
+                                                }
+                                            >
+                                                <CircleDashed data-icon="inline-start" />
+                                                Draf
+                                            </DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
                                     <DropdownMenuItem
                                         onClick={() =>
                                             openEditTaskDialog(row.original)
@@ -804,9 +1050,8 @@ export default function AdminCoursesTask({
                             </Button>
                         </DialogTrigger>
 
-                        <DialogContent className="*:data-[slot=dialog-close]:top-6 *:data-[slot=dialog-close]:right-6 sm:max-w-sm">
+                        <DialogContent className="sm:max-w-sm">
                             <form
-                                className="flex flex-col gap-5"
                                 encType="multipart/form-data"
                                 onSubmit={(event) => {
                                     event.preventDefault();
@@ -821,6 +1066,22 @@ export default function AdminCoursesTask({
                                         taskForm.description,
                                     );
                                     payload.append('type', taskForm.type);
+
+                                    if (taskForm.estimated_minutes) {
+                                        payload.append(
+                                            'estimated_minutes',
+                                            taskForm.estimated_minutes,
+                                        );
+                                    }
+
+                                    if (taskForm.prerequisite_task_id) {
+                                        payload.append(
+                                            'prerequisite_task_id',
+                                            taskForm.prerequisite_task_id,
+                                        );
+                                    }
+
+                                    payload.append('status', taskForm.status);
 
                                     if (taskForm.type === 'video') {
                                         payload.append(
@@ -842,7 +1103,7 @@ export default function AdminCoursesTask({
                                     if (taskForm.type === 'quiz') {
                                         if (quizQuestions.length === 0) {
                                             toast.error(
-                                                'Import quiz question terlebih dahulu.',
+                                                'Tambahkan minimal 1 pertanyaan.',
                                             );
 
                                             return;
@@ -856,24 +1117,24 @@ export default function AdminCoursesTask({
                                                 );
                                                 payload.append(
                                                     `quiz_questions[${index}][options][0]`,
-                                                    question.optionA,
+                                                    question.options[0],
                                                 );
                                                 payload.append(
                                                     `quiz_questions[${index}][options][1]`,
-                                                    question.optionB,
+                                                    question.options[1],
                                                 );
                                                 payload.append(
                                                     `quiz_questions[${index}][options][2]`,
-                                                    question.optionC,
+                                                    question.options[2],
                                                 );
                                                 payload.append(
                                                     `quiz_questions[${index}][options][3]`,
-                                                    question.optionD,
+                                                    question.options[3],
                                                 );
                                                 payload.append(
                                                     `quiz_questions[${index}][correct_option]`,
                                                     String(
-                                                        question.correctOption,
+                                                        question.correct_option,
                                                     ),
                                                 );
                                                 payload.append(
@@ -923,7 +1184,7 @@ export default function AdminCoursesTask({
                                     });
                                 }}
                             >
-                                <DialogHeader className="pr-10">
+                                <DialogHeader>
                                     <DialogTitle>
                                         {isEditMode
                                             ? 'Ubah tugas'
@@ -936,9 +1197,8 @@ export default function AdminCoursesTask({
                                     </DialogDescription>
                                 </DialogHeader>
 
-                                <FieldGroup className="gap-3">
+                                <FieldGroup>
                                     <Field
-                                        className="gap-2"
                                         data-invalid={
                                             taskLessonHasError || undefined
                                         }
@@ -1294,70 +1554,26 @@ export default function AdminCoursesTask({
 
                                     {taskForm.type === 'quiz' && (
                                         <>
-                                            <Field className="gap-3">
-                                                <div className="flex items-center justify-between">
-                                                    <FieldLabel htmlFor="task-quiz-import">
-                                                        Impor Pertanyaan{' '}
-                                                        {!isEditMode && (
-                                                            <span className="text-destructive">
-                                                                *
-                                                            </span>
-                                                        )}
-                                                    </FieldLabel>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="sm"
-                                                            >
-                                                                <Download className="mr-2 h-4 w-4" />
-                                                                Template
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    downloadQuizTemplate(
-                                                                        'csv',
-                                                                    )
-                                                                }
-                                                            >
-                                                                Format CSV
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    downloadQuizTemplate(
-                                                                        'xlsx',
-                                                                    )
-                                                                }
-                                                            >
-                                                                Excel (.xlsx)
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    downloadQuizTemplate(
-                                                                        'xls',
-                                                                    )
-                                                                }
-                                                            >
-                                                                Excel Lama
-                                                                (.xls)
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
+                                            <Field>
+                                                <FieldLabel htmlFor="task-quiz-import">
+                                                    Impor Pertanyaan{' '}
+                                                    {!isEditMode && quizQuestions.length === 0 && (
+                                                        <span className="text-destructive">
+                                                            *
+                                                        </span>
+                                                    )}
+                                                </FieldLabel>
 
-                                                <Input
-                                                    id="task-quiz-import"
-                                                    type="file"
-                                                    accept=".csv,.xlsx,.xls"
-                                                    aria-invalid={
-                                                        taskQuizQuestionsHasError
-                                                    }
-                                                    onChange={async (event) => {
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        id="task-quiz-import"
+                                                        type="file"
+                                                        accept=".csv,.xlsx,.xls"
+                                                        className="flex-1"
+                                                        aria-invalid={
+                                                            taskQuizQuestionsHasError
+                                                        }
+                                                        onChange={async (event) => {
                                                         const selectedFile =
                                                             event.target
                                                                 .files?.[0] ??
@@ -1408,35 +1624,147 @@ export default function AdminCoursesTask({
                                                             );
                                                         }
                                                     }}
-                                                    required={
-                                                        !isEditMode ||
-                                                        quizQuestions.length ===
-                                                            0
-                                                    }
                                                 />
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className="shrink-0"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={() =>
+                                                                downloadQuizTemplate('csv')
+                                                            }
+                                                        >
+                                                            Format CSV
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() =>
+                                                                downloadQuizTemplate('xlsx')
+                                                            }
+                                                        >
+                                                            Excel (.xlsx)
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() =>
+                                                                downloadQuizTemplate('xls')
+                                                            }
+                                                        >
+                                                            Excel Lama (.xls)
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
 
                                                 <FieldDescription>
-                                                    Unggah file CSV atau Excel
-                                                    (.csv, .xlsx, .xls)
+                                                    Unggah CSV/Excel atau klik tombol di bawah untuk tambah manual
                                                 </FieldDescription>
 
                                                 {quizImportFileName && (
-                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                        <Check className="h-4 w-4 text-green-600" />
-                                                        <span>
-                                                            {quizImportFileName}{' '}
-                                                            (
-                                                            {
-                                                                quizQuestions.length
-                                                            }{' '}
-                                                            pertanyaan
-                                                            {quizQuestions.length !==
-                                                            1
-                                                                ? ''
-                                                                : ''}
-                                                            )
-                                                        </span>
-                                                    </div>
+                                                    <>
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                            <Check className="h-4 w-4 text-green-600" />
+                                                            <span>
+                                                                {quizImportFileName}{' '}
+                                                                (
+                                                                {
+                                                                    quizQuestions.length
+                                                                }{' '}
+                                                                pertanyaan
+                                                                {quizQuestions.length !==
+                                                                1
+                                                                    ? ''
+                                                                    : ''}
+                                                                )
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Quiz Preview */}
+                                                        {quizQuestions.length > 0 && (
+                                                            <>
+                                                                <Accordion type="single" collapsible className="mt-3">
+                                                                    <AccordionItem value="preview" className="border rounded-lg px-3">
+                                                                        <AccordionTrigger className="text-sm hover:no-underline">
+                                                                            <span className="flex items-center gap-2">
+                                                                                <Eye className="h-4 w-4" />
+                                                                                Preview Pertanyaan ({quizQuestions.length})
+                                                                            </span>
+                                                                        </AccordionTrigger>
+                                                                        <AccordionContent>
+                                                                            <div className="space-y-3 pt-2 max-h-96 overflow-y-auto">
+                                                                                {quizQuestions.map((q, i) => (
+                                                                                    <div key={i} className="rounded-lg border bg-muted/30 p-3 text-sm">
+                                                                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                                                                            <p className="font-medium flex-1">
+                                                                                                {i + 1}. {q.question}
+                                                                                            </p>
+                                                                                            <div className="flex gap-1 shrink-0">
+                                                                                                <Button
+                                                                                                    type="button"
+                                                                                                    variant="ghost"
+                                                                                                    size="sm"
+                                                                                                    className="h-7 w-7 p-0"
+                                                                                                    onClick={() => openQuestionEditor(i)}
+                                                                                                >
+                                                                                                    <Pencil className="h-3.5 w-3.5" />
+                                                                                                </Button>
+                                                                                                <Button
+                                                                                                    type="button"
+                                                                                                    variant="ghost"
+                                                                                                    size="sm"
+                                                                                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                                                                                    onClick={() => deleteQuestion(i)}
+                                                                                                >
+                                                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                                                </Button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="space-y-1 pl-4">
+                                                                                            {q.options.map((opt, j) => (
+                                                                                                <div
+                                                                                                    key={j}
+                                                                                                    className={
+                                                                                                        j === q.correct_option
+                                                                                                            ? 'text-emerald-600 font-medium'
+                                                                                                            : 'text-muted-foreground'
+                                                                                                    }
+                                                                                                >
+                                                                                                    {j === q.correct_option && '✓ '}
+                                                                                                    {opt}
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                        {q.explanation && (
+                                                                                            <p className="text-xs text-muted-foreground mt-2 pl-4">
+                                                                                                💡 {q.explanation}
+                                                                                            </p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </AccordionContent>
+                                                                    </AccordionItem>
+                                                                </Accordion>
+
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="w-full mt-2"
+                                                                    onClick={() => openQuestionEditor()}
+                                                                >
+                                                                    <Plus className="h-4 w-4 mr-2" />
+                                                                    Tambah Pertanyaan
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                    </>
                                                 )}
 
                                                 {isEditMode &&
@@ -1462,7 +1790,7 @@ export default function AdminCoursesTask({
                                     )}
                                 </FieldGroup>
 
-                                <DialogFooter className="pt-1">
+                                <DialogFooter className="mt-6">
                                     <DialogClose asChild>
                                         <Button
                                             type="button"
@@ -1483,6 +1811,88 @@ export default function AdminCoursesTask({
                                     </Button>
                                 </DialogFooter>
                             </form>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Question Editor Dialog */}
+                    <Dialog open={questionEditorOpen} onOpenChange={setQuestionEditorOpen}>
+                        <DialogContent className="sm:max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle>
+                                    {editingQuestionIndex !== null ? 'Edit Pertanyaan' : 'Tambah Pertanyaan'}
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Isi pertanyaan, 4 opsi jawaban, dan pilih jawaban yang benar.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <FieldGroup>
+                                <Field>
+                                    <FieldLabel htmlFor="q-question">
+                                        Pertanyaan <span className="text-destructive">*</span>
+                                    </FieldLabel>
+                                    <Textarea
+                                        id="q-question"
+                                        value={questionForm.question}
+                                        onChange={(e) => setQuestionForm(prev => ({ ...prev, question: e.target.value }))}
+                                        placeholder="Masukkan pertanyaan"
+                                        rows={3}
+                                    />
+                                </Field>
+
+                                <Field>
+                                    <FieldLabel>
+                                        Opsi Jawaban <span className="text-destructive">*</span>
+                                    </FieldLabel>
+                                    <div className="space-y-2">
+                                        {questionForm.options.map((opt, idx) => (
+                                            <div key={idx} className="flex gap-2 items-center">
+                                                <Input
+                                                    value={opt}
+                                                    onChange={(e) => {
+                                                        const newOptions = [...questionForm.options] as [string, string, string, string];
+                                                        newOptions[idx] = e.target.value;
+                                                        setQuestionForm(prev => ({ ...prev, options: newOptions }));
+                                                    }}
+                                                    placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant={questionForm.correct_option === idx ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    className="shrink-0"
+                                                    onClick={() => setQuestionForm(prev => ({ ...prev, correct_option: idx }))}
+                                                >
+                                                    {questionForm.correct_option === idx ? <Check className="h-4 w-4" /> : 'Benar'}
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <FieldDescription>
+                                        Klik tombol "Benar" untuk menandai jawaban yang benar
+                                    </FieldDescription>
+                                </Field>
+
+                                <Field>
+                                    <FieldLabel htmlFor="q-explanation">Penjelasan</FieldLabel>
+                                    <Textarea
+                                        id="q-explanation"
+                                        value={questionForm.explanation}
+                                        onChange={(e) => setQuestionForm(prev => ({ ...prev, explanation: e.target.value }))}
+                                        placeholder="Penjelasan jawaban (opsional)"
+                                        rows={2}
+                                    />
+                                </Field>
+                            </FieldGroup>
+
+                            <DialogFooter className="mt-6">
+                                <DialogClose asChild>
+                                    <Button type="button" variant="outline">Batal</Button>
+                                </DialogClose>
+                                <Button type="button" onClick={saveQuestion}>
+                                    {editingQuestionIndex !== null ? 'Perbarui' : 'Tambah'}
+                                </Button>
+                            </DialogFooter>
                         </DialogContent>
                     </Dialog>
                 </div>

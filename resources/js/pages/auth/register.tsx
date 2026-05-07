@@ -2,14 +2,16 @@ import { Form, Head, Link } from '@inertiajs/react';
 import {
     AtSign,
     CheckCircle2,
+    Eye,
+    EyeOff,
     LoaderCircle,
     Lock,
     LockKeyhole,
     Mail,
     XCircle,
 } from 'lucide-react';
+import type { ComponentProps, ReactNode, Ref } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
-import PasswordInput from '@/components/password-input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,11 +19,60 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 import { redirect as socialRedirect } from '@/routes/social';
+
+function PasswordInput({
+    className,
+    ref,
+    icon,
+    ...props
+}: Omit<ComponentProps<'input'>, 'type'> & {
+    ref?: Ref<HTMLInputElement>;
+    icon?: ReactNode;
+}) {
+    const [showPassword, setShowPassword] = useState(false);
+
+    return (
+        <InputGroup>
+            {icon ? (
+                <InputGroupAddon align="inline-start">{icon}</InputGroupAddon>
+            ) : null}
+
+            <InputGroupInput
+                type={showPassword ? 'text' : 'password'}
+                className={cn(className)}
+                ref={ref}
+                {...props}
+            />
+
+            <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={
+                        showPassword ? 'Hide password' : 'Show password'
+                    }
+                    tabIndex={-1}
+                >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                </InputGroupButton>
+            </InputGroupAddon>
+        </InputGroup>
+    );
+}
 
 interface SocialUser {
     provider: string;

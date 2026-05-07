@@ -5,6 +5,10 @@ export type CourseRow = {
     summary: string;
     cover: string | null;
     is_published?: boolean;
+    status?: 'draft' | 'published' | 'archived';
+    version?: number;
+    published_by?: number;
+    published_by_name?: string;
     lessons_count: number;
     tasks_count?: number;
     enrollments_count: number;
@@ -22,6 +26,14 @@ export type LessonRow = {
     title: string;
     description: string;
     position: number;
+    status?: 'draft' | 'published' | 'archived';
+    version?: number;
+    published_by?: number;
+    published_by_name?: string;
+    topic_id?: number | null;
+    topic_name?: string | null;
+    prerequisite_lesson_id?: number | null;
+    prerequisite_lesson_title?: string | null;
     created_at: string;
     updated_at: string;
 };
@@ -38,7 +50,12 @@ export type TaskRow = {
     title: string;
     description: string;
     minutes: number;
+    estimated_minutes?: number | null;
     video_url: string | null;
+    status?: 'draft' | 'published' | 'archived';
+    version?: number;
+    prerequisite_task_id?: number | null;
+    prerequisite_task_title?: string | null;
     created_at: string | null;
     updated_at: string | null;
     video_processing_status?: string | null;

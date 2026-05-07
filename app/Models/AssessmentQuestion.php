@@ -25,6 +25,11 @@ use Illuminate\Support\Str;
     'min_words',
     'max_words',
     'sort_order',
+    'question_bank_id',
+    'difficulty_score',
+    'discrimination',
+    'times_shown',
+    'times_correct',
 ])]
 #[Hidden(['correct_answer'])]
 class AssessmentQuestion extends Model
@@ -86,6 +91,10 @@ class AssessmentQuestion extends Model
             'min_words' => 'integer',
             'max_words' => 'integer',
             'sort_order' => 'integer',
+            'difficulty_score' => 'decimal:2',
+            'discrimination' => 'decimal:2',
+            'times_shown' => 'integer',
+            'times_correct' => 'integer',
         ];
     }
 
@@ -94,6 +103,14 @@ class AssessmentQuestion extends Model
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(Assessment::class);
+    }
+
+    /**
+     * Get the question bank entry this question was created from.
+     */
+    public function questionBank(): BelongsTo
+    {
+        return $this->belongsTo(QuestionBank::class);
     }
 
     public function answers(): HasMany
@@ -157,5 +174,35 @@ class AssessmentQuestion extends Model
     {
         return collect($this->getRubricCriteria())
             ->sum('max_points');
+    }
+
+    /**
+     * Record an attempt for this question.
+     */
+    public function recordAttempt(bool $correct): void
+    {
+        $this->increment('times_shown');
+        if ($correct) {
+            $this->increment('times_correct');
+        }
+        $this->updateAnalytics();
+    }
+
+    /**
+     * Update difficulty and discrimination analytics.
+     */
+    public function updateAnalytics(): void
+    {
+        if ($this->times_shown === 0) {
+            return;
+        }
+
+        // Calculate difficulty (p-value: proportion correct)
+        $this->difficulty_score = round($this->times_correct / $this->times_shown, 2);
+
+        // Discrimination calculation requires more context (high vs low performers)
+        // Placeholder: implement based on your analytics requirements
+        // For now, just save difficulty
+        $this->saveQuietly();
     }
 }

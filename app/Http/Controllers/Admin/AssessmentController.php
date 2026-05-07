@@ -77,6 +77,7 @@ class AssessmentController extends Controller
             'max_attempts' => ['required', 'integer', 'min:1', 'max:10'],
             'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:480'],
             'is_published' => ['boolean'],
+            'status' => ['nullable', 'string', 'in:draft,published,archived'],
             'available_from' => ['nullable', 'date'],
             'available_until' => ['nullable', 'date', 'after:available_from'],
         ]);
@@ -88,6 +89,9 @@ class AssessmentController extends Controller
             'slug' => $this->generateUniqueSlug($validated['title']),
             'sort_order' => $nextSortOrder,
             'is_published' => $validated['is_published'] ?? false,
+            'status' => $validated['status'] ?? 'draft',
+            'version' => 1,
+            'published_by' => null,
         ]);
 
         app(AuditService::class)->log($request->user(), 'created', $assessment);
@@ -111,11 +115,17 @@ class AssessmentController extends Controller
             'max_attempts' => ['required', 'integer', 'min:1', 'max:10'],
             'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:480'],
             'is_published' => ['boolean'],
+            'status' => ['nullable', 'string', 'in:draft,published,archived'],
             'available_from' => ['nullable', 'date'],
             'available_until' => ['nullable', 'date', 'after:available_from'],
         ]);
 
-        $assessment->update($validated);
+        $updateData = $validated;
+
+        // Increment version on update
+        $updateData['version'] = $assessment->version + 1;
+
+        $assessment->update($updateData);
 
         app(AuditService::class)->log($request->user(), 'updated', $assessment);
 
@@ -139,9 +149,41 @@ class AssessmentController extends Controller
      */
     public function togglePublish(Assessment $assessment): RedirectResponse
     {
-        $assessment->update(['is_published' => ! $assessment->is_published]);
+        $newStatus = $assessment->status === 'published' ? 'draft' : 'published';
+        $assessment->update(['status' => $newStatus]);
 
-        return back()->with('success', $assessment->is_published ? 'Assessment published.' : 'Assessment unpublished.');
+        return back()->with('success', $newStatus === 'published' ? 'Assessment published.' : 'Assessment unpublished.');
+    }
+
+    /**
+     * Publish an assessment (set status to published).
+     */
+    public function publishAssessment(Assessment $assessment): RedirectResponse
+    {
+        $assessment->update([
+            'status' => 'published',
+            'published_by' => request()->user()->id,
+            'is_published' => true,
+        ]);
+
+        app(AuditService::class)->log(request()->user(), 'published', $assessment);
+
+        return back()->with('success', 'Assessment published.');
+    }
+
+    /**
+     * Archive an assessment (set status to archived).
+     */
+    public function archiveAssessment(Assessment $assessment): RedirectResponse
+    {
+        $assessment->update([
+            'status' => 'archived',
+            'is_published' => false,
+        ]);
+
+        app(AuditService::class)->log(request()->user(), 'archived', $assessment);
+
+        return back()->with('success', 'Assessment archived.');
     }
 
     /**

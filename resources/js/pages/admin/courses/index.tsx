@@ -91,10 +91,6 @@ AdminCoursesIndex.layout = {
             href: dashboard(),
         },
         {
-            title: 'Manajemen',
-            href: adminCoursesIndex(),
-        },
-        {
             title: 'Kursus',
             href: adminCoursesIndex(),
         },

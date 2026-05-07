@@ -1,6 +1,7 @@
 import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
+    Archive,
     ArrowRightLeft,
     BadgeCheck,
     CircleDashed,
@@ -76,6 +77,40 @@ import { show as coursesShow } from '@/routes/courses';
 import type { Paginated } from '@/types';
 import type { CourseRow } from '@/types/course-management';
 
+type ContentStatus = 'draft' | 'published' | 'archived';
+
+function StatusBadge({ status, className }: { status: ContentStatus; className?: string }) {
+    const config = {
+        draft: {
+            icon: CircleDashed,
+            label: 'Draf',
+            variant: 'outline' as const,
+            iconClass: 'text-amber-500',
+        },
+        published: {
+            icon: BadgeCheck,
+            label: 'Diterbitkan',
+            variant: 'outline' as const,
+            iconClass: 'text-emerald-500',
+        },
+        archived: {
+            icon: Archive,
+            label: 'Diarsipkan',
+            variant: 'destructive' as const,
+            iconClass: 'text-red-500',
+        },
+    };
+
+    const { icon: Icon, label, variant, iconClass } = config[status];
+
+    return (
+        <Badge variant={variant} className={className}>
+            <Icon className={iconClass} />
+            {label}
+        </Badge>
+    );
+}
+
 type Props = {
     courses: Paginated<CourseRow>;
 };
@@ -89,11 +124,13 @@ export default function AdminCoursesTitle({ courses }: Props) {
     const [courseFilterValue, setCourseFilterValue] = useState('');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isSavingCourse, setIsSavingCourse] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
     const [courseForm, setCourseForm] = useState({
         title: '',
         description: '',
         coverImage: null as File | null,
     });
+    const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
     const titleHasError = Boolean(errors.title);
     const descriptionHasError = Boolean(errors.description);
     const coverImageHasError = Boolean(errors.cover_image);
@@ -106,6 +143,8 @@ export default function AdminCoursesTitle({ courses }: Props) {
             description: '',
             coverImage: null,
         });
+        setIsDirty(false);
+        setCoverImagePreview(null);
     };
 
     const openCreateDialog = () => {
@@ -120,6 +159,8 @@ export default function AdminCoursesTitle({ courses }: Props) {
             description: course.summary,
             coverImage: null,
         });
+        setIsDirty(false);
+        setCoverImagePreview(null);
         setIsCreateDialogOpen(true);
     };
 
@@ -174,18 +215,37 @@ export default function AdminCoursesTitle({ courses }: Props) {
                 ),
             },
             {
-                accessorKey: 'is_published',
+                accessorKey: 'status',
                 header: 'Status',
+                cell: ({ row }) => {
+                    const status =
+                        row.original.status ||
+                        (row.original.is_published ? 'published' : 'draft');
+
+                    return (
+                        <div className="flex justify-center">
+                            <StatusBadge status={status} />
+                        </div>
+                    );
+                },
+            },
+            {
+                accessorKey: 'version',
+                header: 'Versi',
                 cell: ({ row }) => (
-                    <div className="flex justify-center">
-                        <Badge variant="outline">
-                            {row.original.is_published ? (
-                                <BadgeCheck className="text-emerald-500" />
-                            ) : (
-                                <CircleDashed className="text-amber-500" />
-                            )}
-                            {row.original.is_published ? 'Diterbitkan' : 'Draf'}
-                        </Badge>
+                    <div className="text-center">
+                        {row.original.version
+                            ? `v${row.original.version}`
+                            : '—'}
+                    </div>
+                ),
+            },
+            {
+                accessorKey: 'published_by_name',
+                header: 'Diterbitkan Oleh',
+                cell: ({ row }) => (
+                    <div className="text-center">
+                        {row.original.published_by_name || '—'}
                     </div>
                 ),
             },
@@ -258,7 +318,7 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                     <DropdownMenuSub>
                                         <DropdownMenuSubTrigger>
                                             <ArrowRightLeft data-icon="inline-start" />
-                                            Ubah Status
+                                            Status
                                         </DropdownMenuSubTrigger>
                                         <DropdownMenuSubContent>
                                             <DropdownMenuItem
@@ -396,6 +456,12 @@ export default function AdminCoursesTitle({ courses }: Props) {
                         <Dialog
                             open={isCreateDialogOpen}
                             onOpenChange={(open) => {
+                                if (!open && isDirty && !isSavingCourse) {
+                                    if (!confirm('Perubahan belum disimpan. Tutup dialog?')) {
+                                        return;
+                                    }
+                                }
+
                                 setIsCreateDialogOpen(open);
 
                                 if (!open && !isSavingCourse) {
@@ -413,9 +479,8 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                     Buat
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="*:data-[slot=dialog-close]:top-6 *:data-[slot=dialog-close]:right-6 sm:max-w-sm">
+                            <DialogContent className="sm:max-w-sm">
                                 <form
-                                    className="flex flex-col gap-5"
                                     encType="multipart/form-data"
                                     onSubmit={(event) => {
                                         event.preventDefault();
@@ -465,7 +530,7 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                         });
                                     }}
                                 >
-                                    <DialogHeader className="pr-10">
+                                    <DialogHeader>
                                         <DialogTitle>
                                             {isEditMode
                                                 ? 'Ubah kursus'
@@ -477,9 +542,8 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                                 : 'Tambahkan judul dan ringkasan kursus baru.'}
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <FieldGroup className="gap-3">
+                                    <FieldGroup>
                                         <Field
-                                            className="gap-2"
                                             data-invalid={
                                                 titleHasError || undefined
                                             }
@@ -503,6 +567,7 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                                                 .value,
                                                         }),
                                                     );
+                                                    setIsDirty(true);
                                                 }}
                                                 aria-invalid={titleHasError}
                                                 required
@@ -514,7 +579,6 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                             )}
                                         </Field>
                                         <Field
-                                            className="gap-2"
                                             data-invalid={
                                                 descriptionHasError || undefined
                                             }
@@ -539,6 +603,7 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                                                     .value,
                                                         }),
                                                     );
+                                                    setIsDirty(true);
                                                 }}
                                                 aria-invalid={
                                                     descriptionHasError
@@ -553,7 +618,6 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                             )}
                                         </Field>
                                         <Field
-                                            className="gap-2"
                                             data-invalid={
                                                 coverImageHasError || undefined
                                             }
@@ -580,8 +644,29 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                                             coverImage: file,
                                                         }),
                                                     );
+                                                    setIsDirty(true);
+
+                                                    // Generate preview
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            setCoverImagePreview(reader.result as string);
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    } else {
+                                                        setCoverImagePreview(null);
+                                                    }
                                                 }}
                                             />
+                                            {coverImagePreview && (
+                                                <div className="mt-2">
+                                                    <img
+                                                        src={coverImagePreview}
+                                                        alt="Preview"
+                                                        className="h-32 w-full rounded-lg object-cover"
+                                                    />
+                                                </div>
+                                            )}
                                             {coverImageHasError && (
                                                 <FieldDescription className="text-destructive">
                                                     {errors.cover_image}
@@ -594,7 +679,7 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                             </FieldDescription>
                                         </Field>
                                     </FieldGroup>
-                                    <DialogFooter className="pt-1">
+                                    <DialogFooter className="mt-6">
                                         <DialogClose asChild>
                                             <Button
                                                 variant="outline"

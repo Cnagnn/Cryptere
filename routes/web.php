@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Admin\AssessmentController as AdminAssessmentController;
 use App\Http\Controllers\Admin\AssessmentQuestionController as AdminAssessmentQuestionController;
+use App\Http\Controllers\Admin\ContentVersionController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
+use App\Http\Controllers\Admin\QuestionBankController;
 use App\Http\Controllers\Admin\TaskController as AdminTaskController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Assessment\AssessmentSubmissionController;
@@ -190,6 +192,29 @@ Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin
     Route::patch('assessments/{assessment}/questions/{question}', [AdminAssessmentQuestionController::class, 'update'])->name('assessments.questions.update');
     Route::delete('assessments/{assessment}/questions/{question}', [AdminAssessmentQuestionController::class, 'destroy'])->name('assessments.questions.destroy');
     Route::post('assessments/{assessment}/questions/reorder', [AdminAssessmentQuestionController::class, 'reorder'])->name('assessments.questions.reorder');
+
+    // Question Bank
+    Route::get('question-bank', [QuestionBankController::class, 'index'])->name('question-bank.index');
+    Route::post('question-bank', [QuestionBankController::class, 'store'])->name('question-bank.store');
+    Route::patch('question-bank/{questionBank}', [QuestionBankController::class, 'update'])->name('question-bank.update');
+    Route::delete('question-bank/{questionBank}', [QuestionBankController::class, 'destroy'])->name('question-bank.destroy');
+    Route::post('question-bank/{questionBank}/duplicate', [QuestionBankController::class, 'duplicate'])->name('question-bank.duplicate');
+    Route::post('question-bank/bulk-import', [QuestionBankController::class, 'bulkImport'])->name('question-bank.bulk-import');
+    Route::get('question-bank/{questionBank}/usage-stats', [QuestionBankController::class, 'usageStats'])->name('question-bank.usage-stats');
+
+    // Content Versions
+    Route::get('versions/{versionableType}/{versionableId}', [ContentVersionController::class, 'index'])->name('versions.index');
+    Route::get('versions/{version}', [ContentVersionController::class, 'show'])->name('versions.show');
+    Route::post('versions/{version}/restore', [ContentVersionController::class, 'restore'])->name('versions.restore');
+    Route::get('versions/{version}/compare/{compareVersion}', [ContentVersionController::class, 'compare'])->name('versions.compare');
+
+    // Publish/Archive Actions
+    Route::post('courses/{course}/publish', [AdminCourseController::class, 'publishCourse'])->name('courses.publish');
+    Route::post('courses/{course}/archive', [AdminCourseController::class, 'archiveCourse'])->name('courses.archive');
+    Route::post('lessons/{lesson}/publish', [AdminLessonController::class, 'publishLesson'])->name('lessons.publish');
+    Route::post('tasks/{task}/publish', [AdminTaskController::class, 'publishTask'])->name('tasks.publish');
+    Route::post('assessments/{assessment}/publish', [AdminAssessmentController::class, 'publishAssessment'])->name('assessments.publish');
+    Route::post('assessments/{assessment}/archive', [AdminAssessmentController::class, 'archiveAssessment'])->name('assessments.archive');
 
     // System Stats API
     Route::get('system-stats', SystemStatsController::class)->name('system-stats');

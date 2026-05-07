@@ -1,8 +1,12 @@
 import { router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
+    Archive,
+    ArrowRightLeft,
+    BadgeCheck,
     Check,
     ChevronsUpDown,
+    CircleDashed,
     Eye,
     MoreHorizontal,
     Pencil,
@@ -12,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Command,
@@ -38,6 +43,9 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -71,6 +79,40 @@ import { update as lessonsUpdate } from '@/routes/admin/courses/lessons';
 import type { Paginated } from '@/types';
 import type { CourseRow, LessonRow } from '@/types/course-management';
 
+type ContentStatus = 'draft' | 'published' | 'archived';
+
+function StatusBadge({ status, className }: { status: ContentStatus; className?: string }) {
+    const config = {
+        draft: {
+            icon: CircleDashed,
+            label: 'Draf',
+            variant: 'outline' as const,
+            iconClass: 'text-amber-500',
+        },
+        published: {
+            icon: BadgeCheck,
+            label: 'Diterbitkan',
+            variant: 'outline' as const,
+            iconClass: 'text-emerald-500',
+        },
+        archived: {
+            icon: Archive,
+            label: 'Diarsipkan',
+            variant: 'destructive' as const,
+            iconClass: 'text-red-500',
+        },
+    };
+
+    const { icon: Icon, label, variant, iconClass } = config[status];
+
+    return (
+        <Badge variant={variant} className={className}>
+            <Icon className={iconClass} />
+            {label}
+        </Badge>
+    );
+}
+
 type Props = {
     lessons: Paginated<LessonRow>;
     courseOptions: Pick<CourseRow, 'id' | 'title'>[];
@@ -88,7 +130,7 @@ export default function AdminCoursesTopic({
 }: Props) {
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [filterValue, setFilterValue] = useState('');
-    const [rows, setRows] = useState<LessonRow[]>(lessons.data);
+    const [rows, setRows] = useState<LessonRow[]>(() => lessons.data);
     const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<
         string | null
     >(null);
@@ -106,13 +148,6 @@ export default function AdminCoursesTopic({
     const topicCourseHasError = Boolean(errors.course_id);
     const topicTitleHasError = Boolean(errors.title);
     const topicDescriptionHasError = Boolean(errors.description);
-
-    useEffect(() => {
-        setTopicForm((current) => ({
-            ...current,
-            course_id: selectedCourseId,
-        }));
-    }, [selectedCourseId]);
 
     const resetTopicForm = () => {
         setEditingTopic(null);
@@ -132,10 +167,6 @@ export default function AdminCoursesTopic({
         });
         setCreateTopicDialogOpen(true);
     };
-
-    useEffect(() => {
-        setRows(lessons.data);
-    }, [lessons.data]);
 
     const filteredLessons = useMemo(() => {
         const keyword = filterValue.trim().toLowerCase();
@@ -193,6 +224,36 @@ export default function AdminCoursesTopic({
         });
     };
 
+    const updateLessonStatus = (
+        lesson: LessonRow,
+        status: 'draft' | 'published',
+    ) => {
+        router.patch(
+            lessonsUpdate.url({ lesson: lesson.id }),
+            {
+                title: lesson.title,
+                description: lesson.description,
+                course_id: lesson.course_id,
+                status,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () =>
+                    toast.success(
+                        status === 'published'
+                            ? 'Topik diterbitkan.'
+                            : 'Topik diubah menjadi draf.',
+                    ),
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Gagal mengubah status topik.');
+                },
+            },
+        );
+    };
+
     const columns = useMemo<ColumnDef<LessonRow>[]>(
         () => [
             {
@@ -242,6 +303,39 @@ export default function AdminCoursesTopic({
             {
                 accessorKey: 'course_title',
                 header: 'Judul',
+            },
+            {
+                accessorKey: 'status',
+                header: 'Status',
+                cell: ({ row }) => {
+                    const status = row.original.status || 'draft';
+
+                    return (
+                        <div className="flex justify-center">
+                            <StatusBadge status={status} />
+                        </div>
+                    );
+                },
+            },
+            {
+                accessorKey: 'version',
+                header: 'Versi',
+                cell: ({ row }) => (
+                    <div className="text-center">
+                        {row.original.version
+                            ? `v${row.original.version}`
+                            : '—'}
+                    </div>
+                ),
+            },
+            {
+                accessorKey: 'topic_name',
+                header: 'Topik',
+                cell: ({ row }) => (
+                    <div className="text-center">
+                        {row.original.topic_name || '—'}
+                    </div>
+                ),
             },
             {
                 accessorKey: 'created_at',
@@ -302,6 +396,44 @@ export default function AdminCoursesTopic({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <ArrowRightLeft data-icon="inline-start" />
+                                        Status
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem
+                                            disabled={
+                                                (row.original.status ||
+                                                    'draft') === 'published'
+                                            }
+                                            onClick={() =>
+                                                updateLessonStatus(
+                                                    row.original,
+                                                    'published',
+                                                )
+                                            }
+                                        >
+                                            <BadgeCheck data-icon="inline-start" />
+                                            Diterbitkan
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            disabled={
+                                                (row.original.status ||
+                                                    'draft') === 'draft'
+                                            }
+                                            onClick={() =>
+                                                updateLessonStatus(
+                                                    row.original,
+                                                    'draft',
+                                                )
+                                            }
+                                        >
+                                            <CircleDashed data-icon="inline-start" />
+                                            Draf
+                                        </DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
                                 <DropdownMenuItem
                                     onClick={() =>
                                         openEditTopicDialog(row.original)
@@ -522,9 +654,8 @@ export default function AdminCoursesTopic({
                                 Buat
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="*:data-[slot=dialog-close]:top-6 *:data-[slot=dialog-close]:right-6 sm:max-w-sm">
+                        <DialogContent className="sm:max-w-sm">
                             <form
-                                className="flex flex-col gap-5"
                                 onSubmit={(event) => {
                                     event.preventDefault();
                                     const payload = new FormData();
@@ -577,7 +708,7 @@ export default function AdminCoursesTopic({
                                     });
                                 }}
                             >
-                                <DialogHeader className="pr-10">
+                                <DialogHeader>
                                     <DialogTitle>
                                         {isEditMode
                                             ? 'Ubah topik'
@@ -590,9 +721,8 @@ export default function AdminCoursesTopic({
                                     </DialogDescription>
                                 </DialogHeader>
 
-                                <FieldGroup className="gap-3">
+                                <FieldGroup>
                                     <Field
-                                        className="gap-2"
                                         data-invalid={
                                             topicCourseHasError || undefined
                                         }
@@ -778,7 +908,7 @@ export default function AdminCoursesTopic({
                                     </Field>
                                 </FieldGroup>
 
-                                <DialogFooter className="pt-1">
+                                <DialogFooter className="mt-6">
                                     <DialogClose asChild>
                                         <Button
                                             type="button"

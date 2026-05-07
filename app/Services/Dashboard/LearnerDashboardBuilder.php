@@ -100,7 +100,7 @@ class LearnerDashboardBuilder
     private function buildRecommendedCourses(User $user): mixed
     {
         return Course::query()
-            ->where('is_published', true)
+            ->where('status', 'published')
             ->whereDoesntHave('enrollments', function ($query) use ($user): void {
                 $query->whereBelongsTo($user);
             })

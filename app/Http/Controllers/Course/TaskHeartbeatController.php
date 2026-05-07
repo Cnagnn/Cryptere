@@ -30,6 +30,7 @@ class TaskHeartbeatController extends Controller
             'task_id' => ['required', 'integer', 'exists:lesson_tasks,id'],
             'type' => ['required', 'in:video,reading'],
             'seconds' => ['required', 'integer', 'min:1', 'max:'.self::MAX_HEARTBEAT_SECONDS],
+            'current_time' => ['nullable', 'integer', 'min:0'], // Video playback position in seconds
         ]);
 
         abort_if($lesson->course_id !== $course->id, 404);
@@ -75,6 +76,12 @@ class TaskHeartbeatController extends Controller
 
         // Increment accumulated time
         $progress->increment($column, $seconds);
+
+        // Store video position if provided (for resume playback)
+        if ($validated['type'] === 'video' && isset($validated['current_time'])) {
+            $progress->video_position_seconds = (int) $validated['current_time'];
+            $progress->save();
+        }
 
         return response()->json([
             'success' => true,

@@ -69,6 +69,10 @@ class TaskController extends Controller
                 'sort_order' => $nextOrder,
                 'published_at' => null,
                 'published_by' => null,
+                'estimated_minutes' => $validated['estimated_minutes'] ?? null,
+                'prerequisite_task_id' => $validated['prerequisite_task_id'] ?? null,
+                'status' => $validated['status'] ?? 'draft',
+                'version' => 1,
             ]);
 
             if ($validated['type'] === 'quiz') {
@@ -148,7 +152,7 @@ class TaskController extends Controller
         }
 
         DB::transaction(function () use ($task, $validated, $documentName, $conversionStatus, $pdfUrl, $videoProcessingStatus, $videoMp4Url, $videoUrl): void {
-            $task->update([
+            $updateData = [
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'type' => $validated['type'],
@@ -158,7 +162,28 @@ class TaskController extends Controller
                 'document_name' => $documentName,
                 'conversion_status' => $conversionStatus,
                 'pdf_url' => $pdfUrl,
-            ]);
+            ];
+
+            if (isset($validated['estimated_minutes'])) {
+                $updateData['estimated_minutes'] = $validated['estimated_minutes'];
+            }
+
+            if (isset($validated['prerequisite_task_id'])) {
+                // Validate no circular dependency
+                if ($this->wouldCreateCircularDependency($task, $validated['prerequisite_task_id'])) {
+                    throw new \Exception('Circular dependency detected.');
+                }
+                $updateData['prerequisite_task_id'] = $validated['prerequisite_task_id'];
+            }
+
+            if (isset($validated['status'])) {
+                $updateData['status'] = $validated['status'];
+            }
+
+            // Increment version on update
+            $updateData['version'] = $task->version + 1;
+
+            $task->update($updateData);
 
             $task->quizQuestions()->delete();
 
@@ -226,5 +251,50 @@ class TaskController extends Controller
         $task->delete();
 
         return back();
+    }
+
+    /**
+     * Publish a task (set status to published).
+     */
+    public function publishTask(LessonTask $task): RedirectResponse
+    {
+        $task->update([
+            'status' => 'published',
+            'published_by' => request()->user()->id,
+            'published_at' => now(),
+        ]);
+
+        app(AuditService::class)->log(request()->user(), 'published', $task);
+
+        return back()->with('success', 'Task published.');
+    }
+
+    /**
+     * Check if setting a prerequisite would create a circular dependency.
+     */
+    private function wouldCreateCircularDependency(LessonTask $task, ?int $prerequisiteId): bool
+    {
+        if ($prerequisiteId === null || $prerequisiteId === $task->id) {
+            return false;
+        }
+
+        $visited = [];
+        $current = $prerequisiteId;
+
+        while ($current !== null) {
+            if ($current === $task->id) {
+                return true;
+            }
+
+            if (in_array($current, $visited)) {
+                break;
+            }
+
+            $visited[] = $current;
+            $prerequisite = LessonTask::find($current);
+            $current = $prerequisite?->prerequisite_task_id;
+        }
+
+        return false;
     }
 }

@@ -33,6 +33,7 @@ class AssessmentQuestionController extends Controller
             'grading_type' => ['required', 'in:auto,manual'],
             'min_words' => ['nullable', 'integer', 'min:1'],
             'max_words' => ['nullable', 'integer', 'min:1'],
+            'question_bank_id' => ['nullable', 'integer', 'exists:question_banks,id'],
         ]);
 
         $nextSortOrder = (int) $assessment->questions()->max('sort_order') + 1;
@@ -49,7 +50,15 @@ class AssessmentQuestionController extends Controller
         $assessment->questions()->create([
             ...$validated,
             'sort_order' => $nextSortOrder,
+            'times_shown' => 0,
+            'times_correct' => 0,
         ]);
+
+        // If created from question bank, increment usage
+        if (!empty($validated['question_bank_id'])) {
+            $questionBank = \App\Models\QuestionBank::find($validated['question_bank_id']);
+            $questionBank?->incrementUsage();
+        }
 
         return back()->with('success', 'Question added.');
     }
@@ -72,6 +81,7 @@ class AssessmentQuestionController extends Controller
             'grading_type' => ['required', 'in:auto,manual'],
             'min_words' => ['nullable', 'integer', 'min:1'],
             'max_words' => ['nullable', 'integer', 'min:1'],
+            'question_bank_id' => ['nullable', 'integer', 'exists:question_banks,id'],
         ]);
 
         $question->update($validated);

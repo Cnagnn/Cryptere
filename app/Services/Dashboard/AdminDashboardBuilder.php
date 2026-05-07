@@ -90,7 +90,7 @@ class AdminDashboardBuilder
     {
         return Cache::remember('admin_course_performance', 300, function (): array {
             return Course::query()
-                ->where('is_published', true)
+                ->where('status', 'published')
                 ->withCount([
                     'enrollments',
                     'enrollments as completed_enrollments_count' => function ($query): void {

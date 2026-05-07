@@ -25,6 +25,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'available_from',
     'available_until',
     'sort_order',
+    'status',
+    'version',
+    'published_by',
 ])]
 class Assessment extends Model
 {
@@ -83,6 +86,8 @@ class Assessment extends Model
             'available_from' => 'datetime',
             'available_until' => 'datetime',
             'sort_order' => 'integer',
+            'status' => 'string',
+            'version' => 'integer',
         ];
     }
 
@@ -98,6 +103,14 @@ class Assessment extends Model
         return $this->belongsTo(Topic::class);
     }
 
+    /**
+     * Get the user who published this assessment.
+     */
+    public function publishedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'published_by');
+    }
+
     public function questions(): HasMany
     {
         return $this->hasMany(AssessmentQuestion::class)->orderBy('sort_order')->orderBy('id');
@@ -110,16 +123,19 @@ class Assessment extends Model
 
     // ── Scopes ──
 
+    /**
+     * Scope to published assessments (using status field).
+     */
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('is_published', true);
+        return $query->where('status', 'published');
     }
 
     public function scopeAvailable(Builder $query): Builder
     {
         $now = now();
 
-        return $query->where('is_published', true)
+        return $query->where('status', 'published')
             ->where(function (Builder $q) use ($now) {
                 $q->whereNull('available_from')
                     ->orWhere('available_from', '<=', $now);
@@ -165,7 +181,7 @@ class Assessment extends Model
      */
     public function isAvailable(): bool
     {
-        if (! $this->is_published) {
+        if ($this->status !== 'published') {
             return false;
         }
 
@@ -213,5 +229,29 @@ class Assessment extends Model
     public function requiresManualGrading(): bool
     {
         return in_array($this->grading_type, [self::GRADING_MANUAL, self::GRADING_MIXED]);
+    }
+
+    /**
+     * Check if assessment is published.
+     */
+    public function isPublished(): bool
+    {
+        return $this->status === 'published';
+    }
+
+    /**
+     * Check if assessment is draft.
+     */
+    public function isDraft(): bool
+    {
+        return $this->status === 'draft';
+    }
+
+    /**
+     * Check if assessment is archived.
+     */
+    public function isArchived(): bool
+    {
+        return $this->status === 'archived';
     }
 }

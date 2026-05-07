@@ -74,7 +74,7 @@ class CourseController extends Controller
                 'title' => $course->title,
                 'summary' => $course->summary,
                 'cover' => $course->cover,
-                'is_published' => $course->is_published,
+                'status' => $course->status,
                 'enrollments_count' => $course->enrollments_count,
                 'created_at' => $course->created_at?->toIso8601String(),
                 'updated_at' => $course->updated_at?->toIso8601String(),
@@ -287,7 +287,7 @@ class CourseController extends Controller
                     'passing_score' => $a->passing_score,
                     'max_attempts' => $a->max_attempts,
                     'time_limit_minutes' => $a->time_limit_minutes,
-                    'is_published' => $a->is_published,
+                    'status' => $a->status,
                     'available_from' => $a->available_from,
                     'available_until' => $a->available_until,
                     'sort_order' => $a->sort_order,
@@ -383,6 +383,9 @@ class CourseController extends Controller
             'estimated_minutes' => (int) ($validated['estimated_minutes'] ?? 30),
             'sort_order' => $nextSortOrder,
             'is_published' => (bool) ($validated['is_published'] ?? false),
+            'status' => $validated['status'] ?? 'draft',
+            'version' => 1,
+            'published_by' => null,
         ]);
 
         app(AuditService::class)->log($request->user(), 'created', $course);
@@ -409,13 +412,23 @@ class CourseController extends Controller
             $coverPath = $coverFile->store('course-covers', 'public');
         }
 
-        $course->update([
+        $updateData = [
             'title' => $validated['title'],
             'summary' => $validated['description'],
             'cover_path' => $coverPath,
             'estimated_minutes' => (int) ($validated['estimated_minutes'] ?? $course->estimated_minutes),
             'is_published' => (bool) ($validated['is_published'] ?? true),
-        ]);
+        ];
+
+        // Handle status if provided
+        if (isset($validated['status'])) {
+            $updateData['status'] = $validated['status'];
+        }
+
+        // Increment version on update
+        $updateData['version'] = $course->version + 1;
+
+        $course->update($updateData);
 
         app(AuditService::class)->log($request->user(), 'updated', $course);
 
@@ -465,16 +478,49 @@ class CourseController extends Controller
 
     public function togglePublish(TogglePublishAdminCourseRequest $request, Course $course): RedirectResponse
     {
-        $isPublished = $request->has('is_published')
-            ? (bool) $request->boolean('is_published')
-            : ! $course->is_published;
+        $newStatus = $request->has('status')
+            ? $request->input('status')
+            : ($course->status === 'published' ? 'draft' : 'published');
 
         $course->update([
-            'is_published' => $isPublished,
+            'status' => $newStatus,
         ]);
 
         CacheService::invalidateCourseCatalog();
 
         return back();
+    }
+
+    /**
+     * Publish a course (set status to published).
+     */
+    public function publishCourse(Course $course): RedirectResponse
+    {
+        $course->update([
+            'status' => 'published',
+            'published_by' => request()->user()->id,
+            'is_published' => true,
+        ]);
+
+        app(AuditService::class)->log(request()->user(), 'published', $course);
+        CacheService::invalidateCourseCatalog();
+
+        return back()->with('success', 'Course published.');
+    }
+
+    /**
+     * Archive a course (set status to archived).
+     */
+    public function archiveCourse(Course $course): RedirectResponse
+    {
+        $course->update([
+            'status' => 'archived',
+            'is_published' => false,
+        ]);
+
+        app(AuditService::class)->log(request()->user(), 'archived', $course);
+        CacheService::invalidateCourseCatalog();
+
+        return back()->with('success', 'Course archived.');
     }
 }

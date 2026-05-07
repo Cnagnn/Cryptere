@@ -40,11 +40,17 @@ class EnrollmentController extends Controller
         if (! $course->isUnlockedFor($request->user())) {
             $prerequisite = $course->prerequisite;
 
+            $message = __('You must complete ":course" before enrolling in this course.', [
+                'course' => $prerequisite?->title ?? 'the prerequisite course',
+            ]);
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $message], 403);
+            }
+
             Inertia::flash('toast', [
                 'type' => 'error',
-                'message' => __('You must complete ":course" before enrolling in this course.', [
-                    'course' => $prerequisite?->title ?? 'the prerequisite course',
-                ]),
+                'message' => $message,
             ]);
 
             return back();
@@ -69,11 +75,23 @@ class EnrollmentController extends Controller
             );
         }
 
+        $message = $enrollment->wasRecentlyCreated
+            ? __('You are enrolled in this course.')
+            : __('You are already enrolled in this course.');
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'enrollment' => [
+                    'progressPercentage' => $enrollment->progress_percentage,
+                    'completedAt' => optional($enrollment->completed_at)->toIso8601String(),
+                ],
+            ]);
+        }
+
         Inertia::flash('toast', [
             'type' => $enrollment->wasRecentlyCreated ? 'success' : 'info',
-            'message' => $enrollment->wasRecentlyCreated
-                ? __('You are enrolled in this course.')
-                : __('You are already enrolled in this course.'),
+            'message' => $message,
         ]);
 
         return back();

@@ -255,6 +255,10 @@ export type AdminAssessment = {
     max_attempts: number;
     time_limit_minutes: number | null;
     is_published: boolean;
+    status?: 'draft' | 'published' | 'archived';
+    version?: number;
+    published_by?: number | null;
+    published_by_name?: string | null;
     available_from: string | null;
     available_until: string | null;
     sort_order: number;
@@ -266,6 +270,7 @@ export type AdminAssessment = {
 export type AdminAssessmentQuestion = {
     id: number;
     assessment_id: number;
+    question_bank_id?: number | null;
     bloom_level: BloomLevel;
     question_type: QuestionType;
     question_text: string;
@@ -278,4 +283,32 @@ export type AdminAssessmentQuestion = {
     min_words: number | null;
     max_words: number | null;
     sort_order: number;
+    // Analytics
+    times_shown?: number;
+    times_correct?: number;
+    difficulty_score?: number | null;
+    discrimination?: number | null;
+};
+
+// ── Question Bank ──
+
+export type QuestionBank = {
+    id: number;
+    title: string;
+    category: string | null;
+    bloom_level: BloomLevel;
+    question_type: QuestionType;
+    question_text: string;
+    options: string[] | null;
+    correct_answer: string | null;
+    explanation: string | null;
+    rubric: RubricDefinition | null;
+    points: number;
+    is_active: boolean;
+    // Analytics
+    times_used: number;
+    difficulty_score: number | null;
+    discrimination: number | null;
+    created_at: string;
+    updated_at: string;
 };

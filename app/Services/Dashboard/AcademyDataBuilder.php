@@ -189,7 +189,7 @@ class AcademyDataBuilder
     private function buildPopularCourses(User $user): Collection
     {
         $popularCourses = Course::query()
-            ->where('is_published', true)
+            ->where('status', 'published')
             ->withCount([
                 'lessons',
                 'enrollments',

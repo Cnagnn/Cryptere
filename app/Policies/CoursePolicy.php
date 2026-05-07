@@ -20,7 +20,7 @@ class CoursePolicy
      */
     public function view(User $user, Course $course): bool
     {
-        return $course->is_published || $user->isAdmin();
+        return $course->status === 'published' || $user->isAdmin();
     }
 
     /**
@@ -52,6 +52,6 @@ class CoursePolicy
      */
     public function enroll(User $user, Course $course): bool
     {
-        return $course->is_published;
+        return $course->status === 'published';
     }
 }
