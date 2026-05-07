@@ -22,8 +22,8 @@ import {
     InputGroupInput,
 } from '@/components/ui/input-group';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
+import { cn } from '@/lib/utils';
 import { disable } from '@/routes/two-factor';
 
 function PasswordInput({
@@ -270,13 +270,14 @@ function TwoFactorCard({ enabled, requiresConfirmation }: TwoFactorCardProps) {
 
                             <Separator />
 
-                            <TwoFactorRecoveryCodes
+                            {/* TODO: Implement TwoFactorRecoveryCodes component */}
+                            {/* <TwoFactorRecoveryCodes
                                 recoveryCodesList={twoFactor.recoveryCodesList}
                                 fetchRecoveryCodes={
                                     twoFactor.fetchRecoveryCodes
                                 }
                                 errors={twoFactor.errors}
-                            />
+                            /> */}
 
                             <Separator />
 
@@ -310,7 +311,8 @@ function TwoFactorCard({ enabled, requiresConfirmation }: TwoFactorCardProps) {
                 </CardContent>
             </Card>
 
-            <TwoFactorSetupModal
+            {/* TODO: Implement TwoFactorSetupModal component */}
+            {/* <TwoFactorSetupModal
                 isOpen={showSetupModal}
                 onClose={handleCloseModal}
                 requiresConfirmation={requiresConfirmation}
@@ -320,7 +322,7 @@ function TwoFactorCard({ enabled, requiresConfirmation }: TwoFactorCardProps) {
                 clearSetupData={twoFactor.clearSetupData}
                 fetchSetupData={twoFactor.fetchSetupData}
                 errors={twoFactor.errors}
-            />
+            /> */}
         </>
     );
 }

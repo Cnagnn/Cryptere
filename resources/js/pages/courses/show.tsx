@@ -147,6 +147,7 @@ type LessonTask = {
     type: NormalizedTaskType;
     title: string;
     description: string;
+    maxAttempts?: number | null;
     videoUrl: string | null;
     videoProcessingStatus: string | null;
     videoPositionSeconds: number;

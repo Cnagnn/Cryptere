@@ -856,7 +856,7 @@ export default function AdminCoursesTask({
                 },
             },
         ],
-        [],
+        [openEditTaskDialog],
     );
 
     const handlePageChange = (nextPage: number): void => {
