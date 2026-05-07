@@ -11,13 +11,13 @@ class VerifyEmailNotification extends VerifyEmail
     protected function buildMailMessage($url): MailMessage
     {
         return (new MailMessage)
-            ->subject('🔐 Verify Your Email — Crypter')
-            ->greeting('Welcome to Crypter! 🎉')
+            ->subject('🔐 Verify Your Email — Cryptere')
+            ->greeting('Welcome to Cryptere! 🎉')
             ->line('You\'re one step away from unlocking your coding journey.')
             ->line('Please verify your email address to get started with challenges, courses, and earning achievements.')
             ->action('Verify My Email', $url)
             ->line('This verification link will expire in '.Config::get('auth.verification.expire', 60).' minutes.')
-            ->line('If you didn\'t create an account on Crypter, you can safely ignore this email.')
-            ->salutation('Happy coding! — The Crypter Team');
+            ->line('If you didn\'t create an account on Cryptere, you can safely ignore this email.')
+            ->salutation('Happy coding! — The Cryptere Team');
     }
 }

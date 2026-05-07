@@ -10,12 +10,12 @@ export default function AppLogo({ className, imageClassName }: AppLogoProps) {
         <div className={cn('flex items-center', className)}>
             <img
                 src="/images/Logo/Logomark-Black.svg"
-                alt="Crypter"
+                alt="Cryptere"
                 className={cn('h-8 w-auto dark:hidden', imageClassName)}
             />
             <img
                 src="/images/Logo/Logomark.svg"
-                alt="Crypter"
+                alt="Cryptere"
                 className={cn('hidden h-8 w-auto dark:block', imageClassName)}
             />
         </div>

@@ -37,7 +37,7 @@ export default function SettingsAppearance() {
                 <CardHeader>
                     <CardTitle>Tampilan</CardTitle>
                     <CardDescription>
-                        Pilih tampilan Crypter sesuai keinginan Anda. Pilih tema
+                        Pilih tampilan Cryptere sesuai keinginan Anda. Pilih tema
                         yang sesuai dengan preferensi Anda.
                     </CardDescription>
                 </CardHeader>

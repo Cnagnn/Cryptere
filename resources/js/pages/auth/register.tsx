@@ -197,7 +197,7 @@ export default function Register({ status, socialUser }: Props) {
                         <div>
                             <img
                                 src="/images/Logo/Logomark.svg"
-                                alt="Crypter"
+                                alt="Cryptere"
                                 className="h-11 w-auto"
                             />
                         </div>

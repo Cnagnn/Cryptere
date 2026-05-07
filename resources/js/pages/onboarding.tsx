@@ -74,7 +74,7 @@ function WelcomeStep({ userName }: { userName: string }) {
             </div>
             <div className="flex flex-col gap-2">
                 <h2 className="text-2xl font-bold tracking-tight">
-                    Selamat datang di Crypter, {userName}! 🎉
+                    Selamat datang di Cryptere, {userName}! 🎉
                 </h2>
                 <p className="text-muted-foreground">
                     Anda akan memulai perjalanan yang menarik ke dunia
@@ -265,7 +265,7 @@ export default function Onboarding({ userName }: Props) {
 
     return (
         <>
-            <Head title="Selamat Datang di Crypter" />
+            <Head title="Selamat Datang di Cryptere" />
 
             <div className="flex min-h-screen items-center justify-center bg-background p-4">
                 <Card className="w-full max-w-lg">

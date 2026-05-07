@@ -32,7 +32,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Crypter e-learning platform API. This documents all JSON-returning endpoints used by the frontend SPA.',
+        'description' => 'Cryptere e-learning platform API. This documents all JSON-returning endpoints used by the frontend SPA.',
     ],
 
     /*
@@ -42,7 +42,7 @@ return [
         /*
          * Define the title of the documentation's website. App name is used when this config is `null`.
          */
-        'title' => 'Crypter API',
+        'title' => 'Cryptere API',
 
         /*
          * Define the theme of the documentation. Available options are `light`, `dark`, and `system`.

@@ -129,7 +129,7 @@ function ProfileOverviewCard({
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: `${profileUser.name}'s Profile — Crypter`,
+                    title: `${profileUser.name}'s Profile — Cryptere`,
                     url,
                 });
 

@@ -158,7 +158,7 @@ class RecentActivityAggregator
 
         $activities->push([
             'id' => 'account-created',
-            'title' => 'Joined Crypter',
+            'title' => 'Joined Cryptere',
             'tag' => 'Account',
             'timestamp' => $user->created_at?->diffForHumans(),
             'isoDate' => $user->created_at?->toIso8601String(),

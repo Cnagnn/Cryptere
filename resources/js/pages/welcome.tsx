@@ -119,7 +119,7 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                                     terstruktur dan laboratorium interaktif.
                                 </h1>
                                 <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                                    Crypter menggabungkan pembelajaran
+                                    Cryptere menggabungkan pembelajaran
                                     terstruktur, praktik langsung, dan simulasi
                                     konsep keamanan dunia nyata dalam satu alur
                                     yang fokus pada hasil.

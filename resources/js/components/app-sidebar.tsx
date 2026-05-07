@@ -196,12 +196,12 @@ export function AppSidebar() {
                                     />
                                     <img
                                         src="/images/Logo/Logo-Black.svg"
-                                        alt="Crypter"
+                                        alt="Cryptere"
                                         className="hidden h-7 w-auto group-data-[collapsible=icon]:block dark:group-data-[collapsible=icon]:hidden"
                                     />
                                     <img
                                         src="/images/Logo/Logo.svg"
-                                        alt="Crypter"
+                                        alt="Cryptere"
                                         className="hidden h-7 w-auto dark:group-data-[collapsible=icon]:block"
                                     />
                                 </div>

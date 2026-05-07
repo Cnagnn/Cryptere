@@ -53,7 +53,7 @@ export default function CertificateShow({ certificate }: Props) {
         if (navigator.share) {
             await navigator.share({
                 title: `Certificate: ${certificate.course.title}`,
-                text: `${certificate.user.name} completed ${certificate.course.title} on Crypter!`,
+                text: `${certificate.user.name} completed ${certificate.course.title} on Cryptere!`,
                 url: certificate.verification_url,
             });
         } else {

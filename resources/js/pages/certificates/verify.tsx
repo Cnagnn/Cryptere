@@ -39,7 +39,7 @@ export default function CertificateVerify({ valid, certificate }: Props) {
                         </div>
                         <CardTitle>Verifikasi Sertifikat</CardTitle>
                         <CardDescription>
-                            Platform Pembelajaran Crypter
+                            Platform Pembelajaran Cryptere
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
