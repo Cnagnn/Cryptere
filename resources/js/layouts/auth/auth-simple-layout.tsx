@@ -21,7 +21,7 @@ export default function AuthSimpleLayout({
                             aria-label="Go to homepage"
                         >
                             <div className="mb-1 flex size-9 items-center justify-center rounded-md">
-                                <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" />
+                                <AppLogoIcon className="size-9 fill-current text-foreground dark:text-white" />
                             </div>
                             <span className="sr-only">{title}</span>
                         </Link>

@@ -8,6 +8,9 @@ import {
     Lock,
     LockKeyhole,
     Mail,
+    Monitor,
+    Moon,
+    Sun,
     XCircle,
 } from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';

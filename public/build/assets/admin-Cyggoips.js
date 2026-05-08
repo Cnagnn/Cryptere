@@ -1,0 +1,1 @@
+import e from"./profile-icbDpqbb.js";export{e as default};
