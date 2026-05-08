@@ -308,7 +308,7 @@ function CatalogStatistics({
 function CourseSkeletonGrid() {
     return (
         <div
-            className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3"
+            className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3"
             aria-live="polite"
         >
             {Array.from({ length: 6 }).map((_, index) => (
@@ -472,7 +472,7 @@ function CourseCardGrid({
     };
 
     return (
-        <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
             {courses.map((course) => (
                 <Card
                     key={course.id}
@@ -590,7 +590,7 @@ function EmptyLabCatalogGrid({
     isLabsCatalog: boolean;
 }) {
     return (
-        <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
             {courses.map((course) => (
                 <Card
                     key={course.id}

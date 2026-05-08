@@ -1400,7 +1400,7 @@ function QuizTask({
 
         return (
             <div className="space-y-4">
-                <div className="grid gap-4 rounded-2xl border bg-muted/30 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="grid gap-3 rounded-2xl border bg-muted/30 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div className="flex items-start gap-3">
                         {passed ? (
                             <CheckCircle2 className="mt-1 size-6 text-emerald-600" />
