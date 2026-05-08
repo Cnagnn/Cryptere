@@ -44,6 +44,7 @@ createInertiaApp({
                 'auth/login',
                 'auth/register',
                 'auth/forgot-password',
+                'auth/reset-password',
             ].includes(name):
                 return null;
             case name.startsWith('auth/'):
