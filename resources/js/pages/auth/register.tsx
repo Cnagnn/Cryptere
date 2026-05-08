@@ -105,6 +105,7 @@ function capitalizeProvider(provider: string): string {
 }
 
 export default function Register({ status, socialUser }: Props) {
+    const { resolvedAppearance, appearance, updateAppearance } = useAppearance();
     const isSocialRegistration = Boolean(socialUser);
     const [username, setUsername] = useState(() =>
         socialUser?.name ? slugifyUsername(socialUser.name) : '',
