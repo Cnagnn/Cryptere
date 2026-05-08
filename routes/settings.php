@@ -38,10 +38,6 @@ Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->
         Route::get('/', 'edit')->name('edit');
     });
 
-    Route::controller(SecurityController::class)->prefix('password')->name('password.')->group(function () {
-        Route::put('/', 'update')->middleware('throttle:6,1')->name('update');
-    });
-
     /*
     |----------------------------------------------------------------------
     | Social Accounts

@@ -265,30 +265,44 @@ function ProfilePrivate({
     };
 }) {
     return (
-        <PageShell
-            name={user.name}
-            avatar={user.avatar}
-            title={user.name}
-            subtitle={user.username ? `@${user.username}` : undefined}
-            gradient="muted"
-        >
+        <Card className="overflow-hidden">
+            <CardHeader className="gap-4 text-center">
+                <Avatar className="mx-auto size-20 rounded-full ring-4 ring-card">
+                    <AvatarImage
+                        src={user.avatar ?? undefined}
+                        alt={user.name}
+                    />
+                    <AvatarFallback className="bg-muted text-xl font-semibold text-foreground">
+                        {user.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col gap-1">
+                    <CardTitle>{user.name}</CardTitle>
+                    {user.username && (
+                        <p className="text-sm text-muted-foreground">
+                            @{user.username}
+                        </p>
+                    )}
+                </div>
+            </CardHeader>
             <Separator />
-
-            <div className="flex flex-col items-center gap-4 py-10 text-center">
-                <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
-                    <Lock className="size-7 text-muted-foreground" />
+            <CardContent>
+                <div className="flex flex-col items-center gap-4 py-10 text-center">
+                    <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
+                        <Lock className="size-7 text-muted-foreground" />
+                    </div>
+                    <div className="flex max-w-xs flex-col gap-1.5">
+                        <p className="text-base font-semibold">
+                            This profile is private
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            This user has chosen to keep their profile private.
+                            Only they can see their full profile details.
+                        </p>
+                    </div>
                 </div>
-                <div className="flex max-w-xs flex-col gap-1.5">
-                    <p className="text-base font-semibold">
-                        This profile is private
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                        This user has chosen to keep their profile private. Only
-                        they can see their full profile details.
-                    </p>
-                </div>
-            </div>
-        </PageShell>
+            </CardContent>
+        </Card>
     );
 }
 

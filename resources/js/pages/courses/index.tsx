@@ -134,20 +134,6 @@ const hardcodedCatalogCourses: CourseCard[] = [
         labGroup: 'asymmetric',
     },
     {
-        id: 9005,
-        slug: 'sha-lab',
-        title: 'SHA',
-        summary:
-            'Simulasikan hashing satu arah untuk memeriksa efek avalanche dan integritas data.',
-        coverImage: null,
-        estimatedMinutes: 20,
-        lessonCount: 1,
-        enrollmentCount: 0,
-        isEnrolled: false,
-        progressPercentage: null,
-        labGroup: 'hashing',
-    },
-    {
         id: 9006,
         slug: 'digital-signature-lab',
         title: 'Digital Signature',
@@ -228,7 +214,6 @@ function CatalogFilters({
                             <SelectItem value="asymmetric">
                                 Asimetris
                             </SelectItem>
-                            <SelectItem value="hashing">Hashing</SelectItem>
                             <SelectItem value="signature">
                                 Tanda tangan digital
                             </SelectItem>

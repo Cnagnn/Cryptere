@@ -68,7 +68,7 @@ export default function ResetPassword({ token, email }: Props) {
             <Head title="Atur Ulang Kata Sandi" />
 
             <Form
-                {...update.form()}
+                {...update()}
                 transform={(data) => ({ ...data, token, email })}
                 resetOnSuccess={['password', 'password_confirmation']}
             >

@@ -32,7 +32,6 @@ const ALL_LABS = [
     'vigenere-cipher-lab',
     'aes-lab',
     'rsa-lab',
-    'sha-lab',
     'digital-signature-lab',
 ] as const;
 
@@ -277,45 +276,6 @@ describe('RSA Lab', () => {
     });
 });
 
-// ─── SHA Lab ─────────────────────────────────────────────────────────────────
-describe('SHA Lab', () => {
-    it('produces consistent hash for same input', () => {
-        const r1 = runSimulation('sha-lab', 'encrypt', 'test', '');
-        const r2 = runSimulation('sha-lab', 'encrypt', 'test', '');
-        expect(r1.output).toBe(r2.output);
-    });
-
-    it('produces different hash for different input (avalanche effect)', () => {
-        const r1 = runSimulation('sha-lab', 'encrypt', 'test1', '');
-        const r2 = runSimulation('sha-lab', 'encrypt', 'test2', '');
-        expect(r1.output).not.toBe(r2.output);
-    });
-
-    it('produces 64-character hex output (SHA-256 length)', () => {
-        const result = runSimulation('sha-lab', 'encrypt', 'hello', '');
-        expect(result.output.length).toBe(64);
-    });
-
-    it('generates walkthrough steps', () => {
-        const result = runSimulation('sha-lab', 'encrypt', 'test', '');
-        expect(result.steps.length).toBeGreaterThan(0);
-    });
-
-    it('single character change produces significantly different hash', () => {
-        const r1 = runSimulation('sha-lab', 'encrypt', 'hello', '');
-        const r2 = runSimulation('sha-lab', 'encrypt', 'hellp', '');
-        let diffCount = 0;
-
-        for (let i = 0; i < r1.output.length; i++) {
-            if (r1.output[i] !== r2.output[i]) {
-                diffCount++;
-            }
-        }
-
-        expect(diffCount).toBeGreaterThan(r1.output.length * 0.3);
-    });
-});
-
 // ─── Digital Signature Lab ───────────────────────────────────────────────────
 describe('Digital Signature Lab', () => {
     it('produces signature output in sign mode', () => {
@@ -491,7 +451,7 @@ describe('Utility Functions', () => {
     describe('conceptLensByLab', () => {
         it('returns concept points for each lab', () => {
             for (const lab of ALL_LABS) {
-                const lens = conceptLensByLab(lab);
+                const lens = conceptLensByLab(lab, 'encrypt');
                 expect(lens.points.length).toBeGreaterThan(0);
                 expect(lens.title).toBeTruthy();
             }
@@ -500,24 +460,36 @@ describe('Utility Functions', () => {
 
     describe('visualizationLensByLab', () => {
         it('returns visualization data for caesar cipher', () => {
-            const lens = visualizationLensByLab(
+            const result = runSimulation(
                 'caesar-cipher-lab',
+                'encrypt',
                 'HELLO',
                 '3',
+            );
+            const lens = visualizationLensByLab(
+                'caesar-cipher-lab',
                 'encrypt',
-                'ascii',
+                'HELLO',
+                '3',
+                result,
             );
             expect(lens).toBeTruthy();
             expect(lens.headers).toBeTruthy();
         });
 
         it('returns visualization data for vigenere cipher', () => {
-            const lens = visualizationLensByLab(
+            const result = runSimulation(
                 'vigenere-cipher-lab',
+                'encrypt',
                 'HELLO',
                 'KEY',
+            );
+            const lens = visualizationLensByLab(
+                'vigenere-cipher-lab',
                 'encrypt',
-                'ascii',
+                'HELLO',
+                'KEY',
+                result,
             );
             expect(lens).toBeTruthy();
             expect(lens.headers).toBeTruthy();
@@ -585,15 +557,6 @@ describe('Utility Functions', () => {
             expect(error).toBeTruthy();
         });
 
-        it('returns null for valid SHA input', () => {
-            const error = validationErrorByLab(
-                'sha-lab',
-                'encrypt',
-                'hello',
-                '',
-            );
-            expect(error).toBeNull();
-        });
     });
 
     describe('keyLabelByLab', () => {
@@ -679,7 +642,6 @@ describe('Cross-Lab Integration', () => {
             'vigenere-cipher-lab': 'KEY',
             'aes-lab': 'secretkey',
             'rsa-lab': '',
-            'sha-lab': '',
             'digital-signature-lab': 'signingkey',
         };
 
@@ -701,7 +663,6 @@ describe('Cross-Lab Integration', () => {
             'vigenere-cipher-lab': 'KEY',
             'aes-lab': 'secretkey',
             'rsa-lab': '',
-            'sha-lab': '',
             'digital-signature-lab': 'signingkey',
         };
 

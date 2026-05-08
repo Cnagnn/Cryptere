@@ -205,7 +205,7 @@ export default function LabsShow({ lab }: LabShowProps) {
         return formatOutputValue(rawResult.output, outputFormat);
     }, [lab.slug, outputFormat, rawResult.output]);
 
-    const showKeyInput = !['rsa-lab', 'sha-lab'].includes(lab.slug);
+    const showKeyInput = lab.slug !== 'rsa-lab';
     const recommendedInputFormat = recommendedInputFormatByLab(lab.slug, mode);
     const recommendedOutputFormat = recommendedOutputFormatByLab(
         lab.slug,
@@ -292,9 +292,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                             Alur Enkripsi
                                         </TabsTrigger>
                                         <TabsTrigger value="decrypt">
-                                            {lab.slug === 'sha-lab'
-                                                ? 'Alur Verifikasi'
-                                                : 'Alur Dekripsi'}
+                                            Alur Dekripsi
                                         </TabsTrigger>
                                     </TabsList>
                                     <TabsContent
@@ -710,7 +708,6 @@ export default function LabsShow({ lab }: LabShowProps) {
                                     },
                                     { slug: 'aes-lab', title: 'AES' },
                                     { slug: 'rsa-lab', title: 'RSA' },
-                                    { slug: 'sha-lab', title: 'SHA' },
                                     {
                                         slug: 'digital-signature-lab',
                                         title: 'Digital Signature',

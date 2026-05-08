@@ -1,72 +1,19 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Eye, EyeOff, Loader2, Save, ShieldCheck, ShieldOff } from 'lucide-react';
-import type { ComponentProps, FormEventHandler, ReactNode, Ref } from 'react';
+import { Loader2, ShieldCheck, ShieldOff } from 'lucide-react';
 import { useState } from 'react';
 
-import { update } from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupButton,
-    InputGroupInput,
-} from '@/components/ui/input-group';
 import { Separator } from '@/components/ui/separator';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
-import { cn } from '@/lib/utils';
 import { disable } from '@/routes/two-factor';
-
-function PasswordInput({
-    className,
-    ref,
-    icon,
-    ...props
-}: Omit<ComponentProps<'input'>, 'type'> & {
-    ref?: Ref<HTMLInputElement>;
-    icon?: ReactNode;
-}) {
-    const [showPassword, setShowPassword] = useState(false);
-
-    return (
-        <InputGroup>
-            {icon ? (
-                <InputGroupAddon align="inline-start">{icon}</InputGroupAddon>
-            ) : null}
-
-            <InputGroupInput
-                type={showPassword ? 'text' : 'password'}
-                className={cn(className)}
-                ref={ref}
-                {...props}
-            />
-
-            <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={
-                        showPassword ? 'Hide password' : 'Show password'
-                    }
-                    tabIndex={-1}
-                >
-                    {showPassword ? <EyeOff /> : <Eye />}
-                </InputGroupButton>
-            </InputGroupAddon>
-        </InputGroup>
-    );
-}
 
 type Props = {
     canManageTwoFactor?: boolean;
@@ -84,7 +31,6 @@ export default function SettingsSecurity({
             <Head title="Pengaturan Keamanan" />
 
             <div className="flex flex-col gap-6">
-                <PasswordCard />
                 {canManageTwoFactor && (
                     <TwoFactorCard
                         enabled={twoFactorEnabled}
@@ -93,110 +39,6 @@ export default function SettingsSecurity({
                 )}
             </div>
         </>
-    );
-}
-
-/* ── Password Card ── */
-function PasswordCard() {
-    const {
-        data,
-        setData,
-        put,
-        errors,
-        processing,
-        recentlySuccessful,
-        reset,
-    } = useForm({
-        current_password: '',
-        password: '',
-        password_confirmation: '',
-    });
-
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-        put(update.url(), {
-            onSuccess: () => reset(),
-            preserveScroll: true,
-        });
-    };
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Update Password</CardTitle>
-                <CardDescription>
-                    Use a strong, unique password to protect your account.
-                </CardDescription>
-            </CardHeader>
-
-            <form onSubmit={submit}>
-                <CardContent className="flex flex-col gap-4">
-                    <Field>
-                        <FieldLabel htmlFor="current_password">
-                            Current Password
-                        </FieldLabel>
-                        <PasswordInput
-                            id="current_password"
-                            value={data.current_password}
-                            onChange={(e) =>
-                                setData('current_password', e.target.value)
-                            }
-                            autoComplete="current-password"
-                            placeholder="Enter current password"
-                        />
-                        <FieldError>{errors.current_password}</FieldError>
-                    </Field>
-
-                    <Field>
-                        <FieldLabel htmlFor="password">New Password</FieldLabel>
-                        <PasswordInput
-                            id="password"
-                            value={data.password}
-                            onChange={(e) =>
-                                setData('password', e.target.value)
-                            }
-                            autoComplete="new-password"
-                            placeholder="Enter new password"
-                        />
-                        <FieldError>{errors.password}</FieldError>
-                    </Field>
-
-                    <Field>
-                        <FieldLabel htmlFor="password_confirmation">
-                            Confirm Password
-                        </FieldLabel>
-                        <PasswordInput
-                            id="password_confirmation"
-                            value={data.password_confirmation}
-                            onChange={(e) =>
-                                setData('password_confirmation', e.target.value)
-                            }
-                            autoComplete="new-password"
-                            placeholder="Confirm new password"
-                        />
-                        <FieldError>{errors.password_confirmation}</FieldError>
-                    </Field>
-                </CardContent>
-
-                <CardFooter className="flex items-center justify-between border-t pt-6">
-                    <div>
-                        {recentlySuccessful && (
-                            <p className="text-sm text-green-600 dark:text-green-400">
-                                Password updated.
-                            </p>
-                        )}
-                    </div>
-                    <Button type="submit" disabled={processing}>
-                        {processing ? (
-                            <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                            <Save className="size-4" />
-                        )}
-                        Update Password
-                    </Button>
-                </CardFooter>
-            </form>
-        </Card>
     );
 }
 

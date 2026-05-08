@@ -52,7 +52,7 @@ const modules: ModuleItem[] = [
     {
         title: 'Laboratorium interaktif',
         description:
-            'Praktikkan konsep Caesar, Vigenere, hashing, dan tanda tangan.',
+            'Praktikkan konsep Caesar, Vigenere, dan tanda tangan digital.',
         icon: FlaskConical,
     },
 ];

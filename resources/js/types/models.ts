@@ -241,7 +241,6 @@ export type LabSlug =
     | 'vigenere-cipher-lab'
     | 'aes-lab'
     | 'rsa-lab'
-    | 'sha-lab'
     | 'digital-signature-lab';
 
 /** Based on `app/Models/LabVisit.php` */

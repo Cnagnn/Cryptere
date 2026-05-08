@@ -15,7 +15,6 @@ export type CourseCard = {
         | 'classical'
         | 'symmetric'
         | 'asymmetric'
-        | 'hashing'
         | 'signature';
     timeStart?: string | null;
     timeEnd?: string | null;
@@ -36,7 +35,6 @@ export type LabsGroupFilterValue =
     | 'classical'
     | 'symmetric'
     | 'asymmetric'
-    | 'hashing'
     | 'signature';
 
 export type CatalogFiltersProps = {

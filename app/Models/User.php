@@ -201,22 +201,6 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get the daily reward claims for the user.
-     */
-    public function dailyRewards(): HasMany
-    {
-        return $this->hasMany(DailyReward::class);
-    }
-
-    /**
-     * Get the notes for the user.
-     */
-    public function notes(): HasMany
-    {
-        return $this->hasMany(Note::class);
-    }
-
-    /**
      * Get the certificates for the user.
      */
     public function certificates(): HasMany

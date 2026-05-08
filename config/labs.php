@@ -37,12 +37,6 @@ return [
         'group' => 'asymmetric',
     ],
 
-    'sha-lab' => [
-        'title' => 'SHA',
-        'summary' => 'Simulate one-way hashing to inspect avalanche effects and data integrity.',
-        'group' => 'hashing',
-    ],
-
     'digital-signature-lab' => [
         'title' => 'Digital Signature',
         'summary' => 'Demonstrate digital signature flow for authentication, integrity, and non-repudiation.',

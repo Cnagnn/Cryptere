@@ -20,7 +20,6 @@ class LearnerDashboardBuilder
         private readonly MasteryService $masteryService,
         private readonly LearnerStatsAggregator $statsAggregator,
         private readonly AcademyDataBuilder $academyBuilder,
-        private readonly LearningPathBuilder $learningPathBuilder,
         private readonly AnalyticsBuilder $analyticsBuilder,
     ) {}
 
@@ -52,7 +51,6 @@ class LearnerDashboardBuilder
             'recentCourses' => $this->buildRecentCourses($user),
             'recommendedCourses' => $this->buildRecommendedCourses($user),
             'academy' => $this->academyBuilder->build($user, $stats, $successRates),
-            'learningPath' => $this->learningPathBuilder->build($user),
             'analytics' => $this->buildAnalytics($user, $stats),
         ];
     }

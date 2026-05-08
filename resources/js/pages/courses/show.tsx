@@ -1,4 +1,4 @@
-﻿import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
     BookOpen,
@@ -20,7 +20,6 @@ import {
     XCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-// @ts-expect-error plyr has no default export in types but works at runtime
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

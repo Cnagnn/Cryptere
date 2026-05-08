@@ -39,7 +39,6 @@ type Props = {
 const INTERESTS = [
     { id: 'symmetric', label: 'Enkripsi Simetris', icon: Key },
     { id: 'asymmetric', label: 'Enkripsi Asimetris', icon: Lock },
-    { id: 'hashing', label: 'Fungsi Hash', icon: Shield },
     { id: 'protocols', label: 'Protokol Keamanan', icon: Zap },
     { id: 'applied', label: 'Kriptografi Terapan', icon: Target },
 ] as const;

@@ -35,7 +35,6 @@ class CacheService
     {
         Cache::forget('stats:published_courses_count');
         Cache::forget('courses:catalog');
-        Cache::forget('learning_path:courses');
     }
 
     /**

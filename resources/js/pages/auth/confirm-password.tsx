@@ -61,7 +61,7 @@ export default function ConfirmPassword() {
         <>
             <Head title="Konfirmasi Kata Sandi" />
 
-            <Form {...store.form()} resetOnSuccess={['password']}>
+            <Form {...store()} resetOnSuccess={['password']}>
                 {({ processing, errors }) => (
                     <div className="flex flex-col gap-6">
                         <Field data-invalid={Boolean(errors.password)}>

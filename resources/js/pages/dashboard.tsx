@@ -64,7 +64,6 @@ import type {
     DecayWarning,
     LeaderboardEntry,
     LearnerStats,
-    LearningPathData,
     RecentActivityItem,
     RecentCourse,
     StreakCalendarEntry,
@@ -724,7 +723,6 @@ function LearnerDashboard({
     stats: LearnerStats;
     level?: UserLevel;
     academy: AcademyData;
-    learningPath?: LearningPathData;
     analytics?: AnalyticsData;
     decayWarning?: DecayWarning | null;
     recentCourses?: RecentCourse[];
@@ -1642,7 +1640,6 @@ export default function Dashboard({
     stats,
     level,
     academy,
-    learningPath,
     analytics,
     admin,
     decayWarning,
@@ -1663,7 +1660,6 @@ export default function Dashboard({
                         stats={stats}
                         level={level}
                         academy={academy}
-                        learningPath={learningPath}
                         analytics={analytics}
                         decayWarning={decayWarning}
                         recentCourses={recentCourses}
@@ -1720,7 +1716,6 @@ export default function Dashboard({
                     stats={stats}
                     level={level}
                     academy={academy}
-                    learningPath={learningPath}
                     analytics={analytics}
                     decayWarning={decayWarning}
                     recentCourses={recentCourses}

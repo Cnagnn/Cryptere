@@ -282,10 +282,6 @@ export function recommendedOutputFormatByLab(
         return 'decimal';
     }
 
-    if (slug === 'sha-lab') {
-        return 'hex';
-    }
-
     if (slug === 'lattice-cipher-lab') {
         return 'decimal';
     }
@@ -296,7 +292,6 @@ export function recommendedOutputFormatByLab(
 export function canFormatOutput(labSlug: string): boolean {
     return ![
         'rsa-lab',
-        'sha-lab',
         'digital-signature-lab',
         'lattice-cipher-lab',
     ].includes(labSlug);
@@ -349,18 +344,6 @@ export function conceptLensByLab(
                     'Public key encrypts, private key decrypts.',
                     'Security relies on hard factorization of large integers.',
                     'This lab uses small numbers to make modular arithmetic readable.',
-                ],
-            };
-        case 'sha-lab':
-            return {
-                title:
-                    mode === 'encrypt'
-                        ? 'One-Way Hashing'
-                        : 'Integrity Verification',
-                points: [
-                    'Hashing maps variable-length input to fixed-length digest.',
-                    'Digest comparison is used for integrity, not decryption.',
-                    'Small input changes should produce large digest differences.',
                 ],
             };
         case 'lattice-cipher-lab':
@@ -489,29 +472,6 @@ export function visualizationLensByLab(
                         : modPow(value, 2753, 61 * 53),
                 ),
             })),
-        };
-    }
-
-    if (slug === 'sha-lab') {
-        return {
-            title: 'Digest Evolution',
-            description:
-                'Preview digest chunks to illustrate deterministic one-way output.',
-            headers: ['Source', 'Operation', 'Result'],
-            rows: [
-                {
-                    source: normalizedInput.slice(0, 20) || '(empty)',
-                    operation: 'Pseudo SHA compression',
-                    result: rawResult.output.slice(0, 16),
-                },
-                {
-                    source: `${normalizedInput.slice(0, 19)}*`,
-                    operation: 'Single character change',
-                    result: pseudoSha256(
-                        `${normalizedInput.slice(0, 19)}*`,
-                    ).slice(0, 16),
-                },
-            ],
         };
     }
 
@@ -880,34 +840,6 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
     };
 }
 
-function runShaLab(mode: SimulationMode, text: string): SimulationResult {
-    const digest = pseudoSha256(text);
-
-    if (mode === 'encrypt') {
-        return {
-            outputLabel: 'Digest',
-            output: digest,
-            steps: [
-                'Absorb message bytes into compression state.',
-                'Mix internal state repeatedly to maximize diffusion.',
-                'Emit fixed-length digest for integrity comparison.',
-                'Change one character to observe avalanche effect in the digest.',
-            ],
-        };
-    }
-
-    return {
-        outputLabel: 'Verification note',
-        output: 'Hash functions are one-way. Use digest comparison instead of decryption.',
-        steps: [
-            'SHA is not reversible by design.',
-            `Compute digest for received message: ${digest}`,
-            'Compare with trusted digest to verify integrity.',
-            'If digests differ, the message was modified.',
-        ],
-    };
-}
-
 function runSignatureLab(
     mode: SimulationMode,
     text: string,
@@ -1167,8 +1099,6 @@ export function runSimulation(
             return runAesConcept(mode, text, key);
         case 'rsa-lab':
             return runRsaConcept(mode, text);
-        case 'sha-lab':
-            return runShaLab(mode, text);
         case 'digital-signature-lab':
             return runSignatureLab(mode, text, key);
         case 'lattice-cipher-lab':
@@ -1222,8 +1152,6 @@ export function defaultTextByLab(slug: string): string {
     switch (slug) {
         case 'rsa-lab':
             return 'HELLO';
-        case 'sha-lab':
-            return 'Integrity is everything.';
         case 'lattice-cipher-lab':
             return '42';
         default:
@@ -1232,10 +1160,6 @@ export function defaultTextByLab(slug: string): string {
 }
 
 export function modeDescription(labSlug: string, mode: SimulationMode): string {
-    if (labSlug === 'sha-lab' && mode === 'decrypt') {
-        return 'SHA is one-way; this tab explains verification flow instead of decryption.';
-    }
-
     if (labSlug === 'digital-signature-lab') {
         return mode === 'encrypt'
             ? 'Create signature tokens from message digests.'
@@ -1254,10 +1178,6 @@ export function modeDescription(labSlug: string, mode: SimulationMode): string {
 }
 
 export function inputLabelByLab(labSlug: string, mode: SimulationMode): string {
-    if (labSlug === 'sha-lab') {
-        return mode === 'encrypt' ? 'Message input' : 'Message to verify';
-    }
-
     if (labSlug === 'digital-signature-lab') {
         return mode === 'encrypt' ? 'Message to sign' : 'Message to verify';
     }
@@ -1283,12 +1203,6 @@ export function inputPlaceholderByLab(
         return 'Enter cipher blocks, for example 3000 28 2726';
     }
 
-    if (labSlug === 'sha-lab') {
-        return mode === 'encrypt'
-            ? 'Enter message to hash...'
-            : 'Enter message to verify against digest...';
-    }
-
     if (labSlug === 'lattice-cipher-lab') {
         return mode === 'encrypt'
             ? 'Enter a number (0-96) or a character...'
@@ -1310,12 +1224,6 @@ export function inputHelperByLab(
 
     if (labSlug === 'rsa-lab' && mode === 'decrypt') {
         return 'Use integer cipher blocks separated by spaces.';
-    }
-
-    if (labSlug === 'sha-lab') {
-        return mode === 'encrypt'
-            ? 'SHA produces a one-way digest for integrity checks.'
-            : 'Verification recomputes digest from message and compares with trusted digest.';
     }
 
     if (labSlug === 'lattice-cipher-lab') {

@@ -73,11 +73,6 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Daily reward claim — max 2 per minute (prevent double-click spam)
-        RateLimiter::for('daily-reward', function (Request $request) {
-            return Limit::perMinute(2)->by($request->user()?->id ?: $request->ip());
-        });
-
         // Lesson completion — strict limit to prevent rapid-fire completion
         RateLimiter::for('lesson-complete', function (Request $request) {
             return Limit::perMinute(5)->by($request->user()?->id ?: $request->ip());
@@ -114,8 +109,6 @@ class AppServiceProvider extends ServiceProvider
         Scramble::routes(function (Route $route) {
             $jsonRoutes = [
                 'health',
-                'daily-rewards.index',
-                'daily-rewards.claim',
                 'challenges.quick-submit',
                 'challenges.quiz-submit',
                 'challenges.session-summary',

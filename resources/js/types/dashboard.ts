@@ -95,27 +95,6 @@ export type AcademyData = {
     recentActivity: RecentActivityItem[];
 };
 
-export type PathNode = {
-    id: number;
-    slug: string;
-    title: string;
-    summary: string | null;
-    category: string | null;
-    difficulty: string;
-    pathPosition: number;
-    prerequisiteId: number | null;
-    prerequisiteTitle: string | null;
-    lessonCount: number;
-    estimatedMinutes: number | null;
-    cover: string | null;
-    isEnrolled: boolean;
-    progressPercentage: number;
-    isCompleted: boolean;
-    isLocked: boolean;
-};
-
-export type LearningPathData = { nodes: PathNode[]; categories: string[] };
-
 export type StreakCalendarEntry = {
     date: string;
     active: boolean;
@@ -196,7 +175,6 @@ export type DashboardProps = {
     stats?: LearnerStats;
     level?: UserLevel;
     academy?: AcademyData;
-    learningPath?: LearningPathData;
     analytics?: AnalyticsData;
     admin?: AdminData;
     decayWarning?: DecayWarning | null;

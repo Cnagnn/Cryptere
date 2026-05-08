@@ -20,7 +20,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                 </Alert>
             )}
 
-            <Form {...send.form()} className="flex flex-col gap-6 text-center">
+            <Form {...send()} className="flex flex-col gap-6 text-center">
                 {({ processing }) => (
                     <>
                         <Button disabled={processing} variant="secondary">

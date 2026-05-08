@@ -26,13 +26,11 @@ test('getPublishedCourseCount caches result', function () {
 test('invalidateCourseCatalog clears course caches', function () {
     Cache::put('stats:published_courses_count', 5);
     Cache::put('courses:catalog', ['data']);
-    Cache::put('learning_path:courses', ['data']);
 
     CacheService::invalidateCourseCatalog();
 
     expect(Cache::has('stats:published_courses_count'))->toBeFalse()
-        ->and(Cache::has('courses:catalog'))->toBeFalse()
-        ->and(Cache::has('learning_path:courses'))->toBeFalse();
+        ->and(Cache::has('courses:catalog'))->toBeFalse();
 });
 
 test('invalidateAdminDashboard clears admin caches', function () {

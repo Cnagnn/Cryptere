@@ -90,8 +90,8 @@ export function useLeaderboardChannel(
 
         channel.listen(
             '.leaderboard.updated',
-            (event: LeaderboardUpdatePayload) => {
-                handleEvent(event);
+            (event: unknown) => {
+                handleEvent(event as LeaderboardUpdatePayload);
             },
         );
 

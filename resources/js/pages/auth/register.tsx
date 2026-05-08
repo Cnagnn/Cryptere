@@ -212,7 +212,7 @@ export default function Register({ status, socialUser }: Props) {
                         )}
 
                         <Form
-                            {...store.form()}
+                            {...store()}
                             resetOnSuccess={[
                                 'password',
                                 'password_confirmation',

@@ -17,14 +17,10 @@ use App\Http\Controllers\Course\EnrollmentController;
 use App\Http\Controllers\Course\LessonProgressController;
 use App\Http\Controllers\Course\QuizSubmissionController;
 use App\Http\Controllers\Course\TaskHeartbeatController;
-use App\Http\Controllers\DailyRewardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\LeaderboardController;
-use App\Http\Controllers\LearningPathController;
-use App\Http\Controllers\NoteController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
@@ -124,21 +120,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('labs/{lab}', [LabController::class, 'show'])->name('labs.show');
 
     Route::get('search', SearchController::class)->middleware('throttle:30,1')->name('search');
-
-    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
-    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
-
-    Route::get('daily-rewards', [DailyRewardController::class, 'index'])->name('daily-rewards.index');
-    Route::post('daily-rewards/claim', [DailyRewardController::class, 'claim'])->middleware('throttle:daily-reward')->name('daily-rewards.claim');
-
-    Route::get('learning-path', LearningPathController::class)->name('learning-path');
-
-    Route::get('notes', [NoteController::class, 'index'])->name('notes.index');
-    Route::post('notes', [NoteController::class, 'store'])->name('notes.store');
-    Route::patch('notes/{note}', [NoteController::class, 'update'])->name('notes.update');
-    Route::delete('notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
-    Route::get('notes/export', [NoteController::class, 'export'])->name('notes.export');
 
     Route::get('onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
