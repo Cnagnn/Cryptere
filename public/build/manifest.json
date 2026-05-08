@@ -852,7 +852,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-Deikg68d.css",
+    "file": "assets/app-DrTjyO9k.css",
     "name": "app",
     "names": [
       "app.css"
@@ -861,7 +861,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-B4YZBGut.js",
+    "file": "assets/app-j0icrUES.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -1177,7 +1177,7 @@
     ]
   },
   "resources/js/pages/auth/reset-password.tsx": {
-    "file": "assets/reset-password-Bm58oFWL.js",
+    "file": "assets/reset-password-BEkg9LQQ.js",
     "name": "reset-password",
     "src": "resources/js/pages/auth/reset-password.tsx",
     "isDynamicEntry": true,
@@ -1186,7 +1186,6 @@
       "_eye-off-BeWIvplj.js",
       "_eye-DQreXrcZ.js",
       "_loader-circle-B_d29sLs.js",
-      "_lock-BKY5qqLD.js",
       "_button-CoMKwYgQ.js",
       "_card-GXT89UCU.js",
       "_field-C30W0z1l.js",

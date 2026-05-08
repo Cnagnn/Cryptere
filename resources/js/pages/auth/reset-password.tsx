@@ -1,5 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { Eye, EyeOff, LoaderCircle, Lock } from 'lucide-react';
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -123,21 +123,18 @@ export default function ResetPassword({ token, email }: Props) {
                                         <FieldLabel htmlFor="password">
                                             Kata Sandi Baru
                                         </FieldLabel>
-                                        <div className="relative">
-                                            <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 transform text-muted-foreground" />
-                                            <PasswordInput
-                                                id="password"
-                                                name="password"
-                                                autoComplete="new-password"
-                                                aria-invalid={
-                                                    Boolean(errors.password) ||
-                                                    undefined
-                                                }
-                                                className="w-full pl-9"
-                                                autoFocus
-                                                placeholder="Masukkan kata sandi baru"
-                                            />
-                                        </div>
+                                        <PasswordInput
+                                            id="password"
+                                            name="password"
+                                            autoComplete="new-password"
+                                            aria-invalid={
+                                                Boolean(errors.password) ||
+                                                undefined
+                                            }
+                                            className="w-full"
+                                            autoFocus
+                                            placeholder="Masukkan kata sandi baru"
+                                        />
                                         {errors.password && (
                                             <p className="text-sm text-destructive">
                                                 {errors.password}
@@ -153,21 +150,18 @@ export default function ResetPassword({ token, email }: Props) {
                                         <FieldLabel htmlFor="password_confirmation">
                                             Konfirmasi Kata Sandi
                                         </FieldLabel>
-                                        <div className="relative">
-                                            <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 transform text-muted-foreground" />
-                                            <PasswordInput
-                                                id="password_confirmation"
-                                                name="password_confirmation"
-                                                autoComplete="new-password"
-                                                aria-invalid={
-                                                    Boolean(
-                                                        errors.password_confirmation,
-                                                    ) || undefined
-                                                }
-                                                className="w-full pl-9"
-                                                placeholder="Konfirmasi kata sandi baru"
-                                            />
-                                        </div>
+                                        <PasswordInput
+                                            id="password_confirmation"
+                                            name="password_confirmation"
+                                            autoComplete="new-password"
+                                            aria-invalid={
+                                                Boolean(
+                                                    errors.password_confirmation,
+                                                ) || undefined
+                                            }
+                                            className="w-full"
+                                            placeholder="Konfirmasi kata sandi baru"
+                                        />
                                         {errors.password_confirmation && (
                                             <p className="text-sm text-destructive">
                                                 {errors.password_confirmation}
