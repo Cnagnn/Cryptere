@@ -122,7 +122,7 @@ export default function Login({
                         )}
 
                         <Form
-                            {...store()}
+                            {...store.form()}
                             resetOnSuccess={['password']}
                             className="grid gap-4"
                         >

@@ -22,6 +22,8 @@
 <x-slot:footer>
 <x-mail::footer>
 © {{ date('Y') }} {{ config('app.name') }}. {{ __('All rights reserved.') }}
+
+Learn to code through challenges and interactive courses.
 </x-mail::footer>
 </x-slot:footer>
 </x-mail::layout>

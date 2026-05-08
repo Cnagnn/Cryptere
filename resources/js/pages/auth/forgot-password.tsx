@@ -1,6 +1,6 @@
 // Components
 import { Form, Head, Link } from '@inertiajs/react';
-import { LoaderCircle, Mail, CheckCircle2 } from 'lucide-react';
+import { LoaderCircle, Mail } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,7 +47,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             </Alert>
                         )}
 
-                        <Form {...email()} className="flex flex-col gap-6">
+                        <Form {...email.form()} className="flex flex-col gap-6">
                             {({ processing, errors, wasSuccessful }) => {
                                 const isSuccess = Boolean(
                                     status || wasSuccessful,
@@ -87,26 +87,18 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                             )}
                                         </Field>
 
-                                        <Button
-                                            className="w-full"
-                                            disabled={processing || isSuccess}
-                                            data-test="email-password-reset-link-button"
-                                            variant={
-                                                isSuccess
-                                                    ? 'outline'
-                                                    : 'default'
-                                            }
-                                        >
-                                            {processing && (
-                                                <LoaderCircle className="mr-2 -ml-1 size-4 animate-spin" />
-                                            )}
-                                            {isSuccess && !processing && (
-                                                <CheckCircle2 className="mr-2 -ml-1 size-4 text-foreground" />
-                                            )}
-                                            {isSuccess
-                                                ? 'Terkirim ke Email Anda (jika cocok)'
-                                                : 'Kirim Instruksi Reset'}
-                                        </Button>
+                                        {!isSuccess && (
+                                            <Button
+                                                className="w-full"
+                                                disabled={processing}
+                                                data-test="email-password-reset-link-button"
+                                            >
+                                                {processing && (
+                                                    <LoaderCircle className="mr-2 -ml-1 size-4 animate-spin" />
+                                                )}
+                                                Kirim Instruksi Reset
+                                            </Button>
+                                        )}
                                     </>
                                 );
                             }}
