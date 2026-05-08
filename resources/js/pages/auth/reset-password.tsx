@@ -1,5 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { Eye, EyeOff, LoaderCircle, Lock, Mail } from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,6 @@ import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -26,14 +25,20 @@ import { update } from '@/routes/password';
 function PasswordInput({
     className,
     ref,
+    icon,
     ...props
 }: Omit<ComponentProps<'input'>, 'type'> & {
     ref?: Ref<HTMLInputElement>;
+    icon?: ReactNode;
 }) {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
         <InputGroup>
+            {icon ? (
+                <InputGroupAddon align="inline-start">{icon}</InputGroupAddon>
+            ) : null}
+
             <InputGroupInput
                 type={showPassword ? 'text' : 'password'}
                 className={cn(className)}
@@ -100,18 +105,21 @@ export default function ResetPassword({ token, email }: Props) {
                                         <FieldLabel htmlFor="email">
                                             Email
                                         </FieldLabel>
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            name="email"
-                                            autoComplete="email"
-                                            value={email}
-                                            aria-invalid={
-                                                Boolean(errors.email) || undefined
-                                            }
-                                            className="w-full"
-                                            readOnly
-                                        />
+                                        <div className="relative">
+                                            <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                name="email"
+                                                autoComplete="email"
+                                                value={email}
+                                                aria-invalid={
+                                                    Boolean(errors.email) || undefined
+                                                }
+                                                className="w-full pl-9"
+                                                readOnly
+                                            />
+                                        </div>
                                         {errors.email && (
                                             <p className="text-sm text-destructive">
                                                 {errors.email}
@@ -134,6 +142,9 @@ export default function ResetPassword({ token, email }: Props) {
                                             className="w-full"
                                             autoFocus
                                             placeholder="Masukkan kata sandi baru"
+                                            icon={
+                                                <Lock className="size-4 text-muted-foreground" />
+                                            }
                                         />
                                         {errors.password && (
                                             <p className="text-sm text-destructive">
@@ -161,6 +172,9 @@ export default function ResetPassword({ token, email }: Props) {
                                             }
                                             className="w-full"
                                             placeholder="Konfirmasi kata sandi baru"
+                                            icon={
+                                                <Lock className="size-4 text-muted-foreground" />
+                                            }
                                         />
                                         {errors.password_confirmation && (
                                             <p className="text-sm text-destructive">
@@ -180,22 +194,20 @@ export default function ResetPassword({ token, email }: Props) {
                                         )}
                                         Atur Ulang Kata Sandi
                                     </Button>
+
+                                    <div className="text-center text-sm">
+                                        Sudah ingat kata sandi?{' '}
+                                        <Link
+                                            href={login()}
+                                            className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
+                                        >
+                                            Masuk
+                                        </Link>
+                                    </div>
                                 </>
                             )}
                         </Form>
                     </CardContent>
-
-                    <CardFooter className="justify-center">
-                        <p className="text-sm">
-                            Sudah ingat kata sandi?{' '}
-                            <Link
-                                href={login()}
-                                className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
-                            >
-                                Masuk
-                            </Link>
-                        </p>
-                    </CardFooter>
                 </Card>
             </div>
         </>

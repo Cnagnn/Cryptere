@@ -861,7 +861,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-8W_ptZo0.js",
+    "file": "assets/app-D-wRhUsb.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -1104,7 +1104,7 @@
     ]
   },
   "resources/js/pages/auth/forgot-password.tsx": {
-    "file": "assets/forgot-password-gJ3dVV8v.js",
+    "file": "assets/forgot-password-CS8Aa96f.js",
     "name": "forgot-password",
     "src": "resources/js/pages/auth/forgot-password.tsx",
     "isDynamicEntry": true,
@@ -1177,7 +1177,7 @@
     ]
   },
   "resources/js/pages/auth/reset-password.tsx": {
-    "file": "assets/reset-password-BEkg9LQQ.js",
+    "file": "assets/reset-password-B0inrDOB.js",
     "name": "reset-password",
     "src": "resources/js/pages/auth/reset-password.tsx",
     "isDynamicEntry": true,
@@ -1186,6 +1186,8 @@
       "_eye-off-BeWIvplj.js",
       "_eye-DQreXrcZ.js",
       "_loader-circle-B_d29sLs.js",
+      "_lock-BKY5qqLD.js",
+      "_mail-CIEIWXG0.js",
       "_button-CoMKwYgQ.js",
       "_card-GXT89UCU.js",
       "_field-C30W0z1l.js",

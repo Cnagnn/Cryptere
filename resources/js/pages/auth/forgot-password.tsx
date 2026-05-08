@@ -7,7 +7,6 @@ import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -99,23 +98,21 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                                 Kirim Instruksi Reset
                                             </Button>
                                         )}
+
+                                        <div className="text-center text-sm">
+                                            Sudah punya akun?{' '}
+                                            <Link
+                                                href={login()}
+                                                className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
+                                            >
+                                                Masuk
+                                            </Link>
+                                        </div>
                                     </>
                                 );
                             }}
                         </Form>
                     </CardContent>
-
-                    <CardFooter className="justify-center">
-                        <p className="text-sm">
-                            Sudah punya akun?{' '}
-                            <Link
-                                href={login()}
-                                className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
-                            >
-                                Masuk
-                            </Link>
-                        </p>
-                    </CardFooter>
                 </Card>
             </div>
         </>
