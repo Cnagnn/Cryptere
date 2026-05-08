@@ -1,5 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { AtSign, Eye, EyeOff, LoaderCircle, Lock } from 'lucide-react';
+import { AtSign, Eye, EyeOff, LoaderCircle, Lock, Monitor, Moon, Sun } from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';
 import React, { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,6 +15,8 @@ import {
     InputGroupInput,
 } from '@/components/ui/input-group';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppearance } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
@@ -79,6 +81,7 @@ export default function Login({
     const failedSignInMessage =
         'Masuk gagal. Periksa kredensial atau atur ulang kata sandi.';
     const [identifier, setIdentifier] = useState('');
+    const { appearance, updateAppearance } = useAppearance();
 
     return (
         <>
@@ -87,12 +90,39 @@ export default function Login({
             <div className="flex min-h-screen items-center justify-center bg-background px-4 py-4 lg:h-screen">
                 <Card className="mx-auto w-full max-w-sm">
                     <CardHeader>
-                        <div>
+                        <div className="flex items-center justify-between">
                             <img
                                 src="/images/Logo/Logomark.svg"
                                 alt="Cryptere"
                                 className="h-11 w-auto"
                             />
+                            <Tabs
+                                value={appearance}
+                                onValueChange={(value) =>
+                                    updateAppearance(value as 'light' | 'dark' | 'system')
+                                }
+                            >
+                                <TabsList>
+                                    <TabsTrigger
+                                        value="light"
+                                        aria-label="Light theme"
+                                    >
+                                        <Sun className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="dark"
+                                        aria-label="Dark theme"
+                                    >
+                                        <Moon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="system"
+                                        aria-label="System theme"
+                                    >
+                                        <Monitor className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
                         <CardTitle className="text-2xl">Masuk</CardTitle>
                     </CardHeader>

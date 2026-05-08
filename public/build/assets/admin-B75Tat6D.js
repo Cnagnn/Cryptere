@@ -1,1 +1,0 @@
-import e from"./profile-BG_VTmMU.js";export{e as default};
