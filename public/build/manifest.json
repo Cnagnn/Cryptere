@@ -847,7 +847,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-C0xMQmXA.js",
+    "file": "assets/app-CSbzC7W7.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -1139,7 +1139,7 @@
     ]
   },
   "resources/js/pages/auth/register.tsx": {
-    "file": "assets/register-x_0ZrAhl.js",
+    "file": "assets/register-DZ1mXRSD.js",
     "name": "register",
     "src": "resources/js/pages/auth/register.tsx",
     "isDynamicEntry": true,
@@ -1164,6 +1164,7 @@
       "_field-CvlkLFwY.js",
       "_input-group-CToYz3gA.js",
       "_input-4QzNQ7XZ.js",
+      "_use-appearance-gJEjGHup.js",
       "_routes-BJFQt_HV.js",
       "_social-ftFyfF9V.js",
       "_wayfinder-B-Zm2N3r.js"
