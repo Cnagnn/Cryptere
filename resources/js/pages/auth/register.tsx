@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/input-group';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppearance } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
@@ -194,12 +196,43 @@ export default function Register({ status, socialUser }: Props) {
             <div className="flex min-h-screen items-center justify-center bg-background px-4 py-4 lg:h-screen">
                 <Card className="mx-auto w-full max-w-sm">
                     <CardHeader>
-                        <div>
+                        <div className="flex items-center justify-between">
                             <img
-                                src="/images/Logo/Logomark.svg"
+                                src={
+                                    resolvedAppearance === 'light'
+                                        ? '/images/Logo/Logomark-Black.svg'
+                                        : '/images/Logo/Logomark.svg'
+                                }
                                 alt="Cryptere"
                                 className="h-11 w-auto"
                             />
+                            <Tabs
+                                value={appearance}
+                                onValueChange={(value) =>
+                                    updateAppearance(value as 'light' | 'dark' | 'system')
+                                }
+                            >
+                                <TabsList>
+                                    <TabsTrigger
+                                        value="light"
+                                        aria-label="Light theme"
+                                    >
+                                        <Sun className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="dark"
+                                        aria-label="Dark theme"
+                                    >
+                                        <Moon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="system"
+                                        aria-label="System theme"
+                                    >
+                                        <Monitor className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
                         <CardTitle className="text-2xl">Daftar</CardTitle>
                     </CardHeader>

@@ -1,6 +1,6 @@
 // Components
 import { Form, Head, Link } from '@inertiajs/react';
-import { LoaderCircle, Mail } from 'lucide-react';
+import { LoaderCircle, Mail, Monitor, Moon, Sun } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,10 +12,14 @@ import {
 } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppearance } from '@/hooks/use-appearance';
 import { login } from '@/routes';
 import { email } from '@/routes/password';
 
 export default function ForgotPassword({ status }: { status?: string }) {
+    const { resolvedAppearance, appearance, updateAppearance } = useAppearance();
+
     return (
         <>
             <Head title="Lupa Kata Sandi" />
@@ -23,12 +27,43 @@ export default function ForgotPassword({ status }: { status?: string }) {
             <div className="flex min-h-screen items-center justify-center bg-background py-4 lg:h-screen">
                 <Card className="mx-auto w-full max-w-sm">
                     <CardHeader>
-                        <div>
+                        <div className="flex items-center justify-between">
                             <img
-                                src="/images/Logo/Logomark.svg"
+                                src={
+                                    resolvedAppearance === 'light'
+                                        ? '/images/Logo/Logomark-Black.svg'
+                                        : '/images/Logo/Logomark.svg'
+                                }
                                 alt="Cryptere"
                                 className="h-11 w-auto"
                             />
+                            <Tabs
+                                value={appearance}
+                                onValueChange={(value) =>
+                                    updateAppearance(value as 'light' | 'dark' | 'system')
+                                }
+                            >
+                                <TabsList>
+                                    <TabsTrigger
+                                        value="light"
+                                        aria-label="Light theme"
+                                    >
+                                        <Sun className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="dark"
+                                        aria-label="Dark theme"
+                                    >
+                                        <Moon className="size-4" />
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="system"
+                                        aria-label="System theme"
+                                    >
+                                        <Monitor className="size-4" />
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
                         <CardTitle className="text-2xl">
                             Lupa Kata Sandi

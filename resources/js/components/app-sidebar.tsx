@@ -12,6 +12,7 @@ import {
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
+import { useAppearance } from '@/hooks/use-appearance';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     Collapsible,
@@ -170,6 +171,7 @@ export function UserMenuContent({ user }: { user: UserType }) {
 
 export function AppSidebar() {
     const page = usePage<{ auth: Auth }>();
+    const { resolvedAppearance } = useAppearance();
     const { auth } = page.props;
     const { isCurrentUrl } = useCurrentUrl();
     const isCourseManagementPage = isCurrentUrl(
@@ -195,14 +197,13 @@ export function AppSidebar() {
                                         imageClassName="h-10"
                                     />
                                     <img
-                                        src="/images/Logo/Logo-Black.svg"
+                                        src={
+                                            resolvedAppearance === 'light'
+                                                ? '/images/Logo/Logomark-Black.svg'
+                                                : '/images/Logo/Logomark.svg'
+                                        }
                                         alt="Cryptere"
-                                        className="hidden h-7 w-auto group-data-[collapsible=icon]:block dark:group-data-[collapsible=icon]:hidden"
-                                    />
-                                    <img
-                                        src="/images/Logo/Logo.svg"
-                                        alt="Cryptere"
-                                        className="hidden h-7 w-auto dark:group-data-[collapsible=icon]:block"
+                                        className="hidden h-7 w-auto group-data-[collapsible=icon]:block"
                                     />
                                 </div>
                             </Link>

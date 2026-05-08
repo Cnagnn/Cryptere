@@ -1,0 +1,1 @@
+import e from"./profile-BEk-_L_b.js";export{e as default};

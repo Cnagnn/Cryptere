@@ -92,7 +92,11 @@ export default function Login({
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <img
-                                src="/images/Logo/Logomark.svg"
+                                src={
+                                    appearance === 'light'
+                                        ? '/images/Logo/Logomark-Black.svg'
+                                        : '/images/Logo/Logomark.svg'
+                                }
                                 alt="Cryptere"
                                 className="h-11 w-auto"
                             />
