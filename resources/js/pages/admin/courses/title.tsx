@@ -79,7 +79,13 @@ import type { CourseRow } from '@/types/course-management';
 
 type ContentStatus = 'draft' | 'published' | 'archived';
 
-function StatusBadge({ status, className }: { status: ContentStatus; className?: string }) {
+function StatusBadge({
+    status,
+    className,
+}: {
+    status: ContentStatus;
+    className?: string;
+}) {
     const config = {
         draft: {
             icon: CircleDashed,
@@ -130,7 +136,9 @@ export default function AdminCoursesTitle({ courses }: Props) {
         description: '',
         coverImage: null as File | null,
     });
-    const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+    const [coverImagePreview, setCoverImagePreview] = useState<string | null>(
+        null,
+    );
     const titleHasError = Boolean(errors.title);
     const descriptionHasError = Boolean(errors.description);
     const coverImageHasError = Boolean(errors.cover_image);
@@ -457,7 +465,11 @@ export default function AdminCoursesTitle({ courses }: Props) {
                             open={isCreateDialogOpen}
                             onOpenChange={(open) => {
                                 if (!open && isDirty && !isSavingCourse) {
-                                    if (!confirm('Perubahan belum disimpan. Tutup dialog?')) {
+                                    if (
+                                        !confirm(
+                                            'Perubahan belum disimpan. Tutup dialog?',
+                                        )
+                                    ) {
                                         return;
                                     }
                                 }
@@ -648,13 +660,21 @@ export default function AdminCoursesTitle({ courses }: Props) {
 
                                                     // Generate preview
                                                     if (file) {
-                                                        const reader = new FileReader();
-                                                        reader.onloadend = () => {
-                                                            setCoverImagePreview(reader.result as string);
-                                                        };
-                                                        reader.readAsDataURL(file);
+                                                        const reader =
+                                                            new FileReader();
+                                                        reader.onloadend =
+                                                            () => {
+                                                                setCoverImagePreview(
+                                                                    reader.result as string,
+                                                                );
+                                                            };
+                                                        reader.readAsDataURL(
+                                                            file,
+                                                        );
                                                     } else {
-                                                        setCoverImagePreview(null);
+                                                        setCoverImagePreview(
+                                                            null,
+                                                        );
                                                     }
                                                 }}
                                             />

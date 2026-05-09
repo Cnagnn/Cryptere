@@ -63,7 +63,7 @@ class ContentVersion extends Model
     {
         $model = $this->versionable;
 
-        if (!$model) {
+        if (! $model) {
             return false;
         }
 
@@ -83,7 +83,7 @@ class ContentVersion extends Model
     {
         $model = $this->versionable;
 
-        if (!$model) {
+        if (! $model) {
             return [];
         }
 

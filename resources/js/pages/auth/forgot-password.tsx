@@ -18,7 +18,8 @@ import { login } from '@/routes';
 import { email } from '@/routes/password';
 
 export default function ForgotPassword({ status }: { status?: string }) {
-    const { resolvedAppearance, appearance, updateAppearance } = useAppearance();
+    const { resolvedAppearance, appearance, updateAppearance } =
+        useAppearance();
 
     return (
         <>
@@ -40,7 +41,9 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             <Tabs
                                 value={appearance}
                                 onValueChange={(value) =>
-                                    updateAppearance(value as 'light' | 'dark' | 'system')
+                                    updateAppearance(
+                                        value as 'light' | 'dark' | 'system',
+                                    )
                                 }
                             >
                                 <TabsList>

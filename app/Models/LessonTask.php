@@ -101,7 +101,7 @@ class LessonTask extends Model
      */
     public function canAccess(User $user): bool
     {
-        if (!$this->isPublished()) {
+        if (! $this->isPublished()) {
             return false;
         }
 

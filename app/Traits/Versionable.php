@@ -14,7 +14,7 @@ trait Versionable
     {
         static::updating(function ($model) {
             // Auto-create version on update if model has changed
-            if ($model->isDirty() && !$model->isVersioningDisabled()) {
+            if ($model->isDirty() && ! $model->isVersioningDisabled()) {
                 $changedFields = array_keys($model->getDirty());
                 $model->createVersion($changedFields, 'Auto-saved version');
             }
@@ -40,10 +40,6 @@ trait Versionable
 
     /**
      * Create a new version snapshot.
-     *
-     * @param array $changedFields
-     * @param string $summary
-     * @return ContentVersion
      */
     public function createVersion(array $changedFields, string $summary): ContentVersion
     {
@@ -61,9 +57,6 @@ trait Versionable
 
     /**
      * Restore a specific version.
-     *
-     * @param int $versionNumber
-     * @return bool
      */
     public function restoreVersion(int $versionNumber): bool
     {
@@ -71,7 +64,7 @@ trait Versionable
             ->where('version_number', $versionNumber)
             ->first();
 
-        if (!$version) {
+        if (! $version) {
             return false;
         }
 

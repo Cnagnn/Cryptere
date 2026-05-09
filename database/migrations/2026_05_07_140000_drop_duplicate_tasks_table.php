@@ -28,8 +28,8 @@ return new class extends Migration
         ");
 
         if (count($foreignKeys) > 0) {
-            $names = implode(', ', array_map(fn($fk) => $fk->CONSTRAINT_NAME, $foreignKeys));
-            throw new \Exception(
+            $names = implode(', ', array_map(fn ($fk) => $fk->CONSTRAINT_NAME, $foreignKeys));
+            throw new Exception(
                 "Cannot drop tasks table: foreign key constraints still exist. Found: {$names}"
             );
         }

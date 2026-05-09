@@ -1,5 +1,14 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { AtSign, Eye, EyeOff, LoaderCircle, Lock, Monitor, Moon, Sun } from 'lucide-react';
+import {
+    AtSign,
+    Eye,
+    EyeOff,
+    LoaderCircle,
+    Lock,
+    Monitor,
+    Moon,
+    Sun,
+} from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';
 import React, { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -103,7 +112,9 @@ export default function Login({
                             <Tabs
                                 value={appearance}
                                 onValueChange={(value) =>
-                                    updateAppearance(value as 'light' | 'dark' | 'system')
+                                    updateAppearance(
+                                        value as 'light' | 'dark' | 'system',
+                                    )
                                 }
                             >
                                 <TabsList>

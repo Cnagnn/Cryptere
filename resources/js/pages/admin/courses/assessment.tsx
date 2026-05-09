@@ -141,7 +141,13 @@ const BLOOM_BADGE_COLORS: Record<BloomLevel, string> = {
 
 type ContentStatus = 'draft' | 'published' | 'archived';
 
-function StatusBadge({ status, className }: { status: ContentStatus; className?: string }) {
+function StatusBadge({
+    status,
+    className,
+}: {
+    status: ContentStatus;
+    className?: string;
+}) {
     const config = {
         draft: {
             icon: CircleDashed,
@@ -365,7 +371,9 @@ export default function AdminCoursesAssessment({
 
     // Question editor state
     const [questionEditorOpen, setQuestionEditorOpen] = useState(false);
-    const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
+    const [editingQuestionIndex, setEditingQuestionIndex] = useState<
+        number | null
+    >(null);
     const [questionForm, setQuestionForm] = useState<QuizQuestion>({
         question: '',
         options: ['', '', '', ''],
@@ -462,14 +470,14 @@ export default function AdminCoursesAssessment({
             return;
         }
 
-        if (questionForm.options.some(opt => !opt.trim())) {
+        if (questionForm.options.some((opt) => !opt.trim())) {
             toast.error('Semua opsi harus diisi.');
 
             return;
         }
 
         if (editingQuestionIndex !== null) {
-            setQuizQuestions(prev => {
+            setQuizQuestions((prev) => {
                 const updated = [...prev];
                 updated[editingQuestionIndex] = questionForm;
 
@@ -477,7 +485,7 @@ export default function AdminCoursesAssessment({
             });
             toast.success('Pertanyaan berhasil diperbarui.');
         } else {
-            setQuizQuestions(prev => [...prev, questionForm]);
+            setQuizQuestions((prev) => [...prev, questionForm]);
             toast.success('Pertanyaan berhasil ditambahkan.');
         }
 
@@ -489,7 +497,7 @@ export default function AdminCoursesAssessment({
             return;
         }
 
-        setQuizQuestions(prev => prev.filter((_, i) => i !== index));
+        setQuizQuestions((prev) => prev.filter((_, i) => i !== index));
         toast.success('Pertanyaan berhasil dihapus.');
     };
 
@@ -1393,11 +1401,13 @@ export default function AdminCoursesAssessment({
                                         <Field>
                                             <FieldLabel htmlFor="assessment-quiz-import">
                                                 Impor Soal{' '}
-                                                {!isEditMode && quizQuestions.length === 0 && (
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
-                                                )}
+                                                {!isEditMode &&
+                                                    quizQuestions.length ===
+                                                        0 && (
+                                                        <span className="text-destructive">
+                                                            *
+                                                        </span>
+                                                    )}
                                             </FieldLabel>
 
                                             <div className="flex gap-2">
@@ -1409,52 +1419,55 @@ export default function AdminCoursesAssessment({
                                                     onChange={async (event) => {
                                                         const selectedFile =
                                                             event.target
-                                                            .files?.[0] ?? null;
+                                                                .files?.[0] ??
+                                                            null;
 
-                                                    if (!selectedFile) {
-                                                        setQuizImportFileName(
-                                                            '',
-                                                        );
-                                                        setQuizQuestions([]);
-
-                                                        return;
-                                                    }
-
-                                                    try {
-                                                        const text =
-                                                            await selectedFile.text();
-                                                        const parsedRows =
-                                                            parseQuizImportText(
-                                                                text,
+                                                        if (!selectedFile) {
+                                                            setQuizImportFileName(
+                                                                '',
                                                             );
-
-                                                        if (
-                                                            parsedRows.length ===
-                                                            0
-                                                        ) {
-                                                            toast.error(
-                                                                'Tidak ada soal ditemukan di file.',
+                                                            setQuizQuestions(
+                                                                [],
                                                             );
 
                                                             return;
                                                         }
 
-                                                        setQuizQuestions(
-                                                            parsedRows,
-                                                        );
-                                                        setQuizImportFileName(
-                                                            selectedFile.name,
-                                                        );
-                                                        toast.success(
-                                                            `Berhasil mengimpor ${parsedRows.length} soal.`,
-                                                        );
-                                                    } catch {
-                                                        toast.error(
-                                                            'Gagal membaca file. Silakan gunakan format template.',
-                                                        );
-                                                    }
-                                                }}
-                                            />
+                                                        try {
+                                                            const text =
+                                                                await selectedFile.text();
+                                                            const parsedRows =
+                                                                parseQuizImportText(
+                                                                    text,
+                                                                );
+
+                                                            if (
+                                                                parsedRows.length ===
+                                                                0
+                                                            ) {
+                                                                toast.error(
+                                                                    'Tidak ada soal ditemukan di file.',
+                                                                );
+
+                                                                return;
+                                                            }
+
+                                                            setQuizQuestions(
+                                                                parsedRows,
+                                                            );
+                                                            setQuizImportFileName(
+                                                                selectedFile.name,
+                                                            );
+                                                            toast.success(
+                                                                `Berhasil mengimpor ${parsedRows.length} soal.`,
+                                                            );
+                                                        } catch {
+                                                            toast.error(
+                                                                'Gagal membaca file. Silakan gunakan format template.',
+                                                            );
+                                                        }
+                                                    }}
+                                                />
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -1472,7 +1485,8 @@ export default function AdminCoursesAssessment({
                                             </div>
 
                                             <FieldDescription>
-                                                Unggah CSV atau klik tombol di bawah untuk tambah manual
+                                                Unggah CSV atau klik tombol di
+                                                bawah untuk tambah manual
                                             </FieldDescription>
 
                                             {quizImportFileName && (
@@ -1494,62 +1508,101 @@ export default function AdminCoursesAssessment({
                                             {/* Quiz Preview */}
                                             {quizQuestions.length > 0 && (
                                                 <>
-                                                    <div className="mt-3 space-y-2 max-h-96 overflow-y-auto rounded-lg border p-3">
-                                                        <div className="flex items-center justify-between mb-2">
+                                                    <div className="mt-3 max-h-96 space-y-2 overflow-y-auto rounded-lg border p-3">
+                                                        <div className="mb-2 flex items-center justify-between">
                                                             <span className="text-sm font-medium">
-                                                                Preview Pertanyaan ({quizQuestions.length})
+                                                                Preview
+                                                                Pertanyaan (
+                                                                {
+                                                                    quizQuestions.length
+                                                                }
+                                                                )
                                                             </span>
                                                         </div>
                                                         <div className="space-y-3">
-                                                            {quizQuestions.map((q, i) => (
-                                                                <div key={i} className="rounded-lg border bg-muted/30 p-3 text-sm">
-                                                                    <div className="flex items-start justify-between gap-2 mb-2">
-                                                                        <p className="font-medium flex-1">
-                                                                            {i + 1}. {q.question}
-                                                                        </p>
-                                                                        <div className="flex gap-1 shrink-0">
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="h-7 w-7 p-0"
-                                                                                onClick={() => openQuestionEditor(i)}
-                                                                            >
-                                                                                <Pencil className="h-3.5 w-3.5" />
-                                                                            </Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                                                                onClick={() => deleteQuestion(i)}
-                                                                            >
-                                                                                <Trash2 className="h-3.5 w-3.5" />
-                                                                            </Button>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="space-y-1 pl-4">
-                                                                        {q.options.map((opt, j) => (
-                                                                            <div
-                                                                                key={j}
-                                                                                className={
-                                                                                    j === q.correct_option
-                                                                                        ? 'text-emerald-600 font-medium'
-                                                                                        : 'text-muted-foreground'
+                                                            {quizQuestions.map(
+                                                                (q, i) => (
+                                                                    <div
+                                                                        key={i}
+                                                                        className="rounded-lg border bg-muted/30 p-3 text-sm"
+                                                                    >
+                                                                        <div className="mb-2 flex items-start justify-between gap-2">
+                                                                            <p className="flex-1 font-medium">
+                                                                                {i +
+                                                                                    1}
+
+                                                                                .{' '}
+                                                                                {
+                                                                                    q.question
                                                                                 }
-                                                                            >
-                                                                                {j === q.correct_option && '✓ '}
-                                                                                {opt}
+                                                                            </p>
+                                                                            <div className="flex shrink-0 gap-1">
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    size="sm"
+                                                                                    className="h-7 w-7 p-0"
+                                                                                    onClick={() =>
+                                                                                        openQuestionEditor(
+                                                                                            i,
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <Pencil className="h-3.5 w-3.5" />
+                                                                                </Button>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    size="sm"
+                                                                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                                                                    onClick={() =>
+                                                                                        deleteQuestion(
+                                                                                            i,
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                                </Button>
                                                                             </div>
-                                                                        ))}
+                                                                        </div>
+                                                                        <div className="space-y-1 pl-4">
+                                                                            {q.options.map(
+                                                                                (
+                                                                                    opt,
+                                                                                    j,
+                                                                                ) => (
+                                                                                    <div
+                                                                                        key={
+                                                                                            j
+                                                                                        }
+                                                                                        className={
+                                                                                            j ===
+                                                                                            q.correct_option
+                                                                                                ? 'font-medium text-emerald-600'
+                                                                                                : 'text-muted-foreground'
+                                                                                        }
+                                                                                    >
+                                                                                        {j ===
+                                                                                            q.correct_option &&
+                                                                                            '✓ '}
+                                                                                        {
+                                                                                            opt
+                                                                                        }
+                                                                                    </div>
+                                                                                ),
+                                                                            )}
+                                                                        </div>
+                                                                        {q.explanation && (
+                                                                            <p className="mt-2 pl-4 text-xs text-muted-foreground">
+                                                                                💡{' '}
+                                                                                {
+                                                                                    q.explanation
+                                                                                }
+                                                                            </p>
+                                                                        )}
                                                                     </div>
-                                                                    {q.explanation && (
-                                                                        <p className="text-xs text-muted-foreground mt-2 pl-4">
-                                                                            💡 {q.explanation}
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            ))}
+                                                                ),
+                                                            )}
                                                         </div>
                                                     </div>
 
@@ -1558,9 +1611,11 @@ export default function AdminCoursesAssessment({
                                                         variant="outline"
                                                         size="sm"
                                                         className="w-full"
-                                                        onClick={() => openQuestionEditor()}
+                                                        onClick={() =>
+                                                            openQuestionEditor()
+                                                        }
                                                     >
-                                                        <Plus className="h-4 w-4 mr-2" />
+                                                        <Plus className="mr-2 h-4 w-4" />
                                                         Tambah Pertanyaan
                                                     </Button>
                                                 </>
@@ -1594,93 +1649,165 @@ export default function AdminCoursesAssessment({
                             </DialogContent>
                         </Dialog>
 
-                    {/* Question Editor Dialog */}
-                    <Dialog open={questionEditorOpen} onOpenChange={setQuestionEditorOpen}>
-                        <DialogContent className="sm:max-w-lg">
-                            <DialogHeader>
-                                <DialogTitle>
-                                    {editingQuestionIndex !== null ? 'Edit Pertanyaan' : 'Tambah Pertanyaan'}
-                                </DialogTitle>
-                                <DialogDescription>
-                                    Isi pertanyaan, 4 opsi jawaban, dan pilih jawaban yang benar.
-                                </DialogDescription>
-                            </DialogHeader>
+                        {/* Question Editor Dialog */}
+                        <Dialog
+                            open={questionEditorOpen}
+                            onOpenChange={setQuestionEditorOpen}
+                        >
+                            <DialogContent className="sm:max-w-lg">
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        {editingQuestionIndex !== null
+                                            ? 'Edit Pertanyaan'
+                                            : 'Tambah Pertanyaan'}
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                        Isi pertanyaan, 4 opsi jawaban, dan
+                                        pilih jawaban yang benar.
+                                    </DialogDescription>
+                                </DialogHeader>
 
-                            <FieldGroup>
-                                <Field>
-                                    <FieldLabel htmlFor="q-question">
-                                        Pertanyaan <span className="text-destructive">*</span>
-                                    </FieldLabel>
-                                    <Textarea
-                                        id="q-question"
-                                        value={questionForm.question}
-                                        onChange={(e) => setQuestionForm(prev => ({ ...prev, question: e.target.value }))}
-                                        placeholder="Masukkan pertanyaan"
-                                        rows={3}
-                                    />
-                                </Field>
+                                <FieldGroup>
+                                    <Field>
+                                        <FieldLabel htmlFor="q-question">
+                                            Pertanyaan{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </FieldLabel>
+                                        <Textarea
+                                            id="q-question"
+                                            value={questionForm.question}
+                                            onChange={(e) =>
+                                                setQuestionForm((prev) => ({
+                                                    ...prev,
+                                                    question: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="Masukkan pertanyaan"
+                                            rows={3}
+                                        />
+                                    </Field>
 
-                                <Field>
-                                    <FieldLabel>
-                                        Opsi Jawaban <span className="text-destructive">*</span>
-                                    </FieldLabel>
-                                    <div className="space-y-2">
-                                        {questionForm.options.map((opt, idx) => (
-                                            <div key={idx} className="flex gap-2 items-center">
-                                                <Input
-                                                    value={opt}
-                                                    onChange={(e) => {
-                                                        const newOptions = [...questionForm.options] as [string, string, string, string];
-                                                        newOptions[idx] = e.target.value;
-                                                        setQuestionForm(prev => ({ ...prev, options: newOptions }));
-                                                    }}
-                                                    placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    variant={questionForm.correct_option === idx ? 'default' : 'outline'}
-                                                    size="sm"
-                                                    className="shrink-0"
-                                                    onClick={() => setQuestionForm(prev => ({ ...prev, correct_option: idx }))}
-                                                >
-                                                    {questionForm.correct_option === idx ? <Check className="h-4 w-4" /> : 'Benar'}
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <FieldDescription>
-                                        Klik tombol "Benar" untuk menandai jawaban yang benar
-                                    </FieldDescription>
-                                </Field>
+                                    <Field>
+                                        <FieldLabel>
+                                            Opsi Jawaban{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </FieldLabel>
+                                        <div className="space-y-2">
+                                            {questionForm.options.map(
+                                                (opt, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <Input
+                                                            value={opt}
+                                                            onChange={(e) => {
+                                                                const newOptions =
+                                                                    [
+                                                                        ...questionForm.options,
+                                                                    ] as [
+                                                                        string,
+                                                                        string,
+                                                                        string,
+                                                                        string,
+                                                                    ];
+                                                                newOptions[
+                                                                    idx
+                                                                ] =
+                                                                    e.target.value;
+                                                                setQuestionForm(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        options:
+                                                                            newOptions,
+                                                                    }),
+                                                                );
+                                                            }}
+                                                            placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
+                                                        />
+                                                        <Button
+                                                            type="button"
+                                                            variant={
+                                                                questionForm.correct_option ===
+                                                                idx
+                                                                    ? 'default'
+                                                                    : 'outline'
+                                                            }
+                                                            size="sm"
+                                                            className="shrink-0"
+                                                            onClick={() =>
+                                                                setQuestionForm(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        correct_option:
+                                                                            idx,
+                                                                    }),
+                                                                )
+                                                            }
+                                                        >
+                                                            {questionForm.correct_option ===
+                                                            idx ? (
+                                                                <Check className="h-4 w-4" />
+                                                            ) : (
+                                                                'Benar'
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                ),
+                                            )}
+                                        </div>
+                                        <FieldDescription>
+                                            Klik tombol "Benar" untuk menandai
+                                            jawaban yang benar
+                                        </FieldDescription>
+                                    </Field>
 
-                                <Field>
-                                    <FieldLabel htmlFor="q-explanation">Penjelasan</FieldLabel>
-                                    <Textarea
-                                        id="q-explanation"
-                                        value={questionForm.explanation}
-                                        onChange={(e) => setQuestionForm(prev => ({ ...prev, explanation: e.target.value }))}
-                                        placeholder="Penjelasan jawaban (opsional)"
-                                        rows={2}
-                                    />
-                                </Field>
-                            </FieldGroup>
+                                    <Field>
+                                        <FieldLabel htmlFor="q-explanation">
+                                            Penjelasan
+                                        </FieldLabel>
+                                        <Textarea
+                                            id="q-explanation"
+                                            value={questionForm.explanation}
+                                            onChange={(e) =>
+                                                setQuestionForm((prev) => ({
+                                                    ...prev,
+                                                    explanation: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="Penjelasan jawaban (opsional)"
+                                            rows={2}
+                                        />
+                                    </Field>
+                                </FieldGroup>
 
-                            <DialogFooter className="mt-6">
-                                <DialogClose asChild>
-                                    <Button type="button" variant="outline">Batal</Button>
-                                </DialogClose>
-                                <Button type="button" onClick={saveQuestion}>
-                                    {editingQuestionIndex !== null ? 'Perbarui' : 'Tambah'}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </header>
+                                <DialogFooter className="mt-6">
+                                    <DialogClose asChild>
+                                        <Button type="button" variant="outline">
+                                            Batal
+                                        </Button>
+                                    </DialogClose>
+                                    <Button
+                                        type="button"
+                                        onClick={saveQuestion}
+                                    >
+                                        {editingQuestionIndex !== null
+                                            ? 'Perbarui'
+                                            : 'Tambah'}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </header>
 
-            {/* Table */}
-            <section className="grid gap-4">
-                <div className="flex flex-col gap-4">
+                {/* Table */}
+                <section className="grid gap-4">
+                    <div className="flex flex-col gap-4">
                         {selectedCourseId === 0 && filterValue.trim() === '' ? (
                             <Empty>
                                 <EmptyHeader>

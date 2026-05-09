@@ -108,7 +108,8 @@ function capitalizeProvider(provider: string): string {
 }
 
 export default function Register({ status, socialUser }: Props) {
-    const { resolvedAppearance, appearance, updateAppearance } = useAppearance();
+    const { resolvedAppearance, appearance, updateAppearance } =
+        useAppearance();
     const isSocialRegistration = Boolean(socialUser);
     const [username, setUsername] = useState(() =>
         socialUser?.name ? slugifyUsername(socialUser.name) : '',
@@ -213,7 +214,9 @@ export default function Register({ status, socialUser }: Props) {
                             <Tabs
                                 value={appearance}
                                 onValueChange={(value) =>
-                                    updateAppearance(value as 'light' | 'dark' | 'system')
+                                    updateAppearance(
+                                        value as 'light' | 'dark' | 'system',
+                                    )
                                 }
                             >
                                 <TabsList>

@@ -290,11 +290,9 @@ export function recommendedOutputFormatByLab(
 }
 
 export function canFormatOutput(labSlug: string): boolean {
-    return ![
-        'rsa-lab',
-        'digital-signature-lab',
-        'lattice-cipher-lab',
-    ].includes(labSlug);
+    return !['rsa-lab', 'digital-signature-lab', 'lattice-cipher-lab'].includes(
+        labSlug,
+    );
 }
 
 export function formatLabel(value: FormatValue): string {

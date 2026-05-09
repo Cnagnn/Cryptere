@@ -1,10 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import {
-    AlertTriangle,
-    Calendar,
-    CheckCircle,
-    Shield,
-} from 'lucide-react';
+import { AlertTriangle, Calendar, CheckCircle, Shield } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {

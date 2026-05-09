@@ -99,7 +99,7 @@ class RecentActivityAggregator
             ->get()
             ->map(fn (LabVisit $visit): array => [
                 'id' => 'lab-'.$visit->id,
-                'title' => 'Visited lab "'.Str::of($visit->lab_slug)->replace('-', ' ')->title().'"',
+                'title' => 'Mengunjungi lab "'.Str::of($visit->lab_slug)->replace('-', ' ')->title().'"',
                 'tag' => 'Lab',
                 'timestamp' => $visit->last_visited_at?->diffForHumans(),
                 'isoDate' => $visit->last_visited_at?->toIso8601String(),
@@ -112,7 +112,7 @@ class RecentActivityAggregator
             ->get()
             ->map(fn ($social): array => [
                 'id' => 'social-'.$social->id,
-                'title' => 'Linked '.Str::of($social->provider)->title().' account',
+                'title' => 'Menghubungkan akun '.Str::of($social->provider)->title(),
                 'tag' => 'Account',
                 'timestamp' => $social->created_at?->diffForHumans(),
                 'isoDate' => $social->created_at?->toIso8601String(),
@@ -139,7 +139,7 @@ class RecentActivityAggregator
         if ($user->email_verified_at) {
             $activities->push([
                 'id' => 'account-email-verified',
-                'title' => 'Verified email address',
+                'title' => 'Memverifikasi alamat email',
                 'tag' => 'Account',
                 'timestamp' => $user->email_verified_at->diffForHumans(),
                 'isoDate' => $user->email_verified_at->toIso8601String(),
@@ -158,7 +158,7 @@ class RecentActivityAggregator
 
         $activities->push([
             'id' => 'account-created',
-            'title' => 'Joined Cryptere',
+            'title' => 'Bergabung dengan Cryptere',
             'tag' => 'Account',
             'timestamp' => $user->created_at?->diffForHumans(),
             'isoDate' => $user->created_at?->toIso8601String(),

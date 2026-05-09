@@ -73,7 +73,7 @@ class AssessmentController extends Controller
         $statistics = [
             ['label' => 'Total Assessments', 'value' => (string) $totalAssessments],
             ['label' => 'Completed', 'value' => "{$completedCount} / {$totalAssessments}"],
-            ['label' => 'Average Score', 'value' => $averageScore !== null ? round($averageScore) . '%' : '—'],
+            ['label' => 'Average Score', 'value' => $averageScore !== null ? round($averageScore).'%' : '—'],
         ];
 
         return Inertia::render('assessments/index', [

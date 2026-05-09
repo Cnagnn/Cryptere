@@ -8,7 +8,6 @@ use App\Models\AssessmentQuestion;
 use App\Models\Course;
 use App\Models\Topic;
 use App\Services\AuditService;
-use App\Services\RubricScoringService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

@@ -2,6 +2,8 @@
 
 namespace App\Features;
 
+use App\Listeners\BroadcastLeaderboardUpdate;
+
 /**
  * Controls whether the real-time WebSocket leaderboard updates are enabled.
  *
@@ -9,7 +11,7 @@ namespace App\Features;
  * to connected clients in real-time. When inactive, the leaderboard only
  * updates on page refresh.
  *
- * @see \App\Listeners\BroadcastLeaderboardUpdate
+ * @see BroadcastLeaderboardUpdate
  */
 class RealtimeLeaderboard
 {

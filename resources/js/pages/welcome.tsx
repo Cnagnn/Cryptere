@@ -41,7 +41,7 @@ function Hero115({
                     <div className="relative isolate flex flex-col gap-5">
                         <div
                             aria-hidden
-                            className="pointer-events-none absolute left-1/2 top-1/2 -z-10 mx-auto size-200 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border mask-[linear-gradient(to_top,transparent,transparent,white,white,white,transparent,transparent)] p-16 [-webkit-mask-image:linear-gradient(to_top,transparent,transparent,white,white,white,transparent,transparent)] md:size-325 md:p-32"
+                            className="pointer-events-none absolute top-1/2 left-1/2 -z-10 mx-auto size-200 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border mask-[linear-gradient(to_top,transparent,transparent,white,white,white,transparent,transparent)] p-16 [-webkit-mask-image:linear-gradient(to_top,transparent,transparent,white,white,white,transparent,transparent)] md:size-325 md:p-32"
                         >
                             <div className="size-full rounded-full border border-border p-16 md:p-32">
                                 <div className="size-full rounded-full border border-border" />
@@ -50,17 +50,23 @@ function Hero115({
                         <span className="mx-auto flex size-16 items-center justify-center rounded-full border md:size-20">
                             {icon}
                         </span>
-                        <h1 className="mx-auto max-w-xl text-center text-4xl font-semibold tracking-tight text-pretty lg:max-w-3xl md:text-5xl lg:text-6xl">
+                        <h1 className="mx-auto max-w-xl text-center text-4xl font-semibold tracking-tight text-pretty md:text-5xl lg:max-w-3xl lg:text-6xl">
                             {heading}
                         </h1>
-                        <p className="mx-auto max-w-5xl text-balance text-center text-lg text-muted-foreground md:text-xl">
+                        <p className="mx-auto max-w-5xl text-center text-lg text-balance text-muted-foreground md:text-xl">
                             {description}
                         </p>
-                        <div className="flex flex-col items-center gap-3 pb-12 pt-3">
-                            <Button size="lg" asChild className="w-full sm:w-auto">
+                        <div className="flex flex-col items-center gap-3 pt-3 pb-12">
+                            <Button
+                                size="lg"
+                                asChild
+                                className="w-full sm:w-auto"
+                            >
                                 <Link href={button.url} prefetch>
                                     {button.text}
-                                    {button.icon ?? <ArrowRight data-icon="inline-end" />}
+                                    {button.icon ?? (
+                                        <ArrowRight data-icon="inline-end" />
+                                    )}
                                 </Link>
                             </Button>
                             {byline && (

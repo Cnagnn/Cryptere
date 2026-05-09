@@ -88,12 +88,9 @@ export function useLeaderboardChannel(
         const channel = echo.channel('leaderboard');
         setConnected(true);
 
-        channel.listen(
-            '.leaderboard.updated',
-            (event: unknown) => {
-                handleEvent(event as LeaderboardUpdatePayload);
-            },
-        );
+        channel.listen('.leaderboard.updated', (event: unknown) => {
+            handleEvent(event as LeaderboardUpdatePayload);
+        });
 
         return () => {
             echo.leaveChannel('leaderboard');

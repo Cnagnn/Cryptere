@@ -55,7 +55,7 @@ return new class extends Migration
 
         // Migrate existing published_at to status
         DB::table('lesson_tasks')->update([
-            'status' => DB::raw("CASE WHEN published_at IS NOT NULL THEN 'published' ELSE 'draft' END")
+            'status' => DB::raw("CASE WHEN published_at IS NOT NULL THEN 'published' ELSE 'draft' END"),
         ]);
 
         // Assessments - replace is_published with status
@@ -73,7 +73,7 @@ return new class extends Migration
 
         // Migrate existing is_published data
         DB::table('assessments')->update([
-            'status' => DB::raw("CASE WHEN is_published = 1 THEN 'published' ELSE 'draft' END")
+            'status' => DB::raw("CASE WHEN is_published = 1 THEN 'published' ELSE 'draft' END"),
         ]);
 
         // Drop old is_published column
@@ -93,7 +93,7 @@ return new class extends Migration
         });
 
         DB::table('assessments')->update([
-            'is_published' => DB::raw("CASE WHEN status = 'published' THEN 1 ELSE 0 END")
+            'is_published' => DB::raw("CASE WHEN status = 'published' THEN 1 ELSE 0 END"),
         ]);
 
         Schema::table('assessments', function (Blueprint $table) {
@@ -120,7 +120,7 @@ return new class extends Migration
         });
 
         DB::table('courses')->update([
-            'is_published' => DB::raw("CASE WHEN status = 'published' THEN 1 ELSE 0 END")
+            'is_published' => DB::raw("CASE WHEN status = 'published' THEN 1 ELSE 0 END"),
         ]);
 
         Schema::table('courses', function (Blueprint $table) {

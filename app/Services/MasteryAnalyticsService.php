@@ -61,7 +61,7 @@ class MasteryAnalyticsService
      *     totalPassed: int,
      *     strengths: array<string>,
      *     weaknesses: array<string>,
-     *     recentSubmissions: \Illuminate\Support\Collection,
+     *     recentSubmissions: Collection,
      * }
      */
     public function getUserMasteryProfile(User $user): array

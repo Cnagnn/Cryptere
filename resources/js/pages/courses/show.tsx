@@ -1516,7 +1516,10 @@ function QuizTask({
                                 setStarted(true);
                             }}
                         >
-                            Mulai Ulang{task.submission.attemptNumber ? ` (${task.submission.attemptNumber}/${task.maxAttempts ?? '∞'})` : ''}
+                            Mulai Ulang
+                            {task.submission.attemptNumber
+                                ? ` (${task.submission.attemptNumber}/${task.maxAttempts ?? '∞'})`
+                                : ''}
                         </Button>
                     ) : null}
                 </div>
@@ -1643,7 +1646,10 @@ function QuizTask({
                                 size="lg"
                                 onClick={() => setStarted(true)}
                             >
-                                Mulai Ulang{task.submission.attemptNumber ? ` (${task.submission.attemptNumber}/${task.maxAttempts ?? '∞'})` : ''}
+                                Mulai Ulang
+                                {task.submission.attemptNumber
+                                    ? ` (${task.submission.attemptNumber}/${task.maxAttempts ?? '∞'})`
+                                    : ''}
                             </Button>
                         ) : null}
                     </div>
@@ -1695,7 +1701,9 @@ function QuizTask({
                                 'border-border bg-background',
                         )}
                         aria-label={`Pertanyaan ${index + 1}${answers[index] !== -1 ? ' (dijawab)' : ''}`}
-                        aria-current={index === currentIndex ? 'step' : undefined}
+                        aria-current={
+                            index === currentIndex ? 'step' : undefined
+                        }
                     >
                         {index + 1}
                     </button>
@@ -2046,7 +2054,10 @@ function AssessmentOverview({
                             {starting ? (
                                 <Loader2 className="mr-2 size-4 animate-spin" />
                             ) : null}
-                            Mulai Ulang{assessment.latestResults?.submission.attemptNumber ? ` (${assessment.latestResults.submission.attemptNumber}/${assessment.attemptCount ?? '∞'})` : ''}
+                            Mulai Ulang
+                            {assessment.latestResults?.submission.attemptNumber
+                                ? ` (${assessment.latestResults.submission.attemptNumber}/${assessment.attemptCount ?? '∞'})`
+                                : ''}
                         </Button>
                     ) : null}
                 </div>
@@ -2289,7 +2300,9 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
                     {saving ? (
                         <>
                             <Loader2 className="size-3 animate-spin text-muted-foreground" />
-                            <span className="text-muted-foreground">Menyimpan...</span>
+                            <span className="text-muted-foreground">
+                                Menyimpan...
+                            </span>
                         </>
                     ) : lastSaved ? (
                         <>

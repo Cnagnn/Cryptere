@@ -8,10 +8,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { parseContentWithChecks } from '../content-parser';
-import type {
-    CheckSegment,
-    MarkdownSegment,
-} from '../content-parser';
+import type { CheckSegment, MarkdownSegment } from '../content-parser';
 
 describe('parseContentWithChecks', () => {
     // ─── Basic Parsing ──────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Challenge;
 use App\Models\ChallengeQuestion;
 use App\Models\ChallengeSubmission;
+use App\Models\User;
 use App\Services\AdaptiveQuestionService;
 use App\Services\CacheService;
 use App\Services\ChallengeHelperService;
@@ -223,7 +224,7 @@ class ChallengeController extends Controller
      *
      * @return array{sessionId: string, questions: array<int, array<string, mixed>>}
      */
-    private function buildQuizSession(Challenge $challenge, \App\Models\User $user): array
+    private function buildQuizSession(Challenge $challenge, User $user): array
     {
         $sessionId = (string) Str::uuid();
         $count = $challenge->questions_per_session ?? 10;

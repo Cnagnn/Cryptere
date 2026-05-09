@@ -7,6 +7,8 @@ use App\Features\IndonesianLocale;
 use App\Features\RealtimeLeaderboard;
 use App\Listeners\BroadcastLeaderboardUpdate;
 use App\Listeners\LogXpAward;
+use App\Models\User;
+use App\Observers\UserBalanceHistoryObserver;
 use Carbon\CarbonImmutable;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -40,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->configureFeatureFlags();
         $this->configureApiDocumentation();
+
+        User::observe(UserBalanceHistoryObserver::class);
 
         Event::listen(XpAwarded::class, LogXpAward::class);
         Event::listen(XpAwarded::class, BroadcastLeaderboardUpdate::class);

@@ -5,11 +5,11 @@ namespace App\Services;
 use App\Events\CourseCompleted;
 use App\Events\XpAwarded;
 use App\Models\AssessmentAnswer;
-use App\Models\AssessmentQuestion;
 use App\Models\AssessmentSubmission;
 use App\Models\Enrollment;
 use App\Models\User;
 use App\Notifications\AssessmentGradedNotification;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class AssessmentGradingService
@@ -194,9 +194,9 @@ class AssessmentGradingService
     /**
      * Get the admin grading queue: submissions awaiting manual grading.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, AssessmentSubmission>
+     * @return Collection<int, AssessmentSubmission>
      */
-    public function getGradingQueue(int $limit = 20): \Illuminate\Database\Eloquent\Collection
+    public function getGradingQueue(int $limit = 20): Collection
     {
         return AssessmentSubmission::query()
             ->with(['user:id,name,email', 'assessment:id,title,bloom_level', 'answers.question'])

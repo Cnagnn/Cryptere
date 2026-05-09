@@ -75,6 +75,20 @@ const formatNumber = (num: number): string => {
     return new Intl.NumberFormat('id-ID').format(num);
 };
 
+const formatPointsCompact = (points: number): string => {
+    if (points < 1000) {
+        return formatNumber(points);
+    }
+
+    const compactValue = new Intl.NumberFormat('en', {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+        compactDisplay: 'short',
+    }).format(points);
+
+    return compactValue.toUpperCase();
+};
+
 const getTimeGreeting = (name: string) => {
     const hour = new Date().getHours();
 
@@ -82,7 +96,7 @@ const getTimeGreeting = (name: string) => {
         return {
             text: `Selamat Pagi, ${name}`,
             emoji: '☀️',
-            subtitle: 'Semangat memulai hari dengan belajar!',
+            subtitle: 'Mari mulai hari dengan pembelajaran yang produktif',
         };
     }
 
@@ -90,14 +104,14 @@ const getTimeGreeting = (name: string) => {
         return {
             text: `Selamat Siang, ${name}`,
             emoji: '🌤️',
-            subtitle: 'Terus tingkatkan kemampuanmu!',
+            subtitle: 'Teruskan perjalanan pembelajaran Anda',
         };
     }
 
     return {
         text: `Selamat Malam, ${name}`,
         emoji: '🌙',
-        subtitle: 'Waktunya belajar dan berkembang!',
+        subtitle: 'Waktu yang tepat untuk mengembangkan keterampilan',
     };
 };
 
@@ -120,12 +134,12 @@ const ACTIVITY_TAG_CONFIG: Record<
 > = {
     course_completed: {
         icon: GraduationCap,
-        label: 'Kursus Selesai',
+        label: 'Kursus Diselesaikan',
         color: 'text-green-600 dark:text-green-400',
     },
     lesson_completed: {
         icon: BookOpen,
-        label: 'Pelajaran Selesai',
+        label: 'Pelajaran Diselesaikan',
         color: 'text-blue-600 dark:text-blue-400',
     },
     challenge_solved: {
@@ -158,6 +172,50 @@ const GradientBar = ({ prefix }: { prefix: string }) => (
     </svg>
 );
 
+/* ── Stats Card Component ── */
+
+interface StatsCardProps {
+    title: string;
+    description: string;
+    value: string | number;
+    unit?: string;
+    className?: string;
+    children?: React.ReactNode;
+}
+
+function StatsCard({
+    title,
+    description,
+    value,
+    unit,
+    className,
+    children,
+}: StatsCardProps) {
+    return (
+        <Card className={className}>
+            <CardHeader className="gap-1">
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {children ?? (
+                    <p className="text-2xl font-semibold tabular-nums">
+                        {typeof value === 'number'
+                            ? formatNumber(value)
+                            : value}
+                        {unit && (
+                            <span className="text-sm font-medium text-muted-foreground">
+                                {' '}
+                                {unit}
+                            </span>
+                        )}
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 /* ── Inline Component: LearnerDashboard ── */
 
 function DecayWarningBanner({
@@ -181,7 +239,7 @@ function DecayWarningBanner({
             <AlertTriangle className="size-4" />
             <AlertTitle className="font-semibold">
                 {isUrgent
-                    ? 'Poin akan berkurang besok!'
+                    ? 'Poin akan berkurang besok'
                     : `Poin akan berkurang dalam ${warning.daysUntilDecay} hari`}
             </AlertTitle>
             <AlertDescription
@@ -189,7 +247,7 @@ function DecayWarningBanner({
                     !isUrgent && 'text-amber-600/80 dark:text-amber-400/80',
                 )}
             >
-                Selesaikan pelajaran untuk menjaga{' '}
+                Selesaikan pelajaran untuk mempertahankan{' '}
                 {formatNumber(warning.currentPoints)} poin Anda dari pengurangan{' '}
                 {warning.decayPercent}%.
             </AlertDescription>
@@ -207,6 +265,25 @@ function DecayWarningBanner({
 }
 
 function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
+    // Config for maintainability
+    const config = {
+        title: 'Lanjutkan Pembelajaran',
+        emptyState: {
+            icon: GraduationCap,
+            message:
+                'Belum ada kursus yang sedang diikuti. Mulai pembelajaran baru sekarang.',
+            actionLabel: 'Jelajahi Kursus',
+        },
+        maxVisibleItems: 3,
+        scrollHeight: 'h-54',
+        progressCircle: {
+            viewBox: '0 0 36 36',
+            radius: 15.5,
+            circumference: 97.4, // 2 * π * radius
+            strokeWidth: 2.5,
+        },
+    };
+
     const inProgress = courses.filter(
         (c) => c.progressPercentage > 0 && c.progressPercentage < 100,
     );
@@ -215,16 +292,16 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
         return (
             <Card className="col-span-2 md:col-span-3 lg:col-span-4">
                 <CardHeader>
-                    <CardTitle>Lanjutkan Belajar</CardTitle>
+                    <CardTitle>{config.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
-                    <GraduationCap className="size-10 text-muted-foreground/40" />
+                    <config.emptyState.icon className="size-10 text-muted-foreground/40" />
                     <p className="text-sm text-muted-foreground">
-                        Tidak ada kursus yang sedang berlangsung. Mulai satu!
+                        {config.emptyState.message}
                     </p>
                     <Button variant="outline" size="sm" asChild>
                         <Link href={coursesIndex.url()}>
-                            Jelajahi Kursus
+                            {config.emptyState.actionLabel}
                             <ArrowUpRight data-icon="inline-end" />
                         </Link>
                     </Button>
@@ -236,11 +313,9 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
     return (
         <Card className="col-span-2 md:col-span-3 lg:col-span-4">
             <CardHeader className="gap-1">
-                <CardTitle>Lanjutkan Belajar</CardTitle>
+                <CardTitle>{config.title}</CardTitle>
                 <CardDescription>
-                    {inProgress.length}{' '}
-                    {inProgress.length === 1 ? 'kursus' : 'kursus'} sedang
-                    berlangsung
+                    {inProgress.length} kursus sedang diikuti
                 </CardDescription>
                 <CardAction>
                     <Button variant="ghost" size="sm" asChild>
@@ -252,67 +327,90 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
                 </CardAction>
             </CardHeader>
             <CardContent className="p-0">
-                <ScrollArea className={cn(inProgress.length > 3 && 'h-54')}>
+                <ScrollArea
+                    className={cn(
+                        inProgress.length > config.maxVisibleItems &&
+                            config.scrollHeight,
+                    )}
+                >
                     <div className="flex flex-col gap-2 px-6 pb-6">
-                        {inProgress.map((course) => (
-                            <Link
-                                key={course.id}
-                                href={courseShow.url({ course: course.slug! })}
-                                className="group relative overflow-hidden rounded-lg border bg-card transition-colors hover:bg-muted/50"
-                            >
-                                <div
-                                    className="absolute inset-y-0 left-0 bg-primary/5 transition-all"
-                                    style={{
-                                        width: `${course.progressPercentage}%`,
-                                    }}
-                                />
-                                <div className="relative flex items-center gap-3 p-3">
-                                    <div className="relative flex size-10 shrink-0 items-center justify-center">
-                                        <svg
-                                            className="size-10 -rotate-90"
-                                            viewBox="0 0 36 36"
-                                        >
-                                            <circle
-                                                cx="18"
-                                                cy="18"
-                                                r="15.5"
-                                                fill="none"
-                                                className="stroke-muted"
-                                                strokeWidth="2.5"
-                                            />
-                                            <circle
-                                                cx="18"
-                                                cy="18"
-                                                r="15.5"
-                                                fill="none"
-                                                className="stroke-primary transition-all"
-                                                strokeWidth="2.5"
-                                                strokeLinecap="round"
-                                                strokeDasharray={`${(course.progressPercentage / 100) * 97.4} 97.4`}
-                                            />
-                                        </svg>
-                                        <span className="absolute text-[10px] font-bold tabular-nums">
-                                            {Math.round(
-                                                course.progressPercentage,
-                                            )}
-                                            %
-                                        </span>
+                        {inProgress.map((course) => {
+                            const progressPercent = Math.round(
+                                course.progressPercentage,
+                            );
+                            const dashArray = `${(course.progressPercentage / 100) * config.progressCircle.circumference} ${config.progressCircle.circumference}`;
+
+                            return (
+                                <Link
+                                    key={course.id}
+                                    href={courseShow.url({
+                                        course: course.slug!,
+                                    })}
+                                    className="group relative overflow-hidden rounded-lg border bg-card transition-colors hover:bg-muted/50"
+                                >
+                                    <div
+                                        className="absolute inset-y-0 left-0 bg-primary/5 transition-all"
+                                        style={{
+                                            width: `${course.progressPercentage}%`,
+                                        }}
+                                    />
+                                    <div className="relative flex items-center gap-3 p-3">
+                                        <div className="relative flex size-10 shrink-0 items-center justify-center">
+                                            <svg
+                                                className="size-10 -rotate-90"
+                                                viewBox={
+                                                    config.progressCircle
+                                                        .viewBox
+                                                }
+                                            >
+                                                <circle
+                                                    cx="18"
+                                                    cy="18"
+                                                    r={
+                                                        config.progressCircle
+                                                            .radius
+                                                    }
+                                                    fill="none"
+                                                    className="stroke-muted"
+                                                    strokeWidth={
+                                                        config.progressCircle
+                                                            .strokeWidth
+                                                    }
+                                                />
+                                                <circle
+                                                    cx="18"
+                                                    cy="18"
+                                                    r={
+                                                        config.progressCircle
+                                                            .radius
+                                                    }
+                                                    fill="none"
+                                                    className="stroke-primary transition-all"
+                                                    strokeWidth={
+                                                        config.progressCircle
+                                                            .strokeWidth
+                                                    }
+                                                    strokeLinecap="round"
+                                                    strokeDasharray={dashArray}
+                                                />
+                                            </svg>
+                                            <span className="absolute text-[10px] font-bold tabular-nums">
+                                                {progressPercent}%
+                                            </span>
+                                        </div>
+                                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                            <p className="truncate text-sm font-medium">
+                                                {course.title}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {course.lessonCount} pelajaran
+                                            </p>
+                                        </div>
+                                        <ArrowUpRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                                     </div>
-                                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                                        <p className="truncate text-sm font-medium">
-                                            {course.title}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {course.lessonCount}{' '}
-                                            {course.lessonCount === 1
-                                                ? 'pelajaran'
-                                                : 'pelajaran'}
-                                        </p>
-                                    </div>
-                                    <ArrowUpRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                                </div>
-                            </Link>
-                        ))}
+                                </Link>
+                            );
+                        })}
                     </div>
                 </ScrollArea>
             </CardContent>
@@ -325,16 +423,34 @@ function ActivityFeedTimeline({
 }: {
     activities: RecentActivityItem[];
 }) {
+    // Config for maintainability
+    const config = {
+        title: 'Aktivitas Terkini',
+        description: 'Riwayat aktivitas pembelajaran Anda',
+        emptyState: {
+            icon: Activity,
+            message:
+                'Belum ada aktivitas yang tercatat. Mulai pembelajaran Anda sekarang.',
+        },
+        timeline: {
+            maxHeight: 'max-h-56',
+            linePosition: 'left-1.75', // Position of vertical line
+            dotSize: 'size-3.75', // Size of activity dots
+            iconSize: 'size-2.5', // Size of icons inside dots
+        },
+        ariaLabel: 'Umpan aktivitas terkini',
+    };
+
     if (activities.length === 0) {
         return (
             <Card className="col-span-2 md:col-span-3 lg:col-span-4">
                 <CardHeader>
-                    <CardTitle>Aktivitas Terkini</CardTitle>
+                    <CardTitle>{config.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
-                    <Activity className="size-10 text-muted-foreground/40" />
+                    <config.emptyState.icon className="size-10 text-muted-foreground/40" />
                     <p className="text-sm text-muted-foreground">
-                        Belum ada aktivitas terkini. Mulai belajar!
+                        {config.emptyState.message}
                     </p>
                 </CardContent>
             </Card>
@@ -344,29 +460,30 @@ function ActivityFeedTimeline({
     return (
         <Card className="col-span-2 flex flex-col md:col-span-3 lg:col-span-4">
             <CardHeader className="gap-1">
-                <CardTitle>Aktivitas Terkini</CardTitle>
-                <CardDescription>Tindakan terbaru Anda</CardDescription>
+                <CardTitle>{config.title}</CardTitle>
+                <CardDescription>{config.description}</CardDescription>
             </CardHeader>
             <CardContent className="min-h-0 flex-1 p-0">
-                <ScrollArea className="h-full max-h-56">
+                <ScrollArea className={cn('h-full', config.timeline.maxHeight)}>
                     <div
                         className="flex flex-col px-6 pb-6"
                         role="list"
-                        aria-label="Umpan aktivitas terkini"
+                        aria-label={config.ariaLabel}
                     >
                         <div className="relative flex flex-col">
                             <div
-                                className="absolute top-1 bottom-1 left-1.75 w-px bg-border"
+                                className={cn(
+                                    'absolute top-1 bottom-1 w-px bg-border',
+                                    config.timeline.linePosition,
+                                )}
                                 aria-hidden="true"
                             />
 
                             {activities.map((item, idx) => {
-                                const config =
+                                const tagConfig =
                                     ACTIVITY_TAG_CONFIG[item.tag] ??
                                     DEFAULT_ACTIVITY_TAG;
-
-                                const Icon = config.icon;
-
+                                const Icon = tagConfig.icon;
                                 const isLast = idx === activities.length - 1;
 
                                 return (
@@ -378,8 +495,18 @@ function ActivityFeedTimeline({
                                         )}
                                         role="listitem"
                                     >
-                                        <div className="relative z-10 flex size-3.75 shrink-0 items-center justify-center rounded-full bg-muted ring-2 ring-background">
-                                            <Icon className="size-2.5 text-muted-foreground" />
+                                        <div
+                                            className={cn(
+                                                'relative z-10 flex shrink-0 items-center justify-center rounded-full bg-muted ring-2 ring-background',
+                                                config.timeline.dotSize,
+                                            )}
+                                        >
+                                            <Icon
+                                                className={cn(
+                                                    'text-muted-foreground',
+                                                    config.timeline.iconSize,
+                                                )}
+                                            />
                                         </div>
 
                                         <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-px">
@@ -460,7 +587,7 @@ const leaderboardColumns: ColumnDef<LeaderboardEntry>[] = [
                     row.original.isCurrentUser && 'text-primary',
                 )}
             >
-                {row.original.points.toLocaleString()} pts
+                {formatPointsCompact(row.original.points)} pts
             </span>
         ),
     },
@@ -479,14 +606,14 @@ function StreakCalendar({
         'Feb',
         'Mar',
         'Apr',
-        'May',
+        'Mei',
         'Jun',
         'Jul',
-        'Aug',
+        'Agu',
         'Sep',
-        'Oct',
+        'Okt',
         'Nov',
-        'Dec',
+        'Des',
     ];
 
     return (
@@ -605,6 +732,8 @@ function ChartAreaInteractive({
     const rawData = timeRange === 'weekly' ? weekly : monthly;
     const data = Array.isArray(rawData) ? rawData : [];
 
+    const hasAnyData = data.some((d) => (d.points ?? 0) > 0 || (d.xp ?? 0) > 0);
+
     return (
         <Card className="pt-0">
             <CardHeader className="flex items-center gap-2 border-b py-5 sm:flex-row">
@@ -612,8 +741,8 @@ function ChartAreaInteractive({
                     <CardTitle>Riwayat Perolehan</CardTitle>
                     <CardDescription>
                         {timeRange === 'weekly'
-                            ? 'Poin & XP yang diperoleh dalam 7 hari terakhir'
-                            : 'Poin & XP yang diperoleh dalam 12 bulan terakhir'}
+                            ? 'Perolehan poin dan XP dalam 7 hari terakhir'
+                            : 'Perolehan poin dan XP dalam 12 bulan terakhir'}
                     </CardDescription>
                 </div>
                 <Select value={timeRange} onValueChange={setTimeRange}>
@@ -633,80 +762,103 @@ function ChartAreaInteractive({
                     </SelectContent>
                 </Select>
             </CardHeader>
-            <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-                <ChartContainer
-                    config={earningsChartConfig}
-                    className="aspect-auto h-62.5 w-full"
-                >
-                    <AreaChart data={data} margin={{ left: 12, right: 12 }}>
-                        <defs>
-                            <linearGradient
-                                id="fillPoints"
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                            >
-                                <stop
-                                    offset="5%"
-                                    stopColor="var(--color-points)"
-                                    stopOpacity={0.8}
-                                />
-                                <stop
-                                    offset="95%"
-                                    stopColor="var(--color-points)"
-                                    stopOpacity={0.1}
-                                />
-                            </linearGradient>
-                            <linearGradient
-                                id="fillXp"
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                            >
-                                <stop
-                                    offset="5%"
-                                    stopColor="var(--color-xp)"
-                                    stopOpacity={0.8}
-                                />
-                                <stop
-                                    offset="95%"
-                                    stopColor="var(--color-xp)"
-                                    stopOpacity={0.1}
-                                />
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                            dataKey="label"
-                            tickLine={false}
-                            axisLine={false}
-                            tickMargin={8}
-                            interval={0}
-                        />
-                        <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent indicator="dot" />}
-                        />
-                        <Area
-                            dataKey="xp"
-                            type="natural"
-                            fill="url(#fillXp)"
-                            stroke="var(--color-xp)"
-                            stackId="a"
-                        />
-                        <Area
-                            dataKey="points"
-                            type="natural"
-                            fill="url(#fillPoints)"
-                            stroke="var(--color-points)"
-                            stackId="a"
-                        />
-                        <ChartLegend content={<ChartLegendContent />} />
-                    </AreaChart>
-                </ChartContainer>
-            </CardContent>
+
+            {!hasAnyData ? (
+                <CardContent className="px-6 pt-6">
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <BarChart3 className="size-10 text-muted-foreground/40" />
+                        <p className="mt-3 text-center text-sm text-muted-foreground">
+                            Belum ada catatan perolehan. Selesaikan pelajaran
+                            atau tantangan untuk mulai mengumpulkan poin dan
+                            pengalaman.
+                        </p>
+                        <div className="mt-4">
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={coursesIndex.url()}>
+                                    Jelajahi Kursus
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            ) : (
+                <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+                    <ChartContainer
+                        config={earningsChartConfig}
+                        className="aspect-auto h-62.5 w-full"
+                    >
+                        <AreaChart data={data} margin={{ left: 12, right: 12 }}>
+                            <defs>
+                                <linearGradient
+                                    id="fillPoints"
+                                    x1="0"
+                                    y1="0"
+                                    x2="0"
+                                    y2="1"
+                                >
+                                    <stop
+                                        offset="5%"
+                                        stopColor="var(--color-points)"
+                                        stopOpacity={0.8}
+                                    />
+                                    <stop
+                                        offset="95%"
+                                        stopColor="var(--color-points)"
+                                        stopOpacity={0.1}
+                                    />
+                                </linearGradient>
+                                <linearGradient
+                                    id="fillXp"
+                                    x1="0"
+                                    y1="0"
+                                    x2="0"
+                                    y2="1"
+                                >
+                                    <stop
+                                        offset="5%"
+                                        stopColor="var(--color-xp)"
+                                        stopOpacity={0.8}
+                                    />
+                                    <stop
+                                        offset="95%"
+                                        stopColor="var(--color-xp)"
+                                        stopOpacity={0.1}
+                                    />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="label"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                interval={0}
+                            />
+                            <ChartTooltip
+                                cursor={false}
+                                content={
+                                    <ChartTooltipContent indicator="dot" />
+                                }
+                            />
+                            <Area
+                                dataKey="xp"
+                                type="natural"
+                                fill="url(#fillXp)"
+                                stroke="var(--color-xp)"
+                                stackId="a"
+                            />
+                            <Area
+                                dataKey="points"
+                                type="natural"
+                                fill="url(#fillPoints)"
+                                stroke="var(--color-points)"
+                                stackId="a"
+                            />
+                            <ChartLegend content={<ChartLegendContent />} />
+                        </AreaChart>
+                    </ChartContainer>
+                </CardContent>
+            )}
         </Card>
     );
 }
@@ -754,7 +906,7 @@ function LearnerDashboard({
                         </TypographyH1>
                         <TypographyMuted className="text-sm/6">
                             {auth.user.current_streak > 0
-                                ? `${greeting.subtitle} Anda sedang dalam streak ${auth.user.current_streak} hari! 🔥`
+                                ? `${greeting.subtitle} Anda sedang dalam konsistensi ${auth.user.current_streak} hari berturut-turut! 🔥`
                                 : greeting.subtitle}
                         </TypographyMuted>
                     </div>
@@ -766,80 +918,55 @@ function LearnerDashboard({
                 className="animate-fade-in-up grid grid-cols-2 gap-3 md:grid-cols-6 lg:grid-cols-12"
                 style={{ animationDelay: '100ms' }}
             >
-                <Card className="md:col-span-3 lg:col-span-3">
-                    <CardHeader className="gap-1">
-                        <CardTitle>Total Poin</CardTitle>
-                        <CardDescription>
-                            Kumpulkan poin untuk naik peringkat
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-semibold tabular-nums">
-                            {formatNumber(stats.points)}{' '}
-                            <span className="text-sm font-medium text-muted-foreground">
-                                poin
-                            </span>
+                <StatsCard
+                    title="Total Poin"
+                    description="Kumpulkan poin untuk meningkatkan peringkat"
+                    value={stats.points}
+                    unit="poin"
+                    className="md:col-span-3 lg:col-span-3"
+                />
+
+                <StatsCard
+                    title="Level dan Pengalaman"
+                    description="Pencapaian pembelajaran Anda"
+                    value=""
+                    className="md:col-span-3 lg:col-span-3"
+                >
+                    <div className="flex items-start gap-4">
+                        <p className="shrink-0 text-2xl font-semibold tabular-nums">
+                            Level {level?.level ?? 1}
                         </p>
-                    </CardContent>
-                </Card>
-                <Card className="md:col-span-3 lg:col-span-3">
-                    <CardHeader className="gap-1">
-                        <CardTitle>Level & XP Saat Ini</CardTitle>
-                        <CardDescription>
-                            Anda melakukannya dengan baik!
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-start gap-4">
-                            <p className="shrink-0 text-2xl font-semibold tabular-nums">
-                                Level {level?.level ?? 1}
-                            </p>
-                            {level && level.next_level_xp && (
-                                <div className="flex min-w-0 flex-1 flex-col gap-2">
-                                    <Progress
-                                        value={level.progress}
-                                        className="h-1.5"
-                                    />
-                                    <div className="text-xs text-muted-foreground">
-                                        <span>
-                                            {formatNumber(level.current_xp)} /{' '}
-                                            {formatNumber(level.next_level_xp)}{' '}
-                                            XP
-                                        </span>
-                                    </div>
+                        {level && level.next_level_xp && (
+                            <div className="flex min-w-0 flex-1 flex-col gap-2">
+                                <Progress
+                                    value={level.progress}
+                                    className="h-1.5"
+                                />
+                                <div className="text-xs text-muted-foreground">
+                                    <span>
+                                        {formatNumber(level.current_xp)} /{' '}
+                                        {formatNumber(level.next_level_xp)} XP
+                                    </span>
                                 </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="md:col-span-3 lg:col-span-3">
-                    <CardHeader className="gap-1">
-                        <CardTitle>Kursus Selesai</CardTitle>
-                        <CardDescription>
-                            Satu langkah pada satu waktu
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-semibold tabular-nums">
-                            {stats.completedCourses}{' '}
-                            <span className="text-base font-normal text-muted-foreground">
-                                kursus
-                            </span>
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card className="md:col-span-3 lg:col-span-3">
-                    <CardHeader className="gap-1">
-                        <CardTitle>Peringkat Anda</CardTitle>
-                        <CardDescription>Pertahankan!</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-semibold tabular-nums">
-                            Peringkat #
-                            {academy.learningPath?.currentRank ?? '-'}
-                        </p>
-                    </CardContent>
-                </Card>
+                            </div>
+                        )}
+                    </div>
+                </StatsCard>
+
+                <StatsCard
+                    title="Kursus Diselesaikan"
+                    description="Progres pembelajaran berkelanjutan"
+                    value={stats.completedCourses}
+                    unit="kursus"
+                    className="md:col-span-3 lg:col-span-3"
+                />
+
+                <StatsCard
+                    title="Peringkat Anda"
+                    description="Posisi dalam papan peringkat"
+                    value={`Peringkat #${academy.learningPath?.currentRank ?? '-'}`}
+                    className="md:col-span-3 lg:col-span-3"
+                />
 
                 <div className="col-span-2 flex *:flex-1 md:col-span-4 lg:col-span-8">
                     <ChartAreaInteractive
@@ -848,106 +975,140 @@ function LearnerDashboard({
                     />
                 </div>
 
-                <Card className="col-span-2 flex flex-col md:col-span-2 lg:col-span-4">
-                    <CardHeader>
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex flex-col gap-1">
-                                <CardTitle>Streak & Kalender</CardTitle>
-                                <CardDescription>
-                                    Ringkasan aktivitas
-                                </CardDescription>
-                            </div>
-                            <div className="flex flex-col items-end gap-0.5">
-                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums">
-                                    <Flame className="size-4 fill-orange-500 text-orange-500" />
-                                    Streak {auth.user.current_streak} hari
-                                </span>
-                                <span className="text-xs text-muted-foreground tabular-nums">
-                                    Streak terbaik: {auth.user.longest_streak}{' '}
-                                    hari
-                                </span>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                        <Deferred
-                            data="analytics.streakCalendar"
-                            fallback={<Skeleton className="h-40 w-full" />}
-                        >
-                            {analytics?.streakCalendar ? (
-                                <StreakCalendar
-                                    data={analytics.streakCalendar}
-                                />
-                            ) : (
-                                <p className="text-sm text-muted-foreground">
-                                    Data streak tidak tersedia.
-                                </p>
-                            )}
-                        </Deferred>
-                    </CardContent>
-                </Card>
+                {/* Streak & Calendar Card - Config-driven for maintainability */}
+                {(() => {
+                    const streakConfig = {
+                        title: 'Konsistensi dan Kalender',
+                        description: 'Ringkasan aktivitas pembelajaran',
+                        currentStreak: auth.user.current_streak,
+                        longestStreak: auth.user.longest_streak,
+                        streakIcon: Flame,
+                        streakIconClass:
+                            'size-4 fill-orange-500 text-orange-500',
+                        calendarData: analytics?.streakCalendar,
+                        emptyMessage: 'Data konsistensi tidak tersedia.',
+                    };
+
+                    return (
+                        <Card className="col-span-2 flex flex-col md:col-span-2 lg:col-span-4">
+                            <CardHeader>
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex flex-col gap-1">
+                                        <CardTitle>
+                                            {streakConfig.title}
+                                        </CardTitle>
+                                        <CardDescription>
+                                            {streakConfig.description}
+                                        </CardDescription>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-0.5">
+                                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums">
+                                            <streakConfig.streakIcon
+                                                className={
+                                                    streakConfig.streakIconClass
+                                                }
+                                            />
+                                            Streak {streakConfig.currentStreak}{' '}
+                                            hari
+                                        </span>
+                                        <span className="text-xs text-muted-foreground tabular-nums">
+                                            Streak terbaik:{' '}
+                                            {streakConfig.longestStreak} hari
+                                        </span>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex-1">
+                                <Deferred
+                                    data="analytics.streakCalendar"
+                                    fallback={
+                                        <Skeleton className="h-40 w-full" />
+                                    }
+                                >
+                                    {streakConfig.calendarData ? (
+                                        <StreakCalendar
+                                            data={streakConfig.calendarData}
+                                        />
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                            {streakConfig.emptyMessage}
+                                        </p>
+                                    )}
+                                </Deferred>
+                            </CardContent>
+                        </Card>
+                    );
+                })()}
 
                 <ContinueLearningSection courses={recentCourses ?? []} />
                 <ActivityFeedTimeline
                     activities={academy.recentActivity ?? []}
                 />
 
-                <Card className="col-span-2 flex flex-col md:col-span-6 lg:col-span-4">
-                    <CardHeader className="gap-1">
-                        <CardTitle>Papan Peringkat</CardTitle>
-                        <CardDescription>
-                            Peserta teratas bulan ini
-                        </CardDescription>
-                        <CardAction>
-                            <Button variant="ghost" size="sm" asChild>
-                                <Link href={leaderboardIndex()}>
-                                    Lihat Semua
-                                    <ArrowUpRight data-icon="inline-end" />
-                                </Link>
-                            </Button>
-                        </CardAction>
-                    </CardHeader>
-                    <CardContent>
-                        {(() => {
-                            const top = academy.leaderboardPreview ?? [];
-                            const myRank =
-                                academy.learningPath?.currentRank ?? 0;
-                            const myUsername = auth.user.username;
-                            const isInTop = top.some(
-                                (e) => e.username === myUsername,
-                            );
-                            const data = isInTop
-                                ? top.map((e) =>
-                                      e.username === myUsername
-                                          ? { ...e, isCurrentUser: true }
-                                          : e,
-                                  )
-                                : [
-                                      ...top,
-                                      {
-                                          rank: myRank,
-                                          name: auth.user.name,
-                                          username: myUsername,
-                                          avatar: auth.user.avatar ?? null,
-                                          points: auth.user.points,
-                                          isCurrentUser: true,
-                                      },
-                                  ];
+                {/* Leaderboard Card - Config-driven for maintainability */}
+                {(() => {
+                    const leaderboardConfig = {
+                        title: 'Papan Peringkat',
+                        description: 'Peringkat peserta teratas bulan ini',
+                        viewAllLabel: 'Lihat Semua',
+                        currentUserLabel: '(Anda)',
+                        tableConfig: {
+                            showFilterInput: false,
+                            showColumnToggle: false,
+                            showPageInfo: false,
+                            showFooter: false,
+                            centered: true,
+                        },
+                    };
 
-                            return (
+                    const top = academy.leaderboardPreview ?? [];
+                    const currentUser = {
+                        rank: academy.learningPath?.currentRank ?? 0,
+                        name: auth.user.name,
+                        username: auth.user.username,
+                        avatar: auth.user.avatar ?? null,
+                        points: auth.user.points,
+                        isCurrentUser: true,
+                    };
+
+                    const isInTop = top.some(
+                        (entry) => entry.username === currentUser.username,
+                    );
+
+                    const data = isInTop
+                        ? top.map((entry) =>
+                              entry.username === currentUser.username
+                                  ? { ...entry, isCurrentUser: true }
+                                  : entry,
+                          )
+                        : [...top, currentUser];
+
+                    return (
+                        <Card className="col-span-2 flex flex-col md:col-span-6 lg:col-span-4">
+                            <CardHeader className="gap-1">
+                                <CardTitle>{leaderboardConfig.title}</CardTitle>
+                                <CardDescription>
+                                    {leaderboardConfig.description}
+                                </CardDescription>
+                                <CardAction>
+                                    <Button variant="ghost" size="sm" asChild>
+                                        <Link href={leaderboardIndex()}>
+                                            {leaderboardConfig.viewAllLabel}
+                                            <ArrowUpRight data-icon="inline-end" />
+                                        </Link>
+                                    </Button>
+                                </CardAction>
+                            </CardHeader>
+                            <CardContent>
                                 <DataTable
                                     columns={leaderboardColumns}
                                     data={data}
-                                    showFilterInput={false}
-                                    showColumnToggle={false}
-                                    showPageInfo={false}
-                                    showFooter={false}
-                                    centered
+                                    {...leaderboardConfig.tableConfig}
                                 />
-                            );
-                        })()}
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    );
+                })()}
             </section>
         </div>
     );
@@ -1276,7 +1437,7 @@ function AdminDashboard({
             label: 'Total Pengguna',
             value: admin.stats.totalUsers,
             icon: Users,
-            helper: `${admin.stats.newUsersThisMonth} baru bulan ini`,
+            helper: `${admin.stats.newUsersThisMonth} pengguna baru bulan ini`,
         },
         {
             label: 'Total Kursus',
@@ -1288,7 +1449,9 @@ function AdminDashboard({
             label: 'Total Pendaftaran',
             value: admin.stats.totalEnrollments,
             icon: GraduationCap,
-            helper: topCourse ? `${topCourse.title} teratas` : 'Belum ada data',
+            helper: topCourse
+                ? `${topCourse.title} paling populer`
+                : 'Belum ada data',
         },
         {
             label: 'Pengguna Aktif (30h)',
@@ -1314,7 +1477,7 @@ function AdminDashboard({
                             {greeting.text} {greeting.emoji}
                         </TypographyH1>
                         <TypographyMuted className="text-sm/6">
-                            Ringkasan pertumbuhan, engagement, dan performa
+                            Ringkasan pertumbuhan, keterlibatan, dan kinerja
                             konten platform
                         </TypographyMuted>
                     </div>
@@ -1327,71 +1490,33 @@ function AdminDashboard({
                 className="animate-fade-in-up grid grid-cols-2 gap-3 md:grid-cols-4"
                 style={{ animationDelay: '100ms' }}
             >
-                <Card>
-                    <CardHeader className="gap-1">
-                        <CardTitle>Total Pengguna</CardTitle>
-                        <CardDescription>
-                            Pertumbuhan pengguna platform
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-semibold tabular-nums">
-                            {formatNumber(admin.stats.totalUsers)}{' '}
-                            <span className="text-sm font-medium text-muted-foreground">
-                                pengguna
-                            </span>
-                        </p>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    title="Total Pengguna"
+                    description="Pertumbuhan pengguna platform"
+                    value={admin.stats.totalUsers}
+                    unit="pengguna"
+                />
 
-                <Card>
-                    <CardHeader className="gap-1">
-                        <CardTitle>Total Kursus</CardTitle>
-                        <CardDescription>
-                            Konten pembelajaran tersedia
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-semibold tabular-nums">
-                            {formatNumber(admin.stats.totalCourses)}{' '}
-                            <span className="text-sm font-medium text-muted-foreground">
-                                kursus
-                            </span>
-                        </p>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    title="Total Kursus"
+                    description="Konten pembelajaran yang tersedia"
+                    value={admin.stats.totalCourses}
+                    unit="kursus"
+                />
 
-                <Card>
-                    <CardHeader className="gap-1">
-                        <CardTitle>Total Pendaftaran</CardTitle>
-                        <CardDescription>Engagement pengguna</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-semibold tabular-nums">
-                            {formatNumber(admin.stats.totalEnrollments)}{' '}
-                            <span className="text-sm font-medium text-muted-foreground">
-                                enrollment
-                            </span>
-                        </p>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    title="Total Pendaftaran"
+                    description="Keterlibatan pengguna"
+                    value={admin.stats.totalEnrollments}
+                    unit="pendaftaran"
+                />
 
-                <Card>
-                    <CardHeader className="gap-1">
-                        <CardTitle>Pengguna Aktif</CardTitle>
-                        <CardDescription>
-                            Aktif 30 hari terakhir
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-semibold tabular-nums">
-                            {formatNumber(admin.stats.activeUsers)}{' '}
-                            <span className="text-sm font-medium text-muted-foreground">
-                                aktif
-                            </span>
-                        </p>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    title="Pengguna Aktif"
+                    description="Aktif dalam 30 hari terakhir"
+                    value={admin.stats.activeUsers}
+                    unit="aktif"
+                />
             </section>
 
             {/* Main Content Grid */}
@@ -1405,7 +1530,7 @@ function AdminDashboard({
                         <div className="grid flex-1 gap-1">
                             <CardTitle>Pertumbuhan Platform</CardTitle>
                             <CardDescription>
-                                Pendaftaran dan pengguna baru selama 6 bulan
+                                Pendaftaran dan pengguna baru dalam 6 bulan
                                 terakhir
                             </CardDescription>
                         </div>
@@ -1452,7 +1577,7 @@ function AdminDashboard({
                     <CardHeader className="gap-1 pb-4">
                         <CardTitle>Tren Pendaftaran</CardTitle>
                         <CardDescription className="text-xs">
-                            Pendaftaran baru per bulan
+                            Jumlah pendaftaran baru per bulan
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1488,7 +1613,7 @@ function AdminDashboard({
                     <CardHeader className="gap-1 pb-4">
                         <CardTitle>Pertumbuhan Pengguna</CardTitle>
                         <CardDescription className="text-xs">
-                            Registrasi baru per bulan
+                            Jumlah pengguna baru per bulan
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1556,13 +1681,13 @@ function AdminDashboard({
                     <CardHeader className="gap-1 pb-4">
                         <CardTitle>Kursus Teratas</CardTitle>
                         <CardDescription className="text-xs">
-                            Berdasarkan jumlah pendaftaran
+                            Berdasarkan pendaftaran dan tingkat penyelesaian
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {coursePerformance.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                Belum ada kursus yang dipublikasikan.
+                                Belum ada kursus yang telah dipublikasikan.
                             </p>
                         ) : (
                             <DataTable
@@ -1580,13 +1705,13 @@ function AdminDashboard({
                     <CardHeader className="gap-1 pb-4">
                         <CardTitle>Tantangan Teratas</CardTitle>
                         <CardDescription className="text-xs">
-                            Berdasarkan submission dan rasio sukses
+                            Berdasarkan pengiriman dan tingkat keberhasilan
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {challengePerformance.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                Belum ada tantangan yang dikerjakan.
+                                Belum ada tantangan yang telah dikerjakan.
                             </p>
                         ) : (
                             <DataTable
@@ -1609,15 +1734,15 @@ function AdminDashboard({
             >
                 <Card>
                     <CardHeader>
-                        <CardTitle>Registrasi Terkini</CardTitle>
+                        <CardTitle>Pendaftaran Terkini</CardTitle>
                         <CardDescription>
-                            Pengguna terbaru di platform
+                            Pengguna yang baru bergabung di platform
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {recentUsers.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                Belum ada pengguna yang terdaftar.
+                                Belum ada pengguna yang telah terdaftar.
                             </p>
                         ) : (
                             <DataTable

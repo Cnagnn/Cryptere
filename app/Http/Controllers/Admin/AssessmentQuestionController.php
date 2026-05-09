@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentQuestion;
+use App\Models\QuestionBank;
 use App\Services\RubricScoringService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,8 +56,8 @@ class AssessmentQuestionController extends Controller
         ]);
 
         // If created from question bank, increment usage
-        if (!empty($validated['question_bank_id'])) {
-            $questionBank = \App\Models\QuestionBank::find($validated['question_bank_id']);
+        if (! empty($validated['question_bank_id'])) {
+            $questionBank = QuestionBank::find($validated['question_bank_id']);
             $questionBank?->incrementUsage();
         }
 

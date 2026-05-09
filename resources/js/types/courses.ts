@@ -11,11 +11,7 @@ export type CourseCard = {
     enrollmentCount: number;
     isEnrolled: boolean;
     progressPercentage: number | null;
-    labGroup?:
-        | 'classical'
-        | 'symmetric'
-        | 'asymmetric'
-        | 'signature';
+    labGroup?: 'classical' | 'symmetric' | 'asymmetric' | 'signature';
     timeStart?: string | null;
     timeEnd?: string | null;
     status?: 'upcoming' | 'active' | 'ended';

@@ -167,6 +167,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the balance change history for the user.
+     */
+    public function balanceChanges(): HasMany
+    {
+        return $this->hasMany(UserBalanceChange::class);
+    }
+
+    /**
      * Get challenge submissions for the user.
      */
     public function challengeSubmissions(): HasMany

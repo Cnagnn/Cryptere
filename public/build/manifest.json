@@ -829,7 +829,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-BJePZlc-.css",
+    "file": "assets/app-DBuGHZmX.css",
     "name": "app",
     "names": [
       "app.css"
@@ -838,7 +838,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-Bt2Ftm9g.js",
+    "file": "assets/app-D5VE6n79.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -890,7 +890,7 @@
     ]
   },
   "resources/js/pages/admin/courses/assessment.tsx": {
-    "file": "assets/assessment-C9NnKYa8.js",
+    "file": "assets/assessment-CJSHHnaI.js",
     "name": "assessment",
     "src": "resources/js/pages/admin/courses/assessment.tsx",
     "isDynamicEntry": true,
@@ -923,7 +923,7 @@
     ]
   },
   "resources/js/pages/admin/courses/index.tsx": {
-    "file": "assets/courses-C9twVMFL.js",
+    "file": "assets/courses-BgZ1NyDQ.js",
     "name": "courses",
     "src": "resources/js/pages/admin/courses/index.tsx",
     "isDynamicEntry": true,
@@ -938,7 +938,7 @@
     ]
   },
   "resources/js/pages/admin/courses/task.tsx": {
-    "file": "assets/task-pZD75uJS.js",
+    "file": "assets/task-CY-O7zqp.js",
     "name": "task",
     "src": "resources/js/pages/admin/courses/task.tsx",
     "isDynamicEntry": true,
@@ -1268,7 +1268,7 @@
     ]
   },
   "resources/js/pages/courses/index.tsx": {
-    "file": "assets/courses-CecYwB_p.js",
+    "file": "assets/courses-BZ4ijA7r.js",
     "name": "courses",
     "src": "resources/js/pages/courses/index.tsx",
     "isDynamicEntry": true,
@@ -1337,7 +1337,7 @@
     ]
   },
   "resources/js/pages/dashboard.tsx": {
-    "file": "assets/dashboard-C5uPeXDn.js",
+    "file": "assets/dashboard-Uqh3Phzi.js",
     "name": "dashboard",
     "src": "resources/js/pages/dashboard.tsx",
     "isDynamicEntry": true,
@@ -1383,7 +1383,7 @@
     ]
   },
   "resources/js/pages/labs/index.tsx": {
-    "file": "assets/labs-BZVZ54Yq.js",
+    "file": "assets/labs-D3cYXPZ8.js",
     "name": "labs",
     "src": "resources/js/pages/labs/index.tsx",
     "isDynamicEntry": true,
@@ -1395,7 +1395,7 @@
     ]
   },
   "resources/js/pages/labs/show.tsx": {
-    "file": "assets/show-ylcO8Zfu.js",
+    "file": "assets/show-C3O5DF3_.js",
     "name": "show",
     "src": "resources/js/pages/labs/show.tsx",
     "isDynamicEntry": true,
@@ -1593,7 +1593,7 @@
     ]
   },
   "resources/js/pages/welcome.tsx": {
-    "file": "assets/welcome-Dqr0y0iU.js",
+    "file": "assets/welcome-Bt_BegzN.js",
     "name": "welcome",
     "src": "resources/js/pages/welcome.tsx",
     "isDynamicEntry": true,

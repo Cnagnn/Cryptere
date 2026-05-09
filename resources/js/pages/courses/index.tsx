@@ -1,5 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRight, BookOpenCheck, CheckCircle2, Filter, Search, X } from 'lucide-react';
+import {
+    ArrowRight,
+    BookOpenCheck,
+    CheckCircle2,
+    Filter,
+    Search,
+    X,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -482,7 +489,7 @@ function CourseCardGrid({
 
                     <CardHeader>
                         {course.isEnrolled && (
-                            <Badge variant="secondary" className="w-fit mb-2">
+                            <Badge variant="secondary" className="mb-2 w-fit">
                                 <CheckCircle2 className="mr-1 size-3" />
                                 Terdaftar
                             </Badge>

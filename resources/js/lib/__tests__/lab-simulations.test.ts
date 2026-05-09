@@ -556,7 +556,6 @@ describe('Utility Functions', () => {
             );
             expect(error).toBeTruthy();
         });
-
     });
 
     describe('keyLabelByLab', () => {

@@ -46,7 +46,11 @@ import { dashboard } from '@/routes';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
-import type { Auth, BreadcrumbItem as BreadcrumbItemType, NavItem } from '@/types';
+import type {
+    Auth,
+    BreadcrumbItem as BreadcrumbItemType,
+    NavItem,
+} from '@/types';
 
 type Props = {
     breadcrumbs?: BreadcrumbItemType[];

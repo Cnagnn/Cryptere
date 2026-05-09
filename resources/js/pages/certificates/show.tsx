@@ -12,10 +12,7 @@ import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import AppLayout from '@/layouts/app-layout';

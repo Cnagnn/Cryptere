@@ -1,5 +1,14 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { Eye, EyeOff, LoaderCircle, Lock, Mail, Monitor, Moon, Sun } from 'lucide-react';
+import {
+    Eye,
+    EyeOff,
+    LoaderCircle,
+    Lock,
+    Mail,
+    Monitor,
+    Moon,
+    Sun,
+} from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -72,7 +81,8 @@ type Props = {
 };
 
 export default function ResetPassword({ token, email }: Props) {
-    const { resolvedAppearance, appearance, updateAppearance } = useAppearance();
+    const { resolvedAppearance, appearance, updateAppearance } =
+        useAppearance();
 
     return (
         <>
@@ -94,7 +104,9 @@ export default function ResetPassword({ token, email }: Props) {
                             <Tabs
                                 value={appearance}
                                 onValueChange={(value) =>
-                                    updateAppearance(value as 'light' | 'dark' | 'system')
+                                    updateAppearance(
+                                        value as 'light' | 'dark' | 'system',
+                                    )
                                 }
                             >
                                 <TabsList>
@@ -131,7 +143,10 @@ export default function ResetPassword({ token, email }: Props) {
                         <Form
                             {...update()}
                             transform={(data) => ({ ...data, token, email })}
-                            resetOnSuccess={['password', 'password_confirmation']}
+                            resetOnSuccess={[
+                                'password',
+                                'password_confirmation',
+                            ]}
                             className="flex flex-col gap-6"
                         >
                             {({ processing, errors }) => (
@@ -149,7 +164,8 @@ export default function ResetPassword({ token, email }: Props) {
                                                 autoComplete="email"
                                                 value={email}
                                                 aria-invalid={
-                                                    Boolean(errors.email) || undefined
+                                                    Boolean(errors.email) ||
+                                                    undefined
                                                 }
                                                 className="w-full pl-9"
                                                 readOnly
@@ -162,7 +178,9 @@ export default function ResetPassword({ token, email }: Props) {
                                         )}
                                     </Field>
 
-                                    <Field data-invalid={Boolean(errors.password)}>
+                                    <Field
+                                        data-invalid={Boolean(errors.password)}
+                                    >
                                         <FieldLabel htmlFor="password">
                                             Kata Sandi Baru
                                         </FieldLabel>

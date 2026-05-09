@@ -81,7 +81,13 @@ import type { CourseRow, LessonRow } from '@/types/course-management';
 
 type ContentStatus = 'draft' | 'published' | 'archived';
 
-function StatusBadge({ status, className }: { status: ContentStatus; className?: string }) {
+function StatusBadge({
+    status,
+    className,
+}: {
+    status: ContentStatus;
+    className?: string;
+}) {
     const config = {
         draft: {
             icon: CircleDashed,

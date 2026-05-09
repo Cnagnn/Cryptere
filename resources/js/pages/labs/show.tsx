@@ -115,7 +115,13 @@ export default function LabsShow({ lab }: LabShowProps) {
             normalizedInput.value,
             keyInput,
         );
-    }, [keyInput, lab.slug, mode, normalizedInput.error, normalizedInput.value]);
+    }, [
+        keyInput,
+        lab.slug,
+        mode,
+        normalizedInput.error,
+        normalizedInput.value,
+    ]);
 
     const rawResult = useMemo(() => {
         if (validationError !== null) {
@@ -292,7 +298,7 @@ export default function LabsShow({ lab }: LabShowProps) {
 
                             {/* Format toggle */}
                             {showConfig && (
-                                <div className="animate-in fade-in-0 slide-in-from-top-1 flex flex-col gap-3 rounded-lg border p-3 duration-200">
+                                <div className="flex animate-in flex-col gap-3 rounded-lg border p-3 duration-200 fade-in-0 slide-in-from-top-1">
                                     <div className="flex flex-col gap-1.5">
                                         <Label className="text-[11px] text-muted-foreground">
                                             Format masukan
@@ -320,7 +326,9 @@ export default function LabsShow({ lab }: LabShowProps) {
                                         </Select>
                                         <span className="text-[10px] text-muted-foreground/60">
                                             Disarankan:{' '}
-                                            {formatLabel(recommendedInputFormat)}
+                                            {formatLabel(
+                                                recommendedInputFormat,
+                                            )}
                                         </span>
                                     </div>
                                     <div className="flex flex-col gap-1.5">
@@ -408,7 +416,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 </div>
                                 <div className="rounded-lg bg-muted/40 p-3 font-mono text-sm leading-relaxed break-all">
                                     {outputPresentation.value || (
-                                        <span className="italic text-muted-foreground/40">
+                                        <span className="text-muted-foreground/40 italic">
                                             Menunggu input...
                                         </span>
                                     )}
@@ -438,7 +446,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 <div className="flex items-center gap-1.5">
                                     <Badge
                                         variant="outline"
-                                        className="tabular-nums text-[10px]"
+                                        className="text-[10px] tabular-nums"
                                     >
                                         {safeActiveStepIndex + 1}/
                                         {rawResult.steps.length}
@@ -501,7 +509,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 {rawResult.steps.length > 0 && (
                                     <div
                                         key={`step-${safeActiveStepIndex}`}
-                                        className="animate-in fade-in-0 mt-3 rounded-lg bg-primary/5 px-3 py-2.5 duration-200"
+                                        className="mt-3 animate-in rounded-lg bg-primary/5 px-3 py-2.5 duration-200 fade-in-0"
                                         {...swipeHandlers}
                                     >
                                         <p className="text-[13px] leading-relaxed">
@@ -558,7 +566,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                                             <td className="px-6 py-2 font-mono text-xs break-all">
                                                                 {row.source}
                                                             </td>
-                                                            <td className="px-3 py-2 text-xs text-muted-foreground break-all">
+                                                            <td className="px-3 py-2 text-xs break-all text-muted-foreground">
                                                                 {row.operation}
                                                             </td>
                                                             <td className="px-6 py-2 font-mono text-xs break-all">

@@ -149,7 +149,7 @@ class QuestionBankController extends Controller
     public function duplicate(Request $request, QuestionBank $questionBank): RedirectResponse
     {
         $newQuestion = $questionBank->replicate();
-        $newQuestion->title = $questionBank->title . ' (Copy)';
+        $newQuestion->title = $questionBank->title.' (Copy)';
         $newQuestion->created_by = $request->user()->id;
         $newQuestion->times_used = 0;
         $newQuestion->save();
@@ -216,7 +216,7 @@ class QuestionBankController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withErrors(['error' => 'Import failed: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Import failed: '.$e->getMessage()]);
         }
     }
 

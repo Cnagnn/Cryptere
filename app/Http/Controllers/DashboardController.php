@@ -35,11 +35,13 @@ class DashboardController extends Controller
                     $this->learnerBuilder->build($user),
                 )));
                 \Log::info('Admin dashboard rendered successfully', ['user_id' => $user->id]);
+
                 return $result;
             }
             \Log::info('Rendering learner dashboard', ['user_id' => $user->id]);
             $result = $this->traceSpan('dashboard.learner', 'Learner dashboard render', fn () => Inertia::render('dashboard', $this->learnerBuilder->build($user)));
             \Log::info('Learner dashboard rendered successfully', ['user_id' => $user->id]);
+
             return $result;
         } catch (\Throwable $e) {
             \Log::error('Dashboard error', [

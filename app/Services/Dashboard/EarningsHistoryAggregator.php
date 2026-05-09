@@ -14,67 +14,74 @@ class EarningsHistoryAggregator
      */
     public function build(User $user): array
     {
-        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
-
         // ── Weekly: last 7 days ──
         $weeklyStart = now()->subDays(6)->startOfDay();
 
-        $lessonPointsByDay = $user->lessonProgress()
-            ->whereNotNull('completed_at')
-            ->where('completed_at', '>=', $weeklyStart)
-            ->get(['completed_at'])
-            ->groupBy(fn ($p): string => $p->completed_at->format('Y-m-d'))
-            ->map(fn ($rows): int => $rows->count() * $lessonXpPerLesson);
+        $weeklyTotals = $user->balanceChanges()
+            ->selectRaw('DATE(created_at) as period, SUM(xp_delta) as xp, SUM(points_delta) as points')
+            ->where('created_at', '>=', $weeklyStart)
+            ->groupByRaw('DATE(created_at)')
+            ->get()
+            ->keyBy('period');
 
-        $challengePointsByDay = $user->challengeSubmissions()
-            ->where('is_correct', true)
-            ->whereNotNull('submitted_at')
-            ->where('submitted_at', '>=', $weeklyStart)
-            ->get(['submitted_at', 'score'])
-            ->groupBy(fn ($s): string => $s->submitted_at->format('Y-m-d'))
-            ->map(fn ($rows): int => (int) $rows->sum('score'));
-
-        $weeklySeries = collect(range(6, 0))->map(function (int $dayOffset) use ($lessonPointsByDay, $challengePointsByDay): array {
+        $weeklySeries = collect(range(6, 0))->map(function (int $dayOffset) use ($weeklyTotals): array {
             $day = now()->subDays($dayOffset);
             $period = $day->format('Y-m-d');
-            $lessonPts = (int) ($lessonPointsByDay[$period] ?? 0);
-            $challengePts = (int) ($challengePointsByDay[$period] ?? 0);
+            $totals = $weeklyTotals->get($period);
+
+            // Translate day names to Indonesian
+            $dayNames = [
+                'Sun' => 'Min',
+                'Mon' => 'Sen',
+                'Tue' => 'Sel',
+                'Wed' => 'Rab',
+                'Thu' => 'Kam',
+                'Fri' => 'Jum',
+                'Sat' => 'Sab',
+            ];
 
             return [
-                'label' => $day->format('D'),
-                'points' => $lessonPts + $challengePts,
-                'xp' => $lessonPts,
+                'label' => $dayNames[$day->format('D')] ?? $day->format('D'),
+                'points' => (int) ($totals->points ?? 0),
+                'xp' => (int) ($totals->xp ?? 0),
             ];
         })->values();
 
         // ── Monthly: last 12 months ──
         $monthlyStart = now()->subMonths(11)->startOfMonth();
 
-        $lessonPointsByMonth = $user->lessonProgress()
-            ->whereNotNull('completed_at')
-            ->where('completed_at', '>=', $monthlyStart)
-            ->get(['completed_at'])
-            ->groupBy(fn ($p): string => $p->completed_at->format('Y-m'))
-            ->map(fn ($rows): int => $rows->count() * $lessonXpPerLesson);
+        $monthlyTotals = $user->balanceChanges()
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, SUM(xp_delta) as xp, SUM(points_delta) as points")
+            ->where('created_at', '>=', $monthlyStart)
+            ->groupByRaw("DATE_FORMAT(created_at, '%Y-%m')")
+            ->get()
+            ->keyBy('period');
 
-        $challengePointsByMonth = $user->challengeSubmissions()
-            ->where('is_correct', true)
-            ->whereNotNull('submitted_at')
-            ->where('submitted_at', '>=', $monthlyStart)
-            ->get(['submitted_at', 'score'])
-            ->groupBy(fn ($s): string => $s->submitted_at->format('Y-m'))
-            ->map(fn ($rows): int => (int) $rows->sum('score'));
-
-        $monthlySeries = collect(range(11, 0))->map(function (int $monthOffset) use ($lessonPointsByMonth, $challengePointsByMonth): array {
+        $monthlySeries = collect(range(11, 0))->map(function (int $monthOffset) use ($monthlyTotals): array {
             $month = now()->subMonths($monthOffset)->startOfMonth();
             $period = $month->format('Y-m');
-            $lessonPts = (int) ($lessonPointsByMonth[$period] ?? 0);
-            $challengePts = (int) ($challengePointsByMonth[$period] ?? 0);
+            $totals = $monthlyTotals->get($period);
+
+            // Translate month names to Indonesian
+            $monthNames = [
+                'Jan' => 'Jan',
+                'Feb' => 'Feb',
+                'Mar' => 'Mar',
+                'Apr' => 'Apr',
+                'May' => 'Mei',
+                'Jun' => 'Jun',
+                'Jul' => 'Jul',
+                'Aug' => 'Agu',
+                'Sep' => 'Sep',
+                'Oct' => 'Okt',
+                'Nov' => 'Nov',
+                'Dec' => 'Des',
+            ];
 
             return [
-                'label' => $month->format('M'),
-                'points' => $lessonPts + $challengePts,
-                'xp' => $lessonPts,
+                'label' => $monthNames[$month->format('M')] ?? $month->format('M'),
+                'points' => (int) ($totals->points ?? 0),
+                'xp' => (int) ($totals->xp ?? 0),
             ];
         })->values();
 

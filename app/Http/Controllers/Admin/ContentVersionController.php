@@ -23,7 +23,7 @@ class ContentVersionController extends Controller
             'versionable_id' => ['required', 'integer'],
         ]);
 
-        $versionableType = 'App\\Models\\' . $validated['versionable_type'];
+        $versionableType = 'App\\Models\\'.$validated['versionable_type'];
         $versionableId = $validated['versionable_id'];
 
         $versions = ContentVersion::query()
@@ -66,7 +66,7 @@ class ContentVersionController extends Controller
         try {
             $model = $contentVersion->versionable;
 
-            if (!$model) {
+            if (! $model) {
                 return back()->withErrors(['error' => 'Entity not found.']);
             }
 
@@ -86,8 +86,9 @@ class ContentVersionController extends Controller
             // Restore the version
             $success = $contentVersion->restore();
 
-            if (!$success) {
+            if (! $success) {
                 DB::rollBack();
+
                 return back()->withErrors(['error' => 'Failed to restore version.']);
             }
 
@@ -104,7 +105,7 @@ class ContentVersionController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withErrors(['error' => 'Restore failed: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Restore failed: '.$e->getMessage()]);
         }
     }
 
