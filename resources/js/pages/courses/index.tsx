@@ -488,12 +488,6 @@ function CourseCardGrid({
                     <CourseThumbnail title={course.title} />
 
                     <CardHeader>
-                        {course.isEnrolled && (
-                            <Badge variant="secondary" className="mb-2 w-fit">
-                                <CheckCircle2 className="mr-1 size-3" />
-                                Terdaftar
-                            </Badge>
-                        )}
                         <CardTitle className="text-xl leading-tight tracking-tight">
                             {course.title}
                         </CardTitle>

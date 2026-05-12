@@ -16,6 +16,7 @@ use App\Models\QuizSubmission;
 use App\Models\TaskProgress;
 use App\Services\BadgeService;
 use App\Services\LevelService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class EnrollmentController extends Controller
     /**
      * Enroll the current user into a course.
      */
-    public function store(Request $request, Course $course): RedirectResponse
+    public function store(Request $request, Course $course): RedirectResponse|JsonResponse
     {
         $this->authorize('enroll', $course);
 

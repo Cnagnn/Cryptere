@@ -101,7 +101,7 @@ class CourseDetailBuilder
             'taskId' => $task->id,
             'type' => $task->type,
             'title' => $task->title,
-            'minutes' => $task->minutes,
+            'minutes' => $task->estimated_minutes,
             'videoUrl' => $task->video_mp4_url ?? $task->video_url,
             'videoProcessingStatus' => $task->video_processing_status,
             'videoPositionSeconds' => $progress?->video_position_seconds ?? 0,
