@@ -21,7 +21,6 @@ use Illuminate\Support\Str;
     'cover_path',
     'estimated_minutes',
     'sort_order',
-    'is_published',
     'prerequisite_course_id',
     'category',
     'difficulty',
@@ -40,7 +39,6 @@ class Course extends Model
     {
         return [
             'estimated_minutes' => 'integer',
-            'is_published' => 'boolean',
             'status' => 'string',
             'version' => 'integer',
         ];

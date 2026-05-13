@@ -11,8 +11,8 @@ test('TTL constants are correct', function () {
 });
 
 test('getPublishedCourseCount caches result', function () {
-    Course::factory()->count(3)->create(['is_published' => true]);
-    Course::factory()->count(2)->create(['is_published' => false]);
+    Course::factory()->count(3)->create(['status' => 'published']);
+    Course::factory()->count(2)->create(['status' => 'draft']);
 
     $service = new CacheService;
     $count = $service->getPublishedCourseCount();

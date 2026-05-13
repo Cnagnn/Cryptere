@@ -26,7 +26,7 @@ class CourseFactory extends Factory
             'summary' => fake()->paragraph(),
             'estimated_minutes' => fake()->numberBetween(20, 120),
             'sort_order' => fake()->numberBetween(1, 40),
-            'is_published' => true,
+            'status' => 'published',
         ];
     }
 }

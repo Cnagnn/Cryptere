@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\XpAwarded;
 use App\Features\IndonesianLocale;
 use App\Features\RealtimeLeaderboard;
+use App\Http\Responses\Auth\NeutralPasswordResetLinkResponse;
 use App\Listeners\BroadcastLeaderboardUpdate;
 use App\Listeners\LogXpAward;
 use App\Models\User;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
+use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
 use Laravel\Pennant\Feature;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,7 +33,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(
+            FailedPasswordResetLinkRequestResponse::class,
+            NeutralPasswordResetLinkResponse::class,
+        );
+
+        $this->app->singleton(
+            SuccessfulPasswordResetLinkRequestResponse::class,
+            NeutralPasswordResetLinkResponse::class,
+        );
     }
 
     /**

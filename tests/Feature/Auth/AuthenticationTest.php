@@ -38,6 +38,18 @@ test('user cannot login with invalid password', function () {
     $this->assertGuest();
 });
 
+test('login failure can return Indonesian auth message', function () {
+    $this
+        ->withHeader('Accept-Language', 'id-ID,id;q=0.9')
+        ->post('/login', [
+            'email' => 'missing@example.com',
+            'password' => 'wrong-password',
+        ])
+        ->assertSessionHasErrors([
+            'email' => 'Masuk gagal. Periksa kredensial atau atur ulang kata sandi.',
+        ]);
+});
+
 test('user can register', function () {
     $this->post('/register', [
         'name' => 'Test User',
@@ -45,6 +57,7 @@ test('user can register', function () {
         'email' => 'test@example.com',
         'password' => 'Password123!',
         'password_confirmation' => 'Password123!',
+        'terms' => 'on',
     ])->assertRedirect('/dashboard');
 
     $this->assertAuthenticated();

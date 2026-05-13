@@ -10,21 +10,21 @@ beforeEach(function () {
 
 test('any user can view published course', function () {
     $user = User::factory()->create(['is_admin' => false]);
-    $course = Course::factory()->create(['is_published' => true]);
+    $course = Course::factory()->create(['status' => 'published']);
 
     expect($this->policy->view($user, $course))->toBeTrue();
 });
 
 test('non-admin cannot view unpublished course', function () {
     $user = User::factory()->create(['is_admin' => false]);
-    $course = Course::factory()->create(['is_published' => false]);
+    $course = Course::factory()->create(['status' => 'draft']);
 
     expect($this->policy->view($user, $course))->toBeFalse();
 });
 
 test('admin can view unpublished course', function () {
     $user = User::factory()->create(['role' => 'admin']);
-    $course = Course::factory()->create(['is_published' => false]);
+    $course = Course::factory()->create(['status' => 'draft']);
 
     expect($this->policy->view($user, $course))->toBeTrue();
 });
@@ -57,14 +57,14 @@ test('only admin can delete courses', function () {
 
 test('user can enroll in published course', function () {
     $user = User::factory()->create();
-    $course = Course::factory()->create(['is_published' => true]);
+    $course = Course::factory()->create(['status' => 'published']);
 
     expect($this->policy->enroll($user, $course))->toBeTrue();
 });
 
 test('user cannot enroll in unpublished course', function () {
     $user = User::factory()->create();
-    $course = Course::factory()->create(['is_published' => false]);
+    $course = Course::factory()->create(['status' => 'draft']);
 
     expect($this->policy->enroll($user, $course))->toBeFalse();
 });

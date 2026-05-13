@@ -22,10 +22,13 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        $input['profile_visibility'] ??= 'private';
+
         Validator::make($input, [
             ...$this->profileRules(),
             'username' => ['required', 'string', 'min:4', 'max:255', 'unique:users,username', 'regex:/^[a-zA-Z0-9._]+$/'],
             'password' => $this->passwordRules(),
+            'terms' => ['accepted'],
         ], [
             'username.regex' => 'The username may only contain letters, numbers, dots (.), and underscores (_).',
         ])->validate();
@@ -41,6 +44,7 @@ class CreateNewUser implements CreatesNewUsers
             'is_admin' => $isFirstUser,
             'role' => $isFirstUser ? 'admin' : 'member',
             'status' => 'active',
+            'profile_visibility' => $input['profile_visibility'],
         ]);
 
         if ($hasSocialRegistrationContext) {

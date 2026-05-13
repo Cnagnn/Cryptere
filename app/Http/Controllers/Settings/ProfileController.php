@@ -52,6 +52,7 @@ class ProfileController extends Controller
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             'profileUser' => $this->profilePageData->profileUser($user, true),
+            'profileUrl' => route('profile.show', $user->username),
             'badges' => $this->profilePageData->badges($user),
             'socialAccounts' => $socialAccounts,
             'hasPassword' => $this->userHasUsablePassword($user),

@@ -1,6 +1,14 @@
-import { useHttp } from '@inertiajs/react';
+import { router, useHttp } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
-import { qrCode, recoveryCodes, secretKey } from '@/routes/two-factor';
+import {
+    confirm,
+    disable,
+    enable,
+    qrCode,
+    recoveryCodes,
+    regenerateRecoveryCodes,
+    secretKey,
+} from '@/routes/two-factor';
 
 export type UseTwoFactorAuthReturn = {
     qrCodeSvg: string | null;
@@ -11,6 +19,10 @@ export type UseTwoFactorAuthReturn = {
     clearErrors: () => void;
     clearSetupData: () => void;
     clearTwoFactorAuthData: () => void;
+    enableTwoFactor: () => Promise<void>;
+    confirmTwoFactor: (code: string) => Promise<void>;
+    disableTwoFactor: () => Promise<void>;
+    regenerateRecoveryCodes: () => Promise<void>;
     fetchQrCode: () => Promise<void>;
     fetchSetupKey: () => Promise<void>;
     fetchSetupData: () => Promise<void>;
@@ -84,6 +96,73 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
         }
     }, [submit]);
 
+    const enableTwoFactor = useCallback(async (): Promise<void> => {
+        setErrors([]);
+
+        await new Promise<void>((resolve, reject) => {
+            router.post(enable.url(), undefined, {
+                preserveScroll: true,
+                onSuccess: () => resolve(),
+                onError: () => {
+                    setErrors(['Failed to enable two-factor authentication']);
+                    reject(new Error('Failed to enable two-factor authentication'));
+                },
+            });
+        });
+    }, []);
+
+    const confirmTwoFactor = useCallback(async (code: string): Promise<void> => {
+        setErrors([]);
+
+        await new Promise<void>((resolve, reject) => {
+            router.post(
+                confirm.url(),
+                { code },
+                {
+                    preserveScroll: true,
+                    onSuccess: () => resolve(),
+                    onError: () => {
+                        setErrors(['The verification code was not accepted']);
+                        reject(new Error('The verification code was not accepted'));
+                    },
+                },
+            );
+        });
+    }, []);
+
+    const disableTwoFactor = useCallback(async (): Promise<void> => {
+        setErrors([]);
+
+        await new Promise<void>((resolve, reject) => {
+            router.delete(disable.url(), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    clearTwoFactorAuthData();
+                    resolve();
+                },
+                onError: () => {
+                    setErrors(['Failed to disable two-factor authentication']);
+                    reject(
+                        new Error('Failed to disable two-factor authentication'),
+                    );
+                },
+            });
+        });
+    }, [clearTwoFactorAuthData]);
+
+    const regenerateCodes = useCallback(async (): Promise<void> => {
+        try {
+            setErrors([]);
+            await submit(regenerateRecoveryCodes());
+            await fetchRecoveryCodes();
+        } catch {
+            setErrors((prev) => [
+                ...prev,
+                'Failed to regenerate recovery codes',
+            ]);
+        }
+    }, [fetchRecoveryCodes, submit]);
+
     const fetchSetupData = useCallback(async (): Promise<void> => {
         try {
             setErrors([]);
@@ -103,6 +182,10 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
         clearErrors,
         clearSetupData,
         clearTwoFactorAuthData,
+        enableTwoFactor,
+        confirmTwoFactor,
+        disableTwoFactor,
+        regenerateRecoveryCodes: regenerateCodes,
         fetchQrCode,
         fetchSetupKey,
         fetchSetupData,

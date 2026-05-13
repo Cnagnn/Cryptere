@@ -30,7 +30,7 @@ class AssessmentFactory extends Factory
             'passing_score' => 70,
             'max_attempts' => 3,
             'time_limit_minutes' => fake()->randomElement([null, 30, 60, 90]),
-            'is_published' => true,
+            'status' => 'published',
             'sort_order' => fake()->numberBetween(1, 100),
         ];
     }
@@ -45,12 +45,12 @@ class AssessmentFactory extends Factory
 
     public function published(): static
     {
-        return $this->state(fn () => ['is_published' => true]);
+        return $this->state(fn () => ['status' => 'published']);
     }
 
     public function unpublished(): static
     {
-        return $this->state(fn () => ['is_published' => false]);
+        return $this->state(fn () => ['status' => 'draft']);
     }
 
     private function titleForBloom(string $level): string

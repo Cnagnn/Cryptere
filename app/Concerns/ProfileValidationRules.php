@@ -16,11 +16,12 @@ trait ProfileValidationRules
     {
         return [
             'name' => $this->nameRules(),
+            'username' => $this->usernameRules($userId),
             'email' => $this->emailRules($userId),
             'bio' => ['nullable', 'string', 'max:500'],
-            'pronoun' => ['nullable', 'string', 'max:50'],
+            'pronoun' => ['nullable', 'string', 'max:30'],
             'location' => ['nullable', 'string', 'max:255'],
-            'profile_visibility' => ['nullable', 'string', Rule::in(['public', 'private'])],
+            'profile_visibility' => ['required', 'string', Rule::in(['public', 'private'])],
         ];
     }
 
@@ -32,6 +33,25 @@ trait ProfileValidationRules
     protected function nameRules(): array
     {
         return ['required', 'string', 'max:255'];
+    }
+
+    /**
+     * Get the validation rules used to validate public usernames.
+     *
+     * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
+     */
+    protected function usernameRules(?int $userId = null): array
+    {
+        return [
+            'required',
+            'string',
+            'min:4',
+            'max:255',
+            'regex:/^[a-zA-Z0-9._]+$/',
+            $userId === null
+                ? Rule::unique(User::class, 'username')
+                : Rule::unique(User::class, 'username')->ignore($userId),
+        ];
     }
 
     /**

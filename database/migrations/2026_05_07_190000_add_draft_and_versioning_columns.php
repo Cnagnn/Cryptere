@@ -78,6 +78,7 @@ return new class extends Migration
 
         // Drop old is_published column
         Schema::table('assessments', function (Blueprint $table) {
+            $table->dropIndex(['is_published', 'bloom_level']);
             $table->dropColumn('is_published');
         });
     }
@@ -90,6 +91,7 @@ return new class extends Migration
         // Assessments - restore is_published
         Schema::table('assessments', function (Blueprint $table) {
             $table->boolean('is_published')->default(false)->after('time_limit_minutes');
+            $table->index(['is_published', 'bloom_level']);
         });
 
         DB::table('assessments')->update([

@@ -19,13 +19,16 @@ return new class extends Migration
         // Drop user_progress table (obsolete, replaced by task_progress)
         Schema::dropIfExists('user_progress');
 
-        // Verify no other foreign keys reference tasks table
-        $foreignKeys = DB::select("
-            SELECT CONSTRAINT_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-            AND REFERENCED_TABLE_NAME = 'tasks'
-        ");
+        // Verify no other foreign keys reference tasks table.
+        // SQLite has no information_schema during in-memory tests.
+        $foreignKeys = Schema::getConnection()->getDriverName() === 'sqlite'
+            ? []
+            : DB::select("
+                SELECT CONSTRAINT_NAME
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = DATABASE()
+                AND REFERENCED_TABLE_NAME = 'tasks'
+            ");
 
         if (count($foreignKeys) > 0) {
             $names = implode(', ', array_map(fn ($fk) => $fk->CONSTRAINT_NAME, $foreignKeys));

@@ -11,6 +11,7 @@ import {
     Monitor,
     Moon,
     Sun,
+    User,
     XCircle,
 } from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';
@@ -36,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 import { redirect as socialRedirect } from '@/routes/social';
+import { checkUsername } from '@/routes/users';
 
 function PasswordInput({
     className,
@@ -179,9 +181,7 @@ export default function Register({ status, socialUser }: Props) {
         }
 
         const timer = setTimeout(() => {
-            fetch(
-                `/api/users/check-username?username=${encodeURIComponent(username)}`,
-            )
+            fetch(checkUsername.url({ query: { username } }))
                 .then((res) => res.json())
                 .then((data) => {
                     setUsernameAvailability(
@@ -252,7 +252,7 @@ export default function Register({ status, socialUser }: Props) {
                         )}
 
                         <Form
-                            {...store()}
+                            {...store.form()}
                             resetOnSuccess={[
                                 'password',
                                 'password_confirmation',
@@ -262,12 +262,6 @@ export default function Register({ status, socialUser }: Props) {
                         >
                             {({ processing, errors }) => (
                                 <>
-                                    <Input
-                                        type="hidden"
-                                        name="name"
-                                        value={username.trim()}
-                                    />
-
                                     {!isSocialRegistration && (
                                         <>
                                             <div className="grid grid-cols-2 gap-3">
@@ -347,6 +341,48 @@ export default function Register({ status, socialUser }: Props) {
                                             data-invalid={Boolean(errors.name)}
                                         >
                                             <FieldLabel
+                                                htmlFor="name"
+                                                className="flex items-center"
+                                            >
+                                                Nama Tampilan{' '}
+                                                <span className="ml-1 text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <div className="relative">
+                                                <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                                <Input
+                                                    id="name"
+                                                    type="text"
+                                                    required
+                                                    autoFocus
+                                                    tabIndex={1}
+                                                    autoComplete="name"
+                                                    name="name"
+                                                    placeholder="Nama lengkap"
+                                                    className="pl-9"
+                                                    defaultValue={
+                                                        socialUser?.name ?? ''
+                                                    }
+                                                    aria-invalid={
+                                                        Boolean(errors.name) ||
+                                                        undefined
+                                                    }
+                                                />
+                                            </div>
+                                            {errors.name && (
+                                                <p className="text-sm text-destructive">
+                                                    {errors.name}
+                                                </p>
+                                            )}
+                                        </Field>
+
+                                        <Field
+                                            data-invalid={Boolean(
+                                                errors.username,
+                                            )}
+                                        >
+                                            <FieldLabel
                                                 htmlFor="username"
                                                 className="flex items-center"
                                             >
@@ -393,16 +429,16 @@ export default function Register({ status, socialUser }: Props) {
                                                     type="text"
                                                     required
                                                     minLength={4}
-                                                    autoFocus
-                                                    tabIndex={1}
+                                                    tabIndex={2}
                                                     autoComplete="username"
                                                     name="username"
                                                     placeholder="username"
                                                     className={`pl-9 ${['taken', 'short'].includes(usernameStatus) ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                                                     value={username}
                                                     aria-invalid={
-                                                        Boolean(errors.name) ||
-                                                        undefined
+                                                        Boolean(
+                                                            errors.username,
+                                                        ) || undefined
                                                     }
                                                     onChange={(e) => {
                                                         const val =
@@ -417,9 +453,9 @@ export default function Register({ status, socialUser }: Props) {
                                                     }}
                                                 />
                                             </div>
-                                            {errors.name && (
+                                            {errors.username && (
                                                 <p className="text-sm text-destructive">
-                                                    {errors.name}
+                                                    {errors.username}
                                                 </p>
                                             )}
                                         </Field>
@@ -494,7 +530,7 @@ export default function Register({ status, socialUser }: Props) {
                                                     id="email"
                                                     type="email"
                                                     required
-                                                    tabIndex={2}
+                                                    tabIndex={3}
                                                     autoComplete="email"
                                                     name="email"
                                                     placeholder="email@domain.com"
@@ -563,11 +599,38 @@ export default function Register({ status, socialUser }: Props) {
                                                 />
                                             </div>
                                         )}
-                                        <Input
-                                            type="hidden"
+                                    </Field>
+
+                                    <Field
+                                        data-invalid={Boolean(
+                                            errors.password_confirmation,
+                                        )}
+                                    >
+                                        <FieldLabel htmlFor="password_confirmation">
+                                            Konfirmasi Kata Sandi{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </FieldLabel>
+                                        <PasswordInput
+                                            id="password_confirmation"
+                                            required
+                                            tabIndex={5}
+                                            autoComplete="new-password"
                                             name="password_confirmation"
-                                            value={password}
+                                            placeholder="Ulangi kata sandi"
+                                            aria-invalid={
+                                                Boolean(
+                                                    errors.password_confirmation,
+                                                ) || undefined
+                                            }
+                                            icon={<Lock className="size-4" />}
                                         />
+                                        {errors.password_confirmation && (
+                                            <p className="text-sm text-destructive">
+                                                {errors.password_confirmation}
+                                            </p>
+                                        )}
                                     </Field>
 
                                     <div className="flex items-start gap-2">

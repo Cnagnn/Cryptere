@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('quiz_questions', function (Blueprint $table) {
             // Drop old foreign key
             $table->dropForeign('quiz_questions_task_id_foreign');
@@ -28,6 +32,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('quiz_questions', function (Blueprint $table) {
             // Drop new foreign key
             $table->dropForeign(['lesson_task_id']);

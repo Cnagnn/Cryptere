@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\TaskController as AdminTaskController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Assessment\AssessmentSubmissionController;
 use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\Auth\UsernameAvailabilityController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Course\DocumentController;
@@ -26,7 +27,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SystemStatsController;
 use App\Models\Assessment;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -47,20 +47,9 @@ Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
 
 // Username availability check — rate limited to prevent enumeration attacks
-Route::middleware('throttle:10,1')->get('/api/users/check-username', function (Request $request) {
-    $username = $request->string('username')->trim()->toString();
-
-    if ($username === '') {
-        return response()->json(['available' => false]);
-    }
-
-    $exists = User::where('username', $username)->exists();
-
-    // Consistent timing to prevent enumeration via response time analysis
-    usleep(random_int(50_000, 100_000));
-
-    return response()->json(['available' => ! $exists]);
-});
+Route::middleware('throttle:10,1')
+    ->get('/api/users/check-username', UsernameAvailabilityController::class)
+    ->name('users.check-username');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');

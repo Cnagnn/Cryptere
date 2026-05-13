@@ -2,6 +2,7 @@
 
 use App\Models\SocialAccount;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 test('guest cannot access social accounts settings', function () {
     $this->get(route('settings.social-accounts.edit'))
@@ -51,4 +52,16 @@ test('user cannot disconnect another users social account', function () {
     $this->actingAs($user)
         ->delete(route('settings.social-accounts.destroy', $social))
         ->assertForbidden();
+});
+
+test('user without password cannot disconnect last social account', function (): void {
+    $user = User::factory()->create();
+    DB::table('users')->where('id', $user->id)->update(['password' => '']);
+    $social = SocialAccount::factory()->create(['user_id' => $user->id, 'provider' => 'google']);
+
+    $this->actingAs($user)
+        ->delete(route('settings.social-accounts.destroy', $social))
+        ->assertSessionHasErrors('social');
+
+    expect(SocialAccount::find($social->id))->not->toBeNull();
 });

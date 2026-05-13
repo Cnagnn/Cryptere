@@ -12,7 +12,6 @@ import {
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { useAppearance } from '@/hooks/use-appearance';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     Collapsible,
@@ -44,6 +43,7 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
+import { useAppearance } from '@/hooks/use-appearance';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard, logout } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';

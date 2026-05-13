@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Settings\AvatarController;
+use App\Http\Controllers\Settings\AppearanceController;
+use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Settings\SocialAccountController;
@@ -28,6 +31,11 @@ Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->
         Route::delete('/', 'destroy')->name('destroy');
     });
 
+    Route::controller(AvatarController::class)->prefix('avatar')->name('avatar.')->group(function () {
+        Route::patch('/', 'update')->name('update');
+        Route::delete('/', 'destroy')->name('destroy');
+    });
+
     /*
     |----------------------------------------------------------------------
     | Security Settings
@@ -37,6 +45,8 @@ Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->
     Route::controller(SecurityController::class)->prefix('security')->name('security.')->group(function () {
         Route::get('/', 'edit')->name('edit');
     });
+
+    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
     /*
     |----------------------------------------------------------------------
@@ -48,6 +58,8 @@ Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->
         Route::get('/', 'edit')->name('edit');
         Route::delete('{socialAccount}', 'destroy')->name('destroy');
     });
+
+    Route::get('appearance', AppearanceController::class)->name('appearance.edit');
 });
 
 /*

@@ -27,9 +27,9 @@ import {
     InputGroupButton,
     InputGroupInput,
 } from '@/components/ui/input-group';
-import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppearance } from '@/hooks/use-appearance';
+import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { update } from '@/routes/password';
 
@@ -141,7 +141,7 @@ export default function ResetPassword({ token, email }: Props) {
 
                     <CardContent>
                         <Form
-                            {...update()}
+                            {...update.form()}
                             transform={(data) => ({ ...data, token, email })}
                             resetOnSuccess={[
                                 'password',

@@ -21,7 +21,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'passing_score',
     'max_attempts',
     'time_limit_minutes',
-    'is_published',
     'available_from',
     'available_until',
     'sort_order',
@@ -79,7 +78,6 @@ class Assessment extends Model
     protected function casts(): array
     {
         return [
-            'is_published' => 'boolean',
             'passing_score' => 'integer',
             'max_attempts' => 'integer',
             'time_limit_minutes' => 'integer',

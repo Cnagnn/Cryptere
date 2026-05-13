@@ -12,7 +12,6 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { Appearance } from '@/hooks/use-appearance';
 import { useAppearance } from '@/hooks/use-appearance';
-import { cn } from '@/lib/utils';
 
 export default function SettingsAppearance() {
     const { appearance, updateAppearance } = useAppearance();

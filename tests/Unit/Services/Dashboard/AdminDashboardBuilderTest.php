@@ -15,7 +15,7 @@ beforeEach(function () {
 
 test('build returns admin key with expected structure', function () {
     User::factory()->count(3)->create();
-    Course::factory()->count(2)->create(['is_published' => true]);
+    Course::factory()->count(2)->create(['status' => 'published']);
     Challenge::factory()->count(2)->create(['is_published' => true]);
 
     $result = $this->builder->build();
@@ -48,7 +48,7 @@ test('stats contains correct counts', function () {
 });
 
 test('coursePerformance includes completion rate', function () {
-    $course = Course::factory()->create(['is_published' => true]);
+    $course = Course::factory()->create(['status' => 'published']);
     $users = User::factory()->count(4)->create();
 
     foreach ($users as $user) {

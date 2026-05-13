@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 test('guest cannot access security settings', function () {
     $this->get(route('settings.security.edit'))
@@ -17,10 +18,28 @@ test('authenticated user can access security settings', function () {
     expect($response->status())->toBeIn([200, 302]);
 });
 
-test('password update route is removed', function () {
-    $user = User::factory()->create();
+test('user can update password from security settings', function (): void {
+    $user = User::factory()->create(['password' => bcrypt('OldPassword123!')]);
 
     $this->actingAs($user)
-        ->put('/settings/password')
-        ->assertNotFound();
+        ->put(route('settings.password.update'), [
+            'current_password' => 'OldPassword123!',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ])
+        ->assertRedirect(route('settings.security.edit'));
+
+    expect(Hash::check('NewPassword123!', $user->fresh()->password))->toBeTrue();
+});
+
+test('password update requires current password', function (): void {
+    $user = User::factory()->create(['password' => bcrypt('OldPassword123!')]);
+
+    $this->actingAs($user)
+        ->put(route('settings.password.update'), [
+            'current_password' => 'WrongPassword123!',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ])
+        ->assertSessionHasErrors('current_password');
 });

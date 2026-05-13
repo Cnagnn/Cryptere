@@ -18,21 +18,21 @@ test('any user can view any assessments', function () {
 
 test('user can view published assessment', function () {
     $user = User::factory()->create(['role' => 'member']);
-    $assessment = Assessment::factory()->create(['is_published' => true]);
+    $assessment = Assessment::factory()->create(['status' => 'published']);
 
     expect($this->policy->view($user, $assessment))->toBeTrue();
 });
 
 test('user cannot view unpublished assessment', function () {
     $user = User::factory()->create(['role' => 'member']);
-    $assessment = Assessment::factory()->create(['is_published' => false]);
+    $assessment = Assessment::factory()->create(['status' => 'draft']);
 
     expect($this->policy->view($user, $assessment))->toBeFalse();
 });
 
 test('admin can view unpublished assessment', function () {
     $admin = User::factory()->create(['role' => 'admin']);
-    $assessment = Assessment::factory()->create(['is_published' => false]);
+    $assessment = Assessment::factory()->create(['status' => 'draft']);
 
     expect($this->policy->view($admin, $assessment))->toBeTrue();
 });
@@ -42,7 +42,7 @@ test('enrolled user can attempt available assessment', function () {
     $course = Course::factory()->create();
     $assessment = Assessment::factory()->create([
         'course_id' => $course->id,
-        'is_published' => true,
+        'status' => 'published',
         'max_attempts' => 3,
         'available_from' => null,
         'available_until' => null,
@@ -60,7 +60,7 @@ test('non-enrolled user cannot attempt course assessment', function () {
     $course = Course::factory()->create();
     $assessment = Assessment::factory()->create([
         'course_id' => $course->id,
-        'is_published' => true,
+        'status' => 'published',
         'max_attempts' => 3,
     ]);
 
@@ -70,7 +70,7 @@ test('non-enrolled user cannot attempt course assessment', function () {
 test('user cannot attempt unpublished assessment', function () {
     $user = User::factory()->create();
     $assessment = Assessment::factory()->create([
-        'is_published' => false,
+        'status' => 'draft',
         'course_id' => null,
     ]);
 
