@@ -174,6 +174,12 @@ export function AppSidebar() {
     const { resolvedAppearance } = useAppearance();
     const { auth } = page.props;
     const { isCurrentUrl } = useCurrentUrl();
+
+    // Guard: if auth or user not available, don't render
+    if (!auth?.user) {
+        return null;
+    }
+
     const isCourseManagementPage = isCurrentUrl(
         adminCoursesIndex(),
         undefined,
