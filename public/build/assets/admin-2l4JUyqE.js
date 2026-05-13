@@ -1,1 +1,0 @@
-import e from"./profile-BwSOiTko.js";export{e as default};

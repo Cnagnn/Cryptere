@@ -1,11 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    ArrowRight,
-    BookOpenCheck,
-    Filter,
-    Search,
-    X,
-} from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Filter, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -693,7 +687,9 @@ export default function CoursesIndex({
     const [sortBy, setSortBy] = useState<SortValue>(
         filters?.sort === 'progress' ? 'progress-desc' : 'title-asc',
     );
-    const serverCourses = Array.isArray(courses) ? courses : courses.data;
+    const serverCourses = Array.isArray(courses)
+        ? courses
+        : (courses.data ?? []);
     const serverMeta = Array.isArray(courses) ? null : courses.meta;
     const [currentPage, setCurrentPage] = useState(
         serverMeta?.current_page ?? 1,
