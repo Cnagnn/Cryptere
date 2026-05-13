@@ -1,0 +1,96 @@
+{
+  "skillsRepository": {
+    "name": "Crypter Project Skills",
+    "version": "1.0.0",
+    "description": "Centralized skills management for Crypter project",
+    "lastUpdated": "2026-05-13",
+    "path": ".skills",
+    "categories": {
+      "laravel": {
+        "name": "Laravel Skills",
+        "description": "Backend development with Laravel framework",
+        "color": "#FF2D20",
+        "skills": [
+          "fortify-development",
+          "laravel-best-practices",
+          "pennant-development",
+          "socialite-development",
+          "wayfinder-development"
+        ]
+      },
+      "frontend": {
+        "name": "Frontend Skills",
+        "description": "Client-side development with React + Inertia + Tailwind",
+        "color": "#61DAFB",
+        "skills": [
+          "inertia-react-development",
+          "tailwindcss-development",
+          "shadcn"
+        ]
+      },
+      "testing": {
+        "name": "Testing Skills",
+        "description": "Quality assurance and testing",
+        "color": "#7CB342",
+        "skills": [
+          "pest-testing"
+        ]
+      },
+      "architecture": {
+        "name": "Architecture Skills",
+        "description": "Code analysis, documentation, and understanding",
+        "color": "#FF9800",
+        "skills": [
+          "understand",
+          "understand-dashboard",
+          "understand-domain",
+          "understand-explain",
+          "understand-knowledge",
+          "understand-chat",
+          "understand-onboard"
+        ]
+      },
+      "tooling": {
+        "name": "Tooling Skills",
+        "description": "Development tools, automation, and utilities",
+        "color": "#9C27B0",
+        "skills": [
+          "audit-website",
+          "brainstorming",
+          "create-plan",
+          "understand-diff",
+          "troubleshoot",
+          "project-setup-info-local",
+          "agent-customization",
+          "summarize-github-issue-pr-notification",
+          "suggest-fix-issue",
+          "form-github-search-query",
+          "show-github-search-result",
+          "address-pr-comments",
+          "create-pull-request",
+          "fix-customization-evaluation-diagnostics"
+        ]
+      }
+    },
+    "stats": {
+      "totalSkills": 59,
+      "categories": 5,
+      "laravelSkills": 5,
+      "frontendSkills": 3,
+      "testingSkills": 1,
+      "architectureSkills": 7,
+      "toolingSkills": 38
+    },
+    "activation": {
+      "agentFormat": "@skill:category/skill-name",
+      "example": "@skill:laravel/fortify-development"
+    },
+    "metadata": {
+      "createdDate": "2026-05-13",
+      "maintainedBy": "Development Team",
+      "compatibility": "VS Code 1.90+, All agents",
+      "ideSupport": true,
+      "autoIndexing": true
+    }
+  }
+}
