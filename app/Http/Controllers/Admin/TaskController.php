@@ -11,6 +11,8 @@ use App\Jobs\ConvertLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
+use App\Models\QuizSubmission;
+use App\Models\TaskProgress;
 use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -245,6 +247,15 @@ class TaskController extends Controller
     public function destroy(LessonTask $task): RedirectResponse
     {
         $this->authorize('delete', $task->lesson->course);
+
+        if (
+            TaskProgress::query()->where('lesson_task_id', $task->id)->exists()
+            || QuizSubmission::query()->where('lesson_task_id', $task->id)->exists()
+        ) {
+            return back()->withErrors([
+                'task' => __('Archive this task instead. It already has learner history.'),
+            ]);
+        }
 
         app(AuditService::class)->log(request()->user(), 'deleted', $task);
 

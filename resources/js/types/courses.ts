@@ -22,6 +22,23 @@ export type CourseCard = {
     bestScore?: number;
 };
 
+export type PaginatedCourses = {
+    data: CourseCard[];
+    meta: {
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number | null;
+        to: number | null;
+    };
+    links?: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
+};
+
 export type SortValue = 'title-asc' | 'progress-desc';
 
 export type EnrollmentFilterValue = 'all' | 'enrolled' | 'not-enrolled';
@@ -51,7 +68,12 @@ export type CatalogFiltersProps = {
 };
 
 export type CoursesIndexProps = {
-    courses: CourseCard[];
+    courses: CourseCard[] | PaginatedCourses;
+    filters?: {
+        search: string;
+        enrollment: EnrollmentFilterValue;
+        sort: 'title' | 'progress' | 'newest';
+    };
     catalogMode?: 'learning' | 'labs';
     sidebarMode?: 'filters' | 'statistics';
     statistics?: Array<{

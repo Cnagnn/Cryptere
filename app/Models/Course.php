@@ -25,6 +25,7 @@ use Illuminate\Support\Str;
     'category',
     'difficulty',
     'path_position',
+    'is_published',
     'status',
     'version',
     'published_by',
@@ -32,6 +33,12 @@ use Illuminate\Support\Str;
 class Course extends Model
 {
     use HasFactory;
+
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_PUBLISHED = 'published';
+
+    public const STATUS_ARCHIVED = 'archived';
 
     protected $appends = ['cover'];
 
@@ -41,7 +48,14 @@ class Course extends Model
             'estimated_minutes' => 'integer',
             'status' => 'string',
             'version' => 'integer',
+            'is_published' => 'boolean',
         ];
+    }
+
+    public function setIsPublishedAttribute(bool $value): void
+    {
+        $this->attributes['is_published'] = $value;
+        $this->attributes['status'] = $value ? self::STATUS_PUBLISHED : self::STATUS_DRAFT;
     }
 
     /**
@@ -49,7 +63,7 @@ class Course extends Model
      */
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', 'published');
+        return $query->where('status', self::STATUS_PUBLISHED);
     }
 
     /**
@@ -57,7 +71,7 @@ class Course extends Model
      */
     public function scopeDraft(Builder $query): Builder
     {
-        return $query->where('status', 'draft');
+        return $query->where('status', self::STATUS_DRAFT);
     }
 
     /**
@@ -65,7 +79,7 @@ class Course extends Model
      */
     public function scopeArchived(Builder $query): Builder
     {
-        return $query->where('status', 'archived');
+        return $query->where('status', self::STATUS_ARCHIVED);
     }
 
     public function scopeSearchManagement(Builder $query, string $search): Builder
@@ -203,7 +217,7 @@ SVG;
      */
     public function isPublished(): bool
     {
-        return $this->status === 'published';
+        return $this->status === self::STATUS_PUBLISHED;
     }
 
     /**
@@ -211,7 +225,7 @@ SVG;
      */
     public function isDraft(): bool
     {
-        return $this->status === 'draft';
+        return $this->status === self::STATUS_DRAFT;
     }
 
     /**
@@ -219,6 +233,6 @@ SVG;
      */
     public function isArchived(): bool
     {
-        return $this->status === 'archived';
+        return $this->status === self::STATUS_ARCHIVED;
     }
 }

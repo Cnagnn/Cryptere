@@ -31,6 +31,12 @@ class LessonTask extends Model
 {
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_PUBLISHED = 'published';
+
+    public const STATUS_ARCHIVED = 'archived';
+
     /**
      * Get the attributes that should be cast.
      *
@@ -53,7 +59,7 @@ class LessonTask extends Model
      */
     public function scopePublished($query)
     {
-        return $query->where('status', 'published');
+        return $query->where('status', self::STATUS_PUBLISHED);
     }
 
     /**
@@ -72,6 +78,11 @@ class LessonTask extends Model
         return $this->belongsTo(self::class, 'prerequisite_task_id');
     }
 
+    public function publishedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'published_by');
+    }
+
     /**
      * Get tasks that depend on this task.
      */
@@ -88,12 +99,22 @@ class LessonTask extends Model
         return $this->hasMany(QuizQuestion::class, 'lesson_task_id')->orderBy('sort_order')->orderBy('id');
     }
 
+    public function progress(): HasMany
+    {
+        return $this->hasMany(TaskProgress::class, 'lesson_task_id');
+    }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(QuizSubmission::class, 'lesson_task_id');
+    }
+
     /**
      * Check if task is published.
      */
     public function isPublished(): bool
     {
-        return $this->status === 'published';
+        return $this->status === self::STATUS_PUBLISHED || $this->published_at !== null;
     }
 
     /**
@@ -109,8 +130,22 @@ class LessonTask extends Model
             return true;
         }
 
-        // Check if prerequisite task is completed
-        // Assuming task completion tracked via lesson progress or similar
-        return true; // Implement based on your progress tracking
+        $prerequisite = self::query()->find($this->prerequisite_task_id);
+
+        if ($prerequisite === null) {
+            return false;
+        }
+
+        if ($prerequisite->type === 'quiz') {
+            return $prerequisite->submissions()
+                ->where('user_id', $user->id)
+                ->whereRaw('score >= (total * 0.7)')
+                ->exists();
+        }
+
+        return $prerequisite->progress()
+            ->where('user_id', $user->id)
+            ->whereNotNull('completed_at')
+            ->exists();
     }
 }

@@ -8,6 +8,8 @@ use App\Http\Requests\Admin\StoreAdminLessonRequest;
 use App\Http\Requests\Admin\UpdateAdminLessonRequest;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\QuizSubmission;
+use App\Models\TaskProgress;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -115,6 +117,18 @@ class LessonController extends Controller
     public function destroy(Lesson $lesson): RedirectResponse
     {
         $this->authorize('delete', $lesson->course);
+
+        $taskIds = $lesson->tasks()->pluck('id');
+
+        if (
+            $lesson->progress()->exists()
+            || TaskProgress::query()->whereIn('lesson_task_id', $taskIds)->exists()
+            || QuizSubmission::query()->whereIn('lesson_task_id', $taskIds)->exists()
+        ) {
+            return back()->withErrors([
+                'lesson' => __('Archive this lesson instead. It already has learner history.'),
+            ]);
+        }
 
         app(AuditService::class)->log(request()->user(), 'deleted', $lesson);
 

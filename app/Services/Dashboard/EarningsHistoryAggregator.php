@@ -4,6 +4,7 @@ namespace App\Services\Dashboard;
 
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class EarningsHistoryAggregator
 {
@@ -29,19 +30,8 @@ class EarningsHistoryAggregator
             $period = $day->format('Y-m-d');
             $totals = $weeklyTotals->get($period);
 
-            // Translate day names to Indonesian
-            $dayNames = [
-                'Sun' => 'Min',
-                'Mon' => 'Sen',
-                'Tue' => 'Sel',
-                'Wed' => 'Rab',
-                'Thu' => 'Kam',
-                'Fri' => 'Jum',
-                'Sat' => 'Sab',
-            ];
-
             return [
-                'label' => $dayNames[$day->format('D')] ?? $day->format('D'),
+                'label' => $day->format('D'),
                 'points' => (int) ($totals->points ?? 0),
                 'xp' => (int) ($totals->xp ?? 0),
             ];
@@ -49,11 +39,14 @@ class EarningsHistoryAggregator
 
         // ── Monthly: last 12 months ──
         $monthlyStart = now()->subMonths(11)->startOfMonth();
+        $monthlyPeriodExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
 
         $monthlyTotals = $user->balanceChanges()
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, SUM(xp_delta) as xp, SUM(points_delta) as points")
+            ->selectRaw("{$monthlyPeriodExpression} as period, SUM(xp_delta) as xp, SUM(points_delta) as points")
             ->where('created_at', '>=', $monthlyStart)
-            ->groupByRaw("DATE_FORMAT(created_at, '%Y-%m')")
+            ->groupByRaw($monthlyPeriodExpression)
             ->get()
             ->keyBy('period');
 
@@ -62,24 +55,8 @@ class EarningsHistoryAggregator
             $period = $month->format('Y-m');
             $totals = $monthlyTotals->get($period);
 
-            // Translate month names to Indonesian
-            $monthNames = [
-                'Jan' => 'Jan',
-                'Feb' => 'Feb',
-                'Mar' => 'Mar',
-                'Apr' => 'Apr',
-                'May' => 'Mei',
-                'Jun' => 'Jun',
-                'Jul' => 'Jul',
-                'Aug' => 'Agu',
-                'Sep' => 'Sep',
-                'Oct' => 'Okt',
-                'Nov' => 'Nov',
-                'Dec' => 'Des',
-            ];
-
             return [
-                'label' => $monthNames[$month->format('M')] ?? $month->format('M'),
+                'label' => $month->format('M'),
                 'points' => (int) ($totals->points ?? 0),
                 'xp' => (int) ($totals->xp ?? 0),
             ];

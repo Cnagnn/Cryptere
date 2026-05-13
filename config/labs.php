@@ -26,13 +26,19 @@ return [
     ],
 
     'aes-lab' => [
-        'title' => 'AES',
+        'title' => 'AES-128',
         'summary' => 'Explore a modern block cipher with focus on operation modes and plaintext change effects.',
         'group' => 'symmetric',
     ],
 
+    'des-lab' => [
+        'title' => 'DES',
+        'summary' => 'Explore the legacy 64-bit Feistel cipher with round-by-round educational visualization.',
+        'group' => 'symmetric',
+    ],
+
     'rsa-lab' => [
-        'title' => 'RSA',
+        'title' => 'RSA-256',
         'summary' => 'Visualize public-private key concepts with prime-number-based encryption and decryption.',
         'group' => 'asymmetric',
     ],

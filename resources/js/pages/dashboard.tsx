@@ -10,10 +10,9 @@ import {
     Flame,
     GraduationCap,
     Home,
-    Users,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -1410,62 +1409,6 @@ function AdminDashboard({
         enrollments: entry.enrollments,
         users: userGrowth[index]?.users ?? 0,
     }));
-
-    const averageCourseCompletion = coursePerformance.length
-        ? Math.round(
-              coursePerformance.reduce(
-                  (total, course) => total + course.completionRate,
-                  0,
-              ) / coursePerformance.length,
-          )
-        : 0;
-
-    const averageChallengeSuccess = challengePerformance.length
-        ? Math.round(
-              challengePerformance.reduce(
-                  (total, challenge) => total + challenge.successRate,
-                  0,
-              ) / challengePerformance.length,
-          )
-        : 0;
-
-    const topCourse = coursePerformance[0];
-    const topChallenge = challengePerformance[0];
-
-    const statCards = [
-        {
-            label: 'Total Pengguna',
-            value: admin.stats.totalUsers,
-            icon: Users,
-            helper: `${admin.stats.newUsersThisMonth} pengguna baru bulan ini`,
-        },
-        {
-            label: 'Total Kursus',
-            value: admin.stats.totalCourses,
-            icon: BookOpen,
-            helper: `${averageCourseCompletion}% rata-rata selesai`,
-        },
-        {
-            label: 'Total Pendaftaran',
-            value: admin.stats.totalEnrollments,
-            icon: GraduationCap,
-            helper: topCourse
-                ? `${topCourse.title} paling populer`
-                : 'Belum ada data',
-        },
-        {
-            label: 'Pengguna Aktif (30h)',
-            value: admin.stats.activeUsers,
-            icon: Activity,
-            helper: 'Aktif dalam 30 hari terakhir',
-        },
-        {
-            label: 'Total Tantangan',
-            value: admin.stats.totalChallenges,
-            icon: Flame,
-            helper: `${averageChallengeSuccess}% rata-rata sukses`,
-        },
-    ];
 
     return (
         <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-6">

@@ -86,7 +86,7 @@ export function useLeaderboardChannel(
         }
 
         const channel = echo.channel('leaderboard');
-        setConnected(true);
+        queueMicrotask(() => setConnected(true));
 
         channel.listen('.leaderboard.updated', (event: unknown) => {
             handleEvent(event as LeaderboardUpdatePayload);
@@ -94,7 +94,7 @@ export function useLeaderboardChannel(
 
         return () => {
             echo.leaveChannel('leaderboard');
-            setConnected(false);
+            queueMicrotask(() => setConnected(false));
         };
     }, [handleEvent]);
 

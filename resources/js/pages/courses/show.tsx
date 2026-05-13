@@ -12,7 +12,6 @@ import {
     Lock,
     Menu,
     MessageSquare,
-    PlayCircle,
     RotateCcw,
     Sparkles,
     Target,
@@ -56,7 +55,6 @@ import {
     EmptyHeader,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 
 import { Separator } from '@/components/ui/separator';
@@ -413,18 +411,6 @@ function mapLessons(serverLessons: ServerLesson[]): LessonData[] {
     }));
 }
 
-function taskIcon(type: LessonTask['type']): LucideIcon {
-    if (type === 'video') {
-        return PlayCircle;
-    }
-
-    if (type === 'quiz') {
-        return ClipboardCheck;
-    }
-
-    return BookOpen;
-}
-
 function formatClock(seconds: number): string {
     const safeSeconds = Math.max(0, seconds);
     const minutes = Math.floor(safeSeconds / 60);
@@ -475,7 +461,7 @@ async function sendHeartbeat(
             );
 
             return; // Success
-        } catch (error) {
+        } catch {
             attempt++;
 
             if (attempt >= MAX_RETRIES) {
@@ -611,7 +597,6 @@ function VideoTask({
     const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const watchSecondsRef = useRef(0);
     const isPlayingRef = useRef(false);
-    const maxWatchedTimeRef = useRef(0);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const source = useMemo(
         () => resolvePlayerSource(task.videoUrl ?? ''),
@@ -969,7 +954,10 @@ function PdfStreamViewer({
     // Detect container width for responsive PDF
     useEffect(() => {
         const element = containerRef.current;
-        if (!element) return;
+
+        if (!element) {
+return;
+}
 
         const updateWidth = () => {
             const width = element.clientWidth - 32; // padding
@@ -986,7 +974,10 @@ function PdfStreamViewer({
     // Track current page on scroll
     useEffect(() => {
         const element = containerRef.current;
-        if (!element || numPages === 0) return;
+
+        if (!element || numPages === 0) {
+return;
+}
 
         const handleScroll = () => {
             const scrollTop = element.scrollTop;
@@ -996,6 +987,7 @@ function PdfStreamViewer({
         };
 
         element.addEventListener('scroll', handleScroll);
+
         return () => element.removeEventListener('scroll', handleScroll);
     }, [containerRef, numPages]);
 
@@ -1264,10 +1256,12 @@ function QuizTask({
     const [shuffledIndices] = useState<number[][]>(() =>
         questions.map((q) => {
             const indices = q.options.map((_, i) => i);
+
             for (let i = indices.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [indices[i], indices[j]] = [indices[j], indices[i]];
             }
+
             return indices;
         }),
     );
@@ -1963,7 +1957,6 @@ function AssessmentContinue({
 
 function AssessmentOverview({
     assessment,
-    onClose,
     onViewResults,
 }: {
     assessment: AssessmentFullData;
@@ -2104,6 +2097,7 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
             const saved = window.localStorage.getItem(
                 `assessment-${assessment.id}-answers`,
             );
+
             if (saved) {
                 try {
                     return JSON.parse(saved);
@@ -2112,13 +2106,13 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
                 }
             }
         }
+
         return submission?.answers ?? {};
     });
     const [currentIndex, setCurrentIndex] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [saving, setSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
-    const [warningShown, setWarningShown] = useState(false);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [elapsedSeconds, setElapsedSeconds] = useState(() => {
         if (!submission?.startedAt) {
@@ -2199,9 +2193,11 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
     // localStorage backup for offline fallback
     useEffect(() => {
         const key = `assessment-${assessment.id}-answers`;
+
         if (Object.keys(answers).length > 0) {
             localStorage.setItem(key, JSON.stringify(answers));
         }
+
         return () => {
             if (submitting) {
                 localStorage.removeItem(key);
@@ -2213,9 +2209,11 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
     useEffect(() => {
         const key = `assessment-${assessment.id}-answers`;
         const saved = localStorage.getItem(key);
+
         if (saved && Object.keys(answers).length === 0) {
             try {
                 const parsed = JSON.parse(saved);
+
                 if (typeof parsed === 'object' && parsed !== null) {
                     setAnswers(parsed);
                 }
@@ -2223,7 +2221,7 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
                 localStorage.removeItem(key);
             }
         }
-    }, [assessment.id]);
+    }, [answers, assessment.id]);
 
     // Pause timer when tab inactive
     useEffect(() => {
@@ -2251,6 +2249,7 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
             if (timeRemaining === 60) {
                 toast.warning('⏰ Sisa waktu 1 menit!');
             }
+
             if (timeRemaining <= 0) {
                 handleSubmit();
             }
@@ -2419,7 +2418,7 @@ function AssessmentAnswerInput({
                 role="radiogroup"
                 aria-label={question.questionText}
             >
-                {options.map((option, index) => (
+                {options.map((option) => (
                     <button
                         key={option.key}
                         type="button"
@@ -2491,12 +2490,15 @@ function AssessmentAnswerInput({
                         ? value.answer_text.trim().split(/\s+/).length
                         : 0;
                     const parts = [`${wordCount} kata`];
+
                     if (question.minWords) {
                         parts.push(`min: ${question.minWords}`);
                     }
+
                     if (question.maxWords) {
                         parts.push(`max: ${question.maxWords}`);
                     }
+
                     return parts.join(' • ');
                 })()}
             </p>

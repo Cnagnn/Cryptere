@@ -7,7 +7,6 @@ import {
     Key,
     Lock,
     Rocket,
-    Shield,
     Sparkles,
     Target,
     Trophy,
@@ -22,7 +21,6 @@ import {
     CardContent,
     CardDescription,
     CardHeader,
-    CardTitle,
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';

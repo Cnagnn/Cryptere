@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Assessment;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Assessment\SaveAssessmentAnswerRequest;
+use App\Http\Requests\Assessment\StartAssessmentAttemptRequest;
+use App\Http\Requests\Assessment\SubmitAssessmentAttemptRequest;
 use App\Models\Assessment;
 use App\Models\AssessmentAnswer;
 use App\Models\AssessmentSubmission;
+use App\Services\AssessmentAttemptService;
 use App\Services\AssessmentGradingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,58 +21,17 @@ class AssessmentSubmissionController extends Controller
 {
     public function __construct(
         private readonly AssessmentGradingService $gradingService,
+        private readonly AssessmentAttemptService $attemptService,
     ) {}
 
     /**
      * Start a new assessment attempt.
      */
-    public function start(Request $request, Assessment $assessment): RedirectResponse
+    public function start(StartAssessmentAttemptRequest $request, Assessment $assessment): RedirectResponse
     {
         $this->authorize('attempt', $assessment);
 
-        $user = $request->user();
-
-        // Check for existing in-progress submission
-        $existing = AssessmentSubmission::query()
-            ->forUser($user)
-            ->where('assessment_id', $assessment->id)
-            ->where('status', AssessmentSubmission::STATUS_IN_PROGRESS)
-            ->first();
-
-        if ($existing) {
-            $redirectRoute = $assessment->course_id
-                ? redirect()->route('courses.show', $assessment->course->slug)
-                : redirect()->route('assessments.show', $assessment->slug);
-
-            return $redirectRoute->with('info', 'You have an in-progress attempt. Continue where you left off.');
-        }
-
-        // Determine attempt number
-        $attemptNumber = AssessmentSubmission::query()
-            ->forUser($user)
-            ->where('assessment_id', $assessment->id)
-            ->max('attempt_number') + 1;
-
-        // Create submission with empty answers
-        DB::transaction(function () use ($user, $assessment, $attemptNumber) {
-            $submission = AssessmentSubmission::create([
-                'user_id' => $user->id,
-                'assessment_id' => $assessment->id,
-                'attempt_number' => $attemptNumber,
-                'status' => AssessmentSubmission::STATUS_IN_PROGRESS,
-                'started_at' => now(),
-            ]);
-
-            // Pre-create answer slots for each question
-            $questions = $assessment->questions()->get();
-            foreach ($questions as $question) {
-                AssessmentAnswer::create([
-                    'submission_id' => $submission->id,
-                    'question_id' => $question->id,
-                    'max_points' => $question->points,
-                ]);
-            }
-        });
+        $this->attemptService->start($request->user(), $assessment);
 
         $redirectRoute = $assessment->course_id
             ? route('courses.show', $assessment->course->slug)
@@ -82,31 +44,19 @@ class AssessmentSubmissionController extends Controller
     /**
      * Save a single answer (auto-save as student works).
      */
-    public function saveAnswer(Request $request, Assessment $assessment): JsonResponse
+    public function saveAnswer(SaveAssessmentAnswerRequest $request, Assessment $assessment): JsonResponse
     {
-        $user = $request->user();
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'question_id' => ['required', 'integer', 'exists:assessment_questions,id'],
-            'answer_text' => ['nullable', 'string', 'max:5000'],
-            'selected_option' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $submission = AssessmentSubmission::query()
-            ->forUser($user)
-            ->where('assessment_id', $assessment->id)
-            ->where('status', AssessmentSubmission::STATUS_IN_PROGRESS)
-            ->firstOrFail();
-
-        $answer = AssessmentAnswer::query()
-            ->where('submission_id', $submission->id)
-            ->where('question_id', $validated['question_id'])
-            ->firstOrFail();
-
-        $answer->update([
-            'answer_text' => $validated['answer_text'] ?? $answer->answer_text,
-            'selected_option' => $validated['selected_option'] ?? $answer->selected_option,
-        ]);
+        $this->attemptService->saveAnswer(
+            $request->user(),
+            $assessment,
+            (int) $validated['question_id'],
+            [
+                'answer_text' => $validated['answer_text'] ?? null,
+                'selected_option' => $validated['selected_option'] ?? null,
+            ],
+        );
 
         return response()->json(['saved' => true]);
     }
@@ -114,15 +64,10 @@ class AssessmentSubmissionController extends Controller
     /**
      * Submit the assessment for grading.
      */
-    public function submit(Request $request, Assessment $assessment): RedirectResponse
+    public function submit(SubmitAssessmentAttemptRequest $request, Assessment $assessment): RedirectResponse
     {
-        $user = $request->user();
-
-        $submission = AssessmentSubmission::query()
-            ->forUser($user)
-            ->where('assessment_id', $assessment->id)
-            ->where('status', AssessmentSubmission::STATUS_IN_PROGRESS)
-            ->firstOrFail();
+        $submission = $this->attemptService->activeSubmission($request->user(), $assessment);
+        $this->attemptService->assertWithinTimeLimit($submission);
 
         // Update submission status
         $submission->update([

@@ -65,6 +65,7 @@ class QuizSubmissionController extends Controller
             ->where('id', $validated['task_id'])
             ->where('lesson_id', $lesson->id)
             ->where('type', 'quiz')
+            ->where('status', LessonTask::STATUS_PUBLISHED)
             ->firstOrFail();
 
         // Verify the user is enrolled
@@ -79,6 +80,10 @@ class QuizSubmissionController extends Controller
 
         /** @var User $user */
         $user = $request->user();
+
+        if (! $task->canAccess($user)) {
+            return response()->json(['message' => 'Task is locked.'], 403);
+        }
 
         // Get all existing submissions for this user + task
         $existingSubmissions = QuizSubmission::query()
@@ -113,7 +118,7 @@ class QuizSubmissionController extends Controller
                 'actual_count' => $questions->count(),
             ]);
 
-            return back()->withErrors(['error' => 'Invalid question IDs provided.']);
+            return response()->json(['message' => 'Invalid question IDs provided.'], 422);
         }
 
         $correctCount = 0;
@@ -147,7 +152,7 @@ class QuizSubmissionController extends Controller
 
             return [
                 'correct' => $isCorrect,
-                'correctAnswer' => (int) $question->correct_option,
+                'explanation' => $question->explanation,
                 'remedialLessonSlug' => ! $isCorrect ? $question->topic?->relatedLessonSlug() : null,
             ];
         })->values()->all();
@@ -266,6 +271,19 @@ class QuizSubmissionController extends Controller
             'best_score' => $bestSubmission?->score ?? $correctCount,
             'best_total' => $bestSubmission?->total ?? $questions->count(),
             'can_retry' => true,
+            'submission' => [
+                'answers' => $submission->answers,
+                'score' => $submission->score,
+                'total' => $submission->total,
+                'results' => $submission->results,
+                'xpEarned' => $submission->xp_earned,
+                'pointsEarned' => $submission->points_earned,
+                'attemptNumber' => $submission->attempt_number,
+                'xpMultiplier' => $xpMultiplier,
+                'bestScore' => $bestSubmission?->score ?? $correctCount,
+                'bestTotal' => $bestSubmission?->total ?? $questions->count(),
+                'canRetry' => true,
+            ],
         ]);
     }
 

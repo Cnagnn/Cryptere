@@ -18,7 +18,7 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
     Accordion,
@@ -335,7 +335,7 @@ export default function AdminCoursesTask({
         setQuizQuestions([]);
     };
 
-    const openEditTaskDialog = (task: TaskRow) => {
+    const openEditTaskDialog = useCallback((task: TaskRow) => {
         setEditingTask(task);
         setTaskForm({
             lesson_id: task.lesson_id,
@@ -364,7 +364,13 @@ export default function AdminCoursesTask({
             })),
         );
         setCreateTaskDialogOpen(true);
-    };
+    }, [
+        setCreateTaskDialogOpen,
+        setEditingTask,
+        setQuizImportFileName,
+        setQuizQuestions,
+        setTaskForm,
+    ]);
 
     const filteredTasks = useMemo(() => {
         const keyword = filterValue.trim().toLowerCase();

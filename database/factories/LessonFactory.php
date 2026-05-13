@@ -24,6 +24,7 @@ class LessonFactory extends Factory
             'title' => fake()->sentence(4),
             'content' => fake()->paragraphs(4, true),
             'position' => fake()->unique()->numberBetween(1, 10000),
+            'status' => 'published',
         ];
     }
 }

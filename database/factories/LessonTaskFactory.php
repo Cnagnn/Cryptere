@@ -27,6 +27,7 @@ class LessonTaskFactory extends Factory
             'conversion_status' => null,
             'pdf_url' => null,
             'sort_order' => fake()->numberBetween(1, 20),
+            'status' => 'published',
         ];
     }
 }

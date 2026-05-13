@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\LessonTask;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreAdminLessonTaskRequest extends FormRequest
 {
@@ -59,6 +61,29 @@ class StoreAdminLessonTaskRequest extends FormRequest
             'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'prerequisite_task_id' => ['nullable', 'integer', 'exists:lesson_tasks,id'],
             'status' => ['nullable', 'string', 'in:draft,published,archived'],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $lessonId = (int) $this->input('lesson_id');
+                $prerequisiteTaskId = $this->input('prerequisite_task_id');
+
+                if ($prerequisiteTaskId === null || $prerequisiteTaskId === '') {
+                    return;
+                }
+
+                $existsInLesson = LessonTask::query()
+                    ->whereKey((int) $prerequisiteTaskId)
+                    ->where('lesson_id', $lessonId)
+                    ->exists();
+
+                if (! $existsInLesson) {
+                    $validator->errors()->add('prerequisite_task_id', __('The prerequisite task must belong to the selected lesson.'));
+                }
+            },
         ];
     }
 }

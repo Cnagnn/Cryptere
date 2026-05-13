@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ReorderAdminAssessmentQuestionsRequest;
+use App\Http\Requests\Admin\StoreAdminAssessmentQuestionRequest;
+use App\Http\Requests\Admin\UpdateAdminAssessmentQuestionRequest;
 use App\Models\Assessment;
 use App\Models\AssessmentQuestion;
 use App\Models\QuestionBank;
 use App\Services\RubricScoringService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class AssessmentQuestionController extends Controller
 {
@@ -19,23 +21,9 @@ class AssessmentQuestionController extends Controller
     /**
      * Store a new question for an assessment.
      */
-    public function store(Request $request, Assessment $assessment): RedirectResponse
+    public function store(StoreAdminAssessmentQuestionRequest $request, Assessment $assessment): RedirectResponse
     {
-        $validated = $request->validate([
-            'bloom_level' => ['required', 'in:C1,C2,C3,C4,C5,C6'],
-            'question_type' => ['required', 'in:mcq,true_false,short_answer,essay,computation,case_study,design'],
-            'question_text' => ['required', 'string', 'max:5000'],
-            'options' => ['nullable', 'array'],
-            'options.*' => ['string', 'max:500'],
-            'correct_answer' => ['nullable', 'string', 'max:2000'],
-            'explanation' => ['nullable', 'string', 'max:2000'],
-            'rubric' => ['nullable', 'array'],
-            'points' => ['required', 'integer', 'min:1', 'max:100'],
-            'grading_type' => ['required', 'in:auto,manual'],
-            'min_words' => ['nullable', 'integer', 'min:1'],
-            'max_words' => ['nullable', 'integer', 'min:1'],
-            'question_bank_id' => ['nullable', 'integer', 'exists:question_banks,id'],
-        ]);
+        $validated = $request->validated();
 
         $nextSortOrder = (int) $assessment->questions()->max('sort_order') + 1;
 
@@ -67,23 +55,11 @@ class AssessmentQuestionController extends Controller
     /**
      * Update an existing question.
      */
-    public function update(Request $request, Assessment $assessment, AssessmentQuestion $question): RedirectResponse
+    public function update(UpdateAdminAssessmentQuestionRequest $request, Assessment $assessment, AssessmentQuestion $question): RedirectResponse
     {
-        $validated = $request->validate([
-            'bloom_level' => ['required', 'in:C1,C2,C3,C4,C5,C6'],
-            'question_type' => ['required', 'in:mcq,true_false,short_answer,essay,computation,case_study,design'],
-            'question_text' => ['required', 'string', 'max:5000'],
-            'options' => ['nullable', 'array'],
-            'options.*' => ['string', 'max:500'],
-            'correct_answer' => ['nullable', 'string', 'max:2000'],
-            'explanation' => ['nullable', 'string', 'max:2000'],
-            'rubric' => ['nullable', 'array'],
-            'points' => ['required', 'integer', 'min:1', 'max:100'],
-            'grading_type' => ['required', 'in:auto,manual'],
-            'min_words' => ['nullable', 'integer', 'min:1'],
-            'max_words' => ['nullable', 'integer', 'min:1'],
-            'question_bank_id' => ['nullable', 'integer', 'exists:question_banks,id'],
-        ]);
+        $this->ensureQuestionBelongsToAssessment($assessment, $question);
+
+        $validated = $request->validated();
 
         $question->update($validated);
 
@@ -95,6 +71,14 @@ class AssessmentQuestionController extends Controller
      */
     public function destroy(Assessment $assessment, AssessmentQuestion $question): RedirectResponse
     {
+        $this->ensureQuestionBelongsToAssessment($assessment, $question);
+
+        if ($question->answers()->exists()) {
+            return back()->withErrors([
+                'question' => __('This question already has submitted answers and cannot be deleted.'),
+            ]);
+        }
+
         $question->delete();
 
         return back()->with('success', 'Question deleted.');
@@ -103,13 +87,9 @@ class AssessmentQuestionController extends Controller
     /**
      * Reorder questions within an assessment.
      */
-    public function reorder(Request $request, Assessment $assessment): RedirectResponse
+    public function reorder(ReorderAdminAssessmentQuestionsRequest $request, Assessment $assessment): RedirectResponse
     {
-        $validated = $request->validate([
-            'items' => ['required', 'array'],
-            'items.*.id' => ['required', 'integer', 'exists:assessment_questions,id'],
-            'items.*.sort_order' => ['required', 'integer', 'min:0'],
-        ]);
+        $validated = $request->validated();
 
         foreach ($validated['items'] as $item) {
             AssessmentQuestion::where('id', $item['id'])
@@ -118,5 +98,10 @@ class AssessmentQuestionController extends Controller
         }
 
         return back()->with('success', 'Question order updated.');
+    }
+
+    private function ensureQuestionBelongsToAssessment(Assessment $assessment, AssessmentQuestion $question): void
+    {
+        abort_unless((int) $question->assessment_id === (int) $assessment->id, 404);
     }
 }

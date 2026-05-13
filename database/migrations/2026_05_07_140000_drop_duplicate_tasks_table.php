@@ -19,11 +19,12 @@ return new class extends Migration
         // Drop user_progress table (obsolete, replaced by task_progress)
         Schema::dropIfExists('user_progress');
 
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Verify no other foreign keys reference tasks table.
-        // SQLite has no information_schema during in-memory tests.
-        $foreignKeys = Schema::getConnection()->getDriverName() === 'sqlite'
-            ? []
-            : DB::select("
+        $foreignKeys = DB::select("
                 SELECT CONSTRAINT_NAME
                 FROM information_schema.KEY_COLUMN_USAGE
                 WHERE TABLE_SCHEMA = DATABASE()

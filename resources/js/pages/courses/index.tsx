@@ -2,7 +2,6 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowRight,
     BookOpenCheck,
-    CheckCircle2,
     Filter,
     Search,
     X,
@@ -68,15 +67,36 @@ import type {
 const COURSES_PER_PAGE = 4;
 
 /* ── Course Thumbnail ── */
-function CourseThumbnail({ title }: { title: string }) {
+function CourseThumbnail({
+    coverImage,
+    title,
+}: {
+    coverImage: string | null;
+    title: string;
+}) {
     return (
         <div className="relative aspect-video overflow-hidden border-b bg-muted/40">
-            <div className="flex h-full w-full items-center justify-center">
+            {coverImage ? (
+                <img
+                    src={coverImage}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                />
+            ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                    <BookOpenCheck
+                        className="size-5 text-muted-foreground"
+                        aria-hidden="true"
+                    />
+                </div>
+            )}
+            <span className="sr-only">Gambar mini {title}</span>
+            <div className="hidden h-full w-full items-center justify-center">
                 <BookOpenCheck
                     className="size-5 text-muted-foreground"
                     aria-hidden="true"
                 />
-                <span className="sr-only">Gambar mini {title}</span>
             </div>
         </div>
     );
@@ -346,7 +366,10 @@ function EnrolledCardFooter({ course }: { course: CourseCard }) {
     const [showResetDialog, setShowResetDialog] = useState(false);
 
     const handleReset = async () => {
-        if (resetting) return;
+        if (resetting) {
+            return;
+        }
+
         setResetting(true);
 
         try {
@@ -372,7 +395,7 @@ function EnrolledCardFooter({ course }: { course: CourseCard }) {
             } else {
                 toast.error('Gagal mereset progress');
             }
-        } catch (error) {
+        } catch {
             toast.error('Terjadi kesalahan');
         } finally {
             setResetting(false);
@@ -448,7 +471,10 @@ function CourseCardGrid({
     );
 
     const handleEnroll = async (course: CourseCard) => {
-        if (enrollingCourseId) return;
+        if (enrollingCourseId) {
+            return;
+        }
+
         setEnrollingCourseId(course.id);
 
         try {
@@ -471,7 +497,7 @@ function CourseCardGrid({
             } else {
                 toast.error('Gagal mendaftar');
             }
-        } catch (error) {
+        } catch {
             toast.error('Terjadi kesalahan');
         } finally {
             setEnrollingCourseId(null);
@@ -485,7 +511,10 @@ function CourseCardGrid({
                     key={course.id}
                     className="relative flex h-full flex-col overflow-hidden pt-0"
                 >
-                    <CourseThumbnail title={course.title} />
+                    <CourseThumbnail
+                        coverImage={course.coverImage}
+                        title={course.title}
+                    />
 
                     <CardHeader>
                         <CardTitle className="text-xl leading-tight tracking-tight">
@@ -598,7 +627,10 @@ function EmptyLabCatalogGrid({
                     className="flex h-full flex-col overflow-hidden"
                 >
                     <CardHeader className="flex flex-col gap-4">
-                        <CourseThumbnail title={course.title} />
+                        <CourseThumbnail
+                            coverImage={course.coverImage}
+                            title={course.title}
+                        />
 
                         <div className="flex flex-col gap-2">
                             <CardTitle className="text-xl leading-tight tracking-tight">
@@ -640,6 +672,7 @@ function EmptyLabCatalogGrid({
 
 export default function CoursesIndex({
     courses,
+    filters,
     catalogMode = 'learning',
     sidebarMode = 'filters',
     statistics = [],
@@ -649,14 +682,22 @@ export default function CoursesIndex({
 }: CoursesIndexProps) {
     const isLabsCatalog = catalogMode === 'labs';
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(
+        filters?.search ?? '',
+    );
     const [enrollmentFilter, setEnrollmentFilter] =
-        useState<EnrollmentFilterValue>('all');
+        useState<EnrollmentFilterValue>(filters?.enrollment ?? 'all');
     const [labsGroupFilter, setLabsGroupFilter] =
         useState<LabsGroupFilterValue>('all');
-    const [sortBy, setSortBy] = useState<SortValue>('title-asc');
-    const [currentPage, setCurrentPage] = useState(1);
+    const [sortBy, setSortBy] = useState<SortValue>(
+        filters?.sort === 'progress' ? 'progress-desc' : 'title-asc',
+    );
+    const serverCourses = Array.isArray(courses) ? courses : courses.data;
+    const serverMeta = Array.isArray(courses) ? null : courses.meta;
+    const [currentPage, setCurrentPage] = useState(
+        serverMeta?.current_page ?? 1,
+    );
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -667,12 +708,12 @@ export default function CoursesIndex({
     }, [searchTerm]);
 
     const catalogCourses = useMemo(() => {
-        if (isLabsCatalog && courses.length === 0) {
+        if (isLabsCatalog && serverCourses.length === 0) {
             return hardcodedCatalogCourses;
         }
 
-        return courses;
-    }, [courses, isLabsCatalog]);
+        return serverCourses;
+    }, [serverCourses, isLabsCatalog]);
 
     const visibleCourses = useMemo(() => {
         const normalizedSearch = debouncedSearchTerm.trim().toLowerCase();

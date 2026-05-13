@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Course\CourseCatalogRequest;
 use App\Models\Course;
-use App\Services\CacheService;
+use App\Services\CourseCatalogBuilder;
 use App\Services\CourseDetailBuilder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,46 +15,35 @@ class CourseController extends Controller
 {
     public function __construct(
         private readonly CourseDetailBuilder $detailBuilder,
+        private readonly CourseCatalogBuilder $catalogBuilder,
     ) {}
 
     /**
      * Show the published course catalog.
      */
-    public function index(Request $request): Response
+    public function index(CourseCatalogRequest $request): Response
     {
-        $catalogBase = Cache::remember('courses:catalog', CacheService::TTL_MEDIUM, fn () => Course::query()
-            ->published()
-            ->withCount(['lessons', 'enrollments'])
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->get()
-            ->map(fn (Course $course): array => [
-                'id' => $course->id,
-                'slug' => $course->slug,
-                'title' => $course->title,
-                'summary' => $course->summary,
-                'coverImage' => $course->cover,
-                'estimatedMinutes' => $course->estimated_minutes,
-                'lessonCount' => $course->lessons_count,
-                'enrollmentCount' => $course->enrollments_count,
-            ])->values()->all());
-
-        $progressByCourse = $request->user()
-            ->enrollments()
-            ->pluck('progress_percentage', 'course_id');
-
-        $courses = collect($catalogBase)->map(function (array $course) use ($progressByCourse): array {
-            $isEnrolled = $progressByCourse->has($course['id']);
-
-            return [
-                ...$course,
-                'isEnrolled' => $isEnrolled,
-                'progressPercentage' => $isEnrolled ? $progressByCourse[$course['id']] : null,
-            ];
-        })->values();
+        $filters = $request->catalogFilters();
+        $courses = $this->catalogBuilder->build($request->user(), $filters);
 
         return Inertia::render('courses/index', [
-            'courses' => $courses,
+            'courses' => [
+                'data' => $courses->items(),
+                'meta' => [
+                    'current_page' => $courses->currentPage(),
+                    'last_page' => $courses->lastPage(),
+                    'per_page' => $courses->perPage(),
+                    'total' => $courses->total(),
+                    'from' => $courses->firstItem(),
+                    'to' => $courses->lastItem(),
+                ],
+                'links' => $courses->linkCollection(),
+            ],
+            'filters' => [
+                'search' => $filters['search'],
+                'enrollment' => $filters['enrollment'],
+                'sort' => $filters['sort'],
+            ],
         ]);
     }
 
@@ -71,6 +60,7 @@ class CourseController extends Controller
         $course->load([
             'lessons' => fn ($query) => $query
                 ->with(['tasks.quizQuestions'])
+                ->when(! $isAdmin, fn ($query) => $query->published())
                 ->orderBy('position'),
         ])->loadCount('enrollments');
 
@@ -92,7 +82,7 @@ class CourseController extends Controller
             ],
             'lessons' => $lessons,
             'enrollment' => $enrollment ? [
-                'progressPercentage' => $enrollment->progress_percentage,
+                'progressPercentage' => number_format((float) $enrollment->progress_percentage, 2, '.', ''),
                 'completedAt' => optional($enrollment->completed_at)->toIso8601String(),
             ] : null,
             'assessments' => $assessmentsData,

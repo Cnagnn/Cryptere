@@ -76,10 +76,18 @@ function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
 
     const handleTouchEnd = useCallback(
         (e: React.TouchEvent) => {
-            if (touchStartX.current === null) return;
+            if (touchStartX.current === null) {
+return;
+}
+
             const diff = e.changedTouches[0].clientX - touchStartX.current;
-            if (diff > 50) onSwipeRight();
-            else if (diff < -50) onSwipeLeft();
+
+            if (diff > 50) {
+onSwipeRight();
+} else if (diff < -50) {
+onSwipeLeft();
+}
+
             touchStartX.current = null;
         },
         [onSwipeLeft, onSwipeRight],
@@ -106,9 +114,14 @@ export default function LabsShow({ lab }: LabShowProps) {
     );
 
     const validationError = useMemo(() => {
-        if (normalizedInput.error !== null) return normalizedInput.error;
-        if (normalizedInput.value === null)
-            return 'Input could not be normalized for this algorithm mode.';
+        if (normalizedInput.error !== null) {
+return normalizedInput.error;
+}
+
+        if (normalizedInput.value === null) {
+return 'Input could not be normalized for this algorithm mode.';
+}
+
         return validationErrorByLab(
             lab.slug,
             mode,
@@ -131,6 +144,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                 steps: [validationError],
             } as SimulationResult;
         }
+
         return runSimulation(
             lab.slug,
             mode,
@@ -146,6 +160,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                 error: 'Output ditampilkan apa adanya (format domain-specific).',
             };
         }
+
         return formatOutputValue(rawResult.output, outputFormat);
     }, [lab.slug, outputFormat, rawResult.output]);
 
@@ -177,17 +192,24 @@ export default function LabsShow({ lab }: LabShowProps) {
     );
 
     useEffect(() => {
-        if (!isWalkthroughPlaying || rawResult.steps.length <= 1) return;
+        if (!isWalkthroughPlaying || rawResult.steps.length <= 1) {
+return;
+}
+
         const intervalId = setInterval(() => {
             setActiveStepIndex((currentIndex) => {
                 const lastStepIndex = Math.max(0, rawResult.steps.length - 1);
+
                 if (currentIndex >= lastStepIndex) {
                     setIsWalkthroughPlaying(false);
+
                     return currentIndex;
                 }
+
                 return currentIndex + 1;
             });
         }, 1100);
+
         return () => clearInterval(intervalId);
     }, [isWalkthroughPlaying, rawResult.steps.length]);
 
@@ -463,6 +485,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                             ) {
                                                 setActiveStepIndex(0);
                                             }
+
                                             setIsWalkthroughPlaying((c) => !c);
                                         }}
                                     >

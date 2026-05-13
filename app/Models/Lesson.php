@@ -15,6 +15,12 @@ class Lesson extends Model
     /** @use HasFactory<LessonFactory> */
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_PUBLISHED = 'published';
+
+    public const STATUS_ARCHIVED = 'archived';
+
     protected $casts = [
         'learning_objectives' => 'array',
         'key_concepts' => 'array',
@@ -83,7 +89,7 @@ class Lesson extends Model
      */
     public function scopePublished($query)
     {
-        return $query->where('status', 'published');
+        return $query->where('status', self::STATUS_PUBLISHED);
     }
 
     /**
@@ -91,7 +97,7 @@ class Lesson extends Model
      */
     public function scopeDraft($query)
     {
-        return $query->where('status', 'draft');
+        return $query->where('status', self::STATUS_DRAFT);
     }
 
     /**
@@ -99,7 +105,7 @@ class Lesson extends Model
      */
     public function scopeArchived($query)
     {
-        return $query->where('status', 'archived');
+        return $query->where('status', self::STATUS_ARCHIVED);
     }
 
     /**
@@ -107,7 +113,7 @@ class Lesson extends Model
      */
     public function isPublished(): bool
     {
-        return $this->status === 'published';
+        return $this->status === self::STATUS_PUBLISHED;
     }
 
     /**
@@ -127,7 +133,7 @@ class Lesson extends Model
         return LessonProgress::query()
             ->where('user_id', $user->id)
             ->where('lesson_id', $this->prerequisite_lesson_id)
-            ->where('is_completed', true)
+            ->whereNotNull('completed_at')
             ->exists();
     }
 }

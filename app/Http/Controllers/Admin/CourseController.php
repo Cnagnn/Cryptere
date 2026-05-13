@@ -10,10 +10,15 @@ use App\Http\Requests\Admin\TogglePublishAdminCourseRequest;
 use App\Http\Requests\Admin\UpdateAdminCourseRequest;
 use App\Models\Assessment;
 use App\Models\AssessmentQuestion;
+use App\Models\AssessmentSubmission;
+use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\LessonProgress;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
+use App\Models\QuizSubmission;
+use App\Models\TaskProgress;
 use App\Models\Topic;
 use App\Services\AuditService;
 use App\Services\CacheService;
@@ -59,7 +64,8 @@ class CourseController extends Controller
         $perPage = max(10, min($perPage, 100));
 
         $courses = Course::query()
-            ->withCount('enrollments')
+            ->with('publishedBy:id,name')
+            ->withCount(['enrollments', 'lessons', 'tasks'])
             ->searchManagement($search)
             ->orderBy('sort_order')
             ->orderBy('title')
@@ -75,6 +81,11 @@ class CourseController extends Controller
                 'summary' => $course->summary,
                 'cover' => $course->cover,
                 'status' => $course->status,
+                'is_published' => $course->status === Course::STATUS_PUBLISHED,
+                'version' => $course->version,
+                'published_by_name' => $course->publishedBy?->name,
+                'lessons_count' => $course->lessons_count,
+                'tasks_count' => $course->tasks_count,
                 'enrollments_count' => $course->enrollments_count,
                 'created_at' => $course->created_at?->toIso8601String(),
                 'updated_at' => $course->updated_at?->toIso8601String(),
@@ -115,7 +126,7 @@ class CourseController extends Controller
 
         if ($section === self::SECTION_LESSON || $section === self::SECTION_TASK) {
             $lessonPaginator = Lesson::query()
-                ->with(['course:id,slug,title'])
+                ->with(['course:id,slug,title', 'topic:id,name', 'publishedBy:id,name'])
                 ->withCount('tasks')
                 ->when($selectedCourseId > 0, fn ($q) => $q->where('course_id', $selectedCourseId))
                 ->orderBy('course_id')
@@ -130,10 +141,18 @@ class CourseController extends Controller
                     'course_id' => $lesson->course_id,
                     'course_slug' => $lesson->course?->slug,
                     'course_title' => $lesson->course?->title,
+                    'topic_id' => $lesson->topic_id,
+                    'topic_name' => $lesson->topic?->name,
+                    'prerequisite_lesson_id' => $lesson->prerequisite_lesson_id,
                     'slug' => $lesson->slug,
                     'title' => $lesson->title,
                     'description' => (string) ($lesson->description ?? ''),
+                    'content' => (string) ($lesson->content ?? ''),
                     'position' => $lesson->position,
+                    'status' => $lesson->status,
+                    'version' => $lesson->version,
+                    'published_by_name' => $lesson->publishedBy?->name,
+                    'tasks_count' => $lesson->tasks_count,
                     'created_at' => $lesson->created_at?->toIso8601String(),
                     'updated_at' => $lesson->updated_at?->toIso8601String(),
                 ];
@@ -164,13 +183,13 @@ class CourseController extends Controller
                 if ($selectedLesson->tasks()->exists()) {
                     $taskPaginator = LessonTask::query()
                         ->where('lesson_id', $selectedLesson->id)
-                        ->with('quizQuestions:id,lesson_task_id,question,options,correct_option,explanation,sort_order')
+                        ->with(['quizQuestions:id,lesson_task_id,question,options,correct_option,explanation,sort_order', 'publishedBy:id,name'])
                         ->orderBy('sort_order')
                         ->orderBy('id')
                         ->paginate($perPage)
                         ->withQueryString();
 
-                    $taskPaginator->getCollection()->values()->transform(function (LessonTask $task, int $index) use ($selectedLesson, $taskPaginator): array {
+                    $taskPaginator->getCollection()->transform(function (LessonTask $task, int $index) use ($selectedLesson, $taskPaginator): array {
                         $globalIndex = (($taskPaginator->currentPage() - 1) * $taskPaginator->perPage()) + $index;
 
                         return [
@@ -180,12 +199,25 @@ class CourseController extends Controller
                             'task_index' => $globalIndex,
                             'lesson_id' => $selectedLesson->id,
                             'lesson_title' => $selectedLesson->title,
+                            'course_id' => $selectedLesson->course_id,
                             'course_slug' => $selectedLesson->course?->slug,
                             'type' => $task->type,
                             'title' => $task->title,
                             'description' => (string) ($task->description ?? ''),
+                            'content' => (string) ($task->description ?? ''),
+                            'position' => $task->sort_order,
                             'minutes' => $task->minutes,
+                            'estimated_minutes' => $task->estimated_minutes,
+                            'status' => $task->status,
+                            'version' => $task->version,
+                            'published_by_name' => $task->publishedBy?->name,
+                            'prerequisite_task_id' => $task->prerequisite_task_id,
                             'video_url' => $task->video_url,
+                            'video_processing_status' => $task->video_processing_status,
+                            'video_mp4_url' => $task->video_mp4_url,
+                            'document_name' => $task->document_name,
+                            'conversion_status' => $task->conversion_status,
+                            'pdf_url' => $task->pdf_url,
                             'created_at' => $task->created_at?->toIso8601String(),
                             'updated_at' => $task->updated_at?->toIso8601String(),
                             'quiz_questions' => $task->quizQuestions->map(fn (QuizQuestion $q): array => [
@@ -264,7 +296,7 @@ class CourseController extends Controller
             $assessmentCourseId = $courseFilterSelected ? (int) $request->integer('course_id') : 0;
 
             $assessmentPaginator = Assessment::query()
-                ->with('course:id,title')
+                ->with(['course:id,title', 'publishedBy:id,name'])
                 ->searchManagement($search)
                 ->when($bloomFilter, fn ($q) => $q->where('bloom_level', $bloomFilter))
                 ->when($assessmentCourseId > 0, fn ($q) => $q->where('course_id', $assessmentCourseId))
@@ -288,6 +320,9 @@ class CourseController extends Controller
                     'max_attempts' => $a->max_attempts,
                     'time_limit_minutes' => $a->time_limit_minutes,
                     'status' => $a->status,
+                    'is_published' => $a->status === Assessment::STATUS_PUBLISHED,
+                    'version' => $a->version,
+                    'published_by_name' => $a->publishedBy?->name,
                     'available_from' => $a->available_from,
                     'available_until' => $a->available_until,
                     'sort_order' => $a->sort_order,
@@ -441,6 +476,23 @@ class CourseController extends Controller
     {
         $this->authorize('delete', $course);
 
+        $lessonIds = $course->lessons()->pluck('id');
+        $taskIds = LessonTask::query()->whereIn('lesson_id', $lessonIds)->pluck('id');
+        $assessmentIds = $course->assessments()->pluck('id');
+
+        if (
+            $course->enrollments()->exists()
+            || Certificate::query()->where('course_id', $course->id)->exists()
+            || LessonProgress::query()->whereIn('lesson_id', $lessonIds)->exists()
+            || TaskProgress::query()->whereIn('lesson_task_id', $taskIds)->exists()
+            || QuizSubmission::query()->whereIn('lesson_task_id', $taskIds)->exists()
+            || AssessmentSubmission::query()->whereIn('assessment_id', $assessmentIds)->exists()
+        ) {
+            return back()->withErrors([
+                'course' => __('Archive this course instead. It already has learner history.'),
+            ]);
+        }
+
         // Clean up cover file from disk
         if ($course->cover_path !== null && Storage::disk('public')->exists($course->cover_path)) {
             Storage::disk('public')->delete($course->cover_path);
@@ -478,12 +530,13 @@ class CourseController extends Controller
 
     public function togglePublish(TogglePublishAdminCourseRequest $request, Course $course): RedirectResponse
     {
-        $newStatus = $request->has('status')
-            ? $request->input('status')
-            : ($course->status === 'published' ? 'draft' : 'published');
+        $isPublished = $request->boolean('is_published');
 
         $course->update([
-            'status' => $newStatus,
+            'status' => $isPublished ? Course::STATUS_PUBLISHED : Course::STATUS_DRAFT,
+            'is_published' => $isPublished,
+            'published_by' => $isPublished ? $request->user()->id : null,
+            'version' => $course->version + 1,
         ]);
 
         CacheService::invalidateCourseCatalog();
@@ -497,9 +550,10 @@ class CourseController extends Controller
     public function publishCourse(Course $course): RedirectResponse
     {
         $course->update([
-            'status' => 'published',
+            'status' => Course::STATUS_PUBLISHED,
             'published_by' => request()->user()->id,
             'is_published' => true,
+            'version' => $course->version + 1,
         ]);
 
         app(AuditService::class)->log(request()->user(), 'published', $course);
@@ -514,8 +568,9 @@ class CourseController extends Controller
     public function archiveCourse(Course $course): RedirectResponse
     {
         $course->update([
-            'status' => 'archived',
             'is_published' => false,
+            'status' => Course::STATUS_ARCHIVED,
+            'version' => $course->version + 1,
         ]);
 
         app(AuditService::class)->log(request()->user(), 'archived', $course);

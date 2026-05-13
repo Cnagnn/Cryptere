@@ -68,7 +68,7 @@ class CourseDetailBuilder
 
             $visibleTasks = $lesson->tasks->when(
                 ! $isAdmin,
-                fn ($tasks) => $tasks->filter(fn (LessonTask $task): bool => $task->published_at !== null),
+                fn ($tasks) => $tasks->filter(fn (LessonTask $task): bool => $task->isPublished()),
             )->values();
 
             return [
@@ -108,7 +108,7 @@ class CourseDetailBuilder
             'documentName' => $task->document_name,
             'conversionStatus' => $task->conversion_status,
             'pdfUrl' => $task->pdf_url ? route('courses.documents.show', $task) : null,
-            'isPublished' => $task->published_at !== null,
+            'isPublished' => $task->isPublished(),
             'publishedAt' => optional($task->published_at)->toIso8601String(),
             'isCompleted' => $completedTaskIds->contains($task->id),
             'questions' => $task->quizQuestions->map(fn (QuizQuestion $question): array => [
@@ -195,6 +195,7 @@ class CourseDetailBuilder
                 ->where('user_id', $user->id)
                 ->where('assessment_id', $assessment->id)
                 ->where('status', AssessmentSubmission::STATUS_IN_PROGRESS)
+                ->with('answers')
                 ->first();
 
             $pastSubmissions = AssessmentSubmission::query()
@@ -242,6 +243,11 @@ class CourseDetailBuilder
                     'id' => $activeSubmission->id,
                     'attemptNumber' => $activeSubmission->attempt_number,
                     'startedAt' => $activeSubmission->started_at->toIso8601String(),
+                    'answers' => $activeSubmission->answers->map(fn (AssessmentAnswer $answer) => [
+                        'questionId' => $answer->question_id,
+                        'answerText' => $answer->answer_text,
+                        'selectedOption' => $answer->selected_option,
+                    ])->values(),
                 ] : null,
                 'pastSubmissions' => $pastSubmissions,
                 'latestResults' => $latestResults,

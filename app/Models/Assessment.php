@@ -33,6 +33,12 @@ class Assessment extends Model
     /** @use HasFactory<AssessmentFactory> */
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_PUBLISHED = 'published';
+
+    public const STATUS_ARCHIVED = 'archived';
+
     // Bloom's Taxonomy levels
     public const BLOOM_C1 = 'C1'; // Remember
 
@@ -126,14 +132,14 @@ class Assessment extends Model
      */
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', 'published');
+        return $query->where('status', self::STATUS_PUBLISHED);
     }
 
     public function scopeAvailable(Builder $query): Builder
     {
         $now = now();
 
-        return $query->where('status', 'published')
+        return $query->where('status', self::STATUS_PUBLISHED)
             ->where(function (Builder $q) use ($now) {
                 $q->whereNull('available_from')
                     ->orWhere('available_from', '<=', $now);
@@ -179,7 +185,7 @@ class Assessment extends Model
      */
     public function isAvailable(): bool
     {
-        if ($this->status !== 'published') {
+        if ($this->status !== self::STATUS_PUBLISHED) {
             return false;
         }
 
@@ -234,7 +240,7 @@ class Assessment extends Model
      */
     public function isPublished(): bool
     {
-        return $this->status === 'published';
+        return $this->status === self::STATUS_PUBLISHED;
     }
 
     /**
@@ -242,7 +248,7 @@ class Assessment extends Model
      */
     public function isDraft(): bool
     {
-        return $this->status === 'draft';
+        return $this->status === self::STATUS_DRAFT;
     }
 
     /**
@@ -250,6 +256,6 @@ class Assessment extends Model
      */
     public function isArchived(): bool
     {
-        return $this->status === 'archived';
+        return $this->status === self::STATUS_ARCHIVED;
     }
 }

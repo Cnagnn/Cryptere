@@ -41,6 +41,8 @@ export default [
             'react/react-in-jsx-scope': 'off',
             'react/prop-types': 'off',
             'react/no-unescaped-entities': 'off',
+            'react-hooks/purity': 'off',
+            'react-hooks/set-state-in-effect': 'off',
         },
         settings: {
             react: {
@@ -111,6 +113,9 @@ export default [
             'node_modules',
             'public',
             'bootstrap/ssr',
+            '.agent/**',
+            '.agents/**',
+            '.claude/**',
             'tailwind.config.js',
             'vite.config.ts',
             'resources/js/actions/**',

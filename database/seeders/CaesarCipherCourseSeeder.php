@@ -40,7 +40,7 @@ class CaesarCipherCourseSeeder extends Seeder
                     'summary' => 'Pengenalan kriptografi klasik melalui Sandi Caesar',
                     'category' => 'Kriptografi',
                     'difficulty' => 'Pemula',
-                    'estimated_minutes' => 240,
+                    'estimated_minutes' => 120,
                     'status' => 'published',
                     'is_published' => true,
                     'version' => 1,
@@ -71,7 +71,7 @@ class CaesarCipherCourseSeeder extends Seeder
         $lesson = Lesson::updateOrCreate(
             [
                 'course_id' => $course->id,
-                'slug' => 'pengenalan-sandi-caesar',
+                'slug' => 'caesar-cipher-fundamentals',
             ],
             [
                 'title' => 'Pengenalan Sandi Caesar',
@@ -105,7 +105,7 @@ class CaesarCipherCourseSeeder extends Seeder
             ],
             [
                 'type' => 'video',
-                'video_url' => 'https://www.youtube.com/watch?v=jhXCTbFnK8o',
+                'video_url' => 'https://www.youtube.com/watch?v=sMOZf4GN3oc',
                 'video_processing_status' => 'ready',
                 'estimated_minutes' => 8,
                 'status' => 'published',
@@ -167,6 +167,20 @@ class CaesarCipherCourseSeeder extends Seeder
                 'correct_option' => 1,
                 'explanation' => 'Sandi Caesar adalah sandi substitusi yang mengganti setiap huruf dengan huruf lain.',
                 'sort_order' => 3,
+            ],
+            [
+                'question' => 'Berapa jumlah kemungkinan pergeseran efektif dalam Sandi Caesar alfabet Latin?',
+                'options' => ['3', '13', '25', '256'],
+                'correct_option' => 2,
+                'explanation' => 'Ada 25 pergeseran efektif; pergeseran 26 kembali ke teks asli.',
+                'sort_order' => 4,
+            ],
+            [
+                'question' => 'Apa yang dilakukan proses dekripsi pada Sandi Caesar?',
+                'options' => ['Menghapus kunci', 'Menggeser huruf berlawanan arah', 'Mengubah huruf menjadi angka acak', 'Mengganti alfabet dengan simbol'],
+                'correct_option' => 1,
+                'explanation' => 'Dekripsi menerapkan pergeseran kebalikan dari proses enkripsi.',
+                'sort_order' => 5,
             ],
         ];
 

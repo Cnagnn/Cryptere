@@ -4,7 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
+use App\Models\AssessmentSubmission;
+use App\Models\Certificate;
+use App\Models\Enrollment;
+use App\Models\LessonProgress;
+use App\Models\QuizSubmission;
+use App\Models\TaskProgress;
 use App\Models\User;
+use App\Models\UserBalanceChange;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -82,11 +89,17 @@ class UserController extends Controller
         $isLastAdmin = $user->role === 'admin' && User::query()->where('role', 'admin')->count() <= 1;
 
         if ($isLastAdmin) {
-            return back()->with('error', 'The last admin account cannot be deleted.');
+            return back()->withErrors(['user' => 'The last admin account cannot be deleted.']);
         }
 
         if ((int) $request->user()?->getKey() === (int) $user->getKey()) {
-            return back()->with('error', 'You cannot delete your own account.');
+            return back()->withErrors(['user' => 'You cannot delete your own account.']);
+        }
+
+        if ($this->userHasProtectedHistory($user)) {
+            return back()->withErrors([
+                'user' => __('Deactivate this user instead. The account already has learner or balance history.'),
+            ]);
         }
 
         app(AuditService::class)->log($request->user(), 'deleted', $user);
@@ -94,5 +107,17 @@ class UserController extends Controller
         $user->delete();
 
         return back()->with('success', 'User has been deleted.');
+    }
+
+    private function userHasProtectedHistory(User $user): bool
+    {
+        return $user->points > 0
+            || Enrollment::query()->where('user_id', $user->id)->exists()
+            || LessonProgress::query()->where('user_id', $user->id)->exists()
+            || TaskProgress::query()->where('user_id', $user->id)->exists()
+            || QuizSubmission::query()->where('user_id', $user->id)->exists()
+            || AssessmentSubmission::query()->where('user_id', $user->id)->exists()
+            || Certificate::query()->where('user_id', $user->id)->exists()
+            || UserBalanceChange::query()->where('user_id', $user->id)->exists();
     }
 }

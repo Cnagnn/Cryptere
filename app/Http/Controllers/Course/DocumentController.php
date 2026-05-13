@@ -19,6 +19,10 @@ class DocumentController extends Controller
         // Verify user is enrolled in the course that owns this task
         $course = $task->lesson->course;
         abort_unless($course->enrollments()->where('user_id', $user->id)->exists(), 403);
+        abort_unless($course->isPublished(), 403);
+        abort_unless($task->lesson->isPublished(), 403);
+        abort_unless($task->type === 'read' && $task->isPublished(), 403);
+        abort_unless($task->canAccess($user), 403);
 
         // Extract relative storage path from the full URL
         $pdfUrl = $task->pdf_url;

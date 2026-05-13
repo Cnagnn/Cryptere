@@ -1,3 +1,7 @@
+import { usePage } from '@inertiajs/react';
+import { Award, Shield, Star, Trophy } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import {
     RouteAnnouncer,
     SkipToContent,
@@ -8,10 +12,6 @@ import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import type { AppLayoutProps } from '@/types';
-import { usePage } from '@inertiajs/react';
-import { Award, Shield, Star, Trophy } from 'lucide-react';
-import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 
 type BadgeFlash = {
     name: string;

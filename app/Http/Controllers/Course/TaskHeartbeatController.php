@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
+use App\Models\LessonTask;
 use App\Models\TaskProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,12 +49,17 @@ class TaskHeartbeatController extends Controller
         }
 
         // Verify task belongs to this lesson
-        $taskBelongsToLesson = $lesson->tasks()
+        $task = LessonTask::query()
             ->where('id', $validated['task_id'])
-            ->exists();
+            ->where('lesson_id', $lesson->id)
+            ->first();
 
-        if (! $taskBelongsToLesson) {
+        if ($task === null) {
             return response()->json(['message' => 'Invalid task.'], 422);
+        }
+
+        if (! $course->isPublished() || ! $lesson->isPublished() || ! $task->canAccess($user)) {
+            return response()->json(['message' => 'Task is locked.'], 403);
         }
 
         $seconds = min((int) $validated['seconds'], self::MAX_HEARTBEAT_SECONDS);

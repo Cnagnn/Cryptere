@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ReorderAdminAssessmentsRequest;
+use App\Http\Requests\Admin\StoreAdminAssessmentRequest;
+use App\Http\Requests\Admin\UpdateAdminAssessmentRequest;
 use App\Models\Assessment;
 use App\Models\AssessmentQuestion;
 use App\Models\Course;
@@ -63,23 +66,9 @@ class AssessmentController extends Controller
     /**
      * Store a new assessment.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreAdminAssessmentRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'course_id' => ['nullable', 'integer', 'exists:courses,id'],
-            'topic_id' => ['nullable', 'integer', 'exists:topics,id'],
-            'bloom_level' => ['required', 'in:C1,C2,C3,C4,C5,C6'],
-            'grading_type' => ['required', 'in:auto,manual,mixed'],
-            'passing_score' => ['required', 'integer', 'min:1', 'max:100'],
-            'max_attempts' => ['required', 'integer', 'min:1', 'max:10'],
-            'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:480'],
-            'is_published' => ['boolean'],
-            'status' => ['nullable', 'string', 'in:draft,published,archived'],
-            'available_from' => ['nullable', 'date'],
-            'available_until' => ['nullable', 'date', 'after:available_from'],
-        ]);
+        $validated = $request->validated();
 
         $nextSortOrder = (int) Assessment::query()->max('sort_order') + 1;
 
@@ -87,8 +76,7 @@ class AssessmentController extends Controller
             ...$validated,
             'slug' => $this->generateUniqueSlug($validated['title']),
             'sort_order' => $nextSortOrder,
-            'is_published' => $validated['is_published'] ?? false,
-            'status' => $validated['status'] ?? 'draft',
+            'status' => $validated['status'] ?? Assessment::STATUS_DRAFT,
             'version' => 1,
             'published_by' => null,
         ]);
@@ -101,23 +89,9 @@ class AssessmentController extends Controller
     /**
      * Update an existing assessment.
      */
-    public function update(Request $request, Assessment $assessment): RedirectResponse
+    public function update(UpdateAdminAssessmentRequest $request, Assessment $assessment): RedirectResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'course_id' => ['nullable', 'integer', 'exists:courses,id'],
-            'topic_id' => ['nullable', 'integer', 'exists:topics,id'],
-            'bloom_level' => ['required', 'in:C1,C2,C3,C4,C5,C6'],
-            'grading_type' => ['required', 'in:auto,manual,mixed'],
-            'passing_score' => ['required', 'integer', 'min:1', 'max:100'],
-            'max_attempts' => ['required', 'integer', 'min:1', 'max:10'],
-            'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:480'],
-            'is_published' => ['boolean'],
-            'status' => ['nullable', 'string', 'in:draft,published,archived'],
-            'available_from' => ['nullable', 'date'],
-            'available_until' => ['nullable', 'date', 'after:available_from'],
-        ]);
+        $validated = $request->validated();
 
         $updateData = $validated;
 
@@ -136,6 +110,12 @@ class AssessmentController extends Controller
      */
     public function destroy(Request $request, Assessment $assessment): RedirectResponse
     {
+        if ($assessment->submissions()->exists()) {
+            return back()->withErrors([
+                'assessment' => __('Archive this assessment instead. It already has learner submissions.'),
+            ]);
+        }
+
         app(AuditService::class)->log($request->user(), 'deleted', $assessment);
 
         $assessment->delete();
@@ -148,8 +128,12 @@ class AssessmentController extends Controller
      */
     public function togglePublish(Assessment $assessment): RedirectResponse
     {
-        $newStatus = $assessment->status === 'published' ? 'draft' : 'published';
-        $assessment->update(['status' => $newStatus]);
+        $newStatus = $assessment->status === Assessment::STATUS_PUBLISHED ? Assessment::STATUS_DRAFT : Assessment::STATUS_PUBLISHED;
+        $assessment->update([
+            'status' => $newStatus,
+            'published_by' => $newStatus === Assessment::STATUS_PUBLISHED ? request()->user()->id : null,
+            'version' => $assessment->version + 1,
+        ]);
 
         return back()->with('success', $newStatus === 'published' ? 'Assessment published.' : 'Assessment unpublished.');
     }
@@ -160,9 +144,9 @@ class AssessmentController extends Controller
     public function publishAssessment(Assessment $assessment): RedirectResponse
     {
         $assessment->update([
-            'status' => 'published',
+            'status' => Assessment::STATUS_PUBLISHED,
             'published_by' => request()->user()->id,
-            'is_published' => true,
+            'version' => $assessment->version + 1,
         ]);
 
         app(AuditService::class)->log(request()->user(), 'published', $assessment);
@@ -176,8 +160,8 @@ class AssessmentController extends Controller
     public function archiveAssessment(Assessment $assessment): RedirectResponse
     {
         $assessment->update([
-            'status' => 'archived',
-            'is_published' => false,
+            'status' => Assessment::STATUS_ARCHIVED,
+            'version' => $assessment->version + 1,
         ]);
 
         app(AuditService::class)->log(request()->user(), 'archived', $assessment);
@@ -188,13 +172,9 @@ class AssessmentController extends Controller
     /**
      * Reorder assessments.
      */
-    public function reorder(Request $request): RedirectResponse
+    public function reorder(ReorderAdminAssessmentsRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'items' => ['required', 'array'],
-            'items.*.id' => ['required', 'integer', 'exists:assessments,id'],
-            'items.*.sort_order' => ['required', 'integer', 'min:0'],
-        ]);
+        $validated = $request->validated();
 
         foreach ($validated['items'] as $item) {
             Assessment::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
