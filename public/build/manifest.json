@@ -844,7 +844,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-BoQZUiMO.js",
+    "file": "assets/app-CEJ5HzBR.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -934,7 +934,7 @@
     ]
   },
   "resources/js/pages/admin/courses/index.tsx": {
-    "file": "assets/courses-CtMfjIuG.js",
+    "file": "assets/courses-Bf_0Mexq.js",
     "name": "courses",
     "src": "resources/js/pages/admin/courses/index.tsx",
     "isDynamicEntry": true,
@@ -949,7 +949,7 @@
     ]
   },
   "resources/js/pages/admin/courses/task.tsx": {
-    "file": "assets/task-ByjRzIxT.js",
+    "file": "assets/task-DGrvYa34.js",
     "name": "task",
     "src": "resources/js/pages/admin/courses/task.tsx",
     "isDynamicEntry": true,

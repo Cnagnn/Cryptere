@@ -262,7 +262,6 @@ function parseQuizImportText(text: string): QuizQuestion[] {
 
 export default function AdminCoursesTask({
     tasks,
-    lessons,
     allLessons,
     courseOptions,
     selectedCourseId,
@@ -294,9 +293,15 @@ export default function AdminCoursesTask({
         explanation: '',
     });
 
-    const lessonOptions = lessons.data.filter(
-        (lesson) => lesson.course_id === selectedCourseId,
-    );
+    const lessonOptions = useMemo(() => {
+        if (selectedCourseId === 0) {
+            return allLessons;
+        }
+
+        return allLessons.filter(
+            (lesson) => lesson.course_id === selectedCourseId,
+        );
+    }, [allLessons, selectedCourseId]);
 
     const [taskForm, setTaskForm] = useState({
         lesson_id: selectedLessonId || lessonOptions[0]?.id || 0,

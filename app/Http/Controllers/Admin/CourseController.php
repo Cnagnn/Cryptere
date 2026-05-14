@@ -111,6 +111,33 @@ class CourseController extends Controller
         $selectedCourseId = (int) $request->integer('course_id', $defaultCourseId);
         $selectedLessonId = (int) $request->integer('lesson_id', 0);
 
+        if ($section === self::SECTION_TASK) {
+            if ($selectedLessonId > 0) {
+                $selectedLessonCourseId = Lesson::query()
+                    ->whereKey($selectedLessonId)
+                    ->value('course_id');
+
+                if ($selectedLessonCourseId === null) {
+                    $selectedLessonId = 0;
+                } else {
+                    $selectedCourseId = (int) $selectedLessonCourseId;
+                }
+            }
+
+            if ($selectedLessonId === 0) {
+                $defaultLesson = Lesson::query()
+                    ->when($selectedCourseId > 0, fn ($q) => $q->where('course_id', $selectedCourseId))
+                    ->orderBy('course_id')
+                    ->orderBy('position')
+                    ->first(['id', 'course_id']);
+
+                if ($defaultLesson !== null) {
+                    $selectedCourseId = (int) $defaultLesson->course_id;
+                    $selectedLessonId = (int) $defaultLesson->id;
+                }
+            }
+        }
+
         $emptyPaginated = [
             'data' => [],
             'current_page' => 1,
