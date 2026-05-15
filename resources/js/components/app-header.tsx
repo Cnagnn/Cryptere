@@ -82,8 +82,9 @@ const mainNavItems: NavItem[] = [
 const activeItemStyles = 'bg-accent text-accent-foreground';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
-    const page = usePage<{ auth: Auth }>();
+    const page = usePage<{ auth?: Auth }>();
     const { auth } = page.props;
+    const user = auth?.user;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -214,19 +215,17 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 >
                                     <Avatar className="size-8 overflow-hidden rounded-full">
                                         <AvatarImage
-                                            src={auth.user?.avatar}
-                                            alt={auth.user?.name}
+                                            src={user?.avatar}
+                                            alt={user?.name}
                                         />
                                         <AvatarFallback className="rounded-lg bg-muted text-foreground">
-                                            {getInitials(auth.user?.name ?? '')}
+                                            {getInitials(user?.name ?? '')}
                                         </AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end">
-                                {auth.user && (
-                                    <UserMenuContent user={auth.user} />
-                                )}
+                                {user && <UserMenuContent user={user} />}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

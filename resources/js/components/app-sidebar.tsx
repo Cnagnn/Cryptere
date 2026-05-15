@@ -170,9 +170,10 @@ export function UserMenuContent({ user }: { user: UserType }) {
 }
 
 export function AppSidebar() {
-    const page = usePage<{ auth: Auth }>();
+    const page = usePage<{ auth?: Auth }>();
     const { resolvedAppearance } = useAppearance();
     const { auth } = page.props;
+    const user = auth?.user;
     const { isCurrentUrl } = useCurrentUrl();
 
     const isCourseManagementPage = isCurrentUrl(
@@ -241,7 +242,7 @@ export function AppSidebar() {
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
-                {auth.user.is_admin ? (
+                {user?.is_admin ? (
                     <SidebarGroup className="px-2 py-0">
                         <SidebarGroupLabel>Management</SidebarGroupLabel>
                         <SidebarGroupContent>
@@ -387,51 +388,51 @@ export function AppSidebar() {
                 ) : null}
             </SidebarContent>
 
-            <SidebarFooter>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton
-                                    size="lg"
-                                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            {user ? (
+                <SidebarFooter>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <SidebarMenuButton
+                                        size="lg"
+                                        className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                                    >
+                                        <Avatar className="size-8 rounded-lg">
+                                            <AvatarImage
+                                                src={user.avatar ?? undefined}
+                                                alt={user.name}
+                                            />
+                                            <AvatarFallback className="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                                                {user.name
+                                                    .charAt(0)
+                                                    .toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                                            <span className="truncate font-semibold">
+                                                @{user.username ?? user.name}
+                                            </span>
+                                            <span className="truncate text-xs text-muted-foreground">
+                                                {user.email}
+                                            </span>
+                                        </div>
+                                        <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                                    </SidebarMenuButton>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                                    side="top"
+                                    align="end"
+                                    sideOffset={4}
                                 >
-                                    <Avatar className="size-8 rounded-lg">
-                                        <AvatarImage
-                                            src={auth.user.avatar ?? undefined}
-                                            alt={auth.user.name}
-                                        />
-                                        <AvatarFallback className="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                            {auth.user.name
-                                                .charAt(0)
-                                                .toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                                        <span className="truncate font-semibold">
-                                            @
-                                            {auth.user.username ??
-                                                auth.user.name}
-                                        </span>
-                                        <span className="truncate text-xs text-muted-foreground">
-                                            {auth.user.email}
-                                        </span>
-                                    </div>
-                                    <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
-                                </SidebarMenuButton>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                                side="top"
-                                align="end"
-                                sideOffset={4}
-                            >
-                                <UserMenuContent user={auth.user} />
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarFooter>
+                                    <UserMenuContent user={user} />
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarFooter>
+            ) : null}
         </Sidebar>
     );
 }

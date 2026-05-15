@@ -1713,10 +1713,15 @@ export default function Dashboard({
     decayWarning,
     recentCourses,
 }: DashboardProps) {
-    const { auth } = usePage<{ auth: Auth }>().props;
-
-    const isAdmin = auth.user.is_admin;
+    const { auth } = usePage<{ auth?: Auth }>().props;
+    const user = auth?.user;
     const [activeTab, setActiveTab] = useState<string>('home');
+
+    if (!user) {
+        return <Head title="Dasbor" />;
+    }
+
+    const isAdmin = user.is_admin;
 
     // Admin gets tabbed view with Home + Analytics
     if (isAdmin && admin) {
