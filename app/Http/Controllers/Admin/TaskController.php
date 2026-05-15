@@ -27,6 +27,8 @@ class TaskController extends Controller
         $lesson = Lesson::query()->findOrFail($validated['lesson_id']);
         $documentName = null;
         $conversionStatus = null;
+        $pdfUrl = null;
+        $pendingDocumentPath = null;
         $videoProcessingStatus = null;
         $videoUrl = $validated['type'] === 'video' ? ($validated['video_url'] ?? null) : null;
 
@@ -43,20 +45,16 @@ class TaskController extends Controller
         }
 
         if ($validated['type'] === 'read') {
-            $uploadedDocument = $request->file('document');
-            if ($uploadedDocument !== null) {
-                $storedPath = $uploadedDocument->store('lesson-documents', 'public');
-                $documentName = $uploadedDocument->getClientOriginalName();
-                $conversionStatus = 'pending';
-
-                // Dispatch the PDF conversion job
-                ConvertLessonDocument::dispatch($storedPath, $lesson->id);
-            }
+            $document = $this->storeReadDocument($request);
+            $documentName = $document['document_name'];
+            $conversionStatus = $document['conversion_status'];
+            $pdfUrl = $document['pdf_url'];
+            $pendingDocumentPath = $document['pending_document_path'];
         }
 
         $nextOrder = (int) LessonTask::query()->where('lesson_id', $lesson->id)->max('sort_order') + 1;
 
-        $createdTask = DB::transaction(function () use ($validated, $lesson, $documentName, $conversionStatus, $nextOrder, $videoProcessingStatus, $videoUrl): LessonTask {
+        $createdTask = DB::transaction(function () use ($validated, $lesson, $documentName, $conversionStatus, $pdfUrl, $nextOrder, $videoProcessingStatus, $videoUrl): LessonTask {
             $task = LessonTask::query()->create([
                 'lesson_id' => $lesson->id,
                 'title' => $validated['title'],
@@ -67,7 +65,7 @@ class TaskController extends Controller
                 'video_mp4_url' => null,
                 'document_name' => $documentName,
                 'conversion_status' => $conversionStatus,
-                'pdf_url' => null,
+                'pdf_url' => $pdfUrl,
                 'sort_order' => $nextOrder,
                 'published_at' => null,
                 'published_by' => null,
@@ -95,6 +93,10 @@ class TaskController extends Controller
             return $task;
         });
 
+        if ($pendingDocumentPath !== null) {
+            ConvertLessonDocument::dispatch($pendingDocumentPath, $createdTask->lesson_id);
+        }
+
         if ($createdTask->type === 'video' && $createdTask->video_processing_status === 'pending') {
             ConvertLessonVideo::dispatch($createdTask->id);
         }
@@ -110,20 +112,19 @@ class TaskController extends Controller
         $documentName = $task->document_name;
         $conversionStatus = $task->conversion_status;
         $pdfUrl = $task->pdf_url;
+        $pendingDocumentPath = null;
         $videoProcessingStatus = $task->video_processing_status;
         $videoMp4Url = $task->video_mp4_url;
         $videoUrl = $validated['type'] === 'video' ? ($validated['video_url'] ?? $task->video_url) : null;
 
         if ($validated['type'] === 'read') {
-            $uploadedDocument = $request->file('document');
-            if ($uploadedDocument !== null) {
-                $storedPath = $uploadedDocument->store('lesson-documents', 'public');
-                $documentName = $uploadedDocument->getClientOriginalName();
-                $conversionStatus = 'pending';
-                $pdfUrl = null;
+            $document = $this->storeReadDocument($request);
 
-                // Dispatch the PDF conversion job
-                ConvertLessonDocument::dispatch($storedPath, $task->lesson_id);
+            if ($document['document_name'] !== null) {
+                $documentName = $document['document_name'];
+                $conversionStatus = $document['conversion_status'];
+                $pdfUrl = $document['pdf_url'];
+                $pendingDocumentPath = $document['pending_document_path'];
             }
         } else {
             $documentName = null;
@@ -204,6 +205,10 @@ class TaskController extends Controller
                     });
             }
         });
+
+        if ($pendingDocumentPath !== null) {
+            ConvertLessonDocument::dispatch($pendingDocumentPath, $task->lesson_id);
+        }
 
         if ($task->type === 'video' && $task->video_processing_status === 'pending') {
             ConvertLessonVideo::dispatch($task->id);
@@ -307,5 +312,41 @@ class TaskController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * @return array{document_name: string|null, conversion_status: string|null, pdf_url: string|null, pending_document_path: string|null}
+     */
+    private function storeReadDocument(StoreAdminLessonTaskRequest|UpdateAdminLessonTaskRequest $request): array
+    {
+        $uploadedDocument = $request->file('document');
+
+        if ($uploadedDocument === null) {
+            return [
+                'document_name' => null,
+                'conversion_status' => null,
+                'pdf_url' => null,
+                'pending_document_path' => null,
+            ];
+        }
+
+        $storedPath = $uploadedDocument->store('lesson-documents', 'public');
+        $extension = strtolower(pathinfo($storedPath, PATHINFO_EXTENSION));
+
+        if ($extension === 'pdf') {
+            return [
+                'document_name' => $uploadedDocument->getClientOriginalName(),
+                'conversion_status' => 'converted',
+                'pdf_url' => Storage::disk('public')->url($storedPath),
+                'pending_document_path' => null,
+            ];
+        }
+
+        return [
+            'document_name' => $uploadedDocument->getClientOriginalName(),
+            'conversion_status' => 'pending',
+            'pdf_url' => null,
+            'pending_document_path' => $storedPath,
+        ];
     }
 }
