@@ -555,83 +555,94 @@ export default function Register({ status, socialUser }: Props) {
                                         </Field>
                                     </div>
 
-                                    <Field
-                                        data-invalid={Boolean(errors.password)}
-                                    >
-                                        <FieldLabel htmlFor="password">
-                                            Kata Sandi{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>{' '}
-                                        </FieldLabel>
-                                        <PasswordInput
-                                            id="password"
-                                            required
-                                            tabIndex={4}
-                                            autoComplete="new-password"
-                                            name="password"
-                                            placeholder="Gunakan kata sandi yang kuat"
-                                            aria-invalid={
-                                                Boolean(errors.password) ||
-                                                undefined
-                                            }
-                                            icon={<Lock className="size-4" />}
-                                            value={password}
-                                            onChange={(event) =>
-                                                setPassword(
-                                                    event.currentTarget.value,
-                                                )
-                                            }
-                                        />
-                                        {errors.password && (
-                                            <p className="text-sm text-destructive">
-                                                {errors.password}
-                                            </p>
-                                        )}
+                                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                        <Field
+                                            data-invalid={Boolean(
+                                                errors.password,
+                                            )}
+                                        >
+                                            <FieldLabel htmlFor="password">
+                                                Kata Sandi{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>{' '}
+                                            </FieldLabel>
+                                            <PasswordInput
+                                                id="password"
+                                                required
+                                                tabIndex={4}
+                                                autoComplete="new-password"
+                                                name="password"
+                                                placeholder="Gunakan kata sandi yang kuat"
+                                                aria-invalid={
+                                                    Boolean(errors.password) ||
+                                                    undefined
+                                                }
+                                                icon={
+                                                    <Lock className="size-4" />
+                                                }
+                                                value={password}
+                                                onChange={(event) =>
+                                                    setPassword(
+                                                        event.currentTarget
+                                                            .value,
+                                                    )
+                                                }
+                                            />
+                                            {errors.password && (
+                                                <p className="text-sm text-destructive">
+                                                    {errors.password}
+                                                </p>
+                                            )}
 
-                                        {/* Password Strength Indicator */}
-                                        {password.length > 0 && (
-                                            <div className="mt-1">
-                                                <Progress
-                                                    value={strength * 25}
-                                                    className={`h-1.5 bg-muted/60 transition-colors ${getStrengthBarColor(strength)}`}
-                                                    aria-label="Password strength"
-                                                />
-                                            </div>
-                                        )}
-                                    </Field>
+                                            {/* Password Strength Indicator */}
+                                            {password.length > 0 && (
+                                                <div className="mt-1">
+                                                    <Progress
+                                                        value={strength * 25}
+                                                        className={`h-1.5 bg-muted/60 transition-colors ${getStrengthBarColor(strength)}`}
+                                                        aria-label="Password strength"
+                                                    />
+                                                </div>
+                                            )}
+                                        </Field>
 
-                                    <Field
-                                        data-invalid={Boolean(
-                                            errors.password_confirmation,
-                                        )}
-                                    >
-                                        <FieldLabel htmlFor="password_confirmation">
-                                            Konfirmasi Kata Sandi{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <PasswordInput
-                                            id="password_confirmation"
-                                            required
-                                            tabIndex={5}
-                                            autoComplete="new-password"
-                                            name="password_confirmation"
-                                            placeholder="Ulangi kata sandi"
-                                            aria-invalid={
-                                                Boolean(
-                                                    errors.password_confirmation,
-                                                ) || undefined
-                                            }
-                                            icon={<Lock className="size-4" />}
-                                        />
-                                        {errors.password_confirmation && (
-                                            <p className="text-sm text-destructive">
-                                                {errors.password_confirmation}
-                                            </p>
-                                        )}
-                                    </Field>
+                                        <Field
+                                            data-invalid={Boolean(
+                                                errors.password_confirmation,
+                                            )}
+                                        >
+                                            <FieldLabel htmlFor="password_confirmation">
+                                                Konfirmasi Kata Sandi{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <PasswordInput
+                                                id="password_confirmation"
+                                                required
+                                                tabIndex={5}
+                                                autoComplete="new-password"
+                                                name="password_confirmation"
+                                                placeholder="Ulangi kata sandi"
+                                                aria-invalid={
+                                                    Boolean(
+                                                        errors.password_confirmation,
+                                                    ) || undefined
+                                                }
+                                                icon={
+                                                    <Lock className="size-4" />
+                                                }
+                                            />
+                                            {errors.password_confirmation && (
+                                                <p className="text-sm text-destructive">
+                                                    {
+                                                        errors.password_confirmation
+                                                    }
+                                                </p>
+                                            )}
+                                        </Field>
+                                    </div>
 
                                     <div className="flex items-start gap-2">
                                         <Checkbox
