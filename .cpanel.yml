@@ -10,6 +10,7 @@ deployment:
     - cd $DEPLOYPATH && /usr/bin/npm ci
     - cd $DEPLOYPATH && /usr/bin/npm run build
     - /usr/bin/rsync -a --delete $DEPLOYPATH/public/ $PUBLICPATH/
+    - /bin/sed -i "s#__DIR__.'/../storage/framework/maintenance.php'#__DIR__.'/../cryptere/storage/framework/maintenance.php'#" $PUBLICPATH/index.php
     - /bin/sed -i "s#__DIR__.'/../vendor/autoload.php'#__DIR__.'/../cryptere/vendor/autoload.php'#" $PUBLICPATH/index.php
     - /bin/sed -i "s#__DIR__.'/../bootstrap/app.php'#__DIR__.'/../cryptere/bootstrap/app.php'#" $PUBLICPATH/index.php
     - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force
