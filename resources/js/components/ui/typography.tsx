@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 export function TypographyDemo() {
   return (
     <div>
-      <h1 className="scroll-m-20 text-4xl font-black tracking-tight text-balance">
+      <h1 className="scroll-m-20 text-4xl font-bold tracking-tight text-balance">
         Taxing Laughter: The Joke Tax Chronicles
       </h1>
       <p className="text-xl leading-7 text-muted-foreground not-first:mt-6">
@@ -130,7 +130,7 @@ export function TypographyH1({ children, className, ...props }: TypographyProps)
   return (
     <h1
       className={cn(
-        'scroll-m-20 text-4xl font-black tracking-tight text-balance',
+        'scroll-m-20 text-4xl font-bold tracking-tight text-balance',
         className,
       )}
       {...props}
