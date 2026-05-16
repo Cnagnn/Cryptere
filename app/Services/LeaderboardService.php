@@ -178,6 +178,58 @@ class LeaderboardService
     }
 
     /**
+     * Get current user's leaderboard standing with fewer aggregate queries.
+     *
+     * @return array{points: int, rank: int, nextRankPoints: int|null}
+     */
+    public function getUserStanding(User $user, string $timeframe): array
+    {
+        $points = $this->getUserPoints($user, $timeframe);
+
+        if ($points <= 0) {
+            return [
+                'points' => $points,
+                'rank' => 0,
+                'nextRankPoints' => null,
+            ];
+        }
+
+        if ($timeframe === 'all') {
+            $standing = User::query()
+                ->selectRaw('COUNT(CASE WHEN points > ? THEN 1 END) + 1 as rank_position', [$points])
+                ->selectRaw('MIN(CASE WHEN points > ? THEN points END) as next_rank_points', [$points])
+                ->where('id', '!=', $user->id)
+                ->first();
+
+            return [
+                'points' => $points,
+                'rank' => (int) $standing->rank_position,
+                'nextRankPoints' => $standing->next_rank_points !== null ? (int) $standing->next_rank_points : null,
+            ];
+        }
+
+        $cacheKey = "leaderboard_standing_{$timeframe}_user_{$user->id}";
+        CacheService::trackLeaderboardRankUser($user->id);
+
+        $standing = Cache::remember($cacheKey, 120, function () use ($points, $timeframe, $user): object {
+            $since = $this->resolveSinceDate($timeframe);
+
+            return DB::query()
+                ->fromSub($this->periodPointsQuery($since)->toBase(), 'ranked_users')
+                ->selectRaw('COUNT(CASE WHEN period_points > ? THEN 1 END) + 1 as rank_position', [$points])
+                ->selectRaw('MIN(CASE WHEN period_points > ? THEN period_points END) as next_rank_points', [$points])
+                ->where('id', '!=', $user->id)
+                ->first();
+        });
+
+        return [
+            'points' => $points,
+            'rank' => (int) $standing->rank_position,
+            'nextRankPoints' => $standing->next_rank_points !== null ? (int) $standing->next_rank_points : null,
+        ];
+    }
+
+    /**
      * Get top 3 users for the podium display.
      *
      * @return Collection<int, User>

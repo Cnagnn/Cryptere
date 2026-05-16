@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\ChallengeQuestion;
 use App\Models\User;
 use App\Services\AdaptiveQuestionService;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->service = new AdaptiveQuestionService;
@@ -89,4 +91,26 @@ test('updateUserAbility clamps to valid range', function () {
     $user->refresh();
     // 0.7 * 0.9 + 0.3 * 1.0 = 0.63 + 0.30 = 0.93
     expect($user->ability_estimate)->toBe(0.93);
+});
+
+test('updateQuestionStats persists counters and recalculates difficulty in a single query', function () {
+    $question = ChallengeQuestion::factory()->create([
+        'times_shown' => 2,
+        'times_correct' => 1,
+        'difficulty_score' => 0.5,
+    ]);
+
+    DB::enableQueryLog();
+
+    $this->service->updateQuestionStats($question, true);
+
+    $queryCount = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    $question->refresh();
+
+    expect($question->times_shown)->toBe(3)
+        ->and($question->times_correct)->toBe(2)
+        ->and($question->difficulty_score)->toBe(0.3333)
+        ->and($queryCount)->toBeLessThanOrEqual(1);
 });

@@ -140,26 +140,28 @@ class AdaptiveQuestionService
             return;
         }
 
-        $question->increment('times_shown');
+        $timesShown = ($question->times_shown ?? 0) + 1;
+        $timesCorrect = ($question->times_correct ?? 0) + ($isCorrect ? 1 : 0);
+        $difficultyScore = $question->difficulty_score;
 
-        if ($isCorrect) {
-            $question->increment('times_correct');
+        if ($timesShown >= 3) {
+            $successRate = $timesCorrect / $timesShown;
+            $difficultyScore = max(0.05, min(0.95, round(1.0 - $successRate, 4)));
         }
 
-        // Refresh to get updated counts
-        $question->refresh();
+        $question->newQuery()
+            ->whereKey($question->getKey())
+            ->update([
+                'times_shown' => $timesShown,
+                'times_correct' => $timesCorrect,
+                'difficulty_score' => $difficultyScore,
+            ]);
 
-        // Recalculate difficulty_score based on success rate
-        // Higher success rate = easier question = lower difficulty_score
-        if ($question->times_shown >= 3) {
-            $successRate = $question->times_correct / $question->times_shown;
-            // Invert: high success rate → low difficulty
-            $newDifficultyScore = round(1.0 - $successRate, 4);
-            // Clamp to [0.05, 0.95] to avoid extremes
-            $newDifficultyScore = max(0.05, min(0.95, $newDifficultyScore));
-
-            $question->update(['difficulty_score' => $newDifficultyScore]);
-        }
+        $question->forceFill([
+            'times_shown' => $timesShown,
+            'times_correct' => $timesCorrect,
+            'difficulty_score' => $difficultyScore,
+        ])->syncOriginal();
     }
 
     /**

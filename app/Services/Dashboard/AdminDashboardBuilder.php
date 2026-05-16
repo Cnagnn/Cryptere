@@ -6,7 +6,10 @@ use App\Models\Challenge;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class AdminDashboardBuilder
@@ -59,13 +62,17 @@ class AdminDashboardBuilder
     private function buildEnrollmentTrends(): array
     {
         return Cache::remember('admin_enrollment_trends', 300, function (): array {
-            return collect(range(5, 0))->map(function (int $monthOffset): array {
-                $month = now()->subMonths($monthOffset)->startOfMonth();
-                $end = (clone $month)->endOfMonth();
+            $months = $this->lastSixMonths();
+            $counts = Enrollment::query()
+                ->selectRaw($this->monthSelectSql().' as month_key, COUNT(*) as aggregate')
+                ->where('created_at', '>=', $months->first())
+                ->groupBy('month_key')
+                ->pluck('aggregate', 'month_key');
 
+            return $months->map(function (CarbonImmutable $month) use ($counts): array {
                 return [
                     'month' => $month->format('M'),
-                    'enrollments' => Enrollment::whereBetween('created_at', [$month, $end])->count(),
+                    'enrollments' => (int) ($counts[$month->format('Y-m')] ?? 0),
                 ];
             })->values()->all();
         });
@@ -74,13 +81,17 @@ class AdminDashboardBuilder
     private function buildUserGrowth(): array
     {
         return Cache::remember('admin_user_growth', 300, function (): array {
-            return collect(range(5, 0))->map(function (int $monthOffset): array {
-                $month = now()->subMonths($monthOffset)->startOfMonth();
-                $end = (clone $month)->endOfMonth();
+            $months = $this->lastSixMonths();
+            $counts = User::query()
+                ->selectRaw($this->monthSelectSql().' as month_key, COUNT(*) as aggregate')
+                ->where('created_at', '>=', $months->first())
+                ->groupBy('month_key')
+                ->pluck('aggregate', 'month_key');
 
+            return $months->map(function (CarbonImmutable $month) use ($counts): array {
                 return [
                     'month' => $month->format('M'),
-                    'users' => User::whereBetween('created_at', [$month, $end])->count(),
+                    'users' => (int) ($counts[$month->format('Y-m')] ?? 0),
                 ];
             })->values()->all();
         });
@@ -158,5 +169,18 @@ class AdminDashboardBuilder
                 'role' => $u->role,
                 'createdAt' => $u->created_at?->diffForHumans(),
             ])->values()->all();
+    }
+
+    private function lastSixMonths(): Collection
+    {
+        return collect(range(5, 0))
+            ->map(fn (int $monthOffset): CarbonImmutable => CarbonImmutable::now()->subMonths($monthOffset)->startOfMonth());
+    }
+
+    private function monthSelectSql(): string
+    {
+        return DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
     }
 }

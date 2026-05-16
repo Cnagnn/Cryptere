@@ -81,12 +81,8 @@ class LeaderboardController extends Controller
         }
 
         $currentUser = $request->user();
-        $topScore = $this->leaderboardService->getTopScore($timeframe);
-        $currentUserPoints = $this->leaderboardService->getUserPoints($currentUser, $timeframe);
-        $currentUserRank = $currentUserPoints > 0
-            ? $this->leaderboardService->getUserRank($currentUser, $timeframe)
-            : 0;
-        $nextRankPoints = $this->leaderboardService->getNextRankPoints($currentUser, $currentUserPoints, $currentUserRank, $timeframe);
+        $topScore = (int) ($top3[0]['points'] ?? $this->leaderboardService->getTopScore($timeframe));
+        $currentUserStanding = $this->leaderboardService->getUserStanding($currentUser, $timeframe);
 
         $this->leaderboardService->storeRankSnapshot($timeframe, $leaders);
 
@@ -95,9 +91,9 @@ class LeaderboardController extends Controller
             'top3' => $top3,
             'currentUser' => [
                 'id' => $currentUser->id,
-                'rank' => $currentUserRank,
-                'points' => $currentUserPoints,
-                'nextRankPoints' => $nextRankPoints,
+                'rank' => $currentUserStanding['rank'],
+                'points' => $currentUserStanding['points'],
+                'nextRankPoints' => $currentUserStanding['nextRankPoints'],
             ],
             'topScore' => $topScore,
             'timeframe' => $timeframe,

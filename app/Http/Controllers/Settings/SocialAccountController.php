@@ -33,10 +33,10 @@ class SocialAccountController extends Controller
         abort_unless($socialAccount->user_id === $request->user()->id, 403);
 
         $user = $request->user();
-        $remainingAccounts = $user->socialAccounts()->where('id', '!=', $socialAccount->id)->count();
+        $hasRemainingAccounts = $user->socialAccounts()->whereKeyNot($socialAccount->id)->exists();
         $hasPassword = $this->userHasUsablePassword($user);
 
-        if (! $hasPassword && $remainingAccounts === 0) {
+        if (! $hasPassword && ! $hasRemainingAccounts) {
             return back()->withErrors([
                 'social' => 'You must set a password before disconnecting your last social account.',
             ]);

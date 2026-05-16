@@ -31,30 +31,36 @@ class CourseDetailBuilder
     public function buildLessons(Course $course, User $user, bool $isAdmin): Collection
     {
         $allTaskIds = $course->lessons->flatMap(fn (Lesson $lesson) => $lesson->tasks->pluck('id'));
+        $lessonIds = $course->lessons->pluck('id');
 
-        $quizSubmissions = QuizSubmission::query()
-            ->where('user_id', $user->id)
-            ->whereIn('lesson_task_id', $allTaskIds)
-            ->get()
-            ->keyBy('lesson_task_id');
+        $quizSubmissions = $allTaskIds->isNotEmpty()
+            ? QuizSubmission::query()
+                ->where('user_id', $user->id)
+                ->whereIn('lesson_task_id', $allTaskIds)
+                ->orderByDesc('attempt_number')
+                ->get()
+                ->unique('lesson_task_id')
+                ->keyBy('lesson_task_id')
+            : collect();
 
-        $completedLessonIds = $user
-            ->lessonProgress()
-            ->whereIn('lesson_id', $course->lessons->pluck('id'))
-            ->whereNotNull('completed_at')
-            ->pluck('lesson_id');
+        $completedLessonIds = $lessonIds->isNotEmpty()
+            ? $user
+                ->lessonProgress()
+                ->whereIn('lesson_id', $lessonIds)
+                ->whereNotNull('completed_at')
+                ->pluck('lesson_id')
+            : collect();
 
-        $completedTaskIds = TaskProgress::query()
-            ->where('user_id', $user->id)
-            ->whereIn('lesson_task_id', $allTaskIds)
-            ->whereNotNull('completed_at')
-            ->pluck('lesson_task_id');
-
-        $taskProgressByTaskId = TaskProgress::query()
-            ->where('user_id', $user->id)
-            ->whereIn('lesson_task_id', $allTaskIds)
-            ->get()
-            ->keyBy('lesson_task_id');
+        $taskProgressByTaskId = $allTaskIds->isNotEmpty()
+            ? TaskProgress::query()
+                ->where('user_id', $user->id)
+                ->whereIn('lesson_task_id', $allTaskIds)
+                ->get()
+                ->keyBy('lesson_task_id')
+            : collect();
+        $completedTaskIds = $taskProgressByTaskId
+            ->filter(fn (TaskProgress $progress): bool => $progress->completed_at !== null)
+            ->keys();
 
         $canUnlockNext = true;
 
@@ -159,25 +165,38 @@ class CourseDetailBuilder
      */
     public function buildAssessments(Course $course, User $user): array
     {
-        $assessments = $course->assessments()->published()->withCount('questions')->orderBy('sort_order')->get();
+        $assessments = $course->assessments()
+            ->published()
+            ->with('questions')
+            ->withCount('questions')
+            ->withSum('questions as questions_points_sum', 'points')
+            ->orderBy('sort_order')
+            ->get();
+
+        $submissionsByAssessment = $assessments->isNotEmpty()
+            ? AssessmentSubmission::query()
+                ->where('user_id', $user->id)
+                ->whereIn('assessment_id', $assessments->pluck('id'))
+                ->with(['answers.question', 'grader:id,name'])
+                ->get()
+                ->groupBy('assessment_id')
+            : collect();
+
         $assessmentsData = [];
 
         foreach ($assessments as $assessment) {
-            $bestSubmission = AssessmentSubmission::query()
-                ->where('user_id', $user->id)
-                ->where('assessment_id', $assessment->id)
-                ->where('status', 'graded')
-                ->orderByDesc('total_score')
-                ->first();
-
-            $attemptCount = AssessmentSubmission::query()
-                ->where('user_id', $user->id)
-                ->where('assessment_id', $assessment->id)
-                ->whereIn('status', ['submitted', 'grading', 'graded'])
+            $submissions = $submissionsByAssessment->get($assessment->id, collect());
+            $gradedSubmissions = $submissions->where('status', AssessmentSubmission::STATUS_GRADED);
+            $bestSubmission = $gradedSubmissions->sortByDesc('total_score')->first();
+            $attemptCount = $submissions
+                ->whereIn('status', [
+                    AssessmentSubmission::STATUS_SUBMITTED,
+                    AssessmentSubmission::STATUS_GRADING,
+                    AssessmentSubmission::STATUS_GRADED,
+                ])
                 ->count();
 
-            $questions = $assessment->questions()
-                ->get()
+            $questions = $assessment->questions
                 ->map(fn ($q) => [
                     'id' => $q->id,
                     'bloomLevel' => $q->bloom_level,
@@ -191,23 +210,18 @@ class CourseDetailBuilder
                     'sortOrder' => $q->sort_order,
                 ]);
 
-            $activeSubmission = AssessmentSubmission::query()
-                ->where('user_id', $user->id)
-                ->where('assessment_id', $assessment->id)
+            $activeSubmission = $submissions
                 ->where('status', AssessmentSubmission::STATUS_IN_PROGRESS)
-                ->with('answers')
+                ->sortByDesc('attempt_number')
                 ->first();
 
-            $pastSubmissions = AssessmentSubmission::query()
-                ->where('user_id', $user->id)
-                ->where('assessment_id', $assessment->id)
+            $pastSubmissions = $submissions
                 ->whereIn('status', [
                     AssessmentSubmission::STATUS_SUBMITTED,
                     AssessmentSubmission::STATUS_GRADING,
                     AssessmentSubmission::STATUS_GRADED,
                 ])
-                ->orderByDesc('attempt_number')
-                ->get()
+                ->sortByDesc('attempt_number')
                 ->map(fn (AssessmentSubmission $sub) => [
                     'id' => $sub->id,
                     'attemptNumber' => $sub->attempt_number,
@@ -218,7 +232,7 @@ class CourseDetailBuilder
                     'gradedAt' => $sub->graded_at?->toIso8601String(),
                 ]);
 
-            $latestResults = $this->buildLatestResults($user, $assessment);
+            $latestResults = $this->buildLatestResults($gradedSubmissions->sortByDesc('attempt_number')->first());
 
             $assessmentsData[] = [
                 'id' => $assessment->id,
@@ -232,11 +246,11 @@ class CourseDetailBuilder
                 'maxAttempts' => $assessment->max_attempts,
                 'timeLimitMinutes' => $assessment->time_limit_minutes,
                 'questionsCount' => $assessment->questions_count,
-                'totalPoints' => $assessment->total_points,
+                'totalPoints' => (int) $assessment->questions_points_sum,
                 'bestScore' => $bestSubmission?->total_score,
                 'passed' => $bestSubmission?->passed ?? false,
                 'attemptCount' => $attemptCount,
-                'canAttempt' => $assessment->canAttempt($user),
+                'canAttempt' => $assessment->isAvailable() && $attemptCount < $assessment->max_attempts,
                 'isLocked' => false,
                 'questions' => $questions,
                 'activeSubmission' => $activeSubmission ? [
@@ -260,16 +274,8 @@ class CourseDetailBuilder
     /**
      * Build the latest graded results for an assessment.
      */
-    private function buildLatestResults(User $user, $assessment): ?array
+    private function buildLatestResults(?AssessmentSubmission $latestGraded): ?array
     {
-        $latestGraded = AssessmentSubmission::query()
-            ->where('user_id', $user->id)
-            ->where('assessment_id', $assessment->id)
-            ->where('status', 'graded')
-            ->orderByDesc('attempt_number')
-            ->with(['answers.question', 'grader:id,name'])
-            ->first();
-
         if (! $latestGraded) {
             return null;
         }

@@ -13,10 +13,6 @@ class ProfilePageData
      */
     public function profileUser(User $user, bool $isOwner): array
     {
-        $user->loadMissing(['badges' => function ($query): void {
-            $query->orderByPivot('earned_at', 'desc');
-        }]);
-
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -42,20 +38,20 @@ class ProfilePageData
      */
     public function badges(User $user): array
     {
-        $user->loadMissing(['badges' => function ($query): void {
-            $query->orderByPivot('earned_at', 'desc');
-        }]);
-
-        return $user->badges->map(static fn ($badge): array => [
-            'id' => $badge->id,
-            'slug' => $badge->slug,
-            'name' => $badge->name,
-            'description' => $badge->description,
-            'icon' => $badge->icon,
-            'category' => $badge->category,
-            'tier' => $badge->tier,
-            'earned_at' => $badge->pivot->earned_at,
-        ])->all();
+        return $user->badges()
+            ->select(['badges.id', 'badges.slug', 'badges.name', 'badges.description', 'badges.icon', 'badges.category', 'badges.tier'])
+            ->orderByPivot('earned_at', 'desc')
+            ->get()
+            ->map(static fn ($badge): array => [
+                'id' => $badge->id,
+                'slug' => $badge->slug,
+                'name' => $badge->name,
+                'description' => $badge->description,
+                'icon' => $badge->icon,
+                'category' => $badge->category,
+                'tier' => $badge->tier,
+                'earned_at' => $badge->pivot->earned_at,
+            ])->all();
     }
 
     /**

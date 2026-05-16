@@ -32,6 +32,8 @@ class QuestionBank extends Model
 {
     use HasFactory;
 
+    protected $table = 'question_bank';
+
     /**
      * Get the attributes that should be cast.
      *
@@ -117,6 +119,6 @@ class QuestionBank extends Model
      */
     public function canDelete(): bool
     {
-        return $this->assessmentQuestions()->count() === 0;
+        return ! $this->assessmentQuestions()->exists();
     }
 }

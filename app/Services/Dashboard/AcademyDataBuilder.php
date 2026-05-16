@@ -5,9 +5,12 @@ namespace App\Services\Dashboard;
 use App\Models\Challenge;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\Lesson;
+use App\Models\LessonProgress;
 use App\Models\User;
 use App\Services\CacheService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AcademyDataBuilder
@@ -41,19 +44,17 @@ class AcademyDataBuilder
             ->pluck('course_id');
 
         $totalModules = $enrolledCourseIds->isNotEmpty()
-            ? Course::query()
-                ->whereIn('id', $enrolledCourseIds)
-                ->withCount('lessons')
-                ->get()
-                ->sum('lessons_count')
+            ? Lesson::query()
+                ->whereIn('course_id', $enrolledCourseIds)
+                ->count()
             : 0;
 
         $completedModules = $enrolledCourseIds->isNotEmpty()
-            ? $user->lessonProgress()
+            ? LessonProgress::query()
+                ->where('lesson_progress.user_id', $user->id)
                 ->whereNotNull('completed_at')
-                ->whereHas('lesson', function ($query) use ($enrolledCourseIds): void {
-                    $query->whereIn('course_id', $enrolledCourseIds);
-                })
+                ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
+                ->whereIn('lessons.course_id', $enrolledCourseIds)
                 ->count()
             : 0;
 
@@ -137,17 +138,17 @@ class AcademyDataBuilder
         $lessonCompletionsByMonth = $user->lessonProgress()
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', $monthsWindowStart)
-            ->get(['completed_at'])
-            ->groupBy(fn ($progress): string => $progress->completed_at->format('Y-m'))
-            ->map(fn ($rows): int => $rows->count());
+            ->selectRaw($this->monthSelectSql('completed_at').' as month_key, COUNT(*) as aggregate')
+            ->groupBy('month_key')
+            ->pluck('aggregate', 'month_key');
 
         $challengeCompletionsByMonth = $user->challengeSubmissions()
             ->where('is_correct', true)
             ->whereNotNull('submitted_at')
             ->where('submitted_at', '>=', $monthsWindowStart)
-            ->get(['challenge_id', 'submitted_at'])
-            ->groupBy(fn ($submission): string => $submission->submitted_at->format('Y-m'))
-            ->map(fn ($submissions): int => $submissions->pluck('challenge_id')->unique()->count());
+            ->selectRaw($this->monthSelectSql('submitted_at').' as month_key, COUNT(DISTINCT challenge_id) as aggregate')
+            ->groupBy('month_key')
+            ->pluck('aggregate', 'month_key');
 
         $series = collect(range(5, 0))->map(function (int $monthOffset) use (
             $lessonCompletionsByMonth,
@@ -234,5 +235,12 @@ class AcademyDataBuilder
                 'callToAction' => $callToAction,
             ];
         })->values();
+    }
+
+    private function monthSelectSql(string $column): string
+    {
+        return DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', {$column})"
+            : "DATE_FORMAT({$column}, '%Y-%m')";
     }
 }

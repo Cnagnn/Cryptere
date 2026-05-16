@@ -13,8 +13,13 @@ class CourseCatalogBuilder
      */
     public function build(User $user, array $filters): LengthAwarePaginator
     {
-        $enrolledCourseIds = $user->enrollments()->pluck('course_id');
-        $progressByCourse = $user->enrollments()->pluck('progress_percentage', 'course_id');
+        $enrollments = $user->enrollments()
+            ->get(['course_id', 'progress_percentage', 'completed_at'])
+            ->keyBy('course_id');
+        $enrolledCourseIds = $enrollments->keys();
+        $completedCourseIds = $enrollments
+            ->filter(fn ($enrollment): bool => $enrollment->completed_at !== null)
+            ->keys();
 
         $query = Course::query()
             ->published()
@@ -39,8 +44,11 @@ class CourseCatalogBuilder
         return $query
             ->paginate($filters['per_page'])
             ->withQueryString()
-            ->through(function (Course $course) use ($enrolledCourseIds, $progressByCourse, $user): array {
-                $isEnrolled = $enrolledCourseIds->contains($course->id);
+            ->through(function (Course $course) use ($completedCourseIds, $enrollments): array {
+                $enrollment = $enrollments->get($course->id);
+                $isEnrolled = $enrollment !== null;
+                $isUnlocked = $course->prerequisite_course_id === null
+                    || $completedCourseIds->contains($course->prerequisite_course_id);
 
                 return [
                     'id' => $course->id,
@@ -54,8 +62,8 @@ class CourseCatalogBuilder
                     'lessonCount' => $course->lessons_count,
                     'enrollmentCount' => $course->enrollments_count,
                     'isEnrolled' => $isEnrolled,
-                    'progressPercentage' => $isEnrolled ? (int) $progressByCourse[$course->id] : null,
-                    'isLocked' => ! $course->isUnlockedFor($user),
+                    'progressPercentage' => $isEnrolled ? (int) $enrollment->progress_percentage : null,
+                    'isLocked' => ! $isUnlocked,
                 ];
             });
     }

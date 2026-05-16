@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\LessonProgress;
 use App\Models\User;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
 
 class AnalyticsBuilder
@@ -136,30 +137,36 @@ class AnalyticsBuilder
      */
     public function progressTrend(int $userId): array
     {
-        $weeks = [];
         $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
+        $weekStart = CarbonImmutable::now()->subWeeks(11)->startOfWeek();
 
-        for ($i = 11; $i >= 0; $i--) {
-            $weekStart = now()->subWeeks($i)->startOfWeek();
-            $weekEnd = now()->subWeeks($i)->endOfWeek();
+        $lessonPointsByWeek = LessonProgress::query()
+            ->where('user_id', $userId)
+            ->where('completed_at', '>=', $weekStart)
+            ->selectRaw('DATE(completed_at) as activity_date, COUNT(*) * ? as points', [$lessonXpPerLesson])
+            ->groupByRaw('DATE(completed_at)')
+            ->get()
+            ->groupBy(fn ($row): string => Carbon::parse($row->activity_date)->startOfWeek()->format('Y-m-d'))
+            ->map(fn ($rows): int => (int) $rows->sum('points'));
 
-            $lessonPoints = LessonProgress::query()
-                ->where('user_id', $userId)
-                ->whereBetween('completed_at', [$weekStart, $weekEnd])
-                ->count() * $lessonXpPerLesson;
+        $challengePointsByWeek = ChallengeSubmission::query()
+            ->where('user_id', $userId)
+            ->where('is_correct', true)
+            ->where('submitted_at', '>=', $weekStart)
+            ->selectRaw('DATE(submitted_at) as activity_date, SUM(score) as points')
+            ->groupByRaw('DATE(submitted_at)')
+            ->get()
+            ->groupBy(fn ($row): string => Carbon::parse($row->activity_date)->startOfWeek()->format('Y-m-d'))
+            ->map(fn ($rows): int => (int) $rows->sum('points'));
 
-            $challengePoints = ChallengeSubmission::query()
-                ->where('user_id', $userId)
-                ->where('is_correct', true)
-                ->whereBetween('submitted_at', [$weekStart, $weekEnd])
-                ->sum('score');
+        return collect(range(11, 0))->map(function (int $weekOffset) use ($challengePointsByWeek, $lessonPointsByWeek): array {
+            $weekStart = now()->subWeeks($weekOffset)->startOfWeek();
+            $weekKey = $weekStart->format('Y-m-d');
 
-            $weeks[] = [
+            return [
                 'week' => $weekStart->format('M d'),
-                'points' => (int) ($lessonPoints + $challengePoints),
+                'points' => (int) (($lessonPointsByWeek[$weekKey] ?? 0) + ($challengePointsByWeek[$weekKey] ?? 0)),
             ];
-        }
-
-        return $weeks;
+        })->values()->all();
     }
 }

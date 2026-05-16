@@ -63,81 +63,6 @@ class CourseController extends Controller
         $perPage = (int) $request->integer('per_page', 10);
         $perPage = max(10, min($perPage, 100));
 
-        $courses = Course::query()
-            ->with('publishedBy:id,name')
-            ->withCount(['enrollments', 'lessons', 'tasks'])
-            ->searchManagement($search)
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->paginate($perPage)
-            ->withQueryString();
-
-        // Transform paginated data to include cover URL and extra fields
-        $courses->getCollection()->transform(function (Course $course): array {
-            return [
-                'id' => $course->id,
-                'slug' => $course->slug,
-                'title' => $course->title,
-                'summary' => $course->summary,
-                'cover' => $course->cover,
-                'status' => $course->status,
-                'is_published' => $course->status === Course::STATUS_PUBLISHED,
-                'version' => $course->version,
-                'published_by_name' => $course->publishedBy?->name,
-                'lessons_count' => $course->lessons_count,
-                'tasks_count' => $course->tasks_count,
-                'enrollments_count' => $course->enrollments_count,
-                'created_at' => $course->created_at?->toIso8601String(),
-                'updated_at' => $course->updated_at?->toIso8601String(),
-            ];
-        });
-
-        $courseOptions = Course::query()->orderBy('title')->get(['id', 'slug', 'title']);
-
-        // Lightweight list of ALL lessons for the combobox (course + topic picker)
-        $allLessons = Lesson::query()
-            ->orderBy('course_id')
-            ->orderBy('position')
-            ->get(['id', 'course_id', 'title'])
-            ->map(fn (Lesson $l) => [
-                'id' => $l->id,
-                'course_id' => $l->course_id,
-                'title' => $l->title,
-            ])
-            ->values()
-            ->all();
-
-        $defaultCourseId = in_array($section, [self::SECTION_LESSON, self::SECTION_TASK], true) ? 0 : (int) ($courseOptions->first()?->id ?? 0);
-        $selectedCourseId = (int) $request->integer('course_id', $defaultCourseId);
-        $selectedLessonId = (int) $request->integer('lesson_id', 0);
-
-        if ($section === self::SECTION_TASK) {
-            if ($selectedLessonId > 0) {
-                $selectedLessonCourseId = Lesson::query()
-                    ->whereKey($selectedLessonId)
-                    ->value('course_id');
-
-                if ($selectedLessonCourseId === null) {
-                    $selectedLessonId = 0;
-                } else {
-                    $selectedCourseId = (int) $selectedLessonCourseId;
-                }
-            }
-
-            if ($selectedLessonId === 0) {
-                $defaultLesson = Lesson::query()
-                    ->when($selectedCourseId > 0, fn ($q) => $q->where('course_id', $selectedCourseId))
-                    ->orderBy('course_id')
-                    ->orderBy('position')
-                    ->first(['id', 'course_id']);
-
-                if ($defaultLesson !== null) {
-                    $selectedCourseId = (int) $defaultLesson->course_id;
-                    $selectedLessonId = (int) $defaultLesson->id;
-                }
-            }
-        }
-
         $emptyPaginated = [
             'data' => [],
             'current_page' => 1,
@@ -147,6 +72,94 @@ class CourseController extends Controller
             'from' => null,
             'to' => null,
         ];
+
+        $courses = $emptyPaginated;
+        $courseOptions = collect();
+        $allLessons = [];
+
+        if ($section === self::SECTION_CATALOG) {
+            $coursePaginator = Course::query()
+                ->with('publishedBy:id,name')
+                ->withCount(['enrollments', 'lessons', 'tasks'])
+                ->searchManagement($search)
+                ->orderBy('sort_order')
+                ->orderBy('title')
+                ->paginate($perPage)
+                ->withQueryString();
+
+            $coursePaginator->getCollection()->transform(function (Course $course): array {
+                return [
+                    'id' => $course->id,
+                    'slug' => $course->slug,
+                    'title' => $course->title,
+                    'summary' => $course->summary,
+                    'cover' => $course->cover,
+                    'status' => $course->status,
+                    'is_published' => $course->status === Course::STATUS_PUBLISHED,
+                    'version' => $course->version,
+                    'published_by_name' => $course->publishedBy?->name,
+                    'lessons_count' => $course->lessons_count,
+                    'tasks_count' => $course->tasks_count,
+                    'enrollments_count' => $course->enrollments_count,
+                    'created_at' => $course->created_at?->toIso8601String(),
+                    'updated_at' => $course->updated_at?->toIso8601String(),
+                ];
+            });
+
+            $courses = $coursePaginator;
+        }
+
+        if ($section !== self::SECTION_CATALOG) {
+            $courseOptions = Course::query()->orderBy('title')->get(['id', 'slug', 'title']);
+        }
+
+        if (in_array($section, [self::SECTION_TASK, self::SECTION_ASSESSMENT], true)) {
+            $allLessons = Lesson::query()
+                ->orderBy('course_id')
+                ->orderBy('position')
+                ->get(['id', 'course_id', 'title'])
+                ->map(fn (Lesson $l) => [
+                    'id' => $l->id,
+                    'course_id' => $l->course_id,
+                    'title' => $l->title,
+                ])
+                ->values()
+                ->all();
+        }
+
+        $defaultCourseId = in_array($section, [self::SECTION_LESSON, self::SECTION_TASK], true) ? 0 : (int) ($courseOptions->first()?->id ?? 0);
+        $selectedCourseId = (int) $request->integer('course_id', $defaultCourseId);
+        $selectedLessonId = (int) $request->integer('lesson_id', 0);
+        $selectedLesson = null;
+
+        if ($section === self::SECTION_TASK) {
+            if ($selectedLessonId > 0) {
+                $selectedLesson = Lesson::query()
+                    ->with('course:id,slug,title')
+                    ->whereKey($selectedLessonId)
+                    ->first(['id', 'course_id', 'slug', 'title', 'content']);
+
+                if ($selectedLesson === null) {
+                    $selectedLessonId = 0;
+                } else {
+                    $selectedCourseId = (int) $selectedLesson->course_id;
+                }
+            }
+
+            if ($selectedLessonId === 0) {
+                $selectedLesson = Lesson::query()
+                    ->with('course:id,slug,title')
+                    ->when($selectedCourseId > 0, fn ($q) => $q->where('course_id', $selectedCourseId))
+                    ->orderBy('course_id')
+                    ->orderBy('position')
+                    ->first(['id', 'course_id', 'slug', 'title', 'content']);
+
+                if ($selectedLesson !== null) {
+                    $selectedCourseId = (int) $selectedLesson->course_id;
+                    $selectedLessonId = (int) $selectedLesson->id;
+                }
+            }
+        }
 
         $lessons = $emptyPaginated;
         $tasks = $emptyPaginated;
@@ -197,15 +210,6 @@ class CourseController extends Controller
         }
 
         if ($section === self::SECTION_TASK) {
-            $selectedLesson = null;
-
-            if ($selectedLessonId > 0) {
-                $selectedLesson = Lesson::query()
-                    ->with('course:id,slug,title')
-                    ->whereKey($selectedLessonId)
-                    ->first(['id', 'course_id', 'slug', 'title', 'content']);
-            }
-
             if ($selectedLesson !== null) {
                 if ($selectedLesson->tasks()->exists()) {
                     $taskPaginator = LessonTask::query()

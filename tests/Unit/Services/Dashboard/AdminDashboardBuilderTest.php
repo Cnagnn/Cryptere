@@ -9,6 +9,8 @@ use App\Services\Dashboard\AdminAnalyticsService;
 use App\Services\Dashboard\AdminDashboardBuilder;
 
 beforeEach(function () {
+    Cache::flush();
+
     $this->analyticsService = Mockery::mock(AdminAnalyticsService::class);
     $this->builder = new AdminDashboardBuilder($this->analyticsService);
 });
@@ -65,6 +67,28 @@ test('coursePerformance includes completion rate', function () {
     expect($performance)->not->toBeEmpty()
         ->and($performance[0]['enrollments'])->toBe(4)
         ->and($performance[0]['completionRate'])->toBe(25.0);
+});
+
+test('monthly trends aggregate users and enrollments', function () {
+    $course = Course::factory()->create();
+    $user = User::factory()->create([
+        'created_at' => now()->startOfMonth(),
+    ]);
+
+    User::factory()->create([
+        'created_at' => now()->subMonth()->startOfMonth(),
+    ]);
+
+    Enrollment::factory()->for($user)->for($course)->create([
+        'created_at' => now()->startOfMonth(),
+    ]);
+
+    $result = $this->builder->build();
+
+    expect($result['admin']['userGrowth'])->toHaveCount(6)
+        ->and($result['admin']['enrollmentTrends'])->toHaveCount(6)
+        ->and(collect($result['admin']['userGrowth'])->last()['users'])->toBe(1)
+        ->and(collect($result['admin']['enrollmentTrends'])->last()['enrollments'])->toBe(1);
 });
 
 test('challengePerformance includes success rate', function () {

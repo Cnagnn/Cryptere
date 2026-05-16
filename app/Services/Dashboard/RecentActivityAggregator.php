@@ -109,6 +109,7 @@ class RecentActivityAggregator
 
         $socialActivities = $user->socialAccounts()
             ->latest('created_at')
+            ->take(5)
             ->get()
             ->map(fn ($social): array => [
                 'id' => 'social-'.$social->id,

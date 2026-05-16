@@ -9,6 +9,7 @@ use App\Models\LessonProgress;
 use App\Models\User;
 use App\Services\BadgeService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
@@ -154,6 +155,33 @@ test('checkAndAward only checks specified criteria types', function () {
 
     expect($awarded)->toHaveCount(1);
     expect($awarded->first()->criteria_type)->toBe('streak_days');
+});
+
+test('checkAndAward batches repeated criteria statistics', function () {
+    Event::fake([BadgeEarned::class]);
+    $user = User::factory()->create();
+    Badge::factory()->count(3)->create([
+        'criteria_type' => 'lessons_completed',
+        'criteria_value' => 2,
+    ]);
+    LessonProgress::factory()->count(2)->create([
+        'user_id' => $user->id,
+        'completed_at' => now(),
+    ]);
+
+    Cache::forget('badge_definitions');
+    DB::enableQueryLog();
+
+    $awarded = $this->service->checkAndAward($user, 'lessons_completed');
+
+    $lessonProgressQueries = collect(DB::getQueryLog())
+        ->pluck('query')
+        ->filter(fn (string $query): bool => str_contains($query, 'lesson_progress'))
+        ->count();
+    DB::disableQueryLog();
+
+    expect($awarded)->toHaveCount(3)
+        ->and($lessonProgressQueries)->toBeLessThanOrEqual(1);
 });
 
 test('clearCache forgets badge definitions', function () {

@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Challenge;
+use App\Models\ChallengeSubmission;
 use App\Models\User;
 use App\Services\LeaderboardService;
 
@@ -74,6 +76,43 @@ test('getUserRank returns correct position', function () {
     $rank = $this->service->getUserRank($user, 'all');
 
     expect($rank)->toBe(3);
+});
+
+test('getUserStanding returns points rank and next rank points together', function () {
+    User::factory()->create(['points' => 300]);
+    User::factory()->create(['points' => 200]);
+    $user = User::factory()->create(['points' => 100]);
+
+    $standing = $this->service->getUserStanding($user, 'all');
+
+    expect($standing['points'])->toBe(100)
+        ->and($standing['rank'])->toBe(3)
+        ->and($standing['nextRankPoints'])->toBe(200);
+});
+
+test('getUserStanding returns timeframe standing from aggregated activity', function () {
+    $challenge = Challenge::factory()->create();
+    $leader = User::factory()->create(['points' => 0]);
+    $user = User::factory()->create(['points' => 0]);
+
+    ChallengeSubmission::factory()->for($leader)->for($challenge)->create([
+        'is_correct' => true,
+        'score' => 80,
+        'streak_bonus' => 10,
+        'submitted_at' => now(),
+    ]);
+    ChallengeSubmission::factory()->for($user)->for($challenge)->create([
+        'is_correct' => true,
+        'score' => 50,
+        'streak_bonus' => 0,
+        'submitted_at' => now(),
+    ]);
+
+    $standing = $this->service->getUserStanding($user, 'weekly');
+
+    expect($standing['points'])->toBe(50)
+        ->and($standing['rank'])->toBe(2)
+        ->and($standing['nextRankPoints'])->toBe(90);
 });
 
 test('getUserRank returns 0 for user with no points', function () {

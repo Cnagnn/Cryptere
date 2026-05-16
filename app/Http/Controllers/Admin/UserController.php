@@ -4,17 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
-use App\Models\AssessmentSubmission;
-use App\Models\Certificate;
-use App\Models\Enrollment;
-use App\Models\LessonProgress;
-use App\Models\QuizSubmission;
-use App\Models\TaskProgress;
 use App\Models\User;
-use App\Models\UserBalanceChange;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -111,13 +105,22 @@ class UserController extends Controller
 
     private function userHasProtectedHistory(User $user): bool
     {
-        return $user->points > 0
-            || Enrollment::query()->where('user_id', $user->id)->exists()
-            || LessonProgress::query()->where('user_id', $user->id)->exists()
-            || TaskProgress::query()->where('user_id', $user->id)->exists()
-            || QuizSubmission::query()->where('user_id', $user->id)->exists()
-            || AssessmentSubmission::query()->where('user_id', $user->id)->exists()
-            || Certificate::query()->where('user_id', $user->id)->exists()
-            || UserBalanceChange::query()->where('user_id', $user->id)->exists();
+        if ($user->points > 0) {
+            return true;
+        }
+
+        $historyQuery = DB::table('enrollments')
+            ->selectRaw('1 as has_history')
+            ->where('user_id', $user->id)
+            ->unionAll(DB::table('lesson_progress')->selectRaw('1')->where('user_id', $user->id))
+            ->unionAll(DB::table('task_progress')->selectRaw('1')->where('user_id', $user->id))
+            ->unionAll(DB::table('quiz_submissions')->selectRaw('1')->where('user_id', $user->id))
+            ->unionAll(DB::table('assessment_submissions')->selectRaw('1')->where('user_id', $user->id))
+            ->unionAll(DB::table('certificates')->selectRaw('1')->where('user_id', $user->id))
+            ->unionAll(DB::table('user_balance_changes')->selectRaw('1')->where('user_id', $user->id));
+
+        return DB::query()
+            ->fromSub($historyQuery, 'protected_history')
+            ->exists();
     }
 }

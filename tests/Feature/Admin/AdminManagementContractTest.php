@@ -114,6 +114,54 @@ test('admin course management returns lesson task and assessment data contracts'
         );
 });
 
+test('admin non catalog sections do not load the course catalog table', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true]);
+    $course = Course::factory()->create();
+    Lesson::factory()->for($course)->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.courses.index', ['section' => 'assessment']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('courses.data', [])
+        );
+
+    $this->actingAs($admin)
+        ->get(route('admin.courses.index', ['section' => 'task']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('courses.data', [])
+        );
+});
+
+test('admin user management returns searchable paginated user contract', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true]);
+    $member = User::factory()->create([
+        'name' => 'Managed Member',
+        'username' => 'managed_member',
+        'role' => 'member',
+        'points' => 120,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.users.index', ['search' => 'Managed', 'role' => 'member']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/users/index')
+            ->where('filters.search', 'Managed')
+            ->where('filters.role', 'member')
+            ->has('users.data.0', fn (Assert $row) => $row
+                ->where('id', $member->id)
+                ->where('username', 'managed_member')
+                ->where('points', 120)
+                ->where('role', 'member')
+                ->has('avatar')
+                ->has('can_delete')
+                ->etc()
+            )
+        );
+});
+
 test('non admin users cannot access admin management routes', function (): void {
     $user = User::factory()->create(['role' => 'student', 'is_admin' => false]);
 

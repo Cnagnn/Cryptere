@@ -52,12 +52,12 @@ class CertificateController extends Controller
         $courseId = $validated['course_id'];
 
         // Check enrollment is completed
-        $enrollment = Enrollment::where('user_id', $user->id)
+        $hasCompletedEnrollment = Enrollment::where('user_id', $user->id)
             ->where('course_id', $courseId)
             ->whereNotNull('completed_at')
-            ->first();
+            ->exists();
 
-        if (! $enrollment) {
+        if (! $hasCompletedEnrollment) {
             return back()->with('toast', [
                 'type' => 'error',
                 'message' => 'You must complete the course before generating a certificate.',
@@ -65,11 +65,11 @@ class CertificateController extends Controller
         }
 
         // Check if certificate already exists
-        $existing = Certificate::where('user_id', $user->id)
+        $certificateExists = Certificate::where('user_id', $user->id)
             ->where('course_id', $courseId)
-            ->first();
+            ->exists();
 
-        if ($existing) {
+        if ($certificateExists) {
             return back()->with('toast', [
                 'type' => 'info',
                 'message' => 'You already have a certificate for this course.',

@@ -29,11 +29,12 @@ class BadgeService
         $candidateBadges = $this->getBadgeDefinitions()
             ->whereIn('criteria_type', $criteriaTypes)
             ->whereNotIn('id', $earnedBadgeIds);
+        $criteriaStats = $this->buildCriteriaStats($user, $criteriaTypes);
 
         $newlyAwarded = collect();
 
         foreach ($candidateBadges as $badge) {
-            if ($this->isCriteriaMet($user, $badge)) {
+            if ($this->isCriteriaMet($user, $badge, $criteriaStats)) {
                 $user->badges()->syncWithoutDetaching([
                     $badge->id => ['earned_at' => now()],
                 ]);
@@ -77,76 +78,90 @@ class BadgeService
 
     /**
      * Evaluate whether a user meets the criteria for a specific badge.
+     *
+     * @param  array<string, bool|int>  $criteriaStats
      */
-    private function isCriteriaMet(User $user, Badge $badge): bool
+    private function isCriteriaMet(User $user, Badge $badge, array $criteriaStats): bool
     {
         return match ($badge->criteria_type) {
-            'first_enrollment' => $this->checkFirstEnrollment($user),
-            'courses_completed' => $this->checkCoursesCompleted($user, $badge->criteria_value),
-            'lessons_completed' => $this->checkLessonsCompleted($user, $badge->criteria_value),
-            'challenges_solved' => $this->checkChallengesSolved($user, $badge->criteria_value),
-            'perfect_quiz' => $this->checkPerfectQuiz($user),
-            'speed_demon' => $this->checkSpeedDemon($user),
+            'first_enrollment' => (bool) ($criteriaStats['first_enrollment'] ?? false),
+            'courses_completed' => (int) ($criteriaStats['courses_completed'] ?? 0) >= $badge->criteria_value,
+            'lessons_completed' => (int) ($criteriaStats['lessons_completed'] ?? 0) >= $badge->criteria_value,
+            'challenges_solved' => (int) ($criteriaStats['challenges_solved'] ?? 0) >= $badge->criteria_value,
+            'perfect_quiz' => (bool) ($criteriaStats['perfect_quiz'] ?? false),
+            'speed_demon' => (bool) ($criteriaStats['speed_demon'] ?? false),
             'streak_days' => $this->checkStreakDays($user, $badge->criteria_value),
-            'labs_visited' => $this->checkLabsVisited($user, $badge->criteria_value),
+            'labs_visited' => (int) ($criteriaStats['labs_visited'] ?? 0) >= $badge->criteria_value,
             'points_earned' => $this->checkPointsEarned($user, $badge->criteria_value),
-            'first_discussion' => $this->checkFirstDiscussion($user),
+            'first_discussion' => (bool) ($criteriaStats['first_discussion'] ?? false),
             default => false,
         };
     }
 
-    private function checkFirstEnrollment(User $user): bool
+    /**
+     * Build the user statistics needed for the requested badge criteria.
+     *
+     * @param  array<int, string>  $criteriaTypes
+     * @return array<string, bool|int>
+     */
+    private function buildCriteriaStats(User $user, array $criteriaTypes): array
     {
-        return Enrollment::query()->whereBelongsTo($user)->exists();
-    }
+        $criteriaTypes = array_values(array_unique($criteriaTypes));
+        $stats = [];
 
-    private function checkCoursesCompleted(User $user, int $required): bool
-    {
-        return Enrollment::query()
-            ->whereBelongsTo($user)
-            ->whereNotNull('completed_at')
-            ->count() >= $required;
-    }
+        if (array_intersect($criteriaTypes, ['first_enrollment', 'courses_completed']) !== []) {
+            $enrollmentStats = Enrollment::query()
+                ->whereBelongsTo($user)
+                ->selectRaw('COUNT(*) as total_enrollments, SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) as completed_courses')
+                ->first();
 
-    private function checkLessonsCompleted(User $user, int $required): bool
-    {
-        return LessonProgress::query()
-            ->whereBelongsTo($user)
-            ->whereNotNull('completed_at')
-            ->count() >= $required;
-    }
+            $stats['first_enrollment'] = (int) $enrollmentStats->total_enrollments > 0;
+            $stats['courses_completed'] = (int) $enrollmentStats->completed_courses;
+        }
 
-    private function checkChallengesSolved(User $user, int $required): bool
-    {
-        return ChallengeSubmission::query()
-            ->whereBelongsTo($user)
-            ->where('is_correct', true)
-            ->distinct('challenge_id')
-            ->count('challenge_id') >= $required;
-    }
+        if (in_array('lessons_completed', $criteriaTypes, true)) {
+            $stats['lessons_completed'] = LessonProgress::query()
+                ->whereBelongsTo($user)
+                ->whereNotNull('completed_at')
+                ->count();
+        }
 
-    private function checkPerfectQuiz(User $user): bool
-    {
-        // Check if user has any quiz session where all answers are correct
-        $sessions = ChallengeSubmission::query()
-            ->whereBelongsTo($user)
-            ->whereNotNull('session_id')
-            ->selectRaw('session_id, COUNT(*) as total, SUM(is_correct) as correct_count')
-            ->groupBy('session_id')
-            ->havingRaw('COUNT(*) = SUM(is_correct)')
-            ->havingRaw('COUNT(*) >= 3')
-            ->exists();
+        if (array_intersect($criteriaTypes, ['challenges_solved', 'perfect_quiz', 'speed_demon']) !== []) {
+            $challengeStats = ChallengeSubmission::query()
+                ->whereBelongsTo($user)
+                ->selectRaw('COUNT(DISTINCT CASE WHEN is_correct THEN challenge_id END) as solved_challenges')
+                ->selectRaw('MAX(CASE WHEN is_correct AND elapsed_ms < 5000 THEN 1 ELSE 0 END) as has_speed_demon')
+                ->first();
 
-        return $sessions;
-    }
+            $stats['challenges_solved'] = (int) $challengeStats->solved_challenges;
+            $stats['speed_demon'] = (int) $challengeStats->has_speed_demon === 1;
 
-    private function checkSpeedDemon(User $user): bool
-    {
-        return ChallengeSubmission::query()
-            ->whereBelongsTo($user)
-            ->where('is_correct', true)
-            ->where('elapsed_ms', '<', 5000)
-            ->exists();
+            if (in_array('perfect_quiz', $criteriaTypes, true)) {
+                $perfectSession = ChallengeSubmission::query()
+                    ->whereBelongsTo($user)
+                    ->whereNotNull('session_id')
+                    ->selectRaw('session_id, COUNT(*) as total, SUM(is_correct) as correct_count')
+                    ->groupBy('session_id')
+                    ->havingRaw('COUNT(*) = SUM(is_correct)')
+                    ->havingRaw('COUNT(*) >= 3')
+                    ->exists();
+
+                $stats['perfect_quiz'] = $perfectSession;
+            }
+        }
+
+        if (in_array('labs_visited', $criteriaTypes, true)) {
+            $stats['labs_visited'] = LabVisit::query()
+                ->whereBelongsTo($user)
+                ->distinct('lab_slug')
+                ->count('lab_slug');
+        }
+
+        if (in_array('first_discussion', $criteriaTypes, true)) {
+            $stats['first_discussion'] = Discussion::query()->whereBelongsTo($user)->exists();
+        }
+
+        return $stats;
     }
 
     private function checkStreakDays(User $user, int $required): bool
@@ -155,22 +170,9 @@ class BadgeService
             || ($user->longest_streak ?? 0) >= $required;
     }
 
-    private function checkLabsVisited(User $user, int $required): bool
-    {
-        return LabVisit::query()
-            ->whereBelongsTo($user)
-            ->distinct('lab_slug')
-            ->count('lab_slug') >= $required;
-    }
-
     private function checkPointsEarned(User $user, int $required): bool
     {
         return ($user->points ?? 0) >= $required;
-    }
-
-    private function checkFirstDiscussion(User $user): bool
-    {
-        return Discussion::query()->whereBelongsTo($user)->exists();
     }
 
     /**

@@ -52,25 +52,19 @@ class ChallengeController extends Controller
 
         $user = $request->user();
 
-        $solvedChallengeIds = ChallengeSubmission::query()
+        $submissionStats = ChallengeSubmission::query()
             ->whereBelongsTo($user)
-            ->where('is_correct', true)
-            ->distinct('challenge_id')
-            ->pluck('challenge_id');
-
-        $completedSessionChallengeIds = ChallengeSubmission::query()
-            ->whereBelongsTo($user)
-            ->whereNotNull('session_id')
-            ->distinct('challenge_id')
-            ->pluck('challenge_id');
-
-        $bestScores = ChallengeSubmission::query()
-            ->whereBelongsTo($user)
-            ->selectRaw('challenge_id, MAX(score) as best_score')
+            ->selectRaw('challenge_id')
+            ->selectRaw('MAX(CASE WHEN is_correct THEN 1 ELSE 0 END) as is_solved')
+            ->selectRaw('MAX(CASE WHEN session_id IS NOT NULL THEN 1 ELSE 0 END) as has_completed_session')
+            ->selectRaw('MAX(score) as best_score')
             ->groupBy('challenge_id')
-            ->pluck('best_score', 'challenge_id');
+            ->get()
+            ->keyBy('challenge_id');
 
-        $challenges = collect($catalogBase)->map(function (array $c) use ($solvedChallengeIds, $completedSessionChallengeIds, $bestScores, $currentTime): array {
+        $challenges = collect($catalogBase)->map(function (array $c) use ($submissionStats, $currentTime): array {
+            $stats = $submissionStats->get($c['id']);
+
             return [
                 'id' => $c['id'],
                 'slug' => $c['slug'],
@@ -80,11 +74,11 @@ class ChallengeController extends Controller
                 'timeStart' => $c['timeStart'],
                 'timeEnd' => $c['timeEnd'],
                 'status' => $this->challengeHelper->resolveAvailabilityStatusFromDates($c['time_start_raw'], $c['time_end_raw'], $currentTime),
-                'isSolved' => $solvedChallengeIds->contains($c['id']),
-                'hasCompletedSession' => $completedSessionChallengeIds->contains($c['id']),
+                'isSolved' => (int) ($stats?->is_solved ?? 0) === 1,
+                'hasCompletedSession' => (int) ($stats?->has_completed_session ?? 0) === 1,
                 'hasQuestionBank' => $c['hasQuestionBank'],
                 'questionsCount' => $c['questionsCount'],
-                'bestScore' => $bestScores->get($c['id'], 0),
+                'bestScore' => (int) ($stats?->best_score ?? 0),
             ];
         })->values();
 
@@ -107,11 +101,11 @@ class ChallengeController extends Controller
         $availabilityStatus = $this->challengeHelper->resolveAvailabilityStatus($challenge, $currentTime);
         $hasQuestionBank = $challenge->hasQuestionBank();
 
-        $solvedChallengeIds = ChallengeSubmission::query()
+        $isSolved = ChallengeSubmission::query()
             ->whereBelongsTo($request->user())
+            ->whereBelongsTo($challenge)
             ->where('is_correct', true)
-            ->distinct('challenge_id')
-            ->pluck('challenge_id');
+            ->exists();
 
         // Check if user already completed a quiz session for this challenge
         $hasCompletedSession = $hasQuestionBank && ChallengeSubmission::query()
@@ -184,7 +178,7 @@ class ChallengeController extends Controller
                 'timeStart' => optional($challenge->time_start)?->toIso8601String(),
                 'timeEnd' => optional($challenge->time_end)?->toIso8601String(),
                 'status' => $availabilityStatus,
-                'isSolved' => $solvedChallengeIds->contains($challenge->id),
+                'isSolved' => $isSolved,
                 'hasCompletedSession' => $hasCompletedSession,
                 'hasQuestionBank' => $hasQuestionBank,
                 'timeLimitSeconds' => $hasQuestionBank

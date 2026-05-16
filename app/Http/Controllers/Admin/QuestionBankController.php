@@ -132,7 +132,7 @@ class QuestionBankController extends Controller
     public function destroy(Request $request, QuestionBank $questionBank): RedirectResponse
     {
         // Check if question is used in any assessments
-        if ($questionBank->assessmentQuestions()->count() > 0) {
+        if ($questionBank->assessmentQuestions()->exists()) {
             return back()->withErrors(['error' => 'Cannot delete question that is used in assessments. Deactivate instead.']);
         }
 

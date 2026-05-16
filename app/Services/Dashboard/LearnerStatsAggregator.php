@@ -16,14 +16,18 @@ class LearnerStatsAggregator
     public function aggregate(User $user): array
     {
         return Cache::remember("learner_dashboard_stats:{$user->id}", 60, function () use ($user): array {
-            $enrollmentQuery = Enrollment::query()->whereBelongsTo($user);
+            $enrollmentStats = Enrollment::query()
+                ->whereBelongsTo($user)
+                ->selectRaw('
+                    COUNT(*) as enrolled_courses,
+                    SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) as completed_courses,
+                    SUM(CASE WHEN completed_at IS NULL AND progress_percentage > 0 THEN 1 ELSE 0 END) as in_progress_courses
+                ')
+                ->first();
 
-            $enrolledCourses = (clone $enrollmentQuery)->count();
-            $completedCourses = (clone $enrollmentQuery)->whereNotNull('completed_at')->count();
-            $inProgressCourses = (clone $enrollmentQuery)
-                ->whereNull('completed_at')
-                ->where('progress_percentage', '>', 0)
-                ->count();
+            $enrolledCourses = (int) $enrollmentStats->enrolled_courses;
+            $completedCourses = (int) $enrollmentStats->completed_courses;
+            $inProgressCourses = (int) $enrollmentStats->in_progress_courses;
             $completedLessons = $user->lessonProgress()->whereNotNull('completed_at')->count();
             $solvedChallenges = $user->challengeSubmissions()
                 ->where('is_correct', true)
@@ -47,15 +51,17 @@ class LearnerStatsAggregator
 
         $startOfCurrentMonth = now()->startOfMonth();
 
-        $previousEnrolled = Enrollment::query()
+        $previousStats = Enrollment::query()
             ->whereBelongsTo($user)
             ->where('created_at', '<', $startOfCurrentMonth)
-            ->count();
-        $previousCompleted = Enrollment::query()
-            ->whereBelongsTo($user)
-            ->whereNotNull('completed_at')
-            ->where('completed_at', '<', $startOfCurrentMonth)
-            ->count();
+            ->selectRaw('
+                COUNT(*) as enrolled_courses,
+                SUM(CASE WHEN completed_at IS NOT NULL AND completed_at < ? THEN 1 ELSE 0 END) as completed_courses
+            ', [$startOfCurrentMonth])
+            ->first();
+
+        $previousEnrolled = (int) $previousStats->enrolled_courses;
+        $previousCompleted = (int) $previousStats->completed_courses;
 
         $previousSuccessRate = $previousEnrolled > 0
             ? round(($previousCompleted / $previousEnrolled) * 100, 1)

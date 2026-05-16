@@ -47,8 +47,7 @@ class FortifyServiceProvider extends ServiceProvider
             $login = (string) $request->input(Fortify::username());
 
             $user = User::query()
-                ->where('email', $login)
-                ->orWhere('username', $login)
+                ->where(Str::contains($login, '@') ? 'email' : 'username', $login)
                 ->first();
 
             if ($user && Hash::check((string) $request->password, $user->password)) {
