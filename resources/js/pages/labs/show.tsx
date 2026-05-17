@@ -1,17 +1,4 @@
 import { Head } from '@inertiajs/react';
-import {
-    AlertCircle,
-    ArrowRight,
-    ChevronLeft,
-    ChevronRight,
-    Eye,
-    Lock,
-    Pause,
-    Play,
-    RotateCcw,
-    SlidersHorizontal,
-    Unlock,
-} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -26,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
@@ -34,11 +22,21 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import {
     canFormatOutput,
+    conceptLensByLab,
     defaultTextByLab,
     formatLabel,
     formatOptions,
@@ -66,27 +64,26 @@ import type {
     SimulationResult,
 } from '@/types/labs';
 
-// ── Swipe hook ──
 function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
     const touchStartX = useRef<number | null>(null);
 
-    const handleTouchStart = useCallback((e: React.TouchEvent) => {
-        touchStartX.current = e.touches[0].clientX;
+    const handleTouchStart = useCallback((event: React.TouchEvent) => {
+        touchStartX.current = event.touches[0].clientX;
     }, []);
 
     const handleTouchEnd = useCallback(
-        (e: React.TouchEvent) => {
+        (event: React.TouchEvent) => {
             if (touchStartX.current === null) {
-return;
-}
+                return;
+            }
 
-            const diff = e.changedTouches[0].clientX - touchStartX.current;
+            const diff = event.changedTouches[0].clientX - touchStartX.current;
 
             if (diff > 50) {
-onSwipeRight();
-} else if (diff < -50) {
-onSwipeLeft();
-}
+                onSwipeRight();
+            } else if (diff < -50) {
+                onSwipeLeft();
+            }
 
             touchStartX.current = null;
         },
@@ -96,7 +93,218 @@ onSwipeLeft();
     return { handleTouchStart, handleTouchEnd };
 }
 
-// ── Main Page ──
+function keySetupByLab(slug: string): string[] {
+    switch (slug) {
+        case 'caesar-cipher-lab':
+            return [
+                'Pilih angka pergeseran sebagai kunci.',
+                'Angka yang sama dipakai untuk membalik pergeseran saat dekripsi.',
+            ];
+        case 'vigenere-cipher-lab':
+            return [
+                'Tentukan kata kunci berisi huruf A-Z.',
+                'Setiap huruf kata kunci berubah menjadi nilai pergeseran posisi.',
+            ];
+        case 'aes-lab':
+            return [
+                'Siapkan satu kunci simetris bersama.',
+                'Kunci yang sama digunakan untuk proses enkripsi dan dekripsi.',
+            ];
+        case 'des-lab':
+            return [
+                'Gunakan kunci 64-bit dalam 16 karakter hex.',
+                'Kunci putaran diturunkan dari kunci utama untuk tiap putaran Feistel.',
+            ];
+        case 'rsa-lab':
+            return [
+                'Buat dua bilangan prima kecil untuk simulasi: p=61 dan q=53.',
+                'Turunkan kunci publik (e, n) untuk enkripsi dan kunci privat (d, n) untuk dekripsi.',
+            ];
+        case 'lattice-cipher-lab':
+            return [
+                'Tentukan secret vector s berisi tiga integer.',
+                'Bangun public matrix A dan noise kecil untuk menyamarkan secret.',
+            ];
+        case 'digital-signature-lab':
+            return [
+                'Siapkan kunci tanda tangan sebagai representasi kunci privat.',
+                'Kunci dipakai untuk membuat atau memverifikasi token tanda tangan.',
+            ];
+        default:
+            return [
+                'Tentukan parameter kunci yang dibutuhkan algoritma.',
+                'Gunakan parameter yang sama atau pasangannya saat proses dibalik.',
+            ];
+    }
+}
+
+function labSummaryBySlug(slug: string, fallback: string): string {
+    switch (slug) {
+        case 'caesar-cipher-lab':
+            return 'Pelajari pergeseran alfabet klasik dan bagaimana kunci angka mengubah setiap huruf.';
+        case 'vigenere-cipher-lab':
+            return 'Pelajari sandi berbasis kata kunci yang memakai pergeseran berbeda di tiap posisi.';
+        case 'aes-lab':
+            return 'Pelajari konsep kunci simetris dan pencampuran byte pada sandi blok modern.';
+        case 'des-lab':
+            return 'Pelajari alur Feistel dan putaran kunci pada sandi blok klasik.';
+        case 'rsa-lab':
+            return 'Pelajari dasar kunci publik, kunci privat, dan aritmetika modular RSA.';
+        case 'lattice-cipher-lab':
+            return 'Pelajari konsep LWE, vektor rahasia, noise, dan dekripsi berbasis pembulatan.';
+        case 'digital-signature-lab':
+            return 'Pelajari bagaimana pesan diringkas, ditandatangani, lalu diverifikasi.';
+        default:
+            return fallback;
+    }
+}
+
+function conceptTitleInIndonesian(title: string): string {
+    const labels: Record<string, string> = {
+        'Classical Shift Cipher': 'Sandi Pergeseran Klasik',
+        'Polyalphabetic Substitution': 'Substitusi Polialfabetik',
+        'Symmetric Block Concept': 'Konsep Blok Simetris',
+        'Asymmetric Key Exchange': 'Pertukaran Kunci Asimetris',
+        'LWE Encryption': 'Enkripsi LWE',
+        'LWE Decryption': 'Dekripsi LWE',
+        'Digital Signature Flow': 'Alur Tanda Tangan Digital',
+    };
+
+    return labels[title] ?? title;
+}
+
+function translateText(value: string): string {
+    const exact: Record<string, string> = {
+        'Transform plaintext into protected representation.':
+            'Ubah teks asli menjadi representasi terlindungi.',
+        'Reverse protected representation back into readable text.':
+            'Kembalikan representasi terlindungi menjadi teks yang dapat dibaca.',
+        'Each letter is shifted by a constant numeric key.':
+            'Setiap huruf digeser menggunakan kunci angka yang sama.',
+        'Security is low because only 25 meaningful shift keys exist.':
+            'Keamanannya rendah karena hanya ada 25 pergeseran bermakna.',
+        'Decryption simply applies the inverse shift.':
+            'Dekripsi memakai pergeseran kebalikan dari kunci.',
+        'Keyword letters define changing shifts across positions.':
+            'Setiap huruf kata kunci menentukan pergeseran pada posisi tertentu.',
+        'Repeated keyword patterns can still leak structure.':
+            'Pola kata kunci yang berulang masih dapat membocorkan struktur pesan.',
+        'Decryption uses the same keyword with opposite shifts.':
+            'Dekripsi memakai kata kunci yang sama dengan arah pergeseran berlawanan.',
+        'Same key is used for encryption and decryption.':
+            'Kunci yang sama dipakai untuk enkripsi dan dekripsi.',
+        'This lab visualizes byte-level mixing as a learning approximation.':
+            'Lab ini memvisualkan pencampuran byte sebagai pendekatan belajar.',
+        'Real AES uses multiple rounds with substitution and permutation.':
+            'AES asli memakai banyak putaran substitusi dan permutasi.',
+        'Public key encrypts, private key decrypts.':
+            'Kunci publik digunakan untuk enkripsi, kunci privat untuk dekripsi.',
+        'Security relies on hard factorization of large integers.':
+            'Keamanan bergantung pada sulitnya memfaktorkan bilangan besar.',
+        'This lab uses small numbers to make modular arithmetic readable.':
+            'Lab ini memakai angka kecil agar aritmetika modular mudah dibaca.',
+        'Security is based on the Learning With Errors (LWE) problem.':
+            'Keamanan didasarkan pada masalah Learning With Errors (LWE).',
+        'A public matrix A and vector b = A·s + e form the public key.':
+            'Matriks publik A dan vektor b = A·s + e membentuk kunci publik.',
+        'Small random errors make the system hard to solve, even for quantum computers.':
+            'Error acak kecil membuat sistem sulit dipecahkan, termasuk oleh komputer kuantum.',
+        'This lab uses tiny parameters (n=3, q=97) for educational visibility.':
+            'Lab ini memakai parameter kecil (n=3, q=97) agar prosesnya terlihat.',
+        'A sender signs message digest with private key logic.':
+            'Pengirim menandatangani ringkasan pesan dengan logika kunci privat.',
+        'Receiver verifies signature using public verification logic.':
+            'Penerima memverifikasi tanda tangan dengan logika verifikasi publik.',
+        'Goal: authenticity, integrity, and non-repudiation.':
+            'Tujuannya adalah autentisitas, integritas, dan non-repudiation.',
+        Source: 'Sumber',
+        Operation: 'Operasi',
+        Result: 'Hasil',
+        Plaintext: 'Teks asli',
+        'Ciphertext (hex)': 'Ciphertext (hex)',
+        'Cipher blocks': 'Blok cipher',
+        'Signature token': 'Token tanda tangan',
+        'Validation required': 'Validasi diperlukan',
+        'Input could not be normalized for this algorithm mode.':
+            'Input tidak dapat disesuaikan dengan mode algoritma ini.',
+        'Enter plaintext to encrypt...':
+            'Masukkan teks asli untuk dienkripsi...',
+        'Enter ciphertext to decrypt...': 'Masukkan cipher untuk didekripsi...',
+        'Try changing a single character and compare output differences.':
+            'Ubah satu karakter untuk membandingkan perbedaan hasil.',
+        'Use only hexadecimal characters (0-9, A-F) with an even number of characters.':
+            'Gunakan karakter hex (0-9, A-F) dengan jumlah karakter genap.',
+        'Use integer cipher blocks separated by spaces.':
+            'Gunakan blok cipher berupa angka yang dipisahkan spasi.',
+    };
+
+    let translated = exact[value] ?? value;
+
+    translated = translated
+        .replace('Plain input', 'Masukan teks asli')
+        .replace('Cipher input', 'Masukan cipher')
+        .replace('Shift key (number)', 'Kunci pergeseran (angka)')
+        .replace('Symmetric key', 'Kunci simetris')
+        .replace('Signing key', 'Kunci tanda tangan')
+        .replace('Key parameter', 'Parameter kunci')
+        .replace('Character Shift Table', 'Tabel Pergeseran Karakter')
+        .replace('Keyword-Driven Shift Map', 'Peta Pergeseran Kata Kunci')
+        .replace('Byte Mixing View', 'Tampilan Pencampuran Byte')
+        .replace('Modular Arithmetic Blocks', 'Blok Aritmetika Modular')
+        .replace(
+            'Signing and Verification Lens',
+            'Tampilan Tanda Tangan dan Verifikasi',
+        )
+        .replace(
+            'Observe each letter move by the same offset.',
+            'Lihat setiap huruf bergeser dengan jarak yang sama.',
+        )
+        .replace(
+            'Track each block as modular exponentiation is applied.',
+            'Ikuti setiap blok saat eksponensiasi modular diterapkan.',
+        )
+        .replace(
+            'Observe how digest and signature token are related.',
+            'Lihat hubungan antara ringkasan pesan dan token tanda tangan.',
+        )
+        .replace(
+            'Normalize input into uppercase alphabetic stream:',
+            'Normalisasi input menjadi deretan huruf kapital:',
+        )
+        .replace('Step ', 'Langkah ')
+        .replace('shift ', 'geser ')
+        .replace(
+            'Convert decoded integer codes back to characters.',
+            'Ubah kode integer hasil dekripsi kembali menjadi karakter.',
+        )
+        .replace(
+            'Ciphertext is the sequence of modular exponentiation blocks.',
+            'Ciphertext adalah rangkaian blok hasil eksponensiasi modular.',
+        )
+        .replace(
+            'Hash the original message to produce a digest.',
+            'Hash pesan asli untuk membuat ringkasan.',
+        )
+        .replace(
+            'Distribute message + signature for verification.',
+            'Kirim pesan dan tanda tangan untuk diverifikasi.',
+        )
+        .replace(
+            'Receiver checks signature using paired public logic.',
+            'Penerima memeriksa tanda tangan dengan logika publik pasangannya.',
+        );
+
+    return translated;
+}
+
+function formatLabelInIndonesian(value: FormatValue): string {
+    if (value === 'decimal') {
+        return 'Byte desimal';
+    }
+
+    return formatLabel(value);
+}
+
 export default function LabsShow({ lab }: LabShowProps) {
     const [mode, setMode] = useState<SimulationMode>('encrypt');
     const [inputText, setInputText] = useState(defaultTextByLab(lab.slug));
@@ -105,7 +313,12 @@ export default function LabsShow({ lab }: LabShowProps) {
     const [outputFormat, setOutputFormat] = useState<FormatValue>('ascii');
     const [activeStepIndex, setActiveStepIndex] = useState(0);
     const [isWalkthroughPlaying, setIsWalkthroughPlaying] = useState(false);
-    const [showConfig, setShowConfig] = useState(false);
+
+    const conceptLens = useMemo(
+        () => conceptLensByLab(lab.slug, mode),
+        [lab.slug, mode],
+    );
+    const keySetupSteps = useMemo(() => keySetupByLab(lab.slug), [lab.slug]);
 
     const normalizedInput = useMemo(
         () =>
@@ -115,12 +328,12 @@ export default function LabsShow({ lab }: LabShowProps) {
 
     const validationError = useMemo(() => {
         if (normalizedInput.error !== null) {
-return normalizedInput.error;
-}
+            return normalizedInput.error;
+        }
 
         if (normalizedInput.value === null) {
-return 'Input could not be normalized for this algorithm mode.';
-}
+            return 'Input tidak dapat disesuaikan dengan mode algoritma ini.';
+        }
 
         return validationErrorByLab(
             lab.slug,
@@ -139,8 +352,8 @@ return 'Input could not be normalized for this algorithm mode.';
     const rawResult = useMemo(() => {
         if (validationError !== null) {
             return {
-                outputLabel: 'Validation required',
-                output: 'Fix the input format to see simulation output.',
+                outputLabel: 'Validasi diperlukan',
+                output: 'Perbaiki input atau kunci untuk melihat hasil simulasi.',
                 steps: [validationError],
             } as SimulationResult;
         }
@@ -157,14 +370,13 @@ return 'Input could not be normalized for this algorithm mode.';
         if (!canFormatOutput(lab.slug)) {
             return {
                 value: rawResult.output,
-                error: 'Output ditampilkan apa adanya (format domain-specific).',
+                error: 'Output ditampilkan apa adanya karena formatnya khusus untuk lab ini.',
             };
         }
 
         return formatOutputValue(rawResult.output, outputFormat);
     }, [lab.slug, outputFormat, rawResult.output]);
 
-    const showKeyInput = lab.slug !== 'rsa-lab';
     const recommendedInputFormat = recommendedInputFormatByLab(lab.slug, mode);
     const recommendedOutputFormat = recommendedOutputFormatByLab(
         lab.slug,
@@ -177,24 +389,38 @@ return 'Input could not be normalized for this algorithm mode.';
         keyInput,
         rawResult,
     );
+    const pageSummary = labSummaryBySlug(lab.slug, lab.summary);
+    const translatedSteps = rawResult.steps.map(translateText);
+    const translatedHeaders = visualizationLens.headers.map(translateText);
+    const translatedOutputLabel = translateText(rawResult.outputLabel);
 
     const safeActiveStepIndex = Math.min(
         activeStepIndex,
         Math.max(0, rawResult.steps.length - 1),
     );
+    const progressValue =
+        rawResult.steps.length <= 1
+            ? 100
+            : ((safeActiveStepIndex + 1) / rawResult.steps.length) * 100;
+    const showKeyInput = lab.slug !== 'rsa-lab';
 
     const swipeHandlers = useSwipe(
         () =>
-            setActiveStepIndex((i) =>
-                Math.min(i + 1, rawResult.steps.length - 1),
+            setActiveStepIndex((index) =>
+                Math.min(index + 1, rawResult.steps.length - 1),
             ),
-        () => setActiveStepIndex((i) => Math.max(i - 1, 0)),
+        () => setActiveStepIndex((index) => Math.max(index - 1, 0)),
     );
 
     useEffect(() => {
+        setActiveStepIndex(0);
+        setIsWalkthroughPlaying(false);
+    }, [inputFormat, inputText, keyInput, mode, outputFormat]);
+
+    useEffect(() => {
         if (!isWalkthroughPlaying || rawResult.steps.length <= 1) {
-return;
-}
+            return;
+        }
 
         const intervalId = setInterval(() => {
             setActiveStepIndex((currentIndex) => {
@@ -208,7 +434,7 @@ return;
 
                 return currentIndex + 1;
             });
-        }, 1100);
+        }, 1200);
 
         return () => clearInterval(intervalId);
     }, [isWalkthroughPlaying, rawResult.steps.length]);
@@ -217,445 +443,424 @@ return;
         <>
             <Head title={`${lab.title} Lab`} />
 
-            <div className="relative flex flex-col gap-4 px-4 pt-3 pb-6 lg:gap-6">
-                {/* ── Header with inline mode toggle ── */}
-                <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-col gap-0">
+            <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-6">
+                <section className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex min-w-0 flex-col gap-0">
                         <TypographyH1>{lab.title}</TypographyH1>
-                        <TypographyMuted>{lab.summary}</TypographyMuted>
+                        <TypographyMuted className="text-sm/6">
+                            {pageSummary}
+                        </TypographyMuted>
                     </div>
+
                     <Tabs
                         value={mode}
-                        onValueChange={(v) => setMode(v as SimulationMode)}
+                        onValueChange={(value) =>
+                            setMode(value as SimulationMode)
+                        }
+                        className="w-full sm:w-auto"
                     >
-                        <TabsList className="h-9">
-                            <TabsTrigger
-                                value="encrypt"
-                                className="gap-1.5 text-xs"
-                            >
-                                <Lock className="size-3" />
+                        <TabsList className="grid h-10 w-full grid-cols-2 sm:w-80">
+                            <TabsTrigger value="encrypt" className="gap-2">
                                 Enkripsi
                             </TabsTrigger>
-                            <TabsTrigger
-                                value="decrypt"
-                                className="gap-1.5 text-xs"
-                            >
-                                <Unlock className="size-3" />
+                            <TabsTrigger value="decrypt" className="gap-2">
                                 Dekripsi
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </section>
 
-                {/* ── 2 Cards: Input (narrow) | Visualization (wide) ── */}
-                <section className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-                    {/* ━━ Card 1: Input & Output ━━ */}
-                    <Card className="flex flex-col">
-                        <CardHeader className="gap-1">
-                            <CardTitle className="text-base">
-                                Masukan & Keluaran
+                <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                    <Card className="lg:col-span-4">
+                        <CardHeader className="gap-1 pb-4">
+                            <CardTitle className="flex items-center gap-2">
+                                Dasar Algoritma
                             </CardTitle>
-                            <CardDescription>
-                                {modeDescription(lab.slug, mode)}
+                            <CardDescription className="text-xs">
+                                Konsep utama sebelum masuk ke operasi.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-1 flex-col gap-4">
-                            {/* Input */}
-                            <div className="flex flex-col gap-1.5">
-                                <Label
-                                    htmlFor="lab-input"
-                                    className="text-xs font-medium"
-                                >
-                                    {inputLabelByLab(lab.slug, mode)}
-                                </Label>
-                                <Textarea
-                                    id="lab-input"
-                                    value={inputText}
-                                    onChange={(e) =>
-                                        setInputText(e.target.value)
-                                    }
-                                    placeholder={inputPlaceholderByLab(
-                                        lab.slug,
-                                        mode,
+                        <CardContent className="space-y-3">
+                            <div>
+                                <p className="text-sm font-medium">
+                                    {conceptTitleInIndonesian(
+                                        conceptLens.title,
                                     )}
-                                    className="min-h-28 resize-none rounded-lg font-mono text-sm"
-                                />
-                                <p className="text-[11px] text-muted-foreground">
-                                    {inputHelperByLab(lab.slug, mode)}
+                                </p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    {translateText(
+                                        modeDescription(lab.slug, mode),
+                                    )}
                                 </p>
                             </div>
-
-                            {/* Key */}
-                            {showKeyInput && (
-                                <div className="flex flex-col gap-1.5">
-                                    <Label
-                                        htmlFor="lab-key"
-                                        className="text-xs font-medium"
+                            <Separator />
+                            <div className="space-y-2">
+                                {conceptLens.points.map((point, index) => (
+                                    <div
+                                        key={point}
+                                        className="flex gap-2 text-sm"
                                     >
-                                        {keyLabelByLab(lab.slug)}
-                                    </Label>
-                                    <Input
-                                        id="lab-key"
-                                        value={keyInput}
-                                        onChange={(e) =>
-                                            setKeyInput(e.target.value)
-                                        }
-                                        placeholder={keyPlaceholderByLab(
-                                            lab.slug,
-                                        )}
-                                        className="rounded-lg font-mono text-sm"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Validation */}
-                            {validationError && (
-                                <Alert variant="destructive" className="py-2">
-                                    <AlertCircle className="size-3.5" />
-                                    <AlertDescription className="text-xs">
-                                        {validationError}
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-
-                            {/* Format toggle */}
-                            {showConfig && (
-                                <div className="flex animate-in flex-col gap-3 rounded-lg border p-3 duration-200 fade-in-0 slide-in-from-top-1">
-                                    <div className="flex flex-col gap-1.5">
-                                        <Label className="text-[11px] text-muted-foreground">
-                                            Format masukan
-                                        </Label>
-                                        <Select
-                                            value={inputFormat}
-                                            onValueChange={(v) =>
-                                                setInputFormat(v as FormatValue)
-                                            }
+                                        <Badge
+                                            variant="secondary"
+                                            className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px]"
                                         >
-                                            <SelectTrigger className="h-8 rounded-lg text-xs">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl">
-                                                {formatOptions.map((opt) => (
-                                                    <SelectItem
-                                                        key={opt.value}
-                                                        value={opt.value}
-                                                        className="rounded-lg"
-                                                    >
-                                                        {opt.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <span className="text-[10px] text-muted-foreground/60">
-                                            Disarankan:{' '}
-                                            {formatLabel(
-                                                recommendedInputFormat,
-                                            )}
-                                        </span>
+                                            {index + 1}
+                                        </Badge>
+                                        <span>{translateText(point)}</span>
                                     </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <Label className="text-[11px] text-muted-foreground">
-                                            Format keluaran
-                                        </Label>
-                                        <Select
-                                            value={outputFormat}
-                                            onValueChange={(v) =>
-                                                setOutputFormat(
-                                                    v as FormatValue,
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger className="h-8 rounded-lg text-xs">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl">
-                                                {formatOptions.map((opt) => (
-                                                    <SelectItem
-                                                        key={opt.value}
-                                                        value={opt.value}
-                                                        className="rounded-lg"
-                                                    >
-                                                        {opt.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <span className="text-[10px] text-muted-foreground/60">
-                                            Disarankan:{' '}
-                                            {formatLabel(
-                                                recommendedOutputFormat,
-                                            )}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Actions row */}
-                            <div className="flex gap-1.5">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 gap-1 rounded-lg px-2 text-[11px]"
-                                    onClick={() => setShowConfig((v) => !v)}
-                                >
-                                    <SlidersHorizontal className="size-3" />
-                                    Format
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 gap-1 rounded-lg px-2 text-[11px]"
-                                    onClick={() => {
-                                        setInputText(
-                                            defaultTextByLab(lab.slug),
-                                        );
-                                        setKeyInput(
-                                            keyPlaceholderByLab(lab.slug),
-                                        );
-                                        setInputFormat('ascii');
-                                        setOutputFormat('ascii');
-                                        setMode('encrypt');
-                                    }}
-                                >
-                                    <RotateCcw className="size-3" />
-                                    Reset
-                                </Button>
-                            </div>
-
-                            {/* ── Output section ── */}
-                            <div className="mt-auto flex flex-col gap-2 rounded-lg border-t pt-4">
-                                <div className="flex items-center gap-2">
-                                    <ArrowRight className="size-3.5 text-primary" />
-                                    <span className="text-xs font-semibold">
-                                        {rawResult.outputLabel}
-                                    </span>
-                                    <Badge
-                                        variant="secondary"
-                                        className="ml-auto text-[10px]"
-                                    >
-                                        {formatLabel(outputFormat)}
-                                    </Badge>
-                                </div>
-                                <div className="rounded-lg bg-muted/40 p-3 font-mono text-sm leading-relaxed break-all">
-                                    {outputPresentation.value || (
-                                        <span className="text-muted-foreground/40 italic">
-                                            Menunggu input...
-                                        </span>
-                                    )}
-                                </div>
-                                {outputPresentation.error && (
-                                    <p className="text-[11px] text-muted-foreground">
-                                        {outputPresentation.error}
-                                    </p>
-                                )}
+                                ))}
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* ━━ Card 2: Visualization & Steps ━━ */}
-                    <Card className="flex flex-col">
-                        <CardHeader className="gap-1">
-                            <div className="flex items-start justify-between">
-                                <div className="flex flex-col gap-1">
-                                    <CardTitle className="flex items-center gap-1.5 text-base">
-                                        <Eye className="size-4 text-primary/70" />
-                                        {visualizationLens.title}
+                    <Card className="lg:col-span-4">
+                        <CardHeader className="gap-1 pb-4">
+                            <CardTitle className="flex items-center gap-2">
+                                Pembuatan Kunci
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Fondasi awal sebelum pesan diproses.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                {keySetupSteps.map((step) => (
+                                    <div
+                                        key={step}
+                                        className="flex gap-2 text-sm"
+                                    >
+                                        <span>{step}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {showKeyInput ? (
+                                <div className="space-y-2">
+                                    <Label htmlFor="lab-key">
+                                        {translateText(keyLabelByLab(lab.slug))}
+                                    </Label>
+                                    <Input
+                                        id="lab-key"
+                                        value={keyInput}
+                                        onChange={(event) =>
+                                            setKeyInput(event.target.value)
+                                        }
+                                        placeholder={keyPlaceholderByLab(
+                                            lab.slug,
+                                        )}
+                                        className="font-mono"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                                    <p className="font-medium">
+                                        Kunci publik: (e=17, n=3233)
+                                    </p>
+                                    <p className="text-muted-foreground">
+                                        Kunci privat: (d=2753, n=3233)
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-4">
+                        <CardHeader className="gap-1 pb-4">
+                            <CardTitle className="flex items-center gap-2">
+                                Data dan Format
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Siapkan pesan dan bentuk representasinya.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="lab-input">
+                                    {translateText(
+                                        inputLabelByLab(lab.slug, mode),
+                                    )}
+                                </Label>
+                                <Textarea
+                                    id="lab-input"
+                                    value={inputText}
+                                    onChange={(event) =>
+                                        setInputText(event.target.value)
+                                    }
+                                    placeholder={translateText(
+                                        inputPlaceholderByLab(lab.slug, mode),
+                                    )}
+                                    className="min-h-28 resize-none font-mono text-sm"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {translateText(
+                                        inputHelperByLab(lab.slug, mode),
+                                    )}
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label>Format masukan</Label>
+                                    <Select
+                                        value={inputFormat}
+                                        onValueChange={(value) =>
+                                            setInputFormat(value as FormatValue)
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {formatOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {formatLabelInIndonesian(
+                                                        option.value,
+                                                    )}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Disarankan:{' '}
+                                        {formatLabelInIndonesian(
+                                            recommendedInputFormat,
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Format keluaran</Label>
+                                    <Select
+                                        value={outputFormat}
+                                        onValueChange={(value) =>
+                                            setOutputFormat(
+                                                value as FormatValue,
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {formatOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {formatLabelInIndonesian(
+                                                        option.value,
+                                                    )}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Disarankan:{' '}
+                                        {formatLabelInIndonesian(
+                                            recommendedOutputFormat,
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {validationError && (
+                                <Alert variant="destructive" className="py-3">
+                                    <AlertDescription>
+                                        {translateText(validationError)}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setInputText(defaultTextByLab(lab.slug));
+                                    setKeyInput(keyPlaceholderByLab(lab.slug));
+                                    setInputFormat('ascii');
+                                    setOutputFormat('ascii');
+                                    setMode('encrypt');
+                                }}
+                            >
+                                Atur ulang
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </section>
+
+                <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                    <Card className="flex min-h-[30rem] flex-col lg:col-span-8">
+                        <CardHeader className="gap-1 pb-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        Proses Bertahap
                                     </CardTitle>
-                                    <CardDescription>
-                                        {visualizationLens.description}
+                                    <CardDescription className="text-xs">
+                                        Ikuti transformasi dari kunci dan pesan
+                                        hingga hasil akhir.
                                     </CardDescription>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Badge
-                                        variant="outline"
-                                        className="text-[10px] tabular-nums"
-                                    >
-                                        {safeActiveStepIndex + 1}/
-                                        {rawResult.steps.length}
-                                    </Badge>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="size-7 rounded-lg"
-                                        disabled={rawResult.steps.length <= 1}
-                                        onClick={() => {
-                                            if (
-                                                safeActiveStepIndex >=
-                                                rawResult.steps.length - 1
-                                            ) {
-                                                setActiveStepIndex(0);
-                                            }
-
-                                            setIsWalkthroughPlaying((c) => !c);
-                                        }}
-                                    >
-                                        {isWalkthroughPlaying ? (
-                                            <Pause className="size-3" />
-                                        ) : (
-                                            <Play className="size-3" />
-                                        )}
-                                    </Button>
-                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className="tabular-nums"
+                                >
+                                    {safeActiveStepIndex + 1}/
+                                    {rawResult.steps.length}
+                                </Badge>
                             </div>
                         </CardHeader>
-                        <CardContent className="flex min-h-0 flex-1 flex-col gap-3 p-0">
-                            {/* Step walkthrough */}
-                            <div className="px-6">
-                                {/* Clickable progress */}
-                                <div className="flex gap-0.5">
-                                    {Array.from(
-                                        { length: rawResult.steps.length },
-                                        (_, i) => (
-                                            <button
-                                                key={i}
-                                                type="button"
-                                                onClick={() => {
-                                                    setIsWalkthroughPlaying(
-                                                        false,
-                                                    );
-                                                    setActiveStepIndex(i);
-                                                }}
-                                                className={cn(
-                                                    'h-1 flex-1 rounded-full transition-all duration-300',
-                                                    i <= safeActiveStepIndex
-                                                        ? 'bg-primary'
-                                                        : 'bg-muted hover:bg-muted-foreground/20',
-                                                    i === safeActiveStepIndex &&
-                                                        'scale-y-150',
-                                                )}
-                                            />
-                                        ),
-                                    )}
-                                </div>
+                        <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+                            <Progress value={progressValue} />
 
-                                {/* Step text */}
-                                {rawResult.steps.length > 0 && (
-                                    <div
-                                        key={`step-${safeActiveStepIndex}`}
-                                        className="mt-3 animate-in rounded-lg bg-primary/5 px-3 py-2.5 duration-200 fade-in-0"
-                                        {...swipeHandlers}
-                                    >
-                                        <p className="text-[13px] leading-relaxed">
-                                            {
-                                                rawResult.steps[
-                                                    safeActiveStepIndex
-                                                ]
-                                            }
-                                        </p>
-                                    </div>
-                                )}
+                            <div
+                                className="rounded-lg border bg-muted/30 p-4"
+                                {...swipeHandlers}
+                            >
+                                <p className="text-sm leading-relaxed">
+                                    {translatedSteps[safeActiveStepIndex]}
+                                </p>
                             </div>
 
-                            {/* Table area — scrollable */}
-                            <div className="min-h-0 flex-1 border-t">
-                                {visualizationLens.rows.length > 0 ? (
-                                    <ScrollArea className="h-full max-h-80">
-                                        <table className="w-full text-sm">
-                                            <thead className="sticky top-0 z-10 bg-card">
-                                                <tr className="border-b text-xs text-muted-foreground">
-                                                    <th className="px-6 py-2.5 text-left font-medium">
-                                                        {
-                                                            visualizationLens
-                                                                .headers[0]
-                                                        }
-                                                    </th>
-                                                    <th className="px-3 py-2.5 text-left font-medium">
-                                                        {
-                                                            visualizationLens
-                                                                .headers[1]
-                                                        }
-                                                    </th>
-                                                    <th className="px-6 py-2.5 text-left font-medium">
-                                                        {
-                                                            visualizationLens
-                                                                .headers[2]
-                                                        }
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {visualizationLens.rows.map(
-                                                    (row, index) => (
-                                                        <tr
-                                                            key={`vis-${index}`}
-                                                            className={cn(
-                                                                'border-b transition-colors duration-150 last:border-0',
-                                                                index ===
-                                                                    safeActiveStepIndex
-                                                                    ? 'bg-primary/5 font-medium'
-                                                                    : 'hover:bg-muted/30',
-                                                            )}
-                                                        >
-                                                            <td className="px-6 py-2 font-mono text-xs break-all">
-                                                                {row.source}
-                                                            </td>
-                                                            <td className="px-3 py-2 text-xs break-all text-muted-foreground">
-                                                                {row.operation}
-                                                            </td>
-                                                            <td className="px-6 py-2 font-mono text-xs break-all">
-                                                                {row.result}
-                                                            </td>
-                                                        </tr>
-                                                    ),
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </ScrollArea>
-                                ) : (
-                                    <div className="flex h-full min-h-48 items-center justify-center">
-                                        <div className="flex flex-col items-center gap-3 text-center">
-                                            <div className="rounded-full bg-muted p-3">
-                                                <Eye className="size-5 text-muted-foreground" />
-                                            </div>
-                                            <p className="max-w-48 text-xs text-muted-foreground">
-                                                Masukkan input yang valid untuk
-                                                melihat transformasi data.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Navigation footer */}
-                            <div className="flex items-center justify-between border-t px-6 py-3">
+                            <div className="flex items-center justify-between gap-2">
                                 <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="sm"
                                     disabled={safeActiveStepIndex === 0}
                                     onClick={() =>
-                                        setActiveStepIndex((i) =>
-                                            Math.max(i - 1, 0),
+                                        setActiveStepIndex((index) =>
+                                            Math.max(index - 1, 0),
                                         )
                                     }
-                                    className="h-7 gap-1 text-xs"
                                 >
-                                    <ChevronLeft className="size-3.5" />
                                     Sebelumnya
                                 </Button>
-                                <p className="text-[11px] text-muted-foreground/50 max-sm:hidden">
-                                    Klik progress bar atau geser untuk navigasi
-                                </p>
+
                                 <Button
-                                    variant="ghost"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={rawResult.steps.length <= 1}
+                                    onClick={() => {
+                                        if (
+                                            safeActiveStepIndex >=
+                                            rawResult.steps.length - 1
+                                        ) {
+                                            setActiveStepIndex(0);
+                                        }
+
+                                        setIsWalkthroughPlaying(
+                                            (value) => !value,
+                                        );
+                                    }}
+                                >
+                                    {isWalkthroughPlaying ? 'Jeda' : 'Putar'}
+                                </Button>
+
+                                <Button
+                                    variant="outline"
                                     size="sm"
                                     disabled={
                                         safeActiveStepIndex >=
                                         rawResult.steps.length - 1
                                     }
                                     onClick={() =>
-                                        setActiveStepIndex((i) =>
+                                        setActiveStepIndex((index) =>
                                             Math.min(
-                                                i + 1,
+                                                index + 1,
                                                 rawResult.steps.length - 1,
                                             ),
                                         )
                                     }
-                                    className="h-7 gap-1 text-xs"
                                 >
                                     Selanjutnya
-                                    <ChevronRight className="size-3.5" />
                                 </Button>
                             </div>
+
+                            <div className="min-h-0 flex-1 rounded-lg border">
+                                <ScrollArea className="h-full max-h-72">
+                                    {visualizationLens.rows.length > 0 ? (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    {visualizationLens.headers.map(
+                                                        (header, index) => (
+                                                            <TableHead
+                                                                key={header}
+                                                            >
+                                                                {
+                                                                    translatedHeaders[
+                                                                        index
+                                                                    ]
+                                                                }
+                                                            </TableHead>
+                                                        ),
+                                                    )}
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {visualizationLens.rows.map(
+                                                    (row, index) => (
+                                                        <TableRow
+                                                            key={`${row.source}-${index}`}
+                                                            className={cn(
+                                                                index ===
+                                                                    safeActiveStepIndex &&
+                                                                    'bg-primary/5',
+                                                            )}
+                                                        >
+                                                            <TableCell className="font-mono text-xs whitespace-normal">
+                                                                {row.source}
+                                                            </TableCell>
+                                                            <TableCell className="text-xs whitespace-normal text-muted-foreground">
+                                                                {translateText(
+                                                                    row.operation,
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="font-mono text-xs whitespace-normal">
+                                                                {row.result}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ),
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    ) : (
+                                        <div className="flex min-h-48 items-center justify-center p-6 text-center text-sm text-muted-foreground">
+                                            Masukkan data valid untuk melihat
+                                            transformasi.
+                                        </div>
+                                    )}
+                                </ScrollArea>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-4">
+                        <CardHeader className="gap-1 pb-4">
+                            <CardTitle className="flex items-center gap-2">
+                                Hasil Akhir
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                {translatedOutputLabel} dalam format{' '}
+                                {formatLabelInIndonesian(outputFormat)}.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="min-h-40 rounded-lg bg-muted/40 p-3 font-mono text-sm leading-relaxed break-all">
+                                {outputPresentation.value || (
+                                    <span className="text-muted-foreground italic">
+                                        Menunggu input...
+                                    </span>
+                                )}
+                            </div>
+                            {outputPresentation.error && (
+                                <p className="text-xs text-muted-foreground">
+                                    {outputPresentation.error}
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 </section>

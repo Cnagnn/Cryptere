@@ -52,31 +52,8 @@ return new class extends Migration
             $table->index(['course_id', 'completed_at'], 'enrollments_course_completed_idx');
         });
 
-        Schema::table('challenge_submissions', function (Blueprint $table): void {
-            $table->index(['challenge_id', 'is_correct'], 'challenge_submissions_challenge_correct_idx');
-            $table->index(['user_id', 'challenge_id', 'is_correct'], 'challenge_submissions_user_challenge_correct_idx');
-            $table->index(['user_id', 'challenge_id', 'session_id'], 'challenge_submissions_user_challenge_session_idx');
-            $table->index(['user_id', 'challenge_id', 'submitted_at'], 'challenge_submissions_user_challenge_submitted_idx');
-            $table->index(['user_id', 'session_id'], 'challenge_submissions_user_session_idx');
-            $table->index(['user_id', 'challenge_question_id'], 'challenge_submissions_user_question_idx');
-        });
-
-        Schema::table('challenges', function (Blueprint $table): void {
-            $table->index(['is_published', 'is_daily', 'daily_date', 'sort_order'], 'challenges_daily_published_sort_idx');
-        });
-
         Schema::table('badges', function (Blueprint $table): void {
             $table->index(['criteria_type', 'sort_order'], 'badges_criteria_sort_idx');
-        });
-
-        Schema::table('challenge_questions', function (Blueprint $table): void {
-            $table->index('topic_id', 'challenge_questions_topic_idx');
-            $table->index(['challenge_id', 'sort_order'], 'challenge_questions_challenge_sort_idx');
-        });
-
-        Schema::table('certificates', function (Blueprint $table): void {
-            $table->index(['user_id', 'issued_at'], 'certificates_user_issued_idx');
-            $table->index(['course_id', 'issued_at'], 'certificates_course_issued_idx');
         });
 
         Schema::table('question_bank', function (Blueprint $table): void {
@@ -153,31 +130,8 @@ return new class extends Migration
             $table->dropIndex('enrollments_course_completed_idx');
         });
 
-        Schema::table('challenge_submissions', function (Blueprint $table): void {
-            $table->dropIndex('challenge_submissions_challenge_correct_idx');
-            $table->dropIndex('challenge_submissions_user_challenge_correct_idx');
-            $table->dropIndex('challenge_submissions_user_challenge_session_idx');
-            $table->dropIndex('challenge_submissions_user_challenge_submitted_idx');
-            $table->dropIndex('challenge_submissions_user_session_idx');
-            $table->dropIndex('challenge_submissions_user_question_idx');
-        });
-
-        Schema::table('challenges', function (Blueprint $table): void {
-            $table->dropIndex('challenges_daily_published_sort_idx');
-        });
-
         Schema::table('badges', function (Blueprint $table): void {
             $table->dropIndex('badges_criteria_sort_idx');
-        });
-
-        Schema::table('challenge_questions', function (Blueprint $table): void {
-            $table->dropIndex('challenge_questions_topic_idx');
-            $table->dropIndex('challenge_questions_challenge_sort_idx');
-        });
-
-        Schema::table('certificates', function (Blueprint $table): void {
-            $table->dropIndex('certificates_user_issued_idx');
-            $table->dropIndex('certificates_course_issued_idx');
         });
 
         Schema::table('question_bank', function (Blueprint $table): void {

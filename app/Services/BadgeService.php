@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Events\BadgeEarned;
 use App\Models\Badge;
-use App\Models\ChallengeSubmission;
-use App\Models\Discussion;
 use App\Models\Enrollment;
 use App\Models\LabVisit;
 use App\Models\LessonProgress;
@@ -87,13 +85,10 @@ class BadgeService
             'first_enrollment' => (bool) ($criteriaStats['first_enrollment'] ?? false),
             'courses_completed' => (int) ($criteriaStats['courses_completed'] ?? 0) >= $badge->criteria_value,
             'lessons_completed' => (int) ($criteriaStats['lessons_completed'] ?? 0) >= $badge->criteria_value,
-            'challenges_solved' => (int) ($criteriaStats['challenges_solved'] ?? 0) >= $badge->criteria_value,
             'perfect_quiz' => (bool) ($criteriaStats['perfect_quiz'] ?? false),
-            'speed_demon' => (bool) ($criteriaStats['speed_demon'] ?? false),
             'streak_days' => $this->checkStreakDays($user, $badge->criteria_value),
             'labs_visited' => (int) ($criteriaStats['labs_visited'] ?? 0) >= $badge->criteria_value,
             'points_earned' => $this->checkPointsEarned($user, $badge->criteria_value),
-            'first_discussion' => (bool) ($criteriaStats['first_discussion'] ?? false),
             default => false,
         };
     }
@@ -126,39 +121,11 @@ class BadgeService
                 ->count();
         }
 
-        if (array_intersect($criteriaTypes, ['challenges_solved', 'perfect_quiz', 'speed_demon']) !== []) {
-            $challengeStats = ChallengeSubmission::query()
-                ->whereBelongsTo($user)
-                ->selectRaw('COUNT(DISTINCT CASE WHEN is_correct THEN challenge_id END) as solved_challenges')
-                ->selectRaw('MAX(CASE WHEN is_correct AND elapsed_ms < 5000 THEN 1 ELSE 0 END) as has_speed_demon')
-                ->first();
-
-            $stats['challenges_solved'] = (int) $challengeStats->solved_challenges;
-            $stats['speed_demon'] = (int) $challengeStats->has_speed_demon === 1;
-
-            if (in_array('perfect_quiz', $criteriaTypes, true)) {
-                $perfectSession = ChallengeSubmission::query()
-                    ->whereBelongsTo($user)
-                    ->whereNotNull('session_id')
-                    ->selectRaw('session_id, COUNT(*) as total, SUM(is_correct) as correct_count')
-                    ->groupBy('session_id')
-                    ->havingRaw('COUNT(*) = SUM(is_correct)')
-                    ->havingRaw('COUNT(*) >= 3')
-                    ->exists();
-
-                $stats['perfect_quiz'] = $perfectSession;
-            }
-        }
-
         if (in_array('labs_visited', $criteriaTypes, true)) {
             $stats['labs_visited'] = LabVisit::query()
                 ->whereBelongsTo($user)
                 ->distinct('lab_slug')
                 ->count('lab_slug');
-        }
-
-        if (in_array('first_discussion', $criteriaTypes, true)) {
-            $stats['first_discussion'] = Discussion::query()->whereBelongsTo($user)->exists();
         }
 
         return $stats;

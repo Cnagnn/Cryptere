@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Challenge;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Cache;
 class SearchController extends Controller
 {
     /**
-     * Global search across courses, challenges, lessons, and labs.
+     * Global search across courses, lessons, labs, and public profiles.
      */
     public function __invoke(Request $request): JsonResponse
     {
@@ -22,9 +22,9 @@ class SearchController extends Controller
             return response()->json(['results' => []]);
         }
 
-        $cacheKey = 'search:'.md5($query);
+        $cacheKey = 'search:'.md5($query.'|'.$request->user()?->id);
 
-        $results = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($query) {
+        $results = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($query, $request) {
             $keyword = "%{$query}%";
 
             $courses = Course::query()
@@ -45,25 +45,6 @@ class SearchController extends Controller
                     'meta' => [
                         'difficulty' => $course->difficulty,
                         'category' => $course->category,
-                    ],
-                ]);
-
-            $challenges = Challenge::query()
-                ->published()
-                ->where(fn ($q) => $q
-                    ->where('title', 'like', $keyword)
-                    ->orWhere('prompt', 'like', $keyword)
-                )
-                ->select('slug', 'title', 'prompt', 'difficulty')
-                ->limit(5)
-                ->get()
-                ->map(fn (Challenge $challenge) => [
-                    'type' => 'challenge',
-                    'title' => $challenge->title,
-                    'description' => str($challenge->prompt)->limit(80)->toString(),
-                    'url' => route('challenges.show', $challenge->slug),
-                    'meta' => [
-                        'difficulty' => $challenge->difficulty,
                     ],
                 ]);
 
@@ -103,10 +84,34 @@ class SearchController extends Controller
                 ])
                 ->values();
 
+            $users = User::query()
+                ->where('profile_visibility', 'public')
+                ->whereNotNull('username')
+                ->whereKeyNot($request->user()?->id)
+                ->where(fn ($q) => $q
+                    ->where('name', 'like', $keyword)
+                    ->orWhere('username', 'like', $keyword)
+                    ->orWhere('bio', 'like', $keyword)
+                )
+                ->select('id', 'name', 'username', 'bio')
+                ->limit(5)
+                ->get()
+                ->map(fn (User $user) => [
+                    'type' => 'user',
+                    'title' => $user->name,
+                    'description' => $user->username
+                        ? '@'.$user->username
+                        : str($user->bio ?? 'Public profile')->limit(80)->toString(),
+                    'url' => route('profile.show', $user->username),
+                    'meta' => [
+                        'username' => $user->username,
+                    ],
+                ]);
+
             return $courses
-                ->concat($challenges)
                 ->concat($lessons)
                 ->concat($labs)
+                ->concat($users)
                 ->values()
                 ->all();
         });

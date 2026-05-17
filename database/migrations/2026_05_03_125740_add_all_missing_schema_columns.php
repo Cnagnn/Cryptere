@@ -11,29 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add score to challenge_submissions if not exists
-        if (! Schema::hasColumn('challenge_submissions', 'score')) {
-            Schema::table('challenge_submissions', function (Blueprint $table) {
-                $table->unsignedSmallInteger('score')->default(0)->after('is_correct');
-            });
-        }
-
-        // Add missing columns to challenge_submissions
-        Schema::table('challenge_submissions', function (Blueprint $table) {
-            if (! Schema::hasColumn('challenge_submissions', 'challenge_question_id')) {
-                $table->bigInteger('challenge_question_id')->unsigned()->nullable()->after('session_id');
-            }
-            if (! Schema::hasColumn('challenge_submissions', 'answer')) {
-                $table->text('answer')->nullable()->after('question_index');
-            }
-            if (! Schema::hasColumn('challenge_submissions', 'elapsed_ms')) {
-                $table->unsignedInteger('elapsed_ms')->nullable()->after('score');
-            }
-            if (! Schema::hasColumn('challenge_submissions', 'streak_bonus')) {
-                $table->unsignedSmallInteger('streak_bonus')->default(0)->after('elapsed_ms');
-            }
-        });
-
         // Add missing columns to lesson_progress
         Schema::table('lesson_progress', function (Blueprint $table) {
             if (! Schema::hasColumn('lesson_progress', 'attempts')) {
@@ -120,31 +97,6 @@ return new class extends Migration
                 $table->string('category')->nullable()->after('name');
             }
         });
-
-        // Restructure challenge_questions table
-        Schema::table('challenge_questions', function (Blueprint $table) {
-            if (! Schema::hasColumn('challenge_questions', 'challenge_id')) {
-                $table->bigInteger('challenge_id')->unsigned()->nullable()->after('id');
-            }
-            if (! Schema::hasColumn('challenge_questions', 'topic_id')) {
-                $table->bigInteger('topic_id')->unsigned()->nullable()->after('challenge_id');
-            }
-            if (! Schema::hasColumn('challenge_questions', 'type')) {
-                $table->enum('type', ['mcq', 'true_false', 'short_answer', 'computation'])->default('mcq')->after('topic_id');
-            }
-            if (! Schema::hasColumn('challenge_questions', 'options')) {
-                $table->json('options')->nullable()->after('question');
-            }
-            if (! Schema::hasColumn('challenge_questions', 'correct_answer')) {
-                $table->text('correct_answer')->nullable()->after('options');
-            }
-        });
-
-        if (Schema::hasColumns('challenge_questions', ['option_a', 'option_b', 'option_c', 'option_d', 'correct_option'])) {
-            Schema::table('challenge_questions', function (Blueprint $table) {
-                $table->dropColumn(['option_a', 'option_b', 'option_c', 'option_d', 'correct_option']);
-            });
-        }
 
         // Restructure quiz_questions table
         if (Schema::hasColumn('quiz_questions', 'task_id') && ! Schema::hasColumn('quiz_questions', 'lesson_task_id')) {

@@ -26,7 +26,7 @@ class UserBalanceChangeFactory extends Factory
                 'opening_balance',
                 'model_update',
                 'course_completion',
-                'challenge_session',
+                'quiz_submission',
                 'level_up',
             ]),
         ];

@@ -66,7 +66,7 @@ class LeaderboardService
             $since = $this->resolveSinceDate($timeframe);
 
             return $this->periodPointsQuery($since)
-                ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > 0')
+                ->whereRaw('COALESCE(lp.total, 0) > 0')
                 ->orderByDesc('period_points')
                 ->orderBy('name')
                 ->get(['users.*']);
@@ -109,15 +109,16 @@ class LeaderboardService
         $since = $this->resolveSinceDate($timeframe);
 
         return (int) Cache::remember("leaderboard_top_{$timeframe}", 300, function () use ($since): int {
-            $challengeMax = (int) DB::table('challenge_submissions')
-                ->select(DB::raw('SUM(score + COALESCE(streak_bonus, 0)) as total'))
-                ->where('is_correct', true)
-                ->where('submitted_at', '>=', $since)
+            $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
+            $lessonMax = (int) DB::table('lesson_progress')
+                ->select(DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
+                ->whereNotNull('completed_at')
+                ->where('completed_at', '>=', $since)
                 ->groupBy('user_id')
                 ->orderByDesc('total')
                 ->value('total');
 
-            return max($challengeMax, 0);
+            return max($lessonMax, 0);
         });
     }
 
@@ -132,12 +133,6 @@ class LeaderboardService
 
         $since = $this->resolveSinceDate($timeframe);
 
-        $challengePoints = (int) DB::table('challenge_submissions')
-            ->where('user_id', $user->id)
-            ->where('is_correct', true)
-            ->where('submitted_at', '>=', $since)
-            ->sum(DB::raw('score + COALESCE(streak_bonus, 0)'));
-
         $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
         $completedLessonCount = (int) DB::table('lesson_progress')
             ->where('lesson_progress.user_id', $user->id)
@@ -145,7 +140,7 @@ class LeaderboardService
             ->where('lesson_progress.completed_at', '>=', $since)
             ->count();
 
-        return $challengePoints + ($completedLessonCount * $lessonXpPerLesson);
+        return $completedLessonCount * $lessonXpPerLesson;
     }
 
     /**
@@ -171,7 +166,7 @@ class LeaderboardService
             $since = $this->resolveSinceDate($timeframe);
 
             return (int) $this->periodPointsQuery($since)
-                ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > ?', [$userPoints])
+                ->whereRaw('COALESCE(lp.total, 0) > ?', [$userPoints])
                 ->where('users.id', '!=', $user->id)
                 ->count() + 1;
         });
@@ -257,7 +252,7 @@ class LeaderboardService
         $since = $this->resolveSinceDate($timeframe);
 
         return $this->periodPointsQuery($since)
-            ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > 0')
+            ->whereRaw('COALESCE(lp.total, 0) > 0')
             ->orderByDesc('period_points')
             ->orderBy('name')
             ->limit(3)
@@ -284,10 +279,10 @@ class LeaderboardService
         $since = $this->resolveSinceDate($timeframe);
 
         return (int) $this->periodPointsQuery($since)
-            ->whereRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) > ?', [$currentPoints])
+            ->whereRaw('COALESCE(lp.total, 0) > ?', [$currentPoints])
             ->where('users.id', '!=', $user->id)
-            ->orderByRaw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) ASC')
-            ->value(DB::raw('(COALESCE(cp.total, 0) + COALESCE(lp.total, 0))'));
+            ->orderByRaw('COALESCE(lp.total, 0) ASC')
+            ->value(DB::raw('COALESCE(lp.total, 0)'));
     }
 
     /**
@@ -355,18 +350,6 @@ class LeaderboardService
     }
 
     /**
-     * Build the challenge points subquery for a given timeframe.
-     */
-    private function challengePointsSubquery(CarbonImmutable $since): Builder
-    {
-        return DB::table('challenge_submissions')
-            ->select('user_id', DB::raw('SUM(score + COALESCE(streak_bonus, 0)) as total'))
-            ->where('is_correct', true)
-            ->where('submitted_at', '>=', $since)
-            ->groupBy('user_id');
-    }
-
-    /**
      * Build the lesson points subquery for a given timeframe.
      */
     private function lessonPointsSubquery(CarbonImmutable $since): Builder
@@ -381,16 +364,15 @@ class LeaderboardService
     }
 
     /**
-     * Build a base User query with period_points from challenge + lesson subqueries.
+     * Build a base User query with period_points from lesson completion subqueries.
      *
      * @return \Illuminate\Database\Eloquent\Builder<User>
      */
     private function periodPointsQuery(CarbonImmutable $since): \Illuminate\Database\Eloquent\Builder
     {
         return User::query()
-            ->leftJoinSub($this->challengePointsSubquery($since), 'cp', 'users.id', '=', 'cp.user_id')
             ->leftJoinSub($this->lessonPointsSubquery($since), 'lp', 'users.id', '=', 'lp.user_id')
-            ->selectRaw('users.*, (COALESCE(cp.total, 0) + COALESCE(lp.total, 0)) as period_points');
+            ->selectRaw('users.*, COALESCE(lp.total, 0) as period_points');
     }
 
     /**

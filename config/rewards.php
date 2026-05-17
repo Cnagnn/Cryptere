@@ -45,18 +45,6 @@ return [
     */
     'perfect_score_xp' => 50,
     'perfect_score_points' => 15,
-
-    /*
-    |--------------------------------------------------------------------------
-    | First Blood Bonus
-    |--------------------------------------------------------------------------
-    |
-    | Extra XP awarded on top of BASE_CHALLENGE_XP when a user solves
-    | a challenge correctly for the first time.
-    |
-    */
-    'first_blood_xp' => 25,
-
     /*
     |--------------------------------------------------------------------------
     | Weekly Active Bonus
@@ -134,44 +122,6 @@ return [
     |
     */
     'quiz_task_xp' => 20,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Challenge Rewards
-    |--------------------------------------------------------------------------
-    |
-    | Base points and XP for standalone / speed-round challenges.
-    |
-    */
-    'challenge_base_points' => 15,
-    'challenge_base_xp' => 15,
-    'challenge_first_blood_xp' => 10,
-    'challenge_speed_min_points' => 3,
-    'challenge_speed_floor_ratio' => 0.25,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Challenge Quiz Session
-    |--------------------------------------------------------------------------
-    |
-    | XP awarded for completing a quiz-mode challenge session, and the
-    | default max points per question when the DB column is null.
-    |
-    */
-    'challenge_quiz_session_xp' => 20,
-    'challenge_quiz_max_points_per_question' => 10,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Challenge Streak Bonus
-    |--------------------------------------------------------------------------
-    |
-    | Bonus points added per consecutive correct answer in quiz mode.
-    | Index = consecutive correct count (0-1 → 0, 2 → 2, 3 → 4, 4 → 6, 5+ → 10).
-    |
-    */
-    'challenge_streak_bonus' => [0, 0, 2, 4, 6, 10],
-
     /*
     |--------------------------------------------------------------------------
     | Quiz Retry Settings
@@ -184,18 +134,5 @@ return [
     */
     'quiz_questions_per_attempt' => 4,
     'quiz_retry_xp_multipliers' => [1.0, 0.5, 0.25, 0.1],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Discussion Forum XP
-    |--------------------------------------------------------------------------
-    |
-    | XP awarded for first-time discussion contributions.
-    | - discussion_first_post_xp: awarded when user creates their first discussion
-    | - discussion_first_reply_xp: awarded when user posts their first reply
-    |
-    */
-    'discussion_first_post_xp' => 5,
-    'discussion_first_reply_xp' => 3,
 
 ];

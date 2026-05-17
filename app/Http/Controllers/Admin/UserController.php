@@ -116,7 +116,6 @@ class UserController extends Controller
             ->unionAll(DB::table('task_progress')->selectRaw('1')->where('user_id', $user->id))
             ->unionAll(DB::table('quiz_submissions')->selectRaw('1')->where('user_id', $user->id))
             ->unionAll(DB::table('assessment_submissions')->selectRaw('1')->where('user_id', $user->id))
-            ->unionAll(DB::table('certificates')->selectRaw('1')->where('user_id', $user->id))
             ->unionAll(DB::table('user_balance_changes')->selectRaw('1')->where('user_id', $user->id));
 
         return DB::query()

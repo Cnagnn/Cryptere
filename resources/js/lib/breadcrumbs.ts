@@ -9,7 +9,6 @@ const homeBreadcrumb: BreadcrumbItem = {
 const segmentTitleMap: Record<string, string> = {
     admin: 'Admin',
     courses: 'Kursus',
-    challenges: 'Tantangan',
     leaderboard: 'Papan Peringkat',
     labs: 'Laboratorium',
     settings: 'Pengaturan',

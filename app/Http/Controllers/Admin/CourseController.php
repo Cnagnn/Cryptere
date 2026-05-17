@@ -11,7 +11,6 @@ use App\Http\Requests\Admin\UpdateAdminCourseRequest;
 use App\Models\Assessment;
 use App\Models\AssessmentQuestion;
 use App\Models\AssessmentSubmission;
-use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
@@ -513,7 +512,6 @@ class CourseController extends Controller
 
         if (
             $course->enrollments()->exists()
-            || Certificate::query()->where('course_id', $course->id)->exists()
             || LessonProgress::query()->whereIn('lesson_id', $lessonIds)->exists()
             || TaskProgress::query()->whereIn('lesson_task_id', $taskIds)->exists()
             || QuizSubmission::query()->whereIn('lesson_task_id', $taskIds)->exists()

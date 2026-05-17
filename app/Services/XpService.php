@@ -34,7 +34,7 @@ class XpService
      * - XP = baseXp × streak multiplier (streak boosts XP for leveling)
      * - Points = applyLevelBonus(baseXp) (streak does NOT affect points)
      *
-     * Sources: course tasks and challenges.
+     * Sources: course lessons, quizzes, streaks, and bonuses.
      *
      * @return array{xp: int, points: int}
      */

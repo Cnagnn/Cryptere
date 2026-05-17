@@ -11,11 +11,6 @@ class Topic extends Model
 
     protected $fillable = ['slug', 'name', 'category'];
 
-    public function challenges()
-    {
-        return $this->belongsToMany(Challenge::class, 'challenge_topic');
-    }
-
     public function quizQuestions()
     {
         return $this->hasMany(QuizQuestion::class);

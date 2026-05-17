@@ -5,18 +5,15 @@ namespace App\Services\Dashboard;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\User;
-use App\Services\DailyChallengeService;
 use App\Services\LevelService;
 use App\Services\MasteryService;
 use Carbon\Carbon;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class LearnerDashboardBuilder
 {
     public function __construct(
         private readonly LevelService $levelService,
-        private readonly DailyChallengeService $dailyChallengeService,
         private readonly MasteryService $masteryService,
         private readonly LearnerStatsAggregator $statsAggregator,
         private readonly AcademyDataBuilder $academyBuilder,
@@ -41,13 +38,11 @@ class LearnerDashboardBuilder
                 'enrolledCourses' => $stats['enrolledCourses'],
                 'completedCourses' => $stats['completedCourses'],
                 'completedLessons' => $stats['completedLessons'],
-                'solvedChallenges' => $stats['solvedChallenges'],
                 'points' => $user->points,
                 'xp' => $user->xp,
             ],
             'level' => $this->levelService->getUserLevel($user),
             'recentBadges' => $this->buildRecentBadges($user),
-            'dailyChallenge' => $this->buildDailyChallengePayload($user),
             'recentCourses' => $this->buildRecentCourses($user),
             'recommendedCourses' => $this->buildRecommendedCourses($user),
             'academy' => $this->academyBuilder->build($user, $stats, $successRates),
@@ -128,7 +123,6 @@ class LearnerDashboardBuilder
                 'longestStreak' => $user->longest_streak,
                 'completedCourses' => $stats['completedCourses'],
                 'completedLessons' => $stats['completedLessons'],
-                'solvedChallenges' => $stats['solvedChallenges'],
                 'badgeCount' => $user->badges()->count(),
             ],
             // Heavy data — deferred so the Overview tab loads instantly
@@ -137,23 +131,6 @@ class LearnerDashboardBuilder
             'topicMastery' => Inertia::defer(fn () => $this->masteryService->getUserMastery($user)),
             'streakCalendar' => Inertia::defer(fn () => $this->analyticsBuilder->streakCalendar($user->id)),
             'progressTrend' => Inertia::defer(fn () => $this->analyticsBuilder->progressTrend($user->id)),
-        ];
-    }
-
-    private function buildDailyChallengePayload(User $user): ?array
-    {
-        $dailyChallenge = $this->dailyChallengeService->getTodaysChallenge();
-
-        if ($dailyChallenge === null) {
-            return null;
-        }
-
-        return [
-            'id' => $dailyChallenge->id,
-            'slug' => $dailyChallenge->slug,
-            'title' => $dailyChallenge->title,
-            'prompt' => Str::limit($dailyChallenge->prompt, 120),
-            'isSolved' => $this->dailyChallengeService->hasUserSolvedToday($user->id, $dailyChallenge),
         ];
     }
 

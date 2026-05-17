@@ -11,7 +11,6 @@ import {
     User,
     Users,
 } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     Collapsible,
@@ -42,6 +41,7 @@ import {
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard, logout } from '@/routes';
@@ -173,6 +173,8 @@ export function AppSidebar() {
     const { auth } = page.props;
     const user = auth?.user;
     const { isCurrentUrl } = useCurrentUrl();
+    const { state } = useSidebar();
+    const isCollapsed = state === 'collapsed';
 
     const isCourseManagementPage = isCurrentUrl(
         adminCoursesIndex(),
@@ -192,8 +194,22 @@ export function AppSidebar() {
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={dashboard()} prefetch>
                                 <div className="flex w-full justify-center">
+                                    <img
+                                        src="/images/Logo/Logomark-Black.svg"
+                                        alt="Cryptere"
+                                        data-brand-logo
+                                        draggable={false}
+                                        className={`${isCollapsed ? 'hidden' : 'block'} pointer-events-auto h-10 w-auto select-none dark:hidden`}
+                                    />
+                                    <img
+                                        src="/images/Logo/Logomark.svg"
+                                        alt="Cryptere"
+                                        data-brand-logo
+                                        draggable={false}
+                                        className={`${isCollapsed ? 'hidden' : 'hidden dark:block'} pointer-events-auto h-10 w-auto select-none`}
+                                    />
                                     <div
-                                        className="flex items-center select-none group-data-[collapsible=icon]:hidden"
+                                        className="hidden items-center select-none"
                                         aria-label="Cryptere"
                                     >
                                         <svg
@@ -201,6 +217,7 @@ export function AppSidebar() {
                                             xmlns="http://www.w3.org/2000/svg"
                                             role="img"
                                             aria-hidden="true"
+                                            data-brand-logo
                                             onContextMenu={(event) =>
                                                 event.preventDefault()
                                             }
@@ -227,9 +244,21 @@ export function AppSidebar() {
                                             />
                                         </svg>
                                     </div>
-                                    <AppLogoIcon
+                                    <img
+                                        src="/images/Logo/Logo-Black.svg"
+                                        alt=""
                                         aria-hidden="true"
-                                        className="hidden size-7 fill-current text-black group-data-[collapsible=icon]:block dark:text-white"
+                                        data-brand-logo
+                                        draggable={false}
+                                        className={`${isCollapsed ? 'block' : 'hidden'} size-7 object-contain select-none dark:hidden`}
+                                    />
+                                    <img
+                                        src="/images/Logo/Logo.svg"
+                                        alt=""
+                                        aria-hidden="true"
+                                        data-brand-logo
+                                        draggable={false}
+                                        className={`${isCollapsed ? 'hidden dark:block' : 'hidden'} size-7 object-contain select-none`}
                                     />
                                 </div>
                             </Link>

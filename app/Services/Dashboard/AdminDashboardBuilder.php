@@ -2,7 +2,6 @@
 
 namespace App\Services\Dashboard;
 
-use App\Models\Challenge;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\User;
@@ -29,7 +28,6 @@ class AdminDashboardBuilder
         $enrollmentTrends = $this->buildEnrollmentTrends();
         $userGrowth = $this->buildUserGrowth();
         $coursePerformance = $this->buildCoursePerformance();
-        $challengePerformance = $this->buildChallengePerformance();
         $recentUsers = $this->buildRecentUsers();
 
         return [
@@ -38,7 +36,6 @@ class AdminDashboardBuilder
                 'enrollmentTrends' => $enrollmentTrends,
                 'userGrowth' => $userGrowth,
                 'coursePerformance' => $coursePerformance,
-                'challengePerformance' => $challengePerformance,
                 'recentUsers' => $recentUsers,
                 'cohortRetention' => Inertia::defer(fn () => $this->adminAnalyticsService->getCohortRetention()),
                 'gamificationFunnel' => Inertia::defer(fn () => $this->adminAnalyticsService->getGamificationFunnel()),
@@ -52,7 +49,6 @@ class AdminDashboardBuilder
         return Cache::remember('admin_dashboard_stats', 300, fn (): array => [
             'totalUsers' => User::count(),
             'totalCourses' => Course::count(),
-            'totalChallenges' => Challenge::count(),
             'totalEnrollments' => Enrollment::count(),
             'activeUsers' => User::where('last_active_date', '>=', now()->subDays(30))->count(),
             'newUsersThisMonth' => User::where('created_at', '>=', now()->startOfMonth())->count(),
@@ -120,35 +116,6 @@ class AdminDashboardBuilder
                         'enrollments' => $enrollmentCount,
                         'completionRate' => $enrollmentCount > 0
                             ? round(($completedCount / $enrollmentCount) * 100, 1)
-                            : 0.0,
-                    ];
-                })->values()->all();
-        });
-    }
-
-    private function buildChallengePerformance(): array
-    {
-        return Cache::remember('admin_challenge_performance', 300, function (): array {
-            return Challenge::query()
-                ->where('is_published', true)
-                ->withCount([
-                    'submissions',
-                    'submissions as correct_submissions_count' => function ($query): void {
-                        $query->where('is_correct', true);
-                    },
-                ])
-                ->orderByDesc('submissions_count')
-                ->take(5)
-                ->get(['id', 'title'])
-                ->map(function (Challenge $challenge): array {
-                    $submissionCount = (int) $challenge->submissions_count;
-                    $correctCount = (int) $challenge->correct_submissions_count;
-
-                    return [
-                        'title' => $challenge->title,
-                        'submissions' => $submissionCount,
-                        'successRate' => $submissionCount > 0
-                            ? round(($correctCount / $submissionCount) * 100, 1)
                             : 0.0,
                     ];
                 })->values()->all();

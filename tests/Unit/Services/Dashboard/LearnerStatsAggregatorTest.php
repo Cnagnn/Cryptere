@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\Challenge;
-use App\Models\ChallengeSubmission;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
@@ -20,8 +18,7 @@ test('aggregate returns zero stats for new user', function () {
 
     expect($stats['enrolledCourses'])->toBe(0)
         ->and($stats['completedCourses'])->toBe(0)
-        ->and($stats['completedLessons'])->toBe(0)
-        ->and($stats['solvedChallenges'])->toBe(0);
+        ->and($stats['completedLessons'])->toBe(0);
 });
 
 test('aggregate counts enrolled and completed courses', function () {
@@ -62,27 +59,6 @@ test('aggregate counts completed lessons', function () {
     $stats = $this->service->aggregate($user);
 
     expect($stats['completedLessons'])->toBe(1);
-});
-
-test('aggregate counts distinct solved challenges', function () {
-    $user = User::factory()->create();
-    $challenge = Challenge::factory()->create(['is_published' => true]);
-
-    // Two correct submissions for same challenge = 1 solved
-    ChallengeSubmission::factory()->create([
-        'user_id' => $user->id,
-        'challenge_id' => $challenge->id,
-        'is_correct' => true,
-    ]);
-    ChallengeSubmission::factory()->create([
-        'user_id' => $user->id,
-        'challenge_id' => $challenge->id,
-        'is_correct' => true,
-    ]);
-
-    $stats = $this->service->aggregate($user);
-
-    expect($stats['solvedChallenges'])->toBe(1);
 });
 
 test('successRates calculates overall rate', function () {

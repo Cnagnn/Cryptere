@@ -199,7 +199,9 @@ function CatalogFilters({
                         onChange={(event) =>
                             onSearchTermChange(event.target.value)
                         }
-                        placeholder="Cari kursus... (tekan / untuk fokus)"
+                        placeholder={
+                            isLabsCatalog ? 'Cari lab...' : 'Cari kursus...'
+                        }
                         className="pr-24 pl-8"
                     />
                     {isSearchSyncing ? (

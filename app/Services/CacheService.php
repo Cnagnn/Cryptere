@@ -48,7 +48,6 @@ class CacheService
         Cache::forget('admin_enrollment_trends');
         Cache::forget('admin_user_growth');
         Cache::forget('admin_course_performance');
-        Cache::forget('admin_challenge_performance');
     }
 
     /**
@@ -111,14 +110,6 @@ class CacheService
     }
 
     /**
-     * Invalidate challenge catalog caches.
-     */
-    public static function invalidateChallengeCatalog(): void
-    {
-        Cache::forget('challenges:catalog');
-    }
-
-    /**
      * Invalidate per-user analytics cache.
      */
     public static function invalidateUserAnalytics(int $userId): void
@@ -146,7 +137,6 @@ class CacheService
         self::invalidateAdminDashboard();
         self::invalidateAdminAnalytics();
         self::invalidateLeaderboard();
-        self::invalidateChallengeCatalog();
         BadgeService::clearCache();
     }
 }

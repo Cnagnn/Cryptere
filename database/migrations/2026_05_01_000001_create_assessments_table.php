@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * Creates the assessments table — the core entity replacing challenges.
+     * Creates the assessments table.
      * Each assessment targets a specific Bloom's Taxonomy level (C1-C6)
      * and belongs to a course/topic for contextual learning measurement.
      */

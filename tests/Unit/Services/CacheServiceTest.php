@@ -77,24 +77,14 @@ test('invalidateUserAnalytics clears user-specific caches', function () {
         ->and(Cache::has('learner_dashboard_stats:5'))->toBeFalse();
 });
 
-test('invalidateChallengeCatalog clears challenge cache', function () {
-    Cache::put('challenges:catalog', ['data']);
-
-    CacheService::invalidateChallengeCatalog();
-
-    expect(Cache::has('challenges:catalog'))->toBeFalse();
-});
-
 test('invalidateAll clears everything', function () {
     Cache::put('stats:published_courses_count', 5);
     Cache::put('admin_dashboard_stats', ['data']);
     Cache::put('leaderboard_top_weekly', ['data']);
-    Cache::put('challenges:catalog', ['data']);
 
     CacheService::invalidateAll();
 
     expect(Cache::has('stats:published_courses_count'))->toBeFalse()
         ->and(Cache::has('admin_dashboard_stats'))->toBeFalse()
-        ->and(Cache::has('leaderboard_top_weekly'))->toBeFalse()
-        ->and(Cache::has('challenges:catalog'))->toBeFalse();
+        ->and(Cache::has('leaderboard_top_weekly'))->toBeFalse();
 });

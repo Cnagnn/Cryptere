@@ -59,7 +59,7 @@ class AdminAnalyticsService
     }
 
     /**
-     * Gamification funnel: enrollment → lesson → quiz → challenge → certificate.
+     * Gamification funnel: enrollment -> lesson -> quiz.
      */
     public function getGamificationFunnel(): array
     {
@@ -68,16 +68,12 @@ class AdminAnalyticsService
             $enrolled = DB::table('enrollments')->distinct('user_id')->count('user_id');
             $completedLesson = DB::table('lesson_progress')->whereNotNull('completed_at')->distinct('user_id')->count('user_id');
             $completedQuiz = DB::table('quiz_submissions')->distinct('user_id')->count('user_id');
-            $solvedChallenge = DB::table('challenge_submissions')->where('is_correct', true)->distinct('user_id')->count('user_id');
-            $earnedCertificate = DB::table('certificates')->distinct('user_id')->count('user_id');
 
             return [
                 ['stage' => 'Registered', 'count' => $totalUsers, 'percentage' => 100],
                 ['stage' => 'Enrolled', 'count' => $enrolled, 'percentage' => $totalUsers > 0 ? round(($enrolled / $totalUsers) * 100, 1) : 0],
                 ['stage' => 'Completed Lesson', 'count' => $completedLesson, 'percentage' => $totalUsers > 0 ? round(($completedLesson / $totalUsers) * 100, 1) : 0],
                 ['stage' => 'Completed Quiz', 'count' => $completedQuiz, 'percentage' => $totalUsers > 0 ? round(($completedQuiz / $totalUsers) * 100, 1) : 0],
-                ['stage' => 'Solved Challenge', 'count' => $solvedChallenge, 'percentage' => $totalUsers > 0 ? round(($solvedChallenge / $totalUsers) * 100, 1) : 0],
-                ['stage' => 'Earned Certificate', 'count' => $earnedCertificate, 'percentage' => $totalUsers > 0 ? round(($earnedCertificate / $totalUsers) * 100, 1) : 0],
             ];
         });
     }

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('icon')->nullable();
-            $table->string('category'); // milestone, course, challenge, streak, lab, special
+            $table->string('category'); // milestone, course, streak, lab, special
             $table->string('tier')->nullable(); // bronze, silver, gold, platinum
             $table->string('criteria_type')->nullable();
             $table->integer('criteria_value')->nullable();

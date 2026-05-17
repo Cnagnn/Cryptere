@@ -8,7 +8,7 @@
 | Each level requires a minimum XP. The curve uses:
 |   min_xp = floor(50 × 1.12^(level − 1))
 |
-| With lesson XP = 30, quiz XP = 20, and challenge XP = 15-20, a casual
+| With lesson XP = 30 and quiz XP = 20, a casual
 | user earning ~70 XP/day reaches level 10 in ~2 sessions, level 20 in
 | ~1 week, and level 50 in ~6 months.
 |

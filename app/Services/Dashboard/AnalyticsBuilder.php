@@ -2,7 +2,6 @@
 
 namespace App\Services\Dashboard;
 
-use App\Models\ChallengeSubmission;
 use App\Models\Enrollment;
 use App\Models\LessonProgress;
 use App\Models\User;
@@ -28,19 +27,12 @@ class AnalyticsBuilder
             ->groupByRaw('DATE(completed_at)')
             ->pluck('cnt', 'activity_date');
 
-        $challengeActivity = ChallengeSubmission::query()
-            ->where('user_id', $userId)
-            ->where('submitted_at', '>=', $startDate)
-            ->selectRaw('DATE(submitted_at) as activity_date, COUNT(*) as cnt')
-            ->groupByRaw('DATE(submitted_at)')
-            ->pluck('cnt', 'activity_date');
-
         $heatmap = [];
         $period = CarbonPeriod::create($startDate, now());
 
         foreach ($period as $date) {
             $dateStr = $date->toDateString();
-            $count = ($lessonActivity[$dateStr] ?? 0) + ($challengeActivity[$dateStr] ?? 0);
+            $count = $lessonActivity[$dateStr] ?? 0;
             $heatmap[] = [
                 'date' => $dateStr,
                 'count' => $count,
@@ -93,14 +85,6 @@ class AnalyticsBuilder
             ->groupByRaw('DATE(completed_at)')
             ->pluck('d');
 
-        $challengeDates = ChallengeSubmission::query()
-            ->where('user_id', $userId)
-            ->where('submitted_at', '>=', $calendarStart)
-            ->where('submitted_at', '<=', $today)
-            ->selectRaw('DATE(submitted_at) as d')
-            ->groupByRaw('DATE(submitted_at)')
-            ->pluck('d');
-
         $streakDates = collect();
         if ($user && $user->last_active_date && $user->current_streak > 0) {
             $lastActive = Carbon::parse($user->last_active_date);
@@ -109,7 +93,7 @@ class AnalyticsBuilder
             }
         }
 
-        $activeDates = $lessonDates->merge($challengeDates)->merge($streakDates)->unique();
+        $activeDates = $lessonDates->merge($streakDates)->unique();
 
         $calendar = [];
         $todayStr = $today->toDateString();
@@ -149,23 +133,13 @@ class AnalyticsBuilder
             ->groupBy(fn ($row): string => Carbon::parse($row->activity_date)->startOfWeek()->format('Y-m-d'))
             ->map(fn ($rows): int => (int) $rows->sum('points'));
 
-        $challengePointsByWeek = ChallengeSubmission::query()
-            ->where('user_id', $userId)
-            ->where('is_correct', true)
-            ->where('submitted_at', '>=', $weekStart)
-            ->selectRaw('DATE(submitted_at) as activity_date, SUM(score) as points')
-            ->groupByRaw('DATE(submitted_at)')
-            ->get()
-            ->groupBy(fn ($row): string => Carbon::parse($row->activity_date)->startOfWeek()->format('Y-m-d'))
-            ->map(fn ($rows): int => (int) $rows->sum('points'));
-
-        return collect(range(11, 0))->map(function (int $weekOffset) use ($challengePointsByWeek, $lessonPointsByWeek): array {
+        return collect(range(11, 0))->map(function (int $weekOffset) use ($lessonPointsByWeek): array {
             $weekStart = now()->subWeeks($weekOffset)->startOfWeek();
             $weekKey = $weekStart->format('Y-m-d');
 
             return [
                 'week' => $weekStart->format('M d'),
-                'points' => (int) (($lessonPointsByWeek[$weekKey] ?? 0) + ($challengePointsByWeek[$weekKey] ?? 0)),
+                'points' => (int) ($lessonPointsByWeek[$weekKey] ?? 0),
             ];
         })->values()->all();
     }

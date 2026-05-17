@@ -2,7 +2,6 @@
 
 namespace App\Services\Dashboard;
 
-use App\Models\Challenge;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
@@ -106,7 +105,6 @@ class AcademyDataBuilder
     private function buildActivityBreakdown(array $stats): array
     {
         $totalPublishedCourses = app(CacheService::class)->getPublishedCourseCount();
-        $totalPublishedChallenges = Challenge::where('is_published', true)->count();
 
         return [
             [
@@ -115,14 +113,6 @@ class AcademyDataBuilder
                 'total' => $totalPublishedCourses,
                 'percentage' => $totalPublishedCourses > 0
                     ? round(($stats['completedCourses'] / $totalPublishedCourses) * 100, 1)
-                    : 0.0,
-            ],
-            [
-                'label' => 'Challenges',
-                'completed' => $stats['solvedChallenges'],
-                'total' => $totalPublishedChallenges,
-                'percentage' => $totalPublishedChallenges > 0
-                    ? round(($stats['solvedChallenges'] / $totalPublishedChallenges) * 100, 1)
                     : 0.0,
             ],
         ];
@@ -142,28 +132,17 @@ class AcademyDataBuilder
             ->groupBy('month_key')
             ->pluck('aggregate', 'month_key');
 
-        $challengeCompletionsByMonth = $user->challengeSubmissions()
-            ->where('is_correct', true)
-            ->whereNotNull('submitted_at')
-            ->where('submitted_at', '>=', $monthsWindowStart)
-            ->selectRaw($this->monthSelectSql('submitted_at').' as month_key, COUNT(DISTINCT challenge_id) as aggregate')
-            ->groupBy('month_key')
-            ->pluck('aggregate', 'month_key');
-
         $series = collect(range(5, 0))->map(function (int $monthOffset) use (
-            $lessonCompletionsByMonth,
-            $challengeCompletionsByMonth
+            $lessonCompletionsByMonth
         ): array {
             $month = now()->subMonths($monthOffset)->startOfMonth();
             $period = $month->format('Y-m');
             $lessonsCompleted = (int) ($lessonCompletionsByMonth[$period] ?? 0);
-            $challengesSolved = (int) ($challengeCompletionsByMonth[$period] ?? 0);
 
             return [
                 'month' => $month->format('M'),
                 'lessonsCompleted' => $lessonsCompleted,
-                'challengesSolved' => $challengesSolved,
-                'totalActivity' => $lessonsCompleted + $challengesSolved,
+                'totalActivity' => $lessonsCompleted,
             ];
         })->values();
 

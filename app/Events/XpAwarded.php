@@ -13,7 +13,7 @@ class XpAwarded implements ShouldDispatchAfterCommit
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * @param  string  $source  The source of the XP award (e.g. 'task', 'challenge', 'streak', 'bonus')
+     * @param  string  $source  The source of the XP award (e.g. 'task', 'quiz', 'streak', 'bonus')
      */
     public function __construct(
         public readonly User $user,

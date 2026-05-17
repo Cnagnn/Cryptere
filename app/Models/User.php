@@ -175,14 +175,6 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get challenge submissions for the user.
-     */
-    public function challengeSubmissions(): HasMany
-    {
-        return $this->hasMany(ChallengeSubmission::class);
-    }
-
-    /**
      * Get the social accounts for the user.
      */
     public function socialAccounts(): HasMany
@@ -206,30 +198,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function labVisits(): HasMany
     {
         return $this->hasMany(LabVisit::class);
-    }
-
-    /**
-     * Get the certificates for the user.
-     */
-    public function certificates(): HasMany
-    {
-        return $this->hasMany(Certificate::class);
-    }
-
-    /**
-     * Get the discussions created by the user.
-     */
-    public function discussions(): HasMany
-    {
-        return $this->hasMany(Discussion::class);
-    }
-
-    /**
-     * Get the discussion replies created by the user.
-     */
-    public function discussionReplies(): HasMany
-    {
-        return $this->hasMany(DiscussionReply::class);
     }
 
     private function resolveAvatarBinary(): ?string

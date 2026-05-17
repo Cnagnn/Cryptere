@@ -11,14 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // challenge_submissions: add missing columns
-        Schema::table('challenge_submissions', function (Blueprint $table) {
-            $table->bigInteger('challenge_question_id')->unsigned()->nullable()->after('session_id');
-            $table->text('answer')->nullable()->after('question_index');
-            $table->unsignedInteger('elapsed_ms')->nullable()->after('score');
-            $table->unsignedSmallInteger('streak_bonus')->default(0)->after('elapsed_ms');
-        });
-
         // lesson_progress: add missing columns
         Schema::table('lesson_progress', function (Blueprint $table) {
             $table->unsignedSmallInteger('attempts')->default(0)->after('lesson_id');
@@ -61,16 +53,6 @@ return new class extends Migration
             $table->string('category')->nullable()->after('name');
         });
 
-        // challenge_questions: add missing columns
-        Schema::table('challenge_questions', function (Blueprint $table) {
-            $table->bigInteger('challenge_id')->unsigned()->nullable()->after('id');
-            $table->bigInteger('topic_id')->unsigned()->nullable()->after('challenge_id');
-            $table->enum('type', ['mcq', 'true_false', 'short_answer', 'computation'])->default('mcq')->after('topic_id');
-            $table->json('options')->nullable()->after('question');
-            $table->text('correct_answer')->nullable()->after('options');
-            $table->dropColumn(['option_a', 'option_b', 'option_c', 'option_d', 'correct_option']);
-        });
-
         // quiz_questions: add missing columns
         Schema::table('quiz_questions', function (Blueprint $table) {
             $table->renameColumn('task_id', 'lesson_task_id');
@@ -85,10 +67,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('challenge_submissions', function (Blueprint $table) {
-            $table->dropColumn(['challenge_question_id', 'answer', 'elapsed_ms', 'streak_bonus']);
-        });
-
         Schema::table('lesson_progress', function (Blueprint $table) {
             $table->dropColumn('attempts');
         });
@@ -112,15 +90,6 @@ return new class extends Migration
             $table->string('title')->after('course_id');
             $table->text('description')->nullable()->after('title');
             $table->integer('position')->after('description');
-        });
-
-        Schema::table('challenge_questions', function (Blueprint $table) {
-            $table->dropColumn(['challenge_id', 'topic_id', 'type', 'options', 'correct_answer']);
-            $table->string('option_a')->after('question');
-            $table->string('option_b')->after('option_a');
-            $table->string('option_c')->after('option_b');
-            $table->string('option_d')->after('option_c');
-            $table->tinyInteger('correct_option')->after('option_d');
         });
 
         Schema::table('quiz_questions', function (Blueprint $table) {

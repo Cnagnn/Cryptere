@@ -11,7 +11,7 @@ class LearnerStatsAggregator
     /**
      * Core learner stats (cached 60s).
      *
-     * @return array{enrolledCourses: int, completedCourses: int, inProgressCourses: int, completedLessons: int, solvedChallenges: int}
+     * @return array{enrolledCourses: int, completedCourses: int, inProgressCourses: int, completedLessons: int}
      */
     public function aggregate(User $user): array
     {
@@ -29,12 +29,8 @@ class LearnerStatsAggregator
             $completedCourses = (int) $enrollmentStats->completed_courses;
             $inProgressCourses = (int) $enrollmentStats->in_progress_courses;
             $completedLessons = $user->lessonProgress()->whereNotNull('completed_at')->count();
-            $solvedChallenges = $user->challengeSubmissions()
-                ->where('is_correct', true)
-                ->distinct('challenge_id')
-                ->count('challenge_id');
 
-            return compact('enrolledCourses', 'completedCourses', 'inProgressCourses', 'completedLessons', 'solvedChallenges');
+            return compact('enrolledCourses', 'completedCourses', 'inProgressCourses', 'completedLessons');
         });
     }
 

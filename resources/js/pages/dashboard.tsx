@@ -54,7 +54,6 @@ import { index as leaderboardIndex } from '@/routes/leaderboard';
 import type { Auth, UserLevel } from '@/types/auth';
 import type {
     AcademyData,
-    AdminChallengePerformance,
     AdminCoursePerformance,
     AdminData,
     AdminRecentUser,
@@ -140,11 +139,6 @@ const ACTIVITY_TAG_CONFIG: Record<
         icon: BookOpen,
         label: 'Pelajaran Diselesaikan',
         color: 'text-blue-600 dark:text-blue-400',
-    },
-    challenge_solved: {
-        icon: Activity,
-        label: 'Tantangan Diselesaikan',
-        color: 'text-purple-600 dark:text-purple-400',
     },
 };
 
@@ -1197,79 +1191,6 @@ const courseColumns: ColumnDef<AdminCoursePerformance>[] = [
     },
 ];
 
-const challengeColumns: ColumnDef<AdminChallengePerformance>[] = [
-    {
-        accessorKey: 'title',
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Tantangan
-                <ArrowUpDown className="size-4" />
-            </Button>
-        ),
-        cell: ({ row }) => (
-            <span className="max-w-40 truncate font-medium">
-                {row.original.title}
-            </span>
-        ),
-    },
-    {
-        accessorKey: 'submissions',
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Submission
-                <ArrowUpDown className="size-4" />
-            </Button>
-        ),
-    },
-    {
-        accessorKey: 'successRate',
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Sukses
-                <ArrowUpDown className="size-4" />
-            </Button>
-        ),
-        cell: ({ row }) => (
-            <Badge
-                variant={
-                    row.original.successRate >= 50 ? 'default' : 'secondary'
-                }
-            >
-                {row.original.successRate}%
-            </Badge>
-        ),
-    },
-    {
-        accessorKey: 'avgScore',
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Skor rata-rata
-                <ArrowUpDown className="size-4" />
-            </Button>
-        ),
-    },
-];
-
 const userColumns: ColumnDef<AdminRecentUser>[] = [
     {
         accessorKey: 'name',
@@ -1397,9 +1318,6 @@ function AdminDashboard({
     const coursePerformance = normalizeArray<
         AdminData['coursePerformance'][number]
     >(admin.coursePerformance);
-    const challengePerformance = normalizeArray<
-        AdminData['challengePerformance'][number]
-    >(admin.challengePerformance);
     const recentUsers = normalizeArray<AdminData['recentUsers'][number]>(
         admin.recentUsers,
     );
@@ -1636,30 +1554,6 @@ function AdminDashboard({
                             <DataTable
                                 columns={courseColumns}
                                 data={coursePerformance}
-                                centered
-                                showFilterInput={false}
-                                showFooter={false}
-                                enableDefaultIdSort={false}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="gap-1 pb-4">
-                        <CardTitle>Tantangan Teratas</CardTitle>
-                        <CardDescription className="text-xs">
-                            Berdasarkan pengiriman dan tingkat keberhasilan
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {challengePerformance.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                Belum ada tantangan yang telah dikerjakan.
-                            </p>
-                        ) : (
-                            <DataTable
-                                columns={challengeColumns}
-                                data={challengePerformance}
                                 centered
                                 showFilterInput={false}
                                 showFooter={false}

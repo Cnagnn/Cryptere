@@ -11,7 +11,6 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Assessment\AssessmentSubmissionController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\UsernameAvailabilityController;
-use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Course\DocumentController;
 use App\Http\Controllers\Course\EnrollmentController;
@@ -114,15 +113,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
     Route::post('onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
 
-    Route::get('certificates', [CertificateController::class, 'index'])->name('certificates.index');
-    Route::post('certificates', [CertificateController::class, 'store'])->name('certificates.store');
-    Route::get('certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
-
     // Story and CTF removed
 });
-
-// Public certificate verification — no auth required
-Route::get('verify/{code}', [CertificateController::class, 'verify'])->name('certificates.verify');
 
 Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('users', [AdminUserController::class, 'index'])->name('users.index');

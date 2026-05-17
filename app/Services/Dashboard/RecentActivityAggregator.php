@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 class RecentActivityAggregator
 {
     /**
-     * Build recent activity feed from 8 sources, merged and sorted by date.
+     * Build recent activity feed from active sources, merged and sorted by date.
      *
      * @return Collection<int, array{id: string, title: string, tag: string, timestamp: string|null, isoDate: string|null}>
      */
@@ -32,21 +32,6 @@ class RecentActivityAggregator
                 'tag' => 'Lesson',
                 'timestamp' => $progress->completed_at?->diffForHumans(),
                 'isoDate' => $progress->completed_at?->toIso8601String(),
-            ]);
-
-        $challengeActivities = $user->challengeSubmissions()
-            ->where('is_correct', true)
-            ->whereNotNull('submitted_at')
-            ->with('challenge:id,title')
-            ->latest('submitted_at')
-            ->take(5)
-            ->get()
-            ->map(fn ($submission): array => [
-                'id' => 'challenge-'.$submission->id,
-                'title' => 'Solved challenge "'.$submission->challenge?->title.'"',
-                'tag' => 'Challenge',
-                'timestamp' => $submission->submitted_at?->diffForHumans(),
-                'isoDate' => $submission->submitted_at?->toIso8601String(),
             ]);
 
         $enrollmentActivities = Enrollment::query()
@@ -120,7 +105,6 @@ class RecentActivityAggregator
             ]);
 
         return collect($lessonActivities->all())
-            ->merge($challengeActivities->all())
             ->merge($enrollmentActivities->all())
             ->merge($badgeActivities->all())
             ->merge($quizActivities->all())

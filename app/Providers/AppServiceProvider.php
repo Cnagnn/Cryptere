@@ -73,11 +73,6 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Challenge submissions (standalone + speed-round) — prevent brute-force answer guessing
-        RateLimiter::for('challenge-submit', function (Request $request) {
-            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
-        });
-
         // Quiz question submissions — tightened to prevent brute-force
         RateLimiter::for('quiz-submit', function (Request $request) {
             return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
@@ -124,9 +119,6 @@ class AppServiceProvider extends ServiceProvider
         Scramble::routes(function (Route $route) {
             $jsonRoutes = [
                 'health',
-                'challenges.quick-submit',
-                'challenges.quiz-submit',
-                'challenges.session-summary',
                 'courses.lessons.quiz',
             ];
 

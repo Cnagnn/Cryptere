@@ -129,7 +129,6 @@ export type DecayWarning = {
 export type AdminStats = {
     totalUsers: number;
     totalCourses: number;
-    totalChallenges: number;
     totalEnrollments: number;
     activeUsers: number;
     newUsersThisMonth: number;
@@ -142,13 +141,6 @@ export type AdminCoursePerformance = {
     title: string;
     enrollments: number;
     completionRate: number;
-};
-
-export type AdminChallengePerformance = {
-    title: string;
-    submissions: number;
-    successRate: number;
-    avgScore: number;
 };
 
 export type AdminRecentUser = {
@@ -165,7 +157,6 @@ export type AdminData = {
     enrollmentTrends: AdminEnrollmentTrend[];
     userGrowth: AdminUserGrowth[];
     coursePerformance: AdminCoursePerformance[];
-    challengePerformance: AdminChallengePerformance[];
     recentUsers: AdminRecentUser[];
 };
 

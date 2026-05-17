@@ -18,8 +18,6 @@ class Badge extends Model
 
     public const CATEGORY_COURSE = 'course';
 
-    public const CATEGORY_CHALLENGE = 'challenge';
-
     public const CATEGORY_STREAK = 'streak';
 
     public const CATEGORY_LAB = 'lab';

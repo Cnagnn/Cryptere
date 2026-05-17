@@ -42,17 +42,6 @@ class BadgeFactory extends Factory
     }
 
     /**
-     * Badge for challenge solving.
-     */
-    public function challenge(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'category' => Badge::CATEGORY_CHALLENGE,
-            'criteria_type' => 'challenges_solved',
-        ]);
-    }
-
-    /**
      * Badge for streak milestones.
      */
     public function streak(): static

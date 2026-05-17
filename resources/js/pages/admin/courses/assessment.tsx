@@ -222,7 +222,7 @@ const BLOOM_LEVEL_TEMPLATES: Record<
         instruction:
             'C5 - Evaluate: Test ability to make judgments based on criteria. Use keywords: evaluate, assess, justify, critique, recommend, prioritize.',
         example:
-            'Which security measure should be prioritized first for a new web application?,SSL/TLS certificate,Input validation,Regular backups,User training,1,SSL/TLS should be prioritized first to encrypt all data in transit and establish trust with users.',
+            'Which security measure should be prioritized first for a new web application?,HTTPS/TLS encryption,Input validation,Regular backups,User training,1,HTTPS/TLS should be prioritized first to encrypt all data in transit and establish trust with users.',
     },
     C6: {
         instruction:

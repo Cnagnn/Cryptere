@@ -9,19 +9,11 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * Add difficulty tracking columns to challenge_questions and quiz_questions,
+     * Add difficulty tracking columns to quiz_questions,
      * and ability_estimate to users for the adaptive assessment system (R2).
      */
     public function up(): void
     {
-        Schema::table('challenge_questions', function (Blueprint $table) {
-            $table->enum('difficulty_level', ['easy', 'medium', 'hard'])->default('medium')->after('sort_order');
-            $table->float('difficulty_score')->default(0.5)->after('difficulty_level');
-            $table->float('discrimination')->default(1.0)->after('difficulty_score');
-            $table->unsignedInteger('times_shown')->default(0)->after('discrimination');
-            $table->unsignedInteger('times_correct')->default(0)->after('times_shown');
-        });
-
         Schema::table('quiz_questions', function (Blueprint $table) {
             $table->enum('difficulty_level', ['easy', 'medium', 'hard'])->default('medium')->after('sort_order');
             $table->float('difficulty_score')->default(0.5)->after('difficulty_level');
@@ -40,10 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('challenge_questions', function (Blueprint $table) {
-            $table->dropColumn(['difficulty_level', 'difficulty_score', 'discrimination', 'times_shown', 'times_correct']);
-        });
-
         Schema::table('quiz_questions', function (Blueprint $table) {
             $table->dropColumn(['difficulty_level', 'difficulty_score', 'discrimination', 'times_shown', 'times_correct']);
         });

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\ChallengeQuestion;
+use App\Models\QuizQuestion;
 use App\Models\User;
 use App\Services\AdaptiveQuestionService;
 use Illuminate\Support\Facades\DB;
@@ -94,7 +94,7 @@ test('updateUserAbility clamps to valid range', function () {
 });
 
 test('updateQuestionStats persists counters and recalculates difficulty in a single query', function () {
-    $question = ChallengeQuestion::factory()->create([
+    $question = QuizQuestion::factory()->create([
         'times_shown' => 2,
         'times_correct' => 1,
         'difficulty_score' => 0.5,

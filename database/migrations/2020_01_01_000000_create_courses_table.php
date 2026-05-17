@@ -101,17 +101,6 @@ return new class extends Migration
             $table->unique(['user_id', 'task_id']);
         });
 
-        Schema::create('challenge_submissions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('challenge_id')->nullable();
-            $table->foreignId('session_id')->nullable();
-            $table->integer('question_index')->default(0);
-            $table->boolean('is_correct')->default(false);
-            $table->timestamp('submitted_at')->nullable();
-            $table->timestamps();
-        });
-
         Schema::create('lesson_progress', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -131,26 +120,12 @@ return new class extends Migration
             $table->unique(['user_id', 'course_id']);
         });
 
-        Schema::create('challenge_questions', function (Blueprint $table) {
-            $table->id();
-            $table->text('question');
-            $table->string('option_a');
-            $table->string('option_b');
-            $table->string('option_c');
-            $table->string('option_d');
-            $table->tinyInteger('correct_option');
-            $table->text('explanation')->nullable();
-            $table->integer('sort_order')->default(0);
-            $table->timestamps();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('challenge_questions');
         Schema::dropIfExists('enrollments');
         Schema::dropIfExists('lesson_progress');
-        Schema::dropIfExists('challenge_submissions');
         Schema::dropIfExists('user_progress');
         Schema::dropIfExists('quiz_submissions');
         Schema::dropIfExists('quiz_questions');

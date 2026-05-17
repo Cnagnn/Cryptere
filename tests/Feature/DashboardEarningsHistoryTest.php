@@ -39,7 +39,7 @@ test('earnings history aggregates recorded balance changes', function () {
     UserBalanceChange::factory()->for($user)->create([
         'xp_delta' => 45,
         'points_delta' => 22,
-        'source' => 'challenge_session',
+        'source' => 'quiz_submission',
         'created_at' => now()->subMonths(1),
         'updated_at' => now()->subMonths(1),
     ]);

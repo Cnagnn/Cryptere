@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Challenge;
-use App\Models\ChallengeQuestion;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
 use App\Models\User;
@@ -12,84 +10,6 @@ use Illuminate\Support\Collection;
 
 class AdaptiveQuestionService
 {
-    /**
-     * Select questions adaptively for a challenge quiz session.
-     *
-     * Uses a simplified 1PL IRT model:
-     * - Target questions near the user's ability estimate
-     * - Ensure topic diversity (don't repeat same topic consecutively)
-     * - Fall back to random selection if difficulty data is unavailable
-     *
-     * @return Collection<int, ChallengeQuestion>
-     */
-    public function selectQuestionsForSession(
-        User $user,
-        Challenge $challenge,
-        int $count
-    ): Collection {
-        $allQuestions = $challenge->questions()->get();
-
-        // Graceful fallback: if pool is too small, return all available
-        if ($allQuestions->count() <= $count) {
-            return $allQuestions;
-        }
-
-        // Check if any questions have non-default difficulty data
-        $hasAdaptiveData = $allQuestions->contains(fn (ChallengeQuestion $q) => $q->times_shown > 0 || $q->difficulty_score !== 0.5
-        );
-
-        // Fall back to random selection if no adaptive data exists
-        if (! $hasAdaptiveData) {
-            return $allQuestions->shuffle()->take($count);
-        }
-
-        $targetDifficulty = $this->getTargetDifficulty($user);
-        $selected = collect();
-        $remaining = $allQuestions->values();
-        $lastTopicId = null;
-
-        for ($i = 0; $i < $count && $remaining->isNotEmpty(); $i++) {
-            // Score each remaining question by proximity to target difficulty
-            $scored = $remaining->map(function (ChallengeQuestion $q) use ($targetDifficulty, $lastTopicId) {
-                // Base score: inverse distance from target difficulty
-                $difficultyDistance = abs($q->difficulty_score - $targetDifficulty);
-                $score = 1.0 - $difficultyDistance;
-
-                // Bonus for topic diversity: penalize same topic as last selected
-                if ($lastTopicId !== null && $q->topic_id === $lastTopicId) {
-                    $score -= 0.3;
-                }
-
-                // Weight by discrimination (higher discrimination = better differentiator)
-                $score *= max(0.1, $q->discrimination);
-
-                return ['question' => $q, 'score' => $score];
-            });
-
-            // Sort by score descending and pick the best
-            $scored = $scored->sortByDesc('score')->values();
-
-            // Add some randomness: pick from top 3 candidates
-            $topCandidates = $scored->take(max(1, min(3, $scored->count())));
-            $pick = $topCandidates->random();
-
-            $question = $pick['question'];
-            $selected->push($question);
-            $lastTopicId = $question->topic_id;
-
-            // Remove selected question from remaining pool
-            $remaining = $remaining->reject(fn (ChallengeQuestion $q) => $q->id === $question->id)->values();
-
-            // Adjust target difficulty based on simulated progression
-            // Move slightly harder as we progress through the session
-            $progressRatio = ($i + 1) / $count;
-            $targetDifficulty = $this->getTargetDifficulty($user) + ($progressRatio * 0.1 - 0.05);
-            $targetDifficulty = max(0.0, min(1.0, $targetDifficulty));
-        }
-
-        return $selected;
-    }
-
     /**
      * Select questions adaptively for a lesson quiz.
      *
@@ -136,7 +56,7 @@ class AdaptiveQuestionService
         Model $question,
         bool $isCorrect
     ): void {
-        if (! ($question instanceof ChallengeQuestion) && ! ($question instanceof QuizQuestion)) {
+        if (! ($question instanceof QuizQuestion)) {
             return;
         }
 

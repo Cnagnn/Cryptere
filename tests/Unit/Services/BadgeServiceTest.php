@@ -2,7 +2,6 @@
 
 use App\Events\BadgeEarned;
 use App\Models\Badge;
-use App\Models\ChallengeSubmission;
 use App\Models\Enrollment;
 use App\Models\LabVisit;
 use App\Models\LessonProgress;
@@ -105,24 +104,6 @@ test('awards lessons_completed badge', function () {
 
     Cache::forget('badge_definitions');
     $awarded = $this->service->checkAndAward($user, 'lessons_completed');
-
-    expect($awarded)->toHaveCount(1);
-});
-
-test('awards challenges_solved badge', function () {
-    Event::fake([BadgeEarned::class]);
-    $user = User::factory()->create();
-    Badge::factory()->create([
-        'criteria_type' => 'challenges_solved',
-        'criteria_value' => 2,
-    ]);
-    ChallengeSubmission::factory()->count(2)->create([
-        'user_id' => $user->id,
-        'is_correct' => true,
-    ]);
-
-    Cache::forget('badge_definitions');
-    $awarded = $this->service->checkAndAward($user, 'challenges_solved');
 
     expect($awarded)->toHaveCount(1);
 });
