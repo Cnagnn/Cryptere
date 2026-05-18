@@ -8,6 +8,7 @@ import {
     ChevronsUpDown,
     CircleDashed,
     Eye,
+    History,
     MoreHorizontal,
     Pencil,
     Plus,
@@ -17,6 +18,10 @@ import {
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/page-header';
+import {
+    VersionHistoryDialog,
+    type VersionHistoryItem,
+} from '@/components/admin/version-history-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -123,6 +128,7 @@ type Props = {
     lessons: Paginated<LessonRow>;
     courseOptions: Pick<CourseRow, 'id' | 'title'>[];
     selectedCourseId: number;
+    versionHistories: Record<number, VersionHistoryItem[]>;
 };
 
 function formatTopicCode(order: number): string {
@@ -133,6 +139,7 @@ export default function AdminCoursesTopic({
     lessons,
     courseOptions,
     selectedCourseId,
+    versionHistories,
 }: Props) {
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [filterValue, setFilterValue] = useState('');
@@ -448,6 +455,22 @@ export default function AdminCoursesTopic({
                                     <Pencil data-icon="inline-start" />
                                     Ubah
                                 </DropdownMenuItem>
+                                <VersionHistoryDialog
+                                    itemTitle={row.original.title}
+                                    versions={
+                                        versionHistories[row.original.id] ?? []
+                                    }
+                                    trigger={
+                                        <DropdownMenuItem
+                                            onSelect={(event) =>
+                                                event.preventDefault()
+                                            }
+                                        >
+                                            <History data-icon="inline-start" />
+                                            History
+                                        </DropdownMenuItem>
+                                    }
+                                />
                                 <DropdownMenuItem
                                     onClick={() => {
                                         router.delete(

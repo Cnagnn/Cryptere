@@ -67,11 +67,18 @@ class ContentVersion extends Model
             return false;
         }
 
-        // Restore snapshot data
-        $model->fill($this->content_snapshot);
-        $model->restored_at = now();
+        if (method_exists($model, 'disableVersioning')) {
+            $model->disableVersioning();
+        }
 
-        return $model->save();
+        $model->fill($this->content_snapshot);
+        $result = $model->save();
+
+        if (method_exists($model, 'enableVersioning')) {
+            $model->enableVersioning();
+        }
+
+        return $result;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Versionable;
 use Database\Factories\LessonFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Lesson extends Model
 {
     /** @use HasFactory<LessonFactory> */
-    use HasFactory;
+    use HasFactory, Versionable;
 
     public const STATUS_DRAFT = 'draft';
 

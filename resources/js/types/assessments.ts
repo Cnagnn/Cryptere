@@ -271,6 +271,8 @@ export type AdminAssessmentQuestion = {
     id: number;
     assessment_id: number;
     question_bank_id?: number | null;
+    question_bank_title?: string | null;
+    source_badge?: 'From Bank' | 'Local';
     bloom_level: BloomLevel;
     question_type: QuestionType;
     question_text: string;

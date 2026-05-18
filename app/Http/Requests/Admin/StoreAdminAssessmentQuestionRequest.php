@@ -29,7 +29,7 @@ class StoreAdminAssessmentQuestionRequest extends FormRequest
             'grading_type' => ['required', 'in:auto,manual'],
             'min_words' => ['nullable', 'integer', 'min:1'],
             'max_words' => ['nullable', 'integer', 'min:1'],
-            'question_bank_id' => ['nullable', 'integer', 'exists:question_banks,id'],
+            'question_bank_id' => ['nullable', 'integer', 'exists:question_bank,id'],
         ];
     }
 }

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait Versionable
 {
+    protected bool $versioningDisabled = false;
+
     /**
      * Boot the Versionable trait.
      */
@@ -103,6 +105,6 @@ trait Versionable
      */
     public function isVersioningDisabled(): bool
     {
-        return $this->versioningDisabled ?? false;
+        return $this->versioningDisabled;
     }
 }

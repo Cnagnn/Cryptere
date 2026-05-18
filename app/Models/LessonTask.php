@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Versionable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class LessonTask extends Model
 {
-    use HasFactory;
+    use HasFactory, Versionable;
 
     public const STATUS_DRAFT = 'draft';
 

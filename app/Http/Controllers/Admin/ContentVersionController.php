@@ -47,31 +47,33 @@ class ContentVersionController extends Controller
     /**
      * Show a specific version.
      */
-    public function show(ContentVersion $contentVersion): Response
+    public function show(ContentVersion $version): Response
     {
-        $contentVersion->load('creator:id,name', 'versionable');
+        $version->load('creator:id,name', 'versionable');
 
         return Inertia::render('admin/content-versions/show', [
-            'version' => $contentVersion,
-            'diff' => $contentVersion->diff(),
+            'version' => $version,
+            'diff' => $version->diff(),
         ]);
     }
 
     /**
      * Restore to a specific version.
      */
-    public function restore(Request $request, ContentVersion $contentVersion): RedirectResponse
+    public function restore(Request $request, ContentVersion $version): RedirectResponse
     {
         DB::beginTransaction();
         try {
-            $model = $contentVersion->versionable;
+            $model = $version->versionable;
 
             if (! $model) {
+                DB::rollBack();
+
                 return back()->withErrors(['error' => 'Entity not found.']);
             }
 
             // Create a new version snapshot before restoring
-            $currentSnapshot = $model->only(array_keys($contentVersion->content_snapshot));
+            $currentSnapshot = $model->only(array_keys($version->content_snapshot));
 
             ContentVersion::create([
                 'versionable_type' => get_class($model),
@@ -84,7 +86,7 @@ class ContentVersionController extends Controller
             ]);
 
             // Restore the version
-            $success = $contentVersion->restore();
+            $success = $version->restore();
 
             if (! $success) {
                 DB::rollBack();
@@ -92,16 +94,23 @@ class ContentVersionController extends Controller
                 return back()->withErrors(['error' => 'Failed to restore version.']);
             }
 
-            // Increment version number
+            if (method_exists($model, 'disableVersioning')) {
+                $model->disableVersioning();
+            }
+
             $model->increment('version');
 
+            if (method_exists($model, 'enableVersioning')) {
+                $model->enableVersioning();
+            }
+
             app(AuditService::class)->log($request->user(), 'restored_version', $model, [
-                'version_number' => $contentVersion->version_number,
+                'version_number' => $version->version_number,
             ]);
 
             DB::commit();
 
-            return back()->with('success', "Restored to version {$contentVersion->version_number}.");
+            return back()->with('success', "Restored to version {$version->version_number}.");
         } catch (\Exception $e) {
             DB::rollBack();
 

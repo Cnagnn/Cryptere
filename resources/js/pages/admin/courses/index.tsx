@@ -6,7 +6,9 @@ import type {
     AdminAssessmentQuestion,
     BloomLevel,
     Paginated,
+    QuestionBank,
 } from '@/types';
+import type { VersionHistoryItem } from '@/components/admin/version-history-dialog';
 import type { CourseRow, LessonRow, TaskRow } from '@/types/course-management';
 import AdminCoursesAssessment from './assessment';
 import AdminCoursesTask from './task';
@@ -37,6 +39,13 @@ type Props = {
         search: string;
         bloom_level: BloomLevel | null;
     };
+    questionBank: Paginated<QuestionBank>;
+    versionHistories: {
+        courses: Record<number, VersionHistoryItem[]>;
+        lessons: Record<number, VersionHistoryItem[]>;
+        tasks: Record<number, VersionHistoryItem[]>;
+        assessments: Record<number, VersionHistoryItem[]>;
+    };
 };
 
 export default function AdminCoursesIndex(props: Props) {
@@ -49,6 +58,7 @@ export default function AdminCoursesIndex(props: Props) {
                     lessons={props.lessons}
                     courseOptions={props.courseOptions}
                     selectedCourseId={props.selectedCourseId}
+                    versionHistories={props.versionHistories.lessons}
                 />
             ) : null}
 
@@ -60,11 +70,15 @@ export default function AdminCoursesIndex(props: Props) {
                     courseOptions={props.courseOptions}
                     selectedCourseId={props.selectedCourseId}
                     selectedLessonId={props.selectedLessonId}
+                    versionHistories={props.versionHistories.tasks}
                 />
             ) : null}
 
             {props.section === 'catalog' ? (
-                <AdminCoursesTitle courses={props.courses} />
+                <AdminCoursesTitle
+                    courses={props.courses}
+                    versionHistories={props.versionHistories.courses}
+                />
             ) : null}
 
             {props.section === 'assessment' ? (
@@ -78,6 +92,8 @@ export default function AdminCoursesIndex(props: Props) {
                     allLessons={props.allLessons ?? []}
                     topics={props.assessmentTopics}
                     filters={props.assessmentFilters}
+                    questionBank={props.questionBank}
+                    versionHistories={props.versionHistories.assessments}
                 />
             ) : null}
         </>

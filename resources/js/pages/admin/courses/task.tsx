@@ -11,6 +11,7 @@ import {
     CircleHelp,
     Download,
     Eye,
+    History,
     MoreHorizontal,
     Pencil,
     Play,
@@ -21,6 +22,10 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/page-header';
+import {
+    VersionHistoryDialog,
+    type VersionHistoryItem,
+} from '@/components/admin/version-history-dialog';
 import {
     Accordion,
     AccordionContent,
@@ -146,6 +151,7 @@ type Props = {
     courseOptions: Pick<CourseRow, 'id' | 'title'>[];
     selectedCourseId: number;
     selectedLessonId: number;
+    versionHistories: Record<number, VersionHistoryItem[]>;
 };
 
 function formatTaskCode(order: number): string {
@@ -266,6 +272,7 @@ export default function AdminCoursesTask({
     courseOptions,
     selectedCourseId,
     selectedLessonId,
+    versionHistories,
 }: Props) {
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [filterValue, setFilterValue] = useState('');
@@ -829,6 +836,23 @@ export default function AdminCoursesTask({
                                         <Pencil data-icon="inline-start" />
                                         Ubah
                                     </DropdownMenuItem>
+                                    <VersionHistoryDialog
+                                        itemTitle={row.original.title}
+                                        versions={
+                                            versionHistories[row.original.id] ??
+                                            []
+                                        }
+                                        trigger={
+                                            <DropdownMenuItem
+                                                onSelect={(event) =>
+                                                    event.preventDefault()
+                                                }
+                                            >
+                                                <History data-icon="inline-start" />
+                                                History
+                                            </DropdownMenuItem>
+                                        }
+                                    />
                                     <DropdownMenuItem
                                         onClick={() => {
                                             router.delete(

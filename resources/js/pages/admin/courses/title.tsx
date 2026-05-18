@@ -6,6 +6,7 @@ import {
     BadgeCheck,
     CircleDashed,
     Eye,
+    History,
     MoreHorizontal,
     Pencil,
     Plus,
@@ -15,6 +16,10 @@ import {
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/page-header';
+import {
+    VersionHistoryDialog,
+    type VersionHistoryItem,
+} from '@/components/admin/version-history-dialog';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -119,9 +124,13 @@ function StatusBadge({
 
 type Props = {
     courses: Paginated<CourseRow>;
+    versionHistories: Record<number, VersionHistoryItem[]>;
 };
 
-export default function AdminCoursesTitle({ courses }: Props) {
+export default function AdminCoursesTitle({
+    courses,
+    versionHistories,
+}: Props) {
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [deletingCourse, setDeletingCourse] = useState<CourseRow | null>(
         null,
@@ -385,6 +394,23 @@ export default function AdminCoursesTitle({ courses }: Props) {
                                         <Pencil data-icon="inline-start" />
                                         Ubah
                                     </DropdownMenuItem>
+                                    <VersionHistoryDialog
+                                        itemTitle={row.original.title}
+                                        versions={
+                                            versionHistories[row.original.id] ??
+                                            []
+                                        }
+                                        trigger={
+                                            <DropdownMenuItem
+                                                onSelect={(event) =>
+                                                    event.preventDefault()
+                                                }
+                                            >
+                                                <History data-icon="inline-start" />
+                                                History
+                                            </DropdownMenuItem>
+                                        }
+                                    />
                                     <DropdownMenuItem
                                         onClick={() =>
                                             setDeletingCourse(row.original)

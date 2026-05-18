@@ -11,10 +11,12 @@ use App\Http\Requests\Admin\UpdateAdminCourseRequest;
 use App\Models\Assessment;
 use App\Models\AssessmentQuestion;
 use App\Models\AssessmentSubmission;
+use App\Models\ContentVersion;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\LessonTask;
+use App\Models\QuestionBank;
 use App\Models\QuizQuestion;
 use App\Models\QuizSubmission;
 use App\Models\TaskProgress;
@@ -319,6 +321,7 @@ class CourseController extends Controller
         $assessmentTopics = [];
         $assessmentFilters = ['search' => '', 'bloom_level' => null];
         $courseFilterSelected = false;
+        $questionBank = $emptyPaginated;
 
         if ($section === self::SECTION_ASSESSMENT) {
             $bloomFilter = $request->input('bloom_level');
@@ -377,11 +380,63 @@ class CourseController extends Controller
             if ($selectedAssessmentId > 0) {
                 $assessmentQuestions = AssessmentQuestion::query()
                     ->where('assessment_id', $selectedAssessmentId)
+                    ->with('questionBank:id,title')
                     ->orderBy('sort_order')
                     ->get()
                     ->makeVisible('correct_answer')
-                    ->toArray();
+                    ->map(fn (AssessmentQuestion $question): array => [
+                        ...$question->toArray(),
+                        'source_badge' => $question->question_bank_id ? 'From Bank' : 'Local',
+                        'question_bank_title' => $question->questionBank?->title,
+                    ])
+                    ->values()
+                    ->all();
             }
+
+            $bankPaginator = QuestionBank::query()
+                ->active()
+                ->when($search, fn ($q) => $q->where(function ($query) use ($search) {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('question_text', 'like', "%{$search}%")
+                        ->orWhere('category', 'like', "%{$search}%");
+                }))
+                ->when($bloomFilter, fn ($q) => $q->where('bloom_level', $bloomFilter))
+                ->with('creator:id,name')
+                ->withCount('assessmentQuestions')
+                ->orderByDesc('updated_at')
+                ->paginate($perPage, ['*'], 'question_bank_page')
+                ->withQueryString();
+
+            $bankPaginator->getCollection()->transform(fn (QuestionBank $question): array => [
+                'id' => $question->id,
+                'title' => $question->title,
+                'category' => $question->category,
+                'bloom_level' => $question->bloom_level,
+                'question_type' => $question->question_type,
+                'question_text' => $question->question_text,
+                'options' => $question->options,
+                'correct_answer' => $question->correct_answer,
+                'explanation' => $question->explanation,
+                'rubric' => $question->rubric,
+                'points' => $question->points,
+                'is_active' => $question->is_active,
+                'times_used' => $question->times_used,
+                'assessment_questions_count' => $question->assessment_questions_count,
+                'creator_name' => $question->creator?->name,
+                'source_badge' => 'Bank',
+                'created_at' => $question->created_at?->toIso8601String(),
+                'updated_at' => $question->updated_at?->toIso8601String(),
+            ]);
+
+            $questionBank = [
+                'data' => $bankPaginator->items(),
+                'current_page' => $bankPaginator->currentPage(),
+                'last_page' => $bankPaginator->lastPage(),
+                'per_page' => $bankPaginator->perPage(),
+                'total' => $bankPaginator->total(),
+                'from' => $bankPaginator->firstItem(),
+                'to' => $bankPaginator->lastItem(),
+            ];
 
             $assessmentTopics = Topic::orderBy('name')->get(['id', 'name']);
             $assessmentFilters = [
@@ -392,6 +447,13 @@ class CourseController extends Controller
             // Override selectedCourseId for assessment section
             $selectedCourseId = $assessmentCourseId;
         }
+
+        $versionHistories = $this->buildVersionHistories(
+            courses: data_get($courses, 'data', []),
+            lessons: data_get($lessons, 'data', []),
+            tasks: data_get($tasks, 'data', []),
+            assessments: data_get($assessments, 'data', []),
+        );
 
         return Inertia::render('admin/courses/index', [
             'section' => $section,
@@ -410,7 +472,56 @@ class CourseController extends Controller
             'assessmentTopics' => $assessmentTopics,
             'assessmentFilters' => $assessmentFilters,
             'courseFilterSelected' => $courseFilterSelected,
+            'questionBank' => $questionBank,
+            'versionHistories' => $versionHistories,
         ]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $courses
+     * @param  array<int, array<string, mixed>>  $lessons
+     * @param  array<int, array<string, mixed>>  $tasks
+     * @param  array<int, array<string, mixed>>  $assessments
+     * @return array<string, array<int, array<int, array<string, mixed>>>>
+     */
+    private function buildVersionHistories(array $courses, array $lessons, array $tasks, array $assessments): array
+    {
+        return [
+            'courses' => $this->versionsFor(Course::class, collect($courses)->pluck('id')->filter()->all()),
+            'lessons' => $this->versionsFor(Lesson::class, collect($lessons)->pluck('id')->filter()->all()),
+            'tasks' => $this->versionsFor(LessonTask::class, collect($tasks)->pluck('id')->filter(fn ($id) => (int) $id > 0)->all()),
+            'assessments' => $this->versionsFor(Assessment::class, collect($assessments)->pluck('id')->filter()->all()),
+        ];
+    }
+
+    /**
+     * @param  class-string  $modelClass
+     * @param  array<int, int|string>  $ids
+     * @return array<int, array<int, array<string, mixed>>>
+     */
+    private function versionsFor(string $modelClass, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return ContentVersion::query()
+            ->where('versionable_type', $modelClass)
+            ->whereIn('versionable_id', $ids)
+            ->with('creator:id,name')
+            ->orderByDesc('version_number')
+            ->get()
+            ->groupBy('versionable_id')
+            ->map(fn ($versions) => $versions->map(fn (ContentVersion $version): array => [
+                'id' => $version->id,
+                'version_number' => $version->version_number,
+                'changed_fields' => $version->changed_fields ?? [],
+                'change_summary' => $version->change_summary,
+                'creator_name' => $version->creator?->name,
+                'created_at' => $version->created_at?->toIso8601String(),
+                'restored_at' => $version->restored_at?->toIso8601String(),
+            ])->values()->all())
+            ->all();
     }
 
     // ── courses CRUD ─────────────────────────────────────────────────────────

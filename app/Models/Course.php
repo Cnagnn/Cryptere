@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Versionable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,7 +33,7 @@ use Illuminate\Support\Str;
 ])]
 class Course extends Model
 {
-    use HasFactory;
+    use HasFactory, Versionable;
 
     public const STATUS_DRAFT = 'draft';
 

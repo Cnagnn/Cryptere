@@ -8,6 +8,7 @@ import {
     ChevronsUpDown,
     CircleDashed,
     Download,
+    History,
     MoreHorizontal,
     Pencil,
     Plus,
@@ -18,6 +19,10 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { PageHeader } from '@/components/page-header';
+import {
+    VersionHistoryDialog,
+    type VersionHistoryItem,
+} from '@/components/admin/version-history-dialog';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -95,12 +100,15 @@ import {
     store as storeAssessment,
     update as updateAssessment,
 } from '@/routes/admin/assessments';
+import { store as storeAssessmentQuestion } from '@/routes/admin/assessments/questions';
+import { store as storeQuestionBank } from '@/routes/admin/question-bank';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import type {
     AdminAssessment,
     AdminAssessmentQuestion,
     BloomLevel,
     GradingType,
+    QuestionBank,
 } from '@/types';
 
 type Paginated<T> = {
@@ -124,6 +132,8 @@ type Props = {
     courseFilterSelected: boolean;
     allLessons: LessonOption[];
     topics: { id: number; name: string }[];
+    questionBank: Paginated<QuestionBank>;
+    versionHistories: Record<number, VersionHistoryItem[]>;
     filters: {
         search: string;
         bloom_level: BloomLevel | null;
@@ -337,9 +347,13 @@ function parseQuizImportText(text: string): QuizQuestion[] {
 
 export default function AdminCoursesAssessment({
     assessments,
+    questions,
+    selectedAssessmentId,
     courseOptions,
     selectedCourseId,
     courseFilterSelected,
+    questionBank,
+    versionHistories,
 }: Props) {
     const [filterValue, setFilterValue] = useState('');
     const [rows, setRows] = useState<AdminAssessment[]>(assessments.data);
@@ -371,6 +385,8 @@ export default function AdminCoursesAssessment({
 
     // Question editor state
     const [questionEditorOpen, setQuestionEditorOpen] = useState(false);
+    const [questionBankOpen, setQuestionBankOpen] = useState(false);
+    const [manualQuestionOpen, setManualQuestionOpen] = useState(false);
     const [editingQuestionIndex, setEditingQuestionIndex] = useState<
         number | null
     >(null);
@@ -391,6 +407,10 @@ export default function AdminCoursesAssessment({
         max_attempts: '3',
         time_limit_minutes: '',
     });
+
+    const selectedAssessment = rows.find(
+        (assessment) => assessment.id === selectedAssessmentId,
+    );
 
     const resetFormState = () => {
         setEditingAssessment(null);
@@ -499,6 +519,138 @@ export default function AdminCoursesAssessment({
 
         setQuizQuestions((prev) => prev.filter((_, i) => i !== index));
         toast.success('Pertanyaan berhasil dihapus.');
+    };
+
+    const attachBankQuestion = (question: QuestionBank) => {
+        if (!selectedAssessmentId) {
+            toast.error('Pilih assessment terlebih dahulu.');
+
+            return;
+        }
+
+        router.post(
+            storeAssessmentQuestion.url({ assessment: selectedAssessmentId }),
+            {
+                question_bank_id: question.id,
+                bloom_level: question.bloom_level,
+                question_type: question.question_type,
+                question_text: question.question_text,
+                options: question.options,
+                correct_answer: question.correct_answer,
+                explanation: question.explanation,
+                rubric: question.rubric,
+                points: question.points,
+                grading_type: ['essay', 'case_study', 'design'].includes(
+                    question.question_type,
+                )
+                    ? 'manual'
+                    : 'auto',
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.success('Soal dari Question Bank ditambahkan.');
+                    setQuestionBankOpen(false);
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Gagal menambahkan soal.');
+                },
+            },
+        );
+    };
+
+    const saveManualQuestionToAssessment = () => {
+        if (!selectedAssessmentId) {
+            toast.error('Pilih assessment terlebih dahulu.');
+
+            return;
+        }
+
+        if (!questionForm.question.trim()) {
+            toast.error('Pertanyaan tidak boleh kosong.');
+
+            return;
+        }
+
+        if (questionForm.options.some((option) => !option.trim())) {
+            toast.error('Semua opsi harus diisi.');
+
+            return;
+        }
+
+        router.post(
+            storeAssessmentQuestion.url({ assessment: selectedAssessmentId }),
+            {
+                bloom_level: selectedAssessment?.bloom_level ?? 'C1',
+                question_type: 'mcq',
+                question_text: questionForm.question,
+                options: questionForm.options,
+                correct_answer:
+                    questionForm.options[questionForm.correct_option],
+                explanation: questionForm.explanation,
+                points: 10,
+                grading_type: 'auto',
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.success('Soal manual ditambahkan.');
+                    setManualQuestionOpen(false);
+                    setQuestionForm({
+                        question: '',
+                        options: ['', '', '', ''],
+                        correct_option: 0,
+                        explanation: '',
+                    });
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Gagal menambahkan soal manual.');
+                },
+            },
+        );
+    };
+
+    const saveAssessmentQuestionToBank = (
+        question: AdminAssessmentQuestion,
+    ) => {
+        router.post(
+            storeQuestionBank.url(),
+            {
+                title: question.question_text.slice(0, 120),
+                category: selectedAssessment?.course_title ?? null,
+                bloom_level: question.bloom_level,
+                question_type: question.question_type,
+                question_text: question.question_text,
+                options: question.options,
+                correct_answer: question.correct_answer,
+                explanation: question.explanation,
+                rubric: question.rubric,
+                points: question.points,
+                is_active: true,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () =>
+                    toast.success('Soal disimpan ke Question Bank.'),
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(
+                        messages || 'Gagal menyimpan ke Question Bank.',
+                    );
+                },
+            },
+        );
     };
 
     const reorderRows = (sourceRowId: string, targetRowId: string) => {
@@ -803,6 +955,44 @@ export default function AdminCoursesAssessment({
                                     <Pencil data-icon="inline-start" />
                                     Edit
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        router.get(
+                                            sectionUrl({
+                                                course_id:
+                                                    row.original.course_id ??
+                                                    undefined,
+                                                assessment_id: row.original.id,
+                                                page: assessments.current_page,
+                                                per_page: assessments.per_page,
+                                            }),
+                                            {},
+                                            {
+                                                preserveState: true,
+                                                preserveScroll: true,
+                                            },
+                                        )
+                                    }
+                                >
+                                    <Search data-icon="inline-start" />
+                                    Kelola Soal
+                                </DropdownMenuItem>
+                                <VersionHistoryDialog
+                                    itemTitle={row.original.title}
+                                    versions={
+                                        versionHistories[row.original.id] ?? []
+                                    }
+                                    trigger={
+                                        <DropdownMenuItem
+                                            onSelect={(event) =>
+                                                event.preventDefault()
+                                            }
+                                        >
+                                            <History data-icon="inline-start" />
+                                            History
+                                        </DropdownMenuItem>
+                                    }
+                                />
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     className="text-destructive"
@@ -1903,6 +2093,386 @@ export default function AdminCoursesAssessment({
                                 footerInfo={`Showing ${assessments.from ?? 0} - ${assessments.to ?? 0} of ${assessments.total} Assessments`}
                             />
                         )}
+                    </div>
+                </section>
+
+                <section className="grid gap-4">
+                    <div className="rounded-lg border bg-card p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h2 className="text-base font-semibold">
+                                    Question Builder
+                                </h2>
+                                <p className="text-sm text-muted-foreground">
+                                    {selectedAssessment
+                                        ? `Kelola soal untuk ${selectedAssessment.title}.`
+                                        : 'Pilih Kelola Soal pada salah satu assessment untuk membuka daftar soal.'}
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <Dialog
+                                    open={manualQuestionOpen}
+                                    onOpenChange={(open) => {
+                                        setManualQuestionOpen(open);
+
+                                        if (open) {
+                                            setQuestionForm({
+                                                question: '',
+                                                options: ['', '', '', ''],
+                                                correct_option: 0,
+                                                explanation: '',
+                                            });
+                                        }
+                                    }}
+                                >
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            disabled={!selectedAssessmentId}
+                                        >
+                                            <Plus data-icon="inline-start" />
+                                            Add Manual Question
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-lg">
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                Add Manual Question
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Buat soal lokal yang hanya
+                                                melekat pada assessment ini.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <FieldGroup>
+                                            <Field>
+                                                <FieldLabel htmlFor="manual-question-text">
+                                                    Pertanyaan{' '}
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
+                                                <Textarea
+                                                    id="manual-question-text"
+                                                    value={
+                                                        questionForm.question
+                                                    }
+                                                    onChange={(e) =>
+                                                        setQuestionForm(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                question:
+                                                                    e.target
+                                                                        .value,
+                                                            }),
+                                                        )
+                                                    }
+                                                    placeholder="Masukkan pertanyaan"
+                                                    rows={3}
+                                                />
+                                            </Field>
+
+                                            <Field>
+                                                <FieldLabel>
+                                                    Opsi Jawaban{' '}
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
+                                                <div className="space-y-2">
+                                                    {questionForm.options.map(
+                                                        (option, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className="flex items-center gap-2"
+                                                            >
+                                                                <Input
+                                                                    value={
+                                                                        option
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) => {
+                                                                        const nextOptions =
+                                                                            [
+                                                                                ...questionForm.options,
+                                                                            ] as [
+                                                                                string,
+                                                                                string,
+                                                                                string,
+                                                                                string,
+                                                                            ];
+                                                                        nextOptions[
+                                                                            index
+                                                                        ] =
+                                                                            e.target.value;
+                                                                        setQuestionForm(
+                                                                            (
+                                                                                prev,
+                                                                            ) => ({
+                                                                                ...prev,
+                                                                                options:
+                                                                                    nextOptions,
+                                                                            }),
+                                                                        );
+                                                                    }}
+                                                                    placeholder={`Opsi ${String.fromCharCode(65 + index)}`}
+                                                                />
+                                                                <Button
+                                                                    type="button"
+                                                                    variant={
+                                                                        questionForm.correct_option ===
+                                                                        index
+                                                                            ? 'default'
+                                                                            : 'outline'
+                                                                    }
+                                                                    size="sm"
+                                                                    className="shrink-0"
+                                                                    onClick={() =>
+                                                                        setQuestionForm(
+                                                                            (
+                                                                                prev,
+                                                                            ) => ({
+                                                                                ...prev,
+                                                                                correct_option:
+                                                                                    index,
+                                                                            }),
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {questionForm.correct_option ===
+                                                                    index ? (
+                                                                        <Check className="h-4 w-4" />
+                                                                    ) : (
+                                                                        'Benar'
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+                                                        ),
+                                                    )}
+                                                </div>
+                                            </Field>
+
+                                            <Field>
+                                                <FieldLabel htmlFor="manual-question-explanation">
+                                                    Penjelasan
+                                                </FieldLabel>
+                                                <Textarea
+                                                    id="manual-question-explanation"
+                                                    value={
+                                                        questionForm.explanation
+                                                    }
+                                                    onChange={(e) =>
+                                                        setQuestionForm(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                explanation:
+                                                                    e.target
+                                                                        .value,
+                                                            }),
+                                                        )
+                                                    }
+                                                    placeholder="Penjelasan jawaban (opsional)"
+                                                    rows={2}
+                                                />
+                                            </Field>
+                                        </FieldGroup>
+
+                                        <DialogFooter className="mt-6">
+                                            <DialogClose asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                >
+                                                    Batal
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="button"
+                                                onClick={
+                                                    saveManualQuestionToAssessment
+                                                }
+                                            >
+                                                Simpan Soal
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+
+                                <Dialog
+                                    open={questionBankOpen}
+                                    onOpenChange={setQuestionBankOpen}
+                                >
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled={!selectedAssessmentId}
+                                        >
+                                            <Search data-icon="inline-start" />
+                                            Pick From Bank
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-3xl">
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                Question Bank
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Cari soal reusable dan tambahkan
+                                                ke assessment terpilih sebagai
+                                                snapshot.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="max-h-[30rem] space-y-3 overflow-y-auto pr-1">
+                                            {questionBank.data.length === 0 ? (
+                                                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                                                    Belum ada soal aktif di
+                                                    Question Bank.
+                                                </div>
+                                            ) : (
+                                                questionBank.data.map(
+                                                    (question) => (
+                                                        <div
+                                                            key={question.id}
+                                                            className="rounded-lg border p-4"
+                                                        >
+                                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                                <div className="space-y-2">
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <Badge variant="secondary">
+                                                                            From
+                                                                            Bank
+                                                                        </Badge>
+                                                                        <Badge variant="outline">
+                                                                            {
+                                                                                question.bloom_level
+                                                                            }
+                                                                        </Badge>
+                                                                        <Badge variant="outline">
+                                                                            {
+                                                                                question.question_type
+                                                                            }
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <p className="font-medium">
+                                                                        {
+                                                                            question.title
+                                                                        }
+                                                                    </p>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        {
+                                                                            question.question_text
+                                                                        }
+                                                                    </p>
+                                                                    {question.category ? (
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            Category:{' '}
+                                                                            {
+                                                                                question.category
+                                                                            }
+                                                                        </p>
+                                                                    ) : null}
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        attachBankQuestion(
+                                                                            question,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Plus data-icon="inline-start" />
+                                                                    Tambahkan
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ),
+                                                )
+                                            )}
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                        </div>
+
+                        {selectedAssessmentId ? (
+                            <div className="mt-4 grid gap-3">
+                                {questions.length === 0 ? (
+                                    <div className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
+                                        Assessment ini belum memiliki soal.
+                                    </div>
+                                ) : (
+                                    questions.map((question, index) => (
+                                        <div
+                                            key={question.id}
+                                            className="rounded-lg border p-4"
+                                        >
+                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                <div className="space-y-2">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <Badge
+                                                            variant={
+                                                                question.question_bank_id
+                                                                    ? 'secondary'
+                                                                    : 'outline'
+                                                            }
+                                                        >
+                                                            {question.question_bank_id
+                                                                ? 'From Bank'
+                                                                : 'Local'}
+                                                        </Badge>
+                                                        <Badge variant="outline">
+                                                            {
+                                                                question.bloom_level
+                                                            }
+                                                        </Badge>
+                                                        <Badge variant="outline">
+                                                            {
+                                                                question.question_type
+                                                            }
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="font-medium">
+                                                        {index + 1}.{' '}
+                                                        {question.question_text}
+                                                    </p>
+                                                    {question.explanation ? (
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {
+                                                                question.explanation
+                                                            }
+                                                        </p>
+                                                    ) : null}
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                                                    {!question.question_bank_id ? (
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() =>
+                                                                saveAssessmentQuestionToBank(
+                                                                    question,
+                                                                )
+                                                            }
+                                                        >
+                                                            <Plus data-icon="inline-start" />
+                                                            Save to Bank
+                                                        </Button>
+                                                    ) : null}
+                                                    <Badge variant="outline">
+                                                        {question.points} pts
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        ) : null}
                     </div>
                 </section>
             </div>
