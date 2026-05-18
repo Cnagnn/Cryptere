@@ -5,14 +5,14 @@ deployment:
     - export PUBLICPATH=/home/fkdzqxmc/public_html
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/mkdir -p $PUBLICPATH
-    - /usr/bin/rsync -a --delete --exclude='.git' --exclude='.env' --exclude='node_modules' --exclude='vendor' --exclude='storage/app' --exclude='storage/framework/cache' --exclude='storage/framework/sessions' --exclude='storage/framework/testing' --exclude='storage/framework/views' --exclude='storage/logs' ./ $DEPLOYPATH/
     - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php /usr/local/bin/composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
     - cd $DEPLOYPATH && /usr/bin/npm ci
     - cd $DEPLOYPATH && /usr/bin/npm run build
-    - /usr/bin/rsync -a --delete $DEPLOYPATH/public/ $PUBLICPATH/
+    - /bin/rm -rf $PUBLICPATH/build
+    - /bin/cp -a $DEPLOYPATH/public/. $PUBLICPATH/
     - /bin/sed -i "s#__DIR__.'/../storage/framework/maintenance.php'#__DIR__.'/../cryptere/storage/framework/maintenance.php'#" $PUBLICPATH/index.php
     - /bin/sed -i "s#__DIR__.'/../vendor/autoload.php'#__DIR__.'/../cryptere/vendor/autoload.php'#" $PUBLICPATH/index.php
     - /bin/sed -i "s#__DIR__.'/../bootstrap/app.php'#__DIR__.'/../cryptere/bootstrap/app.php'#" $PUBLICPATH/index.php
     - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force
-    - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php artisan storage:link
+    - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php artisan storage:link || true
     - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php artisan optimize
