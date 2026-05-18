@@ -32,8 +32,9 @@
             }
         </style>
 
-        <link rel="icon" href="/images/Logo/Logo.svg" type="image/svg+xml">
-        <link rel="alternate icon" href="/images/Logo/Logo.svg">
+        <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+        <link rel="alternate icon" href="/favicon.ico">
+        <link rel="shortcut icon" href="/favicon.ico">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
