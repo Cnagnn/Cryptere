@@ -70,7 +70,7 @@ function WelcomeStep({ userName }: { userName: string }) {
                 <Rocket className="size-10 text-primary" />
             </div>
             <div className="flex flex-col gap-2">
-                <h2 className="text-2xl font-bold tracking-tight">
+                <h2 className="text-2xl font-bold">
                     Selamat datang di Cryptere, {userName}! 🎉
                 </h2>
                 <p className="text-muted-foreground">
@@ -110,7 +110,7 @@ function ExperienceStep({
     return (
         <div className="flex flex-col gap-6">
             <div className="text-center">
-                <h2 className="text-2xl font-bold tracking-tight">
+                <h2 className="text-2xl font-bold">
                     Apa tingkat pengalaman Anda?
                 </h2>
                 <p className="mt-1 text-muted-foreground">
@@ -170,7 +170,7 @@ function InterestsStep({
     return (
         <div className="flex flex-col gap-6">
             <div className="text-center">
-                <h2 className="text-2xl font-bold tracking-tight">
+                <h2 className="text-2xl font-bold">
                     Apa yang paling menarik bagi Anda?
                 </h2>
                 <p className="mt-1 text-muted-foreground">

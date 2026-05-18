@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 
+import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +48,6 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
 import { index as coursesIndex, show as courseShow } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
@@ -395,7 +395,7 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
                                             <p className="truncate text-sm font-medium">
                                                 {course.title}
                                             </p>
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-xs text-muted-foreground tabular-nums">
                                                 {course.lessonCount} pelajaran
                                             </p>
                                         </div>
@@ -881,7 +881,7 @@ function LearnerDashboard({
     const greeting = getTimeGreeting(auth.user.name);
 
     return (
-        <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-6">
+        <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
             {decayWarning && showDecayWarning && (
                 <div className="animate-fade-in-up relative">
                     <DecayWarningBanner
@@ -891,21 +891,16 @@ function LearnerDashboard({
                 </div>
             )}
 
-            <section className="animate-fade-in-up relative flex flex-col gap-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-col gap-0">
-                        <TypographyH1>
-                            {greeting.text} {greeting.emoji}
-                        </TypographyH1>
-                        <TypographyMuted className="text-sm/6">
-                            {auth.user.current_streak > 0
-                                ? `${greeting.subtitle} Anda sedang dalam konsistensi ${auth.user.current_streak} hari berturut-turut! 🔥`
-                                : greeting.subtitle}
-                        </TypographyMuted>
-                    </div>
-                    {adminTabs && <div>{adminTabs}</div>}
-                </div>
-            </section>
+            <PageHeader
+                className="animate-fade-in-up relative"
+                title={`${greeting.text} ${greeting.emoji}`}
+                description={
+                    auth.user.current_streak > 0
+                        ? `${greeting.subtitle} Anda sedang dalam konsistensi ${auth.user.current_streak} hari berturut-turut!`
+                        : greeting.subtitle
+                }
+                actions={adminTabs}
+            />
 
             <section
                 className="animate-fade-in-up grid grid-cols-2 gap-3 md:grid-cols-6 lg:grid-cols-12"
@@ -1329,22 +1324,14 @@ function AdminDashboard({
     }));
 
     return (
-        <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-6">
+        <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-4">
             {/* Header Section */}
-            <section className="animate-fade-in-up relative flex flex-col gap-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-col gap-1">
-                        <TypographyH1>
-                            {greeting.text} {greeting.emoji}
-                        </TypographyH1>
-                        <TypographyMuted className="text-sm/6">
-                            Ringkasan pertumbuhan, keterlibatan, dan kinerja
-                            konten platform
-                        </TypographyMuted>
-                    </div>
-                    {adminTabs && <div>{adminTabs}</div>}
-                </div>
-            </section>
+            <PageHeader
+                className="animate-fade-in-up relative"
+                title={`${greeting.text} ${greeting.emoji}`}
+                description="Ringkasan pertumbuhan, keterlibatan, dan kinerja konten platform"
+                actions={adminTabs}
+            />
 
             {/* Stats Cards - 4 columns */}
             <section
@@ -1437,7 +1424,7 @@ function AdminDashboard({
                 <Card>
                     <CardHeader className="gap-1 pb-4">
                         <CardTitle>Tren Pendaftaran</CardTitle>
-                        <CardDescription className="text-xs">
+                        <CardDescription className="text-sm/6">
                             Jumlah pendaftaran baru per bulan
                         </CardDescription>
                     </CardHeader>
@@ -1473,7 +1460,7 @@ function AdminDashboard({
                 <Card>
                     <CardHeader className="gap-1 pb-4">
                         <CardTitle>Pertumbuhan Pengguna</CardTitle>
-                        <CardDescription className="text-xs">
+                        <CardDescription className="text-sm/6">
                             Jumlah pengguna baru per bulan
                         </CardDescription>
                     </CardHeader>
@@ -1541,7 +1528,7 @@ function AdminDashboard({
                 <Card>
                     <CardHeader className="gap-1 pb-4">
                         <CardTitle>Kursus Teratas</CardTitle>
-                        <CardDescription className="text-xs">
+                        <CardDescription className="text-sm/6">
                             Berdasarkan pendaftaran dan tingkat penyelesaian
                         </CardDescription>
                     </CardHeader>

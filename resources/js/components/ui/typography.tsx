@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 export function TypographyDemo() {
   return (
     <div>
-      <h1 className="scroll-m-20 text-4xl font-bold tracking-tight text-balance">
+      <h1 className="scroll-m-20 text-4xl font-bold text-balance">
         Taxing Laughter: The Joke Tax Chronicles
       </h1>
       <p className="text-xl leading-7 text-muted-foreground not-first:mt-6">
@@ -13,7 +13,7 @@ export function TypographyDemo() {
         spent all day lounging on his throne. One day, his advisors came to him
         with a problem: the kingdom was running out of money.
       </p>
-      <h2 className="mt-10 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
+      <h2 className="mt-10 scroll-m-20 border-b pb-2 text-3xl font-semibold transition-colors first:mt-0">
         The King&apos;s Plan
       </h2>
       <p className="leading-7 not-first:mt-6">
@@ -30,7 +30,7 @@ export function TypographyDemo() {
         &quot;After all,&quot; he said, &quot;everyone enjoys a good joke, so
         it&apos;s only fair that they should pay for the privilege.&quot;
       </blockquote>
-      <h3 className="mt-8 scroll-m-20 text-2xl font-semibold tracking-tight">
+      <h3 className="mt-8 scroll-m-20 text-2xl font-semibold">
         The Joke Tax
       </h3>
       <p className="leading-7 not-first:mt-6">
@@ -47,7 +47,7 @@ export function TypographyDemo() {
         gloom. But there was one person who refused to let the king&apos;s
         foolishness get him down: a court jester named Jokester.
       </p>
-      <h3 className="mt-8 scroll-m-20 text-2xl font-semibold tracking-tight">
+      <h3 className="mt-8 scroll-m-20 text-2xl font-semibold">
         Jokester&apos;s Revolt
       </h3>
       <p className="leading-7 not-first:mt-6">
@@ -61,7 +61,7 @@ export function TypographyDemo() {
         left by Jokester were so funny that they couldn&apos;t help but laugh.
         And once they started laughing, they couldn&apos;t stop.
       </p>
-      <h3 className="mt-8 scroll-m-20 text-2xl font-semibold tracking-tight">
+      <h3 className="mt-8 scroll-m-20 text-2xl font-semibold">
         The People&apos;s Rebellion
       </h3>
       <p className="leading-7 not-first:mt-6">
@@ -130,7 +130,7 @@ export function TypographyH1({ children, className, ...props }: TypographyProps)
   return (
     <h1
       className={cn(
-        'scroll-m-20 text-4xl font-bold tracking-tight text-balance',
+        'scroll-m-20 text-3xl leading-tight font-semibold text-balance md:text-4xl',
         className,
       )}
       {...props}
@@ -144,7 +144,7 @@ export function TypographyH2({ children, className, ...props }: TypographyProps)
   return (
     <h2
       className={cn(
-        'scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0',
+        'scroll-m-20 border-b pb-2 text-2xl leading-tight font-semibold first:mt-0 md:text-3xl',
         className,
       )}
       {...props}
@@ -157,7 +157,7 @@ export function TypographyH2({ children, className, ...props }: TypographyProps)
 export function TypographyH3({ children, className, ...props }: TypographyProps) {
   return (
     <h3
-      className={cn('scroll-m-20 text-2xl font-semibold tracking-tight', className)}
+      className={cn('scroll-m-20 text-xl leading-tight font-semibold md:text-2xl', className)}
       {...props}
     >
       {children}
@@ -168,7 +168,7 @@ export function TypographyH3({ children, className, ...props }: TypographyProps)
 export function TypographyH4({ children, className, ...props }: TypographyProps) {
   return (
     <h4
-      className={cn('scroll-m-20 text-xl font-semibold tracking-tight', className)}
+      className={cn('scroll-m-20 text-lg leading-tight font-semibold md:text-xl', className)}
       {...props}
     >
       {children}
@@ -249,7 +249,7 @@ export function TypographyInlineCode({ children, className, ...props }: Typograp
   return (
     <code
       className={cn(
-        'relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold',
+        'relative rounded bg-muted px-[0.3rem] py-[0.2rem] text-sm font-semibold',
         className,
       )}
       {...props}
@@ -261,7 +261,7 @@ export function TypographyInlineCode({ children, className, ...props }: Typograp
 
 export function TypographyLead({ children, className, ...props }: TypographyProps) {
   return (
-    <p className={cn('text-xl text-muted-foreground', className)} {...props}>
+    <p className={cn('text-lg/7 text-muted-foreground md:text-xl', className)} {...props}>
       {children}
     </p>
   )
@@ -277,7 +277,7 @@ export function TypographyLarge({ children, className, ...props }: TypographyPro
 
 export function TypographySmall({ children, className, ...props }: TypographyProps) {
   return (
-    <small className={cn('text-sm leading-none font-medium', className)} {...props}>
+    <small className={cn('text-sm/5 font-medium', className)} {...props}>
       {children}
     </small>
   )
@@ -285,7 +285,7 @@ export function TypographySmall({ children, className, ...props }: TypographyPro
 
 export function TypographyMuted({ children, className, ...props }: TypographyProps) {
   return (
-    <p className={cn('text-sm text-muted-foreground', className)} {...props}>
+    <p className={cn('text-sm/6 text-muted-foreground', className)} {...props}>
       {children}
     </p>
   )

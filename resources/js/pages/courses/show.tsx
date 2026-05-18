@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+import { PageHeader } from '@/components/page-header';
 import {
     Accordion,
     AccordionContent,
@@ -66,7 +67,6 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import {
@@ -569,11 +569,11 @@ function MetricCard({
 }) {
     return (
         <div className="rounded-md border bg-muted/20 p-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Icon className="size-4" />
                 {label}
             </div>
-            <p className="mt-1 text-lg leading-tight font-semibold tracking-tight tabular-nums">
+            <p className="mt-1 text-lg leading-tight font-semibold tabular-nums">
                 {value}
             </p>
         </div>
@@ -1198,7 +1198,7 @@ function ReadingTask({
     return (
         <div className="space-y-4">
             <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>Progress membaca</span>
                     <span className="font-medium text-foreground tabular-nums">
                         {readingProgress}%
@@ -1665,7 +1665,7 @@ function QuizTask({
     return (
         <div className="space-y-4">
             <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>
                         Dijawab {answeredCount}/{questions.length}
                     </span>
@@ -1940,7 +1940,7 @@ function AssessmentContinue({
 
             <div className="space-y-2">
                 <Progress value={progress} className="h-2" />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm/6 text-muted-foreground">
                     {totalQuestions - answeredCount} pertanyaan belum dijawab
                 </p>
             </div>
@@ -2269,7 +2269,7 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
         <div className="space-y-4">
             {/* Progress bar — identical to QuizTask */}
             <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>
                         Dijawab {answeredCount}/{assessment.questions.length}
                     </span>
@@ -2295,7 +2295,7 @@ function AssessmentAttempt({ assessment }: { assessment: AssessmentFullData }) {
                 <Progress value={progress} className="h-2" />
 
                 {/* Auto-save indicator */}
-                <div className="flex items-center justify-end gap-1 text-xs">
+                <div className="flex items-center justify-end gap-1 text-sm">
                     {saving ? (
                         <>
                             <Loader2 className="size-3 animate-spin text-muted-foreground" />
@@ -2484,7 +2484,7 @@ function AssessmentAnswerInput({
                 placeholder="Tulis jawaban Anda di sini..."
                 className="resize-y"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm/6 text-muted-foreground">
                 {(() => {
                     const wordCount = value?.answer_text?.trim()
                         ? value.answer_text.trim().split(/\s+/).length
@@ -3247,7 +3247,7 @@ export default function CourseShow({
                 {ariaLiveMessage}
             </div>
 
-            <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-6">
+            <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
                 {notice ? (
                     <Alert className="border-primary/20 bg-primary/5">
                         <Sparkles className="size-4" />
@@ -3255,14 +3255,11 @@ export default function CourseShow({
                     </Alert>
                 ) : null}
 
-                <div className="animate-fade-in-up flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex w-full flex-col gap-1">
-                        <TypographyH1>{serverCourse.title}</TypographyH1>
-                        <TypographyMuted>
-                            {serverCourse.summary}
-                        </TypographyMuted>
-                    </div>
-                </div>
+                <PageHeader
+                    className="animate-fade-in-up"
+                    title={serverCourse.title}
+                    description={serverCourse.summary}
+                />
 
                 {/* Mobile sidebar trigger */}
                 <div className="lg:hidden">

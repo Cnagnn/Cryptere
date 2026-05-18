@@ -127,7 +127,7 @@ export function TwoFactorSettingsCard({
                                 <p className="text-sm font-medium">
                                     Not enabled
                                 </p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-sm/6 text-muted-foreground">
                                     Require a time-based code from your
                                     authenticator app when signing in.
                                 </p>

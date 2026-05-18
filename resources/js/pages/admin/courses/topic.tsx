@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -70,7 +71,6 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as lessonsDestroy } from '@/routes/admin/courses/lessons';
 import { reorder as lessonsReorder } from '@/routes/admin/courses/lessons';
@@ -537,408 +537,420 @@ export default function AdminCoursesTopic({
     };
 
     return (
-        <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-            <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div className="flex flex-col gap-0">
-                    <TypographyH1>Manajemen Topik</TypographyH1>
-                    <TypographyMuted className="text-sm/6">
-                        Kelola topik untuk setiap kursus.
-                    </TypographyMuted>
-                </div>
+        <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
+            <PageHeader
+                title="Manajemen Topik"
+                description="Kelola topik untuk setiap kursus."
+                actions={
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className="w-full justify-between sm:w-72"
+                                >
+                                    <span className="truncate">
+                                        {(() => {
+                                            const course = courseOptions.find(
+                                                (c) =>
+                                                    c.id === selectedCourseId,
+                                            );
 
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                role="combobox"
-                                className="w-full justify-between sm:w-72"
-                            >
-                                <span className="truncate">
-                                    {(() => {
-                                        const course = courseOptions.find(
-                                            (c) => c.id === selectedCourseId,
-                                        );
+                                            if (course) {
+                                                return course.title;
+                                            }
 
-                                        if (course) {
-                                            return course.title;
-                                        }
-
-                                        return 'Pilih Kursus...';
-                                    })()}
-                                </span>
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-72 p-0" align="start">
-                            <Command>
-                                <CommandInput placeholder="Cari kursus..." />
-                                <CommandList className="max-h-none overflow-y-hidden">
-                                    <CommandEmpty>
-                                        Tidak ada hasil ditemukan.
-                                    </CommandEmpty>
-                                    <ScrollArea className="h-64">
-                                        <CommandGroup>
-                                            {courseOptions.map((course) => (
-                                                <CommandItem
-                                                    key={course.id}
-                                                    value={course.title}
-                                                    onSelect={() => {
-                                                        const newCourseId =
-                                                            selectedCourseId ===
-                                                            course.id
-                                                                ? 0
-                                                                : course.id;
-                                                        router.get(
-                                                            adminCoursesIndex.url(
-                                                                {
-                                                                    query: {
-                                                                        section:
-                                                                            'lesson',
-                                                                        ...(newCourseId >
-                                                                        0
-                                                                            ? {
-                                                                                  course_id:
-                                                                                      newCourseId,
-                                                                              }
-                                                                            : {}),
-                                                                        page: 1,
+                                            return 'Pilih Kursus...';
+                                        })()}
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72 p-0" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Cari kursus..." />
+                                    <CommandList className="max-h-none overflow-y-hidden">
+                                        <CommandEmpty>
+                                            Tidak ada hasil ditemukan.
+                                        </CommandEmpty>
+                                        <ScrollArea className="h-64">
+                                            <CommandGroup>
+                                                {courseOptions.map((course) => (
+                                                    <CommandItem
+                                                        key={course.id}
+                                                        value={course.title}
+                                                        onSelect={() => {
+                                                            const newCourseId =
+                                                                selectedCourseId ===
+                                                                course.id
+                                                                    ? 0
+                                                                    : course.id;
+                                                            router.get(
+                                                                adminCoursesIndex.url(
+                                                                    {
+                                                                        query: {
+                                                                            section:
+                                                                                'lesson',
+                                                                            ...(newCourseId >
+                                                                            0
+                                                                                ? {
+                                                                                      course_id:
+                                                                                          newCourseId,
+                                                                                  }
+                                                                                : {}),
+                                                                            page: 1,
+                                                                        },
                                                                     },
+                                                                ),
+                                                                {},
+                                                                {
+                                                                    preserveState: true,
+                                                                    preserveScroll: true,
                                                                 },
-                                                            ),
-                                                            {},
-                                                            {
-                                                                preserveState: true,
-                                                                preserveScroll: true,
-                                                            },
-                                                        );
-                                                    }}
-                                                >
-                                                    {course.title}
-                                                    <Check
-                                                        className={`ml-auto h-4 w-4 ${selectedCourseId === course.id ? 'opacity-100' : 'opacity-0'}`}
-                                                    />
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </ScrollArea>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
-
-                    <div className="w-full sm:w-80">
-                        <Input
-                            id="topic-search"
-                            placeholder="Cari Topik..."
-                            value={filterValue}
-                            onChange={(event) =>
-                                setFilterValue(event.target.value)
-                            }
-                        />
-                    </div>
-
-                    <Dialog
-                        open={createTopicDialogOpen}
-                        onOpenChange={(open) => {
-                            setCreateTopicDialogOpen(open);
-
-                            if (!open && !isSavingTopic) {
-                                resetTopicForm();
-                            }
-                        }}
-                    >
-                        <DialogTrigger asChild>
-                            <Button
-                                type="button"
-                                onClick={() => {
-                                    resetTopicForm();
-                                    setCreateTopicDialogOpen(true);
-                                }}
-                            >
-                                <Plus data-icon="inline-start" />
-                                Buat
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-sm">
-                            <form
-                                onSubmit={(event) => {
-                                    event.preventDefault();
-                                    const payload = new FormData();
-                                    payload.append(
-                                        'course_id',
-                                        String(topicForm.course_id),
-                                    );
-                                    payload.append('title', topicForm.title);
-                                    payload.append(
-                                        'description',
-                                        topicForm.description,
-                                    );
-
-                                    const requestUrl = isEditMode
-                                        ? lessonsUpdate.url({
-                                              lesson: editingTopic.id,
-                                          })
-                                        : lessonsStore.url();
-
-                                    if (isEditMode) {
-                                        payload.append('_method', 'PATCH');
-                                    }
-
-                                    router.post(requestUrl, payload, {
-                                        forceFormData: true,
-                                        preserveScroll: true,
-                                        preserveState: true,
-                                        onStart: () => setIsSavingTopic(true),
-                                        onSuccess: () => {
-                                            toast.success(
-                                                isEditMode
-                                                    ? 'Topik berhasil diperbarui.'
-                                                    : 'Topik berhasil dibuat.',
-                                            );
-                                            resetTopicForm();
-                                            setCreateTopicDialogOpen(false);
-                                        },
-                                        onError: (formErrors) => {
-                                            const messages = Object.values(
-                                                formErrors,
-                                            )
-                                                .flat()
-                                                .join(', ');
-                                            toast.error(
-                                                messages ||
-                                                    'Gagal menyimpan topik.',
-                                            );
-                                        },
-                                        onFinish: () => setIsSavingTopic(false),
-                                    });
-                                }}
-                            >
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        {isEditMode
-                                            ? 'Ubah topik'
-                                            : 'Buat topik'}
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                        {isEditMode
-                                            ? 'Perbarui judul dan deskripsi topik.'
-                                            : 'Tambahkan topik baru untuk judul kursus yang dipilih.'}
-                                    </DialogDescription>
-                                </DialogHeader>
-
-                                <FieldGroup>
-                                    <Field
-                                        data-invalid={
-                                            topicCourseHasError || undefined
-                                        }
-                                    >
-                                        <FieldLabel htmlFor="topic-course">
-                                            Kursus{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <Popover
-                                            open={courseComboboxOpen}
-                                            onOpenChange={setCourseComboboxOpen}
-                                        >
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    id="topic-course"
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    className="w-full justify-between"
-                                                    aria-invalid={
-                                                        topicCourseHasError
-                                                    }
-                                                >
-                                                    <span className="truncate">
-                                                        {(() => {
-                                                            const course =
-                                                                courseOptions.find(
-                                                                    (c) =>
-                                                                        c.id ===
-                                                                        topicForm.course_id,
-                                                                );
-
-                                                            if (course) {
-                                                                return course.title;
-                                                            }
-
-                                                            return 'Pilih Kursus...';
-                                                        })()}
-                                                    </span>
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent
-                                                className="p-0"
-                                                align="start"
-                                                style={{
-                                                    width: 'var(--radix-popover-trigger-width)',
-                                                }}
-                                            >
-                                                <Command>
-                                                    <CommandInput placeholder="Cari kursus..." />
-                                                    <CommandList
-                                                        style={{
-                                                            maxHeight: '16rem',
-                                                            overflowY: 'auto',
+                                                            );
                                                         }}
                                                     >
-                                                        <CommandEmpty>
-                                                            Tidak ada hasil
-                                                            ditemukan.
-                                                        </CommandEmpty>
-                                                        <CommandGroup>
-                                                            {courseOptions.map(
-                                                                (course) => (
-                                                                    <CommandItem
-                                                                        key={
-                                                                            course.id
-                                                                        }
-                                                                        value={
-                                                                            course.title
-                                                                        }
-                                                                        onSelect={() => {
-                                                                            setTopicForm(
-                                                                                (
-                                                                                    current,
-                                                                                ) => ({
-                                                                                    ...current,
-                                                                                    course_id:
-                                                                                        course.id,
-                                                                                }),
-                                                                            );
-                                                                            setCourseComboboxOpen(
-                                                                                false,
-                                                                            );
-                                                                        }}
-                                                                    >
-                                                                        {
-                                                                            course.title
-                                                                        }
-                                                                        <Check
-                                                                            className={`ml-auto h-4 w-4 ${
-                                                                                topicForm.course_id ===
+                                                        {course.title}
+                                                        <Check
+                                                            className={`ml-auto h-4 w-4 ${selectedCourseId === course.id ? 'opacity-100' : 'opacity-0'}`}
+                                                        />
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </ScrollArea>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+
+                        <div className="w-full sm:w-80">
+                            <Input
+                                id="topic-search"
+                                placeholder="Cari Topik..."
+                                value={filterValue}
+                                onChange={(event) =>
+                                    setFilterValue(event.target.value)
+                                }
+                            />
+                        </div>
+
+                        <Dialog
+                            open={createTopicDialogOpen}
+                            onOpenChange={(open) => {
+                                setCreateTopicDialogOpen(open);
+
+                                if (!open && !isSavingTopic) {
+                                    resetTopicForm();
+                                }
+                            }}
+                        >
+                            <DialogTrigger asChild>
+                                <Button
+                                    type="button"
+                                    onClick={() => {
+                                        resetTopicForm();
+                                        setCreateTopicDialogOpen(true);
+                                    }}
+                                >
+                                    <Plus data-icon="inline-start" />
+                                    Buat
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-sm">
+                                <form
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        const payload = new FormData();
+                                        payload.append(
+                                            'course_id',
+                                            String(topicForm.course_id),
+                                        );
+                                        payload.append(
+                                            'title',
+                                            topicForm.title,
+                                        );
+                                        payload.append(
+                                            'description',
+                                            topicForm.description,
+                                        );
+
+                                        const requestUrl = isEditMode
+                                            ? lessonsUpdate.url({
+                                                  lesson: editingTopic.id,
+                                              })
+                                            : lessonsStore.url();
+
+                                        if (isEditMode) {
+                                            payload.append('_method', 'PATCH');
+                                        }
+
+                                        router.post(requestUrl, payload, {
+                                            forceFormData: true,
+                                            preserveScroll: true,
+                                            preserveState: true,
+                                            onStart: () =>
+                                                setIsSavingTopic(true),
+                                            onSuccess: () => {
+                                                toast.success(
+                                                    isEditMode
+                                                        ? 'Topik berhasil diperbarui.'
+                                                        : 'Topik berhasil dibuat.',
+                                                );
+                                                resetTopicForm();
+                                                setCreateTopicDialogOpen(false);
+                                            },
+                                            onError: (formErrors) => {
+                                                const messages = Object.values(
+                                                    formErrors,
+                                                )
+                                                    .flat()
+                                                    .join(', ');
+                                                toast.error(
+                                                    messages ||
+                                                        'Gagal menyimpan topik.',
+                                                );
+                                            },
+                                            onFinish: () =>
+                                                setIsSavingTopic(false),
+                                        });
+                                    }}
+                                >
+                                    <DialogHeader>
+                                        <DialogTitle>
+                                            {isEditMode
+                                                ? 'Ubah topik'
+                                                : 'Buat topik'}
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            {isEditMode
+                                                ? 'Perbarui judul dan deskripsi topik.'
+                                                : 'Tambahkan topik baru untuk judul kursus yang dipilih.'}
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <FieldGroup>
+                                        <Field
+                                            data-invalid={
+                                                topicCourseHasError || undefined
+                                            }
+                                        >
+                                            <FieldLabel htmlFor="topic-course">
+                                                Kursus{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Popover
+                                                open={courseComboboxOpen}
+                                                onOpenChange={
+                                                    setCourseComboboxOpen
+                                                }
+                                            >
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        id="topic-course"
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className="w-full justify-between"
+                                                        aria-invalid={
+                                                            topicCourseHasError
+                                                        }
+                                                    >
+                                                        <span className="truncate">
+                                                            {(() => {
+                                                                const course =
+                                                                    courseOptions.find(
+                                                                        (c) =>
+                                                                            c.id ===
+                                                                            topicForm.course_id,
+                                                                    );
+
+                                                                if (course) {
+                                                                    return course.title;
+                                                                }
+
+                                                                return 'Pilih Kursus...';
+                                                            })()}
+                                                        </span>
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent
+                                                    className="p-0"
+                                                    align="start"
+                                                    style={{
+                                                        width: 'var(--radix-popover-trigger-width)',
+                                                    }}
+                                                >
+                                                    <Command>
+                                                        <CommandInput placeholder="Cari kursus..." />
+                                                        <CommandList
+                                                            style={{
+                                                                maxHeight:
+                                                                    '16rem',
+                                                                overflowY:
+                                                                    'auto',
+                                                            }}
+                                                        >
+                                                            <CommandEmpty>
+                                                                Tidak ada hasil
+                                                                ditemukan.
+                                                            </CommandEmpty>
+                                                            <CommandGroup>
+                                                                {courseOptions.map(
+                                                                    (
+                                                                        course,
+                                                                    ) => (
+                                                                        <CommandItem
+                                                                            key={
                                                                                 course.id
-                                                                                    ? 'opacity-100'
-                                                                                    : 'opacity-0'
-                                                                            }`}
-                                                                        />
-                                                                    </CommandItem>
-                                                                ),
-                                                            )}
-                                                        </CommandGroup>
-                                                    </CommandList>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
-                                        {topicCourseHasError && (
-                                            <FieldDescription className="text-destructive">
-                                                {errors.course_id}
-                                            </FieldDescription>
-                                        )}
-                                    </Field>
+                                                                            }
+                                                                            value={
+                                                                                course.title
+                                                                            }
+                                                                            onSelect={() => {
+                                                                                setTopicForm(
+                                                                                    (
+                                                                                        current,
+                                                                                    ) => ({
+                                                                                        ...current,
+                                                                                        course_id:
+                                                                                            course.id,
+                                                                                    }),
+                                                                                );
+                                                                                setCourseComboboxOpen(
+                                                                                    false,
+                                                                                );
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                course.title
+                                                                            }
+                                                                            <Check
+                                                                                className={`ml-auto h-4 w-4 ${
+                                                                                    topicForm.course_id ===
+                                                                                    course.id
+                                                                                        ? 'opacity-100'
+                                                                                        : 'opacity-0'
+                                                                                }`}
+                                                                            />
+                                                                        </CommandItem>
+                                                                    ),
+                                                                )}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                            {topicCourseHasError && (
+                                                <FieldDescription className="text-destructive">
+                                                    {errors.course_id}
+                                                </FieldDescription>
+                                            )}
+                                        </Field>
 
-                                    <Field
-                                        className="gap-2"
-                                        data-invalid={
-                                            topicTitleHasError || undefined
-                                        }
-                                    >
-                                        <FieldLabel htmlFor="topic-title">
-                                            Judul{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <Input
-                                            id="topic-title"
-                                            name="title"
-                                            placeholder="Masukkan judul topik"
-                                            value={topicForm.title}
-                                            onChange={(event) =>
-                                                setTopicForm((current) => ({
-                                                    ...current,
-                                                    title: event.target.value,
-                                                }))
+                                        <Field
+                                            className="gap-2"
+                                            data-invalid={
+                                                topicTitleHasError || undefined
                                             }
-                                            aria-invalid={topicTitleHasError}
-                                            required
-                                        />
-                                        {topicTitleHasError && (
-                                            <FieldDescription className="text-destructive">
-                                                {errors.title}
-                                            </FieldDescription>
-                                        )}
-                                    </Field>
+                                        >
+                                            <FieldLabel htmlFor="topic-title">
+                                                Judul{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Input
+                                                id="topic-title"
+                                                name="title"
+                                                placeholder="Masukkan judul topik"
+                                                value={topicForm.title}
+                                                onChange={(event) =>
+                                                    setTopicForm((current) => ({
+                                                        ...current,
+                                                        title: event.target
+                                                            .value,
+                                                    }))
+                                                }
+                                                aria-invalid={
+                                                    topicTitleHasError
+                                                }
+                                                required
+                                            />
+                                            {topicTitleHasError && (
+                                                <FieldDescription className="text-destructive">
+                                                    {errors.title}
+                                                </FieldDescription>
+                                            )}
+                                        </Field>
 
-                                    <Field
-                                        className="gap-2"
-                                        data-invalid={
-                                            topicDescriptionHasError ||
-                                            undefined
-                                        }
-                                    >
-                                        <FieldLabel htmlFor="topic-description">
-                                            Deskripsi{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <Textarea
-                                            id="topic-description"
-                                            name="description"
-                                            placeholder="Masukkan deskripsi topik"
-                                            value={topicForm.description}
-                                            onChange={(event) =>
-                                                setTopicForm((current) => ({
-                                                    ...current,
-                                                    description:
-                                                        event.target.value,
-                                                }))
+                                        <Field
+                                            className="gap-2"
+                                            data-invalid={
+                                                topicDescriptionHasError ||
+                                                undefined
                                             }
-                                            aria-invalid={
-                                                topicDescriptionHasError
-                                            }
-                                            rows={4}
-                                            required
-                                        />
-                                        {topicDescriptionHasError && (
-                                            <FieldDescription className="text-destructive">
-                                                {errors.description}
-                                            </FieldDescription>
-                                        )}
-                                    </Field>
-                                </FieldGroup>
+                                        >
+                                            <FieldLabel htmlFor="topic-description">
+                                                Deskripsi{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Textarea
+                                                id="topic-description"
+                                                name="description"
+                                                placeholder="Masukkan deskripsi topik"
+                                                value={topicForm.description}
+                                                onChange={(event) =>
+                                                    setTopicForm((current) => ({
+                                                        ...current,
+                                                        description:
+                                                            event.target.value,
+                                                    }))
+                                                }
+                                                aria-invalid={
+                                                    topicDescriptionHasError
+                                                }
+                                                rows={4}
+                                                required
+                                            />
+                                            {topicDescriptionHasError && (
+                                                <FieldDescription className="text-destructive">
+                                                    {errors.description}
+                                                </FieldDescription>
+                                            )}
+                                        </Field>
+                                    </FieldGroup>
 
-                                <DialogFooter className="mt-6">
-                                    <DialogClose asChild>
+                                    <DialogFooter className="mt-6">
+                                        <DialogClose asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                disabled={isSavingTopic}
+                                            >
+                                                Batal
+                                            </Button>
+                                        </DialogClose>
                                         <Button
-                                            type="button"
-                                            variant="outline"
+                                            type="submit"
                                             disabled={isSavingTopic}
                                         >
-                                            Batal
+                                            {isSavingTopic && (
+                                                <Spinner data-icon="inline-start" />
+                                            )}
+                                            Simpan perubahan
                                         </Button>
-                                    </DialogClose>
-                                    <Button
-                                        type="submit"
-                                        disabled={isSavingTopic}
-                                    >
-                                        {isSavingTopic && (
-                                            <Spinner data-icon="inline-start" />
-                                        )}
-                                        Simpan perubahan
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </header>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                }
+            />
 
             <section className="grid gap-4">
                 <div className="flex flex-col gap-4">

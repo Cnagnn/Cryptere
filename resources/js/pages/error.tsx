@@ -73,7 +73,7 @@ export default function ErrorPage({ status, message }: ErrorPageProps) {
                         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
                             <Icon className="size-8 text-muted-foreground" />
                         </div>
-                        <p className="text-5xl font-bold tracking-tight text-foreground">
+                        <p className="text-5xl font-bold text-foreground">
                             {status}
                         </p>
                         <CardTitle className="text-xl">

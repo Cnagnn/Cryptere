@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/page-header';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -65,7 +66,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import {
     destroy as coursesDestroy,
     index as adminCoursesIndex,
@@ -440,292 +440,303 @@ export default function AdminCoursesTitle({ courses }: Props) {
 
     return (
         <>
-            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-col gap-0">
-                        <TypographyH1>Manajemen Judul</TypographyH1>
-                        <TypographyMuted className="text-sm/6">
-                            Kelola judul kursus, status publikasi, dan metadata
-                            tingkat tinggi.
-                        </TypographyMuted>
-                    </div>
-
-                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                        <div className="w-full sm:w-80">
-                            <Input
-                                id="course-search"
-                                placeholder="Cari Kursus..."
-                                value={courseFilterValue}
-                                onChange={(event) =>
-                                    setCourseFilterValue(event.target.value)
-                                }
-                            />
-                        </div>
-                        <Dialog
-                            open={isCreateDialogOpen}
-                            onOpenChange={(open) => {
-                                if (!open && isDirty && !isSavingCourse) {
-                                    if (
-                                        !confirm(
-                                            'Perubahan belum disimpan. Tutup dialog?',
-                                        )
-                                    ) {
-                                        return;
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
+                <PageHeader
+                    title="Manajemen Judul"
+                    description="Kelola judul kursus, status publikasi, dan metadata tingkat tinggi."
+                    actions={
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                            <div className="w-full sm:w-80">
+                                <Input
+                                    id="course-search"
+                                    placeholder="Cari Kursus..."
+                                    value={courseFilterValue}
+                                    onChange={(event) =>
+                                        setCourseFilterValue(event.target.value)
                                     }
-                                }
-
-                                setIsCreateDialogOpen(open);
-
-                                if (!open && !isSavingCourse) {
-                                    resetCourseDialogState();
-                                }
-                            }}
-                        >
-                            <DialogTrigger asChild>
-                                <Button
-                                    type="button"
-                                    className="sm:shrink-0"
-                                    onClick={openCreateDialog}
-                                >
-                                    <Plus data-icon="inline-start" />
-                                    Buat
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-sm">
-                                <form
-                                    encType="multipart/form-data"
-                                    onSubmit={(event) => {
-                                        event.preventDefault();
-                                        const form = event.currentTarget;
-                                        const payload = new FormData(form);
-
-                                        const requestUrl = isEditMode
-                                            ? coursesUpdate.url({
-                                                  course: editingCourse.id,
-                                              })
-                                            : coursesStore.url();
-
-                                        if (isEditMode) {
-                                            payload.append('_method', 'PATCH');
+                                />
+                            </div>
+                            <Dialog
+                                open={isCreateDialogOpen}
+                                onOpenChange={(open) => {
+                                    if (!open && isDirty && !isSavingCourse) {
+                                        if (
+                                            !confirm(
+                                                'Perubahan belum disimpan. Tutup dialog?',
+                                            )
+                                        ) {
+                                            return;
                                         }
+                                    }
 
-                                        router.post(requestUrl, payload, {
-                                            forceFormData: true,
-                                            preserveScroll: true,
-                                            preserveState: true,
-                                            onStart: () => {
-                                                setIsSavingCourse(true);
-                                            },
-                                            onSuccess: () => {
-                                                toast.success(
-                                                    isEditMode
-                                                        ? 'Kursus berhasil diperbarui.'
-                                                        : 'Kursus berhasil dibuat.',
-                                                );
-                                                resetCourseDialogState();
-                                                setIsCreateDialogOpen(false);
-                                            },
-                                            onError: (formErrors) => {
-                                                const messages = Object.values(
-                                                    formErrors,
-                                                )
-                                                    .flat()
-                                                    .join(', ');
-                                                toast.error(
-                                                    messages ||
-                                                        'Gagal menyimpan kursus.',
-                                                );
-                                            },
-                                            onFinish: () => {
-                                                setIsSavingCourse(false);
-                                            },
-                                        });
-                                    }}
-                                >
-                                    <DialogHeader>
-                                        <DialogTitle>
-                                            {isEditMode
-                                                ? 'Ubah kursus'
-                                                : 'Buat kursus'}
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            {isEditMode
-                                                ? 'Perbarui judul, ringkasan, dan gambar sampul kursus.'
-                                                : 'Tambahkan judul dan ringkasan kursus baru.'}
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <FieldGroup>
-                                        <Field
-                                            data-invalid={
-                                                titleHasError || undefined
-                                            }
-                                        >
-                                            <FieldLabel htmlFor="course-title">
-                                                Judul{' '}
-                                                <span className="text-destructive">
-                                                    *
-                                                </span>
-                                            </FieldLabel>
-                                            <Input
-                                                id="course-title"
-                                                name="title"
-                                                placeholder="Masukkan judul kursus"
-                                                value={courseForm.title}
-                                                onChange={(event) => {
-                                                    setCourseForm(
-                                                        (current) => ({
-                                                            ...current,
-                                                            title: event.target
-                                                                .value,
-                                                        }),
-                                                    );
-                                                    setIsDirty(true);
-                                                }}
-                                                aria-invalid={titleHasError}
-                                                required
-                                            />
-                                            {titleHasError && (
-                                                <FieldDescription className="text-destructive">
-                                                    {errors.title}
-                                                </FieldDescription>
-                                            )}
-                                        </Field>
-                                        <Field
-                                            data-invalid={
-                                                descriptionHasError || undefined
-                                            }
-                                        >
-                                            <FieldLabel htmlFor="course-description">
-                                                Deskripsi{' '}
-                                                <span className="text-destructive">
-                                                    *
-                                                </span>
-                                            </FieldLabel>
-                                            <Textarea
-                                                id="course-description"
-                                                name="description"
-                                                placeholder="Masukkan deskripsi kursus"
-                                                value={courseForm.description}
-                                                onChange={(event) => {
-                                                    setCourseForm(
-                                                        (current) => ({
-                                                            ...current,
-                                                            description:
-                                                                event.target
-                                                                    .value,
-                                                        }),
-                                                    );
-                                                    setIsDirty(true);
-                                                }}
-                                                aria-invalid={
-                                                    descriptionHasError
-                                                }
-                                                required
-                                                rows={4}
-                                            />
-                                            {descriptionHasError && (
-                                                <FieldDescription className="text-destructive">
-                                                    {errors.description}
-                                                </FieldDescription>
-                                            )}
-                                        </Field>
-                                        <Field
-                                            data-invalid={
-                                                coverImageHasError || undefined
-                                            }
-                                        >
-                                            <FieldLabel htmlFor="course-picture">
-                                                Unggah Sampul{' '}
-                                                <span className="text-destructive"></span>
-                                            </FieldLabel>
-                                            <Input
-                                                id="course-picture"
-                                                name="cover_image"
-                                                type="file"
-                                                accept="image/*"
-                                                aria-invalid={
-                                                    coverImageHasError
-                                                }
-                                                onChange={(event) => {
-                                                    const file =
-                                                        event.target
-                                                            .files?.[0] ?? null;
-                                                    setCourseForm(
-                                                        (current) => ({
-                                                            ...current,
-                                                            coverImage: file,
-                                                        }),
-                                                    );
-                                                    setIsDirty(true);
+                                    setIsCreateDialogOpen(open);
 
-                                                    // Generate preview
-                                                    if (file) {
-                                                        const reader =
-                                                            new FileReader();
-                                                        reader.onloadend =
-                                                            () => {
-                                                                setCoverImagePreview(
-                                                                    reader.result as string,
-                                                                );
-                                                            };
-                                                        reader.readAsDataURL(
-                                                            file,
-                                                        );
-                                                    } else {
-                                                        setCoverImagePreview(
-                                                            null,
-                                                        );
-                                                    }
-                                                }}
-                                            />
-                                            {coverImagePreview && (
-                                                <div className="mt-2">
-                                                    <img
-                                                        src={coverImagePreview}
-                                                        alt="Preview"
-                                                        className="h-32 w-full rounded-lg object-cover"
-                                                    />
-                                                </div>
-                                            )}
-                                            {coverImageHasError && (
-                                                <FieldDescription className="text-destructive">
-                                                    {errors.cover_image}
-                                                </FieldDescription>
-                                            )}
-                                            <FieldDescription>
+                                    if (!open && !isSavingCourse) {
+                                        resetCourseDialogState();
+                                    }
+                                }}
+                            >
+                                <DialogTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        className="sm:shrink-0"
+                                        onClick={openCreateDialog}
+                                    >
+                                        <Plus data-icon="inline-start" />
+                                        Buat
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-sm">
+                                    <form
+                                        encType="multipart/form-data"
+                                        onSubmit={(event) => {
+                                            event.preventDefault();
+                                            const form = event.currentTarget;
+                                            const payload = new FormData(form);
+
+                                            const requestUrl = isEditMode
+                                                ? coursesUpdate.url({
+                                                      course: editingCourse.id,
+                                                  })
+                                                : coursesStore.url();
+
+                                            if (isEditMode) {
+                                                payload.append(
+                                                    '_method',
+                                                    'PATCH',
+                                                );
+                                            }
+
+                                            router.post(requestUrl, payload, {
+                                                forceFormData: true,
+                                                preserveScroll: true,
+                                                preserveState: true,
+                                                onStart: () => {
+                                                    setIsSavingCourse(true);
+                                                },
+                                                onSuccess: () => {
+                                                    toast.success(
+                                                        isEditMode
+                                                            ? 'Kursus berhasil diperbarui.'
+                                                            : 'Kursus berhasil dibuat.',
+                                                    );
+                                                    resetCourseDialogState();
+                                                    setIsCreateDialogOpen(
+                                                        false,
+                                                    );
+                                                },
+                                                onError: (formErrors) => {
+                                                    const messages =
+                                                        Object.values(
+                                                            formErrors,
+                                                        )
+                                                            .flat()
+                                                            .join(', ');
+                                                    toast.error(
+                                                        messages ||
+                                                            'Gagal menyimpan kursus.',
+                                                    );
+                                                },
+                                                onFinish: () => {
+                                                    setIsSavingCourse(false);
+                                                },
+                                            });
+                                        }}
+                                    >
+                                        <DialogHeader>
+                                            <DialogTitle>
                                                 {isEditMode
-                                                    ? 'Biarkan kosong untuk mempertahankan sampul saat ini.'
-                                                    : 'Biarkan kosong untuk menggunakan sampul bawaan sistem.'}
-                                            </FieldDescription>
-                                        </Field>
-                                    </FieldGroup>
-                                    <DialogFooter className="mt-6">
-                                        <DialogClose asChild>
+                                                    ? 'Ubah kursus'
+                                                    : 'Buat kursus'}
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                {isEditMode
+                                                    ? 'Perbarui judul, ringkasan, dan gambar sampul kursus.'
+                                                    : 'Tambahkan judul dan ringkasan kursus baru.'}
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <FieldGroup>
+                                            <Field
+                                                data-invalid={
+                                                    titleHasError || undefined
+                                                }
+                                            >
+                                                <FieldLabel htmlFor="course-title">
+                                                    Judul{' '}
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
+                                                <Input
+                                                    id="course-title"
+                                                    name="title"
+                                                    placeholder="Masukkan judul kursus"
+                                                    value={courseForm.title}
+                                                    onChange={(event) => {
+                                                        setCourseForm(
+                                                            (current) => ({
+                                                                ...current,
+                                                                title: event
+                                                                    .target
+                                                                    .value,
+                                                            }),
+                                                        );
+                                                        setIsDirty(true);
+                                                    }}
+                                                    aria-invalid={titleHasError}
+                                                    required
+                                                />
+                                                {titleHasError && (
+                                                    <FieldDescription className="text-destructive">
+                                                        {errors.title}
+                                                    </FieldDescription>
+                                                )}
+                                            </Field>
+                                            <Field
+                                                data-invalid={
+                                                    descriptionHasError ||
+                                                    undefined
+                                                }
+                                            >
+                                                <FieldLabel htmlFor="course-description">
+                                                    Deskripsi{' '}
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
+                                                <Textarea
+                                                    id="course-description"
+                                                    name="description"
+                                                    placeholder="Masukkan deskripsi kursus"
+                                                    value={
+                                                        courseForm.description
+                                                    }
+                                                    onChange={(event) => {
+                                                        setCourseForm(
+                                                            (current) => ({
+                                                                ...current,
+                                                                description:
+                                                                    event.target
+                                                                        .value,
+                                                            }),
+                                                        );
+                                                        setIsDirty(true);
+                                                    }}
+                                                    aria-invalid={
+                                                        descriptionHasError
+                                                    }
+                                                    required
+                                                    rows={4}
+                                                />
+                                                {descriptionHasError && (
+                                                    <FieldDescription className="text-destructive">
+                                                        {errors.description}
+                                                    </FieldDescription>
+                                                )}
+                                            </Field>
+                                            <Field
+                                                data-invalid={
+                                                    coverImageHasError ||
+                                                    undefined
+                                                }
+                                            >
+                                                <FieldLabel htmlFor="course-picture">
+                                                    Unggah Sampul{' '}
+                                                    <span className="text-destructive"></span>
+                                                </FieldLabel>
+                                                <Input
+                                                    id="course-picture"
+                                                    name="cover_image"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    aria-invalid={
+                                                        coverImageHasError
+                                                    }
+                                                    onChange={(event) => {
+                                                        const file =
+                                                            event.target
+                                                                .files?.[0] ??
+                                                            null;
+                                                        setCourseForm(
+                                                            (current) => ({
+                                                                ...current,
+                                                                coverImage:
+                                                                    file,
+                                                            }),
+                                                        );
+                                                        setIsDirty(true);
+
+                                                        // Generate preview
+                                                        if (file) {
+                                                            const reader =
+                                                                new FileReader();
+                                                            reader.onloadend =
+                                                                () => {
+                                                                    setCoverImagePreview(
+                                                                        reader.result as string,
+                                                                    );
+                                                                };
+                                                            reader.readAsDataURL(
+                                                                file,
+                                                            );
+                                                        } else {
+                                                            setCoverImagePreview(
+                                                                null,
+                                                            );
+                                                        }
+                                                    }}
+                                                />
+                                                {coverImagePreview && (
+                                                    <div className="mt-2">
+                                                        <img
+                                                            src={
+                                                                coverImagePreview
+                                                            }
+                                                            alt="Preview"
+                                                            className="h-32 w-full rounded-lg object-cover"
+                                                        />
+                                                    </div>
+                                                )}
+                                                {coverImageHasError && (
+                                                    <FieldDescription className="text-destructive">
+                                                        {errors.cover_image}
+                                                    </FieldDescription>
+                                                )}
+                                                <FieldDescription>
+                                                    {isEditMode
+                                                        ? 'Biarkan kosong untuk mempertahankan sampul saat ini.'
+                                                        : 'Biarkan kosong untuk menggunakan sampul bawaan sistem.'}
+                                                </FieldDescription>
+                                            </Field>
+                                        </FieldGroup>
+                                        <DialogFooter className="mt-6">
+                                            <DialogClose asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    type="button"
+                                                    disabled={isSavingCourse}
+                                                >
+                                                    Batal
+                                                </Button>
+                                            </DialogClose>
                                             <Button
-                                                variant="outline"
-                                                type="button"
+                                                type="submit"
                                                 disabled={isSavingCourse}
                                             >
-                                                Batal
+                                                {isSavingCourse && (
+                                                    <Spinner data-icon="inline-start" />
+                                                )}
+                                                {isEditMode
+                                                    ? 'Perbarui Kursus'
+                                                    : 'Simpan Draf'}
                                             </Button>
-                                        </DialogClose>
-                                        <Button
-                                            type="submit"
-                                            disabled={isSavingCourse}
-                                        >
-                                            {isSavingCourse && (
-                                                <Spinner data-icon="inline-start" />
-                                            )}
-                                            {isEditMode
-                                                ? 'Perbarui Kursus'
-                                                : 'Simpan Draf'}
-                                        </Button>
-                                    </DialogFooter>
-                                </form>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                </header>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                    }
+                />
 
                 <section className="grid gap-4">
                     <div className="flex flex-col gap-4">

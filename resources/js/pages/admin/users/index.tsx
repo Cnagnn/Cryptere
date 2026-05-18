@@ -9,6 +9,7 @@ import {
     UserRound,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PageHeader } from '@/components/page-header';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -58,7 +59,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import { destroy, index as usersIndex, update } from '@/routes/admin/users';
@@ -366,62 +366,64 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         <>
             <Head title="Manajemen - Pengguna" />
 
-            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-col gap-0">
-                        <TypographyH1>Manajemen Pengguna</TypographyH1>
-                        <TypographyMuted className="text-sm/6">
-                            Kelola peran pengguna dan saldo poin dari satu ruang
-                            kerja.
-                        </TypographyMuted>
-                    </div>
-
-                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                        <div className="w-full sm:w-80">
-                            <Input
-                                id="user-search"
-                                value={searchInput}
-                                onChange={(event) =>
-                                    setSearchInput(event.target.value)
-                                }
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                        event.preventDefault();
-                                        syncFilters(searchInput, roleFilter, 1);
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
+                <PageHeader
+                    title="Manajemen Pengguna"
+                    description="Kelola peran pengguna dan saldo poin dari satu ruang kerja."
+                    actions={
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                            <div className="w-full sm:w-80">
+                                <Input
+                                    id="user-search"
+                                    value={searchInput}
+                                    onChange={(event) =>
+                                        setSearchInput(event.target.value)
                                     }
-                                }}
-                                placeholder="Cari nama pengguna..."
-                            />
-                        </div>
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            syncFilters(
+                                                searchInput,
+                                                roleFilter,
+                                                1,
+                                            );
+                                        }
+                                    }}
+                                    placeholder="Cari nama pengguna..."
+                                />
+                            </div>
 
-                        <Select
-                            value={roleFilter}
-                            onValueChange={(value) =>
-                                setRoleFilter(
-                                    value as 'all' | 'admin' | 'member',
-                                )
-                            }
-                        >
-                            <SelectTrigger
-                                id="role-filter"
-                                className="w-full sm:w-40"
+                            <Select
+                                value={roleFilter}
+                                onValueChange={(value) =>
+                                    setRoleFilter(
+                                        value as 'all' | 'admin' | 'member',
+                                    )
+                                }
                             >
-                                <SelectValue placeholder="Semua peran" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem value="all">
-                                        Semua peran
-                                    </SelectItem>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                    <SelectItem value="member">
-                                        Anggota
-                                    </SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </header>
+                                <SelectTrigger
+                                    id="role-filter"
+                                    className="w-full sm:w-40"
+                                >
+                                    <SelectValue placeholder="Semua peran" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem value="all">
+                                            Semua peran
+                                        </SelectItem>
+                                        <SelectItem value="admin">
+                                            Admin
+                                        </SelectItem>
+                                        <SelectItem value="member">
+                                            Anggota
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    }
+                />
 
                 <section className="grid gap-4">
                     <div className="flex flex-col gap-4">

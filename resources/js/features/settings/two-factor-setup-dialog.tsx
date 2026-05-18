@@ -70,7 +70,7 @@ export function TwoFactorSetupDialog({
                     {twoFactor.manualSetupKey && (
                         <div className="grid gap-2">
                             <Label>Manual setup key</Label>
-                            <div className="rounded-lg border bg-muted/40 p-3 font-mono text-xs break-all">
+                            <div className="rounded-lg border bg-muted/40 p-3 text-sm break-all">
                                 {twoFactor.manualSetupKey}
                             </div>
                         </div>

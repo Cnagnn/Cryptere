@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/page-header';
 import {
     Accordion,
     AccordionContent,
@@ -88,7 +89,6 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as tasksDestroy } from '@/routes/admin/courses/tasks';
 import { reorder as tasksReorder } from '@/routes/admin/courses/tasks';
@@ -914,1151 +914,1187 @@ export default function AdminCoursesTask({
     };
 
     return (
-        <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-            <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div className="flex flex-col gap-0">
-                    <TypographyH1>Manajemen Tugas</TypographyH1>
-                    <TypographyMuted className="text-sm/6">
-                        Kelola tugas di bawah setiap topik.
-                    </TypographyMuted>
-                </div>
-
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                role="combobox"
-                                className="w-full justify-between sm:w-72"
-                            >
-                                <span className="truncate">
-                                    {(() => {
-                                        if (
-                                            selectedLessonId === 0 &&
-                                            selectedCourseId === 0
-                                        ) {
-                                            return 'Pilih Topik...';
-                                        }
-
-                                        const lesson = allLessons.find(
-                                            (l) => l.id === selectedLessonId,
-                                        );
-
-                                        if (lesson) {
-                                            return lesson.title;
-                                        }
-
-                                        return 'Pilih Topik...';
-                                    })()}
-                                </span>
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-72 p-0" align="start">
-                            <Command>
-                                <CommandInput placeholder="Cari kursus atau topik..." />
-                                <CommandList className="max-h-none overflow-y-hidden">
-                                    <CommandEmpty>
-                                        Tidak ada hasil ditemukan.
-                                    </CommandEmpty>
-                                    <ScrollArea className="h-64">
-                                        {courseOptions.map((course) => {
-                                            const courseLessons =
-                                                allLessons.filter(
-                                                    (l) =>
-                                                        l.course_id ===
-                                                        course.id,
-                                                );
-
-                                            if (courseLessons.length === 0) {
-                                                return null;
+        <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
+            <PageHeader
+                title="Manajemen Tugas"
+                description="Kelola tugas di bawah setiap topik."
+                actions={
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className="w-full justify-between sm:w-72"
+                                >
+                                    <span className="truncate">
+                                        {(() => {
+                                            if (
+                                                selectedLessonId === 0 &&
+                                                selectedCourseId === 0
+                                            ) {
+                                                return 'Pilih Topik...';
                                             }
 
-                                            return (
-                                                <CommandGroup
-                                                    key={course.id}
-                                                    heading={course.title}
-                                                >
-                                                    {courseLessons.map(
-                                                        (lesson) => (
-                                                            <CommandItem
-                                                                key={lesson.id}
-                                                                value={`${course.title} ${lesson.title}`}
-                                                                onSelect={() => {
-                                                                    const isSelected =
-                                                                        selectedLessonId ===
-                                                                            lesson.id &&
-                                                                        selectedCourseId ===
-                                                                            course.id;
-
-                                                                    // Don't navigate if already selected
-                                                                    if (
-                                                                        isSelected
-                                                                    ) {
-                                                                        return;
-                                                                    }
-
-                                                                    router.get(
-                                                                        adminCoursesIndex.url(
-                                                                            {
-                                                                                query: {
-                                                                                    section:
-                                                                                        'task',
-                                                                                    course_id:
-                                                                                        course.id,
-                                                                                    lesson_id:
-                                                                                        lesson.id,
-                                                                                    page: 1,
-                                                                                    per_page:
-                                                                                        tasks.per_page,
-                                                                                },
-                                                                            },
-                                                                        ),
-                                                                        {},
-                                                                        {
-                                                                            preserveState: true,
-                                                                            preserveScroll: true,
-                                                                        },
-                                                                    );
-                                                                }}
-                                                            >
-                                                                {lesson.title}
-                                                                <Check
-                                                                    className={`ml-auto h-4 w-4 ${selectedLessonId === lesson.id && selectedCourseId === course.id ? 'opacity-100' : 'opacity-0'}`}
-                                                                />
-                                                            </CommandItem>
-                                                        ),
-                                                    )}
-                                                </CommandGroup>
-                                            );
-                                        })}
-                                    </ScrollArea>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
-
-                    <div className="w-full sm:w-80">
-                        <Input
-                            id="task-search"
-                            placeholder="Cari Tugas..."
-                            value={filterValue}
-                            onChange={(event) =>
-                                setFilterValue(event.target.value)
-                            }
-                        />
-                    </div>
-
-                    <Dialog
-                        open={createTaskDialogOpen}
-                        onOpenChange={(open) => {
-                            setCreateTaskDialogOpen(open);
-
-                            if (!open && !isSavingTask) {
-                                resetTaskForm();
-                            }
-                        }}
-                    >
-                        <DialogTrigger asChild>
-                            <Button
-                                type="button"
-                                onClick={() => {
-                                    resetTaskForm();
-                                    setCreateTaskDialogOpen(true);
-                                }}
-                            >
-                                <Plus data-icon="inline-start" />
-                                Buat
-                            </Button>
-                        </DialogTrigger>
-
-                        <DialogContent className="sm:max-w-sm">
-                            <form
-                                encType="multipart/form-data"
-                                onSubmit={(event) => {
-                                    event.preventDefault();
-                                    const payload = new FormData();
-                                    payload.append(
-                                        'lesson_id',
-                                        String(taskForm.lesson_id),
-                                    );
-                                    payload.append('title', taskForm.title);
-                                    payload.append(
-                                        'description',
-                                        taskForm.description,
-                                    );
-                                    payload.append('type', taskForm.type);
-
-                                    if (taskForm.estimated_minutes) {
-                                        payload.append(
-                                            'estimated_minutes',
-                                            taskForm.estimated_minutes,
-                                        );
-                                    }
-
-                                    if (taskForm.prerequisite_task_id) {
-                                        payload.append(
-                                            'prerequisite_task_id',
-                                            taskForm.prerequisite_task_id,
-                                        );
-                                    }
-
-                                    payload.append('status', taskForm.status);
-
-                                    if (taskForm.type === 'video') {
-                                        payload.append(
-                                            'video_url',
-                                            taskForm.video_url,
-                                        );
-                                    }
-
-                                    if (
-                                        taskForm.type === 'read' &&
-                                        taskForm.document
-                                    ) {
-                                        payload.append(
-                                            'document',
-                                            taskForm.document,
-                                        );
-                                    }
-
-                                    if (taskForm.type === 'quiz') {
-                                        if (quizQuestions.length === 0) {
-                                            toast.error(
-                                                'Tambahkan minimal 1 pertanyaan.',
+                                            const lesson = allLessons.find(
+                                                (l) =>
+                                                    l.id === selectedLessonId,
                                             );
 
-                                            return;
-                                        }
+                                            if (lesson) {
+                                                return lesson.title;
+                                            }
 
-                                        quizQuestions.forEach(
-                                            (question, index) => {
-                                                payload.append(
-                                                    `quiz_questions[${index}][question]`,
-                                                    question.question,
-                                                );
-                                                payload.append(
-                                                    `quiz_questions[${index}][options][0]`,
-                                                    question.options[0],
-                                                );
-                                                payload.append(
-                                                    `quiz_questions[${index}][options][1]`,
-                                                    question.options[1],
-                                                );
-                                                payload.append(
-                                                    `quiz_questions[${index}][options][2]`,
-                                                    question.options[2],
-                                                );
-                                                payload.append(
-                                                    `quiz_questions[${index}][options][3]`,
-                                                    question.options[3],
-                                                );
-                                                payload.append(
-                                                    `quiz_questions[${index}][correct_option]`,
-                                                    String(
-                                                        question.correct_option,
-                                                    ),
-                                                );
-                                                payload.append(
-                                                    `quiz_questions[${index}][explanation]`,
-                                                    question.explanation,
-                                                );
-                                            },
-                                        );
-                                    }
+                                            return 'Pilih Topik...';
+                                        })()}
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72 p-0" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Cari kursus atau topik..." />
+                                    <CommandList className="max-h-none overflow-y-hidden">
+                                        <CommandEmpty>
+                                            Tidak ada hasil ditemukan.
+                                        </CommandEmpty>
+                                        <ScrollArea className="h-64">
+                                            {courseOptions.map((course) => {
+                                                const courseLessons =
+                                                    allLessons.filter(
+                                                        (l) =>
+                                                            l.course_id ===
+                                                            course.id,
+                                                    );
 
-                                    const requestUrl = isEditMode
-                                        ? tasksUpdate.url({
-                                              task: editingTask.id,
-                                          })
-                                        : tasksStore.url();
+                                                if (
+                                                    courseLessons.length === 0
+                                                ) {
+                                                    return null;
+                                                }
 
-                                    if (isEditMode) {
-                                        payload.append('_method', 'PATCH');
-                                    }
-
-                                    router.post(requestUrl, payload, {
-                                        forceFormData: true,
-                                        preserveScroll: true,
-                                        preserveState: true,
-                                        onStart: () => setIsSavingTask(true),
-                                        onSuccess: () => {
-                                            toast.success(
-                                                isEditMode
-                                                    ? 'Tugas berhasil diperbarui.'
-                                                    : 'Tugas berhasil dibuat.',
-                                            );
-                                            resetTaskForm();
-                                            setCreateTaskDialogOpen(false);
-                                        },
-                                        onError: (formErrors) => {
-                                            const messages = Object.values(
-                                                formErrors,
-                                            )
-                                                .flat()
-                                                .join(', ');
-                                            toast.error(
-                                                messages ||
-                                                    'Gagal menyimpan tugas.',
-                                            );
-                                        },
-                                        onFinish: () => setIsSavingTask(false),
-                                    });
-                                }}
-                            >
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        {isEditMode
-                                            ? 'Ubah tugas'
-                                            : 'Buat tugas'}
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                        {isEditMode
-                                            ? 'Perbarui detail dan konten tugas.'
-                                            : 'Tambahkan tugas baru di bawah topik yang dipilih.'}
-                                    </DialogDescription>
-                                </DialogHeader>
-
-                                <FieldGroup>
-                                    <Field
-                                        data-invalid={
-                                            taskLessonHasError || undefined
-                                        }
-                                    >
-                                        <FieldLabel htmlFor="task-lesson">
-                                            Topik{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <Popover
-                                            open={topicComboboxOpen}
-                                            onOpenChange={setTopicComboboxOpen}
-                                        >
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    id="task-lesson"
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    className="w-full justify-between"
-                                                    aria-invalid={
-                                                        taskLessonHasError
-                                                    }
-                                                >
-                                                    <span className="truncate">
-                                                        {(() => {
-                                                            const lesson =
-                                                                lessonOptions.find(
-                                                                    (l) =>
-                                                                        l.id ===
-                                                                        taskForm.lesson_id,
-                                                                );
-
-                                                            if (lesson) {
-                                                                return lesson.title;
-                                                            }
-
-                                                            return 'Pilih Topik...';
-                                                        })()}
-                                                    </span>
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent
-                                                className="p-0"
-                                                align="start"
-                                                style={{
-                                                    width: 'var(--radix-popover-trigger-width)',
-                                                }}
-                                            >
-                                                <Command>
-                                                    <CommandInput placeholder="Cari kursus atau topik..." />
-                                                    <CommandList
-                                                        style={{
-                                                            maxHeight: '16rem',
-                                                            overflowY: 'auto',
-                                                        }}
+                                                return (
+                                                    <CommandGroup
+                                                        key={course.id}
+                                                        heading={course.title}
                                                     >
-                                                        <CommandEmpty>
-                                                            Tidak ada hasil
-                                                            ditemukan.
-                                                        </CommandEmpty>
-                                                        {Object.entries(
-                                                            groupedLessons,
-                                                        ).map(
-                                                            ([
-                                                                courseId,
-                                                                {
-                                                                    course,
-                                                                    lessons,
-                                                                },
-                                                            ]) => (
-                                                                <CommandGroup
+                                                        {courseLessons.map(
+                                                            (lesson) => (
+                                                                <CommandItem
                                                                     key={
-                                                                        courseId
+                                                                        lesson.id
                                                                     }
-                                                                    heading={
-                                                                        course
-                                                                    }
-                                                                >
-                                                                    {lessons.map(
-                                                                        (
-                                                                            lesson,
-                                                                        ) => (
-                                                                            <CommandItem
-                                                                                key={
-                                                                                    lesson.id
-                                                                                }
-                                                                                value={`${course} ${lesson.title}`}
-                                                                                onSelect={() => {
-                                                                                    setTaskForm(
-                                                                                        (
-                                                                                            current,
-                                                                                        ) => ({
-                                                                                            ...current,
-                                                                                            lesson_id:
-                                                                                                lesson.id,
-                                                                                        }),
-                                                                                    );
-                                                                                    setTopicComboboxOpen(
-                                                                                        false,
-                                                                                    );
-                                                                                }}
-                                                                            >
+                                                                    value={`${course.title} ${lesson.title}`}
+                                                                    onSelect={() => {
+                                                                        const isSelected =
+                                                                            selectedLessonId ===
+                                                                                lesson.id &&
+                                                                            selectedCourseId ===
+                                                                                course.id;
+
+                                                                        // Don't navigate if already selected
+                                                                        if (
+                                                                            isSelected
+                                                                        ) {
+                                                                            return;
+                                                                        }
+
+                                                                        router.get(
+                                                                            adminCoursesIndex.url(
                                                                                 {
-                                                                                    lesson.title
-                                                                                }
-                                                                                <Check
-                                                                                    className={`ml-auto h-4 w-4 ${
-                                                                                        taskForm.lesson_id ===
-                                                                                        lesson.id
-                                                                                            ? 'opacity-100'
-                                                                                            : 'opacity-0'
-                                                                                    }`}
-                                                                                />
-                                                                            </CommandItem>
-                                                                        ),
-                                                                    )}
-                                                                </CommandGroup>
+                                                                                    query: {
+                                                                                        section:
+                                                                                            'task',
+                                                                                        course_id:
+                                                                                            course.id,
+                                                                                        lesson_id:
+                                                                                            lesson.id,
+                                                                                        page: 1,
+                                                                                        per_page:
+                                                                                            tasks.per_page,
+                                                                                    },
+                                                                                },
+                                                                            ),
+                                                                            {},
+                                                                            {
+                                                                                preserveState: true,
+                                                                                preserveScroll: true,
+                                                                            },
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        lesson.title
+                                                                    }
+                                                                    <Check
+                                                                        className={`ml-auto h-4 w-4 ${selectedLessonId === lesson.id && selectedCourseId === course.id ? 'opacity-100' : 'opacity-0'}`}
+                                                                    />
+                                                                </CommandItem>
                                                             ),
                                                         )}
-                                                    </CommandList>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
-                                        {taskLessonHasError && (
-                                            <FieldDescription className="text-destructive">
-                                                {errors.lesson_id}
-                                            </FieldDescription>
-                                        )}
-                                    </Field>
+                                                    </CommandGroup>
+                                                );
+                                            })}
+                                        </ScrollArea>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
 
-                                    <Field
-                                        className="gap-2"
-                                        data-invalid={
-                                            taskTitleHasError || undefined
-                                        }
-                                    >
-                                        <FieldLabel htmlFor="task-title">
-                                            Judul{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <Input
-                                            id="task-title"
-                                            name="title"
-                                            placeholder="Masukkan judul tugas"
-                                            value={taskForm.title}
-                                            onChange={(event) =>
-                                                setTaskForm((current) => ({
-                                                    ...current,
-                                                    title: event.target.value,
-                                                }))
-                                            }
-                                            aria-invalid={taskTitleHasError}
-                                            required
-                                        />
-                                        {taskTitleHasError && (
-                                            <FieldDescription className="text-destructive">
-                                                {errors.title}
-                                            </FieldDescription>
-                                        )}
-                                    </Field>
+                        <div className="w-full sm:w-80">
+                            <Input
+                                id="task-search"
+                                placeholder="Cari Tugas..."
+                                value={filterValue}
+                                onChange={(event) =>
+                                    setFilterValue(event.target.value)
+                                }
+                            />
+                        </div>
 
-                                    <Field
-                                        className="gap-2"
-                                        data-invalid={
-                                            taskDescriptionHasError || undefined
-                                        }
-                                    >
-                                        <FieldLabel htmlFor="task-description">
-                                            Deskripsi{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <Textarea
-                                            id="task-description"
-                                            name="description"
-                                            placeholder="Masukkan deskripsi tugas"
-                                            value={taskForm.description}
-                                            onChange={(event) =>
-                                                setTaskForm((current) => ({
-                                                    ...current,
-                                                    description:
-                                                        event.target.value,
-                                                }))
-                                            }
-                                            aria-invalid={
-                                                taskDescriptionHasError
-                                            }
-                                            rows={3}
-                                            required
-                                        />
-                                        {taskDescriptionHasError && (
-                                            <FieldDescription className="text-destructive">
-                                                {errors.description}
-                                            </FieldDescription>
-                                        )}
-                                    </Field>
+                        <Dialog
+                            open={createTaskDialogOpen}
+                            onOpenChange={(open) => {
+                                setCreateTaskDialogOpen(open);
 
-                                    <Field
-                                        className="gap-2"
-                                        data-invalid={
-                                            taskTypeHasError || undefined
+                                if (!open && !isSavingTask) {
+                                    resetTaskForm();
+                                }
+                            }}
+                        >
+                            <DialogTrigger asChild>
+                                <Button
+                                    type="button"
+                                    onClick={() => {
+                                        resetTaskForm();
+                                        setCreateTaskDialogOpen(true);
+                                    }}
+                                >
+                                    <Plus data-icon="inline-start" />
+                                    Buat
+                                </Button>
+                            </DialogTrigger>
+
+                            <DialogContent className="sm:max-w-sm">
+                                <form
+                                    encType="multipart/form-data"
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        const payload = new FormData();
+                                        payload.append(
+                                            'lesson_id',
+                                            String(taskForm.lesson_id),
+                                        );
+                                        payload.append('title', taskForm.title);
+                                        payload.append(
+                                            'description',
+                                            taskForm.description,
+                                        );
+                                        payload.append('type', taskForm.type);
+
+                                        if (taskForm.estimated_minutes) {
+                                            payload.append(
+                                                'estimated_minutes',
+                                                taskForm.estimated_minutes,
+                                            );
                                         }
-                                    >
-                                        <FieldLabel htmlFor="task-type">
-                                            Tipe{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <Select
-                                            value={taskForm.type}
-                                            onValueChange={(value) => {
-                                                setTaskForm((current) => ({
-                                                    ...current,
-                                                    type: value as
-                                                        | 'video'
-                                                        | 'read'
-                                                        | 'quiz',
-                                                    video_url:
-                                                        value === 'video'
-                                                            ? current.video_url
-                                                            : '',
-                                                    document:
-                                                        value === 'read'
-                                                            ? current.document
-                                                            : null,
-                                                }));
-                                            }}
+
+                                        if (taskForm.prerequisite_task_id) {
+                                            payload.append(
+                                                'prerequisite_task_id',
+                                                taskForm.prerequisite_task_id,
+                                            );
+                                        }
+
+                                        payload.append(
+                                            'status',
+                                            taskForm.status,
+                                        );
+
+                                        if (taskForm.type === 'video') {
+                                            payload.append(
+                                                'video_url',
+                                                taskForm.video_url,
+                                            );
+                                        }
+
+                                        if (
+                                            taskForm.type === 'read' &&
+                                            taskForm.document
+                                        ) {
+                                            payload.append(
+                                                'document',
+                                                taskForm.document,
+                                            );
+                                        }
+
+                                        if (taskForm.type === 'quiz') {
+                                            if (quizQuestions.length === 0) {
+                                                toast.error(
+                                                    'Tambahkan minimal 1 pertanyaan.',
+                                                );
+
+                                                return;
+                                            }
+
+                                            quizQuestions.forEach(
+                                                (question, index) => {
+                                                    payload.append(
+                                                        `quiz_questions[${index}][question]`,
+                                                        question.question,
+                                                    );
+                                                    payload.append(
+                                                        `quiz_questions[${index}][options][0]`,
+                                                        question.options[0],
+                                                    );
+                                                    payload.append(
+                                                        `quiz_questions[${index}][options][1]`,
+                                                        question.options[1],
+                                                    );
+                                                    payload.append(
+                                                        `quiz_questions[${index}][options][2]`,
+                                                        question.options[2],
+                                                    );
+                                                    payload.append(
+                                                        `quiz_questions[${index}][options][3]`,
+                                                        question.options[3],
+                                                    );
+                                                    payload.append(
+                                                        `quiz_questions[${index}][correct_option]`,
+                                                        String(
+                                                            question.correct_option,
+                                                        ),
+                                                    );
+                                                    payload.append(
+                                                        `quiz_questions[${index}][explanation]`,
+                                                        question.explanation,
+                                                    );
+                                                },
+                                            );
+                                        }
+
+                                        const requestUrl = isEditMode
+                                            ? tasksUpdate.url({
+                                                  task: editingTask.id,
+                                              })
+                                            : tasksStore.url();
+
+                                        if (isEditMode) {
+                                            payload.append('_method', 'PATCH');
+                                        }
+
+                                        router.post(requestUrl, payload, {
+                                            forceFormData: true,
+                                            preserveScroll: true,
+                                            preserveState: true,
+                                            onStart: () =>
+                                                setIsSavingTask(true),
+                                            onSuccess: () => {
+                                                toast.success(
+                                                    isEditMode
+                                                        ? 'Tugas berhasil diperbarui.'
+                                                        : 'Tugas berhasil dibuat.',
+                                                );
+                                                resetTaskForm();
+                                                setCreateTaskDialogOpen(false);
+                                            },
+                                            onError: (formErrors) => {
+                                                const messages = Object.values(
+                                                    formErrors,
+                                                )
+                                                    .flat()
+                                                    .join(', ');
+                                                toast.error(
+                                                    messages ||
+                                                        'Gagal menyimpan tugas.',
+                                                );
+                                            },
+                                            onFinish: () =>
+                                                setIsSavingTask(false),
+                                        });
+                                    }}
+                                >
+                                    <DialogHeader>
+                                        <DialogTitle>
+                                            {isEditMode
+                                                ? 'Ubah tugas'
+                                                : 'Buat tugas'}
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            {isEditMode
+                                                ? 'Perbarui detail dan konten tugas.'
+                                                : 'Tambahkan tugas baru di bawah topik yang dipilih.'}
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <FieldGroup>
+                                        <Field
+                                            data-invalid={
+                                                taskLessonHasError || undefined
+                                            }
                                         >
-                                            <SelectTrigger
-                                                id="task-type"
-                                                aria-invalid={taskTypeHasError}
+                                            <FieldLabel htmlFor="task-lesson">
+                                                Topik{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Popover
+                                                open={topicComboboxOpen}
+                                                onOpenChange={
+                                                    setTopicComboboxOpen
+                                                }
                                             >
-                                                <SelectValue placeholder="Pilih tipe" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    <SelectItem value="video">
-                                                        Video
-                                                    </SelectItem>
-                                                    <SelectItem value="read">
-                                                        Dokumen
-                                                    </SelectItem>
-                                                    <SelectItem value="quiz">
-                                                        Kuis
-                                                    </SelectItem>
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                        {taskTypeHasError && (
-                                            <FieldDescription className="text-destructive">
-                                                {errors.type}
-                                            </FieldDescription>
-                                        )}
-                                    </Field>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        id="task-lesson"
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className="w-full justify-between"
+                                                        aria-invalid={
+                                                            taskLessonHasError
+                                                        }
+                                                    >
+                                                        <span className="truncate">
+                                                            {(() => {
+                                                                const lesson =
+                                                                    lessonOptions.find(
+                                                                        (l) =>
+                                                                            l.id ===
+                                                                            taskForm.lesson_id,
+                                                                    );
 
-                                    {taskForm.type === 'video' && (
+                                                                if (lesson) {
+                                                                    return lesson.title;
+                                                                }
+
+                                                                return 'Pilih Topik...';
+                                                            })()}
+                                                        </span>
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent
+                                                    className="p-0"
+                                                    align="start"
+                                                    style={{
+                                                        width: 'var(--radix-popover-trigger-width)',
+                                                    }}
+                                                >
+                                                    <Command>
+                                                        <CommandInput placeholder="Cari kursus atau topik..." />
+                                                        <CommandList
+                                                            style={{
+                                                                maxHeight:
+                                                                    '16rem',
+                                                                overflowY:
+                                                                    'auto',
+                                                            }}
+                                                        >
+                                                            <CommandEmpty>
+                                                                Tidak ada hasil
+                                                                ditemukan.
+                                                            </CommandEmpty>
+                                                            {Object.entries(
+                                                                groupedLessons,
+                                                            ).map(
+                                                                ([
+                                                                    courseId,
+                                                                    {
+                                                                        course,
+                                                                        lessons,
+                                                                    },
+                                                                ]) => (
+                                                                    <CommandGroup
+                                                                        key={
+                                                                            courseId
+                                                                        }
+                                                                        heading={
+                                                                            course
+                                                                        }
+                                                                    >
+                                                                        {lessons.map(
+                                                                            (
+                                                                                lesson,
+                                                                            ) => (
+                                                                                <CommandItem
+                                                                                    key={
+                                                                                        lesson.id
+                                                                                    }
+                                                                                    value={`${course} ${lesson.title}`}
+                                                                                    onSelect={() => {
+                                                                                        setTaskForm(
+                                                                                            (
+                                                                                                current,
+                                                                                            ) => ({
+                                                                                                ...current,
+                                                                                                lesson_id:
+                                                                                                    lesson.id,
+                                                                                            }),
+                                                                                        );
+                                                                                        setTopicComboboxOpen(
+                                                                                            false,
+                                                                                        );
+                                                                                    }}
+                                                                                >
+                                                                                    {
+                                                                                        lesson.title
+                                                                                    }
+                                                                                    <Check
+                                                                                        className={`ml-auto h-4 w-4 ${
+                                                                                            taskForm.lesson_id ===
+                                                                                            lesson.id
+                                                                                                ? 'opacity-100'
+                                                                                                : 'opacity-0'
+                                                                                        }`}
+                                                                                    />
+                                                                                </CommandItem>
+                                                                            ),
+                                                                        )}
+                                                                    </CommandGroup>
+                                                                ),
+                                                            )}
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                            {taskLessonHasError && (
+                                                <FieldDescription className="text-destructive">
+                                                    {errors.lesson_id}
+                                                </FieldDescription>
+                                            )}
+                                        </Field>
+
                                         <Field
                                             className="gap-2"
                                             data-invalid={
-                                                taskVideoUrlHasError ||
-                                                undefined
+                                                taskTitleHasError || undefined
                                             }
                                         >
-                                            <FieldLabel htmlFor="task-video-url">
-                                                URL Video{' '}
+                                            <FieldLabel htmlFor="task-title">
+                                                Judul{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
                                             </FieldLabel>
                                             <Input
-                                                id="task-video-url"
-                                                name="video_url"
-                                                type="url"
-                                                placeholder="https://..."
-                                                value={taskForm.video_url}
+                                                id="task-title"
+                                                name="title"
+                                                placeholder="Masukkan judul tugas"
+                                                value={taskForm.title}
                                                 onChange={(event) =>
                                                     setTaskForm((current) => ({
                                                         ...current,
-                                                        video_url:
+                                                        title: event.target
+                                                            .value,
+                                                    }))
+                                                }
+                                                aria-invalid={taskTitleHasError}
+                                                required
+                                            />
+                                            {taskTitleHasError && (
+                                                <FieldDescription className="text-destructive">
+                                                    {errors.title}
+                                                </FieldDescription>
+                                            )}
+                                        </Field>
+
+                                        <Field
+                                            className="gap-2"
+                                            data-invalid={
+                                                taskDescriptionHasError ||
+                                                undefined
+                                            }
+                                        >
+                                            <FieldLabel htmlFor="task-description">
+                                                Deskripsi{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Textarea
+                                                id="task-description"
+                                                name="description"
+                                                placeholder="Masukkan deskripsi tugas"
+                                                value={taskForm.description}
+                                                onChange={(event) =>
+                                                    setTaskForm((current) => ({
+                                                        ...current,
+                                                        description:
                                                             event.target.value,
                                                     }))
                                                 }
                                                 aria-invalid={
-                                                    taskVideoUrlHasError
+                                                    taskDescriptionHasError
                                                 }
+                                                rows={3}
                                                 required
                                             />
-                                            {taskVideoUrlHasError && (
+                                            {taskDescriptionHasError && (
                                                 <FieldDescription className="text-destructive">
-                                                    {errors.video_url}
+                                                    {errors.description}
                                                 </FieldDescription>
                                             )}
                                         </Field>
-                                    )}
 
-                                    {taskForm.type === 'read' && (
                                         <Field
                                             className="gap-2"
                                             data-invalid={
-                                                taskDocumentHasError ||
-                                                undefined
+                                                taskTypeHasError || undefined
                                             }
                                         >
-                                            <FieldLabel htmlFor="task-document">
-                                                Dokumen{' '}
-                                                {!isEditMode && (
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
-                                                )}
+                                            <FieldLabel htmlFor="task-type">
+                                                Tipe{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
                                             </FieldLabel>
-                                            {isEditMode &&
-                                                editingTask.document_name && (
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Saat ini:{' '}
-                                                        {
-                                                            editingTask.document_name
-                                                        }
-                                                    </p>
-                                                )}
-                                            <Input
-                                                id="task-document"
-                                                name="document"
-                                                type="file"
-                                                accept=".pdf,.doc,.docx,.txt"
-                                                aria-invalid={
-                                                    taskDocumentHasError
-                                                }
-                                                onChange={(event) => {
-                                                    const file =
-                                                        event.target
-                                                            .files?.[0] ?? null;
+                                            <Select
+                                                value={taskForm.type}
+                                                onValueChange={(value) => {
                                                     setTaskForm((current) => ({
                                                         ...current,
-                                                        document: file,
+                                                        type: value as
+                                                            | 'video'
+                                                            | 'read'
+                                                            | 'quiz',
+                                                        video_url:
+                                                            value === 'video'
+                                                                ? current.video_url
+                                                                : '',
+                                                        document:
+                                                            value === 'read'
+                                                                ? current.document
+                                                                : null,
                                                     }));
                                                 }}
-                                                required={!isEditMode}
-                                            />
-                                            {taskDocumentHasError && (
+                                            >
+                                                <SelectTrigger
+                                                    id="task-type"
+                                                    aria-invalid={
+                                                        taskTypeHasError
+                                                    }
+                                                >
+                                                    <SelectValue placeholder="Pilih tipe" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectItem value="video">
+                                                            Video
+                                                        </SelectItem>
+                                                        <SelectItem value="read">
+                                                            Dokumen
+                                                        </SelectItem>
+                                                        <SelectItem value="quiz">
+                                                            Kuis
+                                                        </SelectItem>
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                            {taskTypeHasError && (
                                                 <FieldDescription className="text-destructive">
-                                                    {errors.document}
+                                                    {errors.type}
                                                 </FieldDescription>
                                             )}
                                         </Field>
-                                    )}
 
-                                    {taskForm.type === 'quiz' && (
-                                        <>
-                                            <Field>
-                                                <FieldLabel htmlFor="task-quiz-import">
-                                                    Impor Pertanyaan{' '}
-                                                    {!isEditMode &&
-                                                        quizQuestions.length ===
-                                                            0 && (
-                                                            <span className="text-destructive">
-                                                                *
-                                                            </span>
-                                                        )}
+                                        {taskForm.type === 'video' && (
+                                            <Field
+                                                className="gap-2"
+                                                data-invalid={
+                                                    taskVideoUrlHasError ||
+                                                    undefined
+                                                }
+                                            >
+                                                <FieldLabel htmlFor="task-video-url">
+                                                    URL Video{' '}
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
                                                 </FieldLabel>
+                                                <Input
+                                                    id="task-video-url"
+                                                    name="video_url"
+                                                    type="url"
+                                                    placeholder="https://..."
+                                                    value={taskForm.video_url}
+                                                    onChange={(event) =>
+                                                        setTaskForm(
+                                                            (current) => ({
+                                                                ...current,
+                                                                video_url:
+                                                                    event.target
+                                                                        .value,
+                                                            }),
+                                                        )
+                                                    }
+                                                    aria-invalid={
+                                                        taskVideoUrlHasError
+                                                    }
+                                                    required
+                                                />
+                                                {taskVideoUrlHasError && (
+                                                    <FieldDescription className="text-destructive">
+                                                        {errors.video_url}
+                                                    </FieldDescription>
+                                                )}
+                                            </Field>
+                                        )}
 
-                                                <div className="flex gap-2">
-                                                    <Input
-                                                        id="task-quiz-import"
-                                                        type="file"
-                                                        accept=".csv,.xlsx,.xls"
-                                                        className="flex-1"
-                                                        aria-invalid={
-                                                            taskQuizQuestionsHasError
-                                                        }
-                                                        onChange={async (
-                                                            event,
-                                                        ) => {
-                                                            const selectedFile =
-                                                                event.target
-                                                                    .files?.[0] ??
-                                                                null;
-
-                                                            if (!selectedFile) {
-                                                                setQuizImportFileName(
-                                                                    '',
-                                                                );
-                                                                setQuizQuestions(
-                                                                    [],
-                                                                );
-
-                                                                return;
+                                        {taskForm.type === 'read' && (
+                                            <Field
+                                                className="gap-2"
+                                                data-invalid={
+                                                    taskDocumentHasError ||
+                                                    undefined
+                                                }
+                                            >
+                                                <FieldLabel htmlFor="task-document">
+                                                    Dokumen{' '}
+                                                    {!isEditMode && (
+                                                        <span className="text-destructive">
+                                                            *
+                                                        </span>
+                                                    )}
+                                                </FieldLabel>
+                                                {isEditMode &&
+                                                    editingTask.document_name && (
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Saat ini:{' '}
+                                                            {
+                                                                editingTask.document_name
                                                             }
+                                                        </p>
+                                                    )}
+                                                <Input
+                                                    id="task-document"
+                                                    name="document"
+                                                    type="file"
+                                                    accept=".pdf,.doc,.docx,.txt"
+                                                    aria-invalid={
+                                                        taskDocumentHasError
+                                                    }
+                                                    onChange={(event) => {
+                                                        const file =
+                                                            event.target
+                                                                .files?.[0] ??
+                                                            null;
+                                                        setTaskForm(
+                                                            (current) => ({
+                                                                ...current,
+                                                                document: file,
+                                                            }),
+                                                        );
+                                                    }}
+                                                    required={!isEditMode}
+                                                />
+                                                {taskDocumentHasError && (
+                                                    <FieldDescription className="text-destructive">
+                                                        {errors.document}
+                                                    </FieldDescription>
+                                                )}
+                                            </Field>
+                                        )}
 
-                                                            try {
-                                                                const text =
-                                                                    await selectedFile.text();
-                                                                const parsedRows =
-                                                                    parseQuizImportText(
-                                                                        text,
-                                                                    );
+                                        {taskForm.type === 'quiz' && (
+                                            <>
+                                                <Field>
+                                                    <FieldLabel htmlFor="task-quiz-import">
+                                                        Impor Pertanyaan{' '}
+                                                        {!isEditMode &&
+                                                            quizQuestions.length ===
+                                                                0 && (
+                                                                <span className="text-destructive">
+                                                                    *
+                                                                </span>
+                                                            )}
+                                                    </FieldLabel>
+
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            id="task-quiz-import"
+                                                            type="file"
+                                                            accept=".csv,.xlsx,.xls"
+                                                            className="flex-1"
+                                                            aria-invalid={
+                                                                taskQuizQuestionsHasError
+                                                            }
+                                                            onChange={async (
+                                                                event,
+                                                            ) => {
+                                                                const selectedFile =
+                                                                    event.target
+                                                                        .files?.[0] ??
+                                                                    null;
 
                                                                 if (
-                                                                    parsedRows.length ===
-                                                                    0
+                                                                    !selectedFile
                                                                 ) {
-                                                                    toast.error(
-                                                                        'Tidak ada pertanyaan ditemukan dalam file.',
+                                                                    setQuizImportFileName(
+                                                                        '',
+                                                                    );
+                                                                    setQuizQuestions(
+                                                                        [],
                                                                     );
 
                                                                     return;
                                                                 }
 
-                                                                setQuizQuestions(
-                                                                    parsedRows,
-                                                                );
-                                                                setQuizImportFileName(
-                                                                    selectedFile.name,
-                                                                );
-                                                                toast.success(
-                                                                    `Berhasil mengimpor ${parsedRows.length} pertanyaan.`,
-                                                                );
-                                                            } catch {
-                                                                toast.error(
-                                                                    'Gagal membaca file. Silakan gunakan format template.',
-                                                                );
-                                                            }
-                                                        }}
-                                                    />
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="icon"
-                                                                className="shrink-0"
-                                                            >
-                                                                <Download className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    downloadQuizTemplate(
-                                                                        'csv',
-                                                                    )
-                                                                }
-                                                            >
-                                                                Format CSV
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    downloadQuizTemplate(
-                                                                        'xlsx',
-                                                                    )
-                                                                }
-                                                            >
-                                                                Excel (.xlsx)
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    downloadQuizTemplate(
-                                                                        'xls',
-                                                                    )
-                                                                }
-                                                            >
-                                                                Excel Lama
-                                                                (.xls)
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
+                                                                try {
+                                                                    const text =
+                                                                        await selectedFile.text();
+                                                                    const parsedRows =
+                                                                        parseQuizImportText(
+                                                                            text,
+                                                                        );
 
-                                                <FieldDescription>
-                                                    Unggah CSV/Excel atau klik
-                                                    tombol di bawah untuk tambah
-                                                    manual
-                                                </FieldDescription>
+                                                                    if (
+                                                                        parsedRows.length ===
+                                                                        0
+                                                                    ) {
+                                                                        toast.error(
+                                                                            'Tidak ada pertanyaan ditemukan dalam file.',
+                                                                        );
 
-                                                {quizImportFileName && (
-                                                    <>
-                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                            <Check className="h-4 w-4 text-green-600" />
-                                                            <span>
-                                                                {
-                                                                    quizImportFileName
-                                                                }{' '}
-                                                                (
+                                                                        return;
+                                                                    }
+
+                                                                    setQuizQuestions(
+                                                                        parsedRows,
+                                                                    );
+                                                                    setQuizImportFileName(
+                                                                        selectedFile.name,
+                                                                    );
+                                                                    toast.success(
+                                                                        `Berhasil mengimpor ${parsedRows.length} pertanyaan.`,
+                                                                    );
+                                                                } catch {
+                                                                    toast.error(
+                                                                        'Gagal membaca file. Silakan gunakan format template.',
+                                                                    );
+                                                                }
+                                                            }}
+                                                        />
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger
+                                                                asChild
+                                                            >
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className="shrink-0"
+                                                                >
+                                                                    <Download className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        downloadQuizTemplate(
+                                                                            'csv',
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Format CSV
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        downloadQuizTemplate(
+                                                                            'xlsx',
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Excel
+                                                                    (.xlsx)
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        downloadQuizTemplate(
+                                                                            'xls',
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Excel Lama
+                                                                    (.xls)
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+
+                                                    <FieldDescription>
+                                                        Unggah CSV/Excel atau
+                                                        klik tombol di bawah
+                                                        untuk tambah manual
+                                                    </FieldDescription>
+
+                                                    {quizImportFileName && (
+                                                        <>
+                                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                <Check className="h-4 w-4 text-green-600" />
+                                                                <span>
+                                                                    {
+                                                                        quizImportFileName
+                                                                    }{' '}
+                                                                    (
+                                                                    {
+                                                                        quizQuestions.length
+                                                                    }{' '}
+                                                                    pertanyaan
+                                                                    {quizQuestions.length !==
+                                                                    1
+                                                                        ? ''
+                                                                        : ''}
+                                                                    )
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Quiz Preview */}
+                                                            {quizQuestions.length >
+                                                                0 && (
+                                                                <>
+                                                                    <Accordion
+                                                                        type="single"
+                                                                        collapsible
+                                                                        className="mt-3"
+                                                                    >
+                                                                        <AccordionItem
+                                                                            value="preview"
+                                                                            className="rounded-lg border px-3"
+                                                                        >
+                                                                            <AccordionTrigger className="text-sm hover:no-underline">
+                                                                                <span className="flex items-center gap-2">
+                                                                                    <Eye className="h-4 w-4" />
+                                                                                    Preview
+                                                                                    Pertanyaan
+                                                                                    (
+                                                                                    {
+                                                                                        quizQuestions.length
+                                                                                    }
+
+                                                                                    )
+                                                                                </span>
+                                                                            </AccordionTrigger>
+                                                                            <AccordionContent>
+                                                                                <div className="max-h-96 space-y-3 overflow-y-auto pt-2">
+                                                                                    {quizQuestions.map(
+                                                                                        (
+                                                                                            q,
+                                                                                            i,
+                                                                                        ) => (
+                                                                                            <div
+                                                                                                key={
+                                                                                                    i
+                                                                                                }
+                                                                                                className="rounded-lg border bg-muted/30 p-3 text-sm"
+                                                                                            >
+                                                                                                <div className="mb-2 flex items-start justify-between gap-2">
+                                                                                                    <p className="flex-1 font-medium">
+                                                                                                        {i +
+                                                                                                            1}
+
+                                                                                                        .{' '}
+                                                                                                        {
+                                                                                                            q.question
+                                                                                                        }
+                                                                                                    </p>
+                                                                                                    <div className="flex shrink-0 gap-1">
+                                                                                                        <Button
+                                                                                                            type="button"
+                                                                                                            variant="ghost"
+                                                                                                            size="sm"
+                                                                                                            className="h-7 w-7 p-0"
+                                                                                                            onClick={() =>
+                                                                                                                openQuestionEditor(
+                                                                                                                    i,
+                                                                                                                )
+                                                                                                            }
+                                                                                                        >
+                                                                                                            <Pencil className="h-3.5 w-3.5" />
+                                                                                                        </Button>
+                                                                                                        <Button
+                                                                                                            type="button"
+                                                                                                            variant="ghost"
+                                                                                                            size="sm"
+                                                                                                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                                                                                            onClick={() =>
+                                                                                                                deleteQuestion(
+                                                                                                                    i,
+                                                                                                                )
+                                                                                                            }
+                                                                                                        >
+                                                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                                                        </Button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="space-y-1 pl-4">
+                                                                                                    {q.options.map(
+                                                                                                        (
+                                                                                                            opt,
+                                                                                                            j,
+                                                                                                        ) => (
+                                                                                                            <div
+                                                                                                                key={
+                                                                                                                    j
+                                                                                                                }
+                                                                                                                className={
+                                                                                                                    j ===
+                                                                                                                    q.correct_option
+                                                                                                                        ? 'font-medium text-emerald-600'
+                                                                                                                        : 'text-muted-foreground'
+                                                                                                                }
+                                                                                                            >
+                                                                                                                {j ===
+                                                                                                                    q.correct_option &&
+                                                                                                                    '✓ '}
+                                                                                                                {
+                                                                                                                    opt
+                                                                                                                }
+                                                                                                            </div>
+                                                                                                        ),
+                                                                                                    )}
+                                                                                                </div>
+                                                                                                {q.explanation && (
+                                                                                                    <p className="mt-2 pl-4 text-xs text-muted-foreground">
+                                                                                                        💡{' '}
+                                                                                                        {
+                                                                                                            q.explanation
+                                                                                                        }
+                                                                                                    </p>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        ),
+                                                                                    )}
+                                                                                </div>
+                                                                            </AccordionContent>
+                                                                        </AccordionItem>
+                                                                    </Accordion>
+
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="mt-2 w-full"
+                                                                        onClick={() =>
+                                                                            openQuestionEditor()
+                                                                        }
+                                                                    >
+                                                                        <Plus className="mr-2 h-4 w-4" />
+                                                                        Tambah
+                                                                        Pertanyaan
+                                                                    </Button>
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    )}
+
+                                                    {isEditMode &&
+                                                        quizQuestions.length >
+                                                            0 &&
+                                                        !quizImportFileName && (
+                                                            <FieldDescription>
                                                                 {
                                                                     quizQuestions.length
                                                                 }{' '}
                                                                 pertanyaan
-                                                                {quizQuestions.length !==
-                                                                1
-                                                                    ? ''
-                                                                    : ''}
-                                                                )
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Quiz Preview */}
-                                                        {quizQuestions.length >
-                                                            0 && (
-                                                            <>
-                                                                <Accordion
-                                                                    type="single"
-                                                                    collapsible
-                                                                    className="mt-3"
-                                                                >
-                                                                    <AccordionItem
-                                                                        value="preview"
-                                                                        className="rounded-lg border px-3"
-                                                                    >
-                                                                        <AccordionTrigger className="text-sm hover:no-underline">
-                                                                            <span className="flex items-center gap-2">
-                                                                                <Eye className="h-4 w-4" />
-                                                                                Preview
-                                                                                Pertanyaan
-                                                                                (
-                                                                                {
-                                                                                    quizQuestions.length
-                                                                                }
-
-                                                                                )
-                                                                            </span>
-                                                                        </AccordionTrigger>
-                                                                        <AccordionContent>
-                                                                            <div className="max-h-96 space-y-3 overflow-y-auto pt-2">
-                                                                                {quizQuestions.map(
-                                                                                    (
-                                                                                        q,
-                                                                                        i,
-                                                                                    ) => (
-                                                                                        <div
-                                                                                            key={
-                                                                                                i
-                                                                                            }
-                                                                                            className="rounded-lg border bg-muted/30 p-3 text-sm"
-                                                                                        >
-                                                                                            <div className="mb-2 flex items-start justify-between gap-2">
-                                                                                                <p className="flex-1 font-medium">
-                                                                                                    {i +
-                                                                                                        1}
-
-                                                                                                    .{' '}
-                                                                                                    {
-                                                                                                        q.question
-                                                                                                    }
-                                                                                                </p>
-                                                                                                <div className="flex shrink-0 gap-1">
-                                                                                                    <Button
-                                                                                                        type="button"
-                                                                                                        variant="ghost"
-                                                                                                        size="sm"
-                                                                                                        className="h-7 w-7 p-0"
-                                                                                                        onClick={() =>
-                                                                                                            openQuestionEditor(
-                                                                                                                i,
-                                                                                                            )
-                                                                                                        }
-                                                                                                    >
-                                                                                                        <Pencil className="h-3.5 w-3.5" />
-                                                                                                    </Button>
-                                                                                                    <Button
-                                                                                                        type="button"
-                                                                                                        variant="ghost"
-                                                                                                        size="sm"
-                                                                                                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                                                                                        onClick={() =>
-                                                                                                            deleteQuestion(
-                                                                                                                i,
-                                                                                                            )
-                                                                                                        }
-                                                                                                    >
-                                                                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                                                                    </Button>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                            <div className="space-y-1 pl-4">
-                                                                                                {q.options.map(
-                                                                                                    (
-                                                                                                        opt,
-                                                                                                        j,
-                                                                                                    ) => (
-                                                                                                        <div
-                                                                                                            key={
-                                                                                                                j
-                                                                                                            }
-                                                                                                            className={
-                                                                                                                j ===
-                                                                                                                q.correct_option
-                                                                                                                    ? 'font-medium text-emerald-600'
-                                                                                                                    : 'text-muted-foreground'
-                                                                                                            }
-                                                                                                        >
-                                                                                                            {j ===
-                                                                                                                q.correct_option &&
-                                                                                                                '✓ '}
-                                                                                                            {
-                                                                                                                opt
-                                                                                                            }
-                                                                                                        </div>
-                                                                                                    ),
-                                                                                                )}
-                                                                                            </div>
-                                                                                            {q.explanation && (
-                                                                                                <p className="mt-2 pl-4 text-xs text-muted-foreground">
-                                                                                                    💡{' '}
-                                                                                                    {
-                                                                                                        q.explanation
-                                                                                                    }
-                                                                                                </p>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    ),
-                                                                                )}
-                                                                            </div>
-                                                                        </AccordionContent>
-                                                                    </AccordionItem>
-                                                                </Accordion>
-
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    className="mt-2 w-full"
-                                                                    onClick={() =>
-                                                                        openQuestionEditor()
-                                                                    }
-                                                                >
-                                                                    <Plus className="mr-2 h-4 w-4" />
-                                                                    Tambah
-                                                                    Pertanyaan
-                                                                </Button>
-                                                            </>
+                                                                dimuat. Unggah
+                                                                file baru untuk
+                                                                mengganti.
+                                                            </FieldDescription>
                                                         )}
-                                                    </>
-                                                )}
 
-                                                {isEditMode &&
-                                                    quizQuestions.length > 0 &&
-                                                    !quizImportFileName && (
-                                                        <FieldDescription>
+                                                    {taskQuizQuestionsHasError && (
+                                                        <FieldDescription className="text-destructive">
                                                             {
-                                                                quizQuestions.length
-                                                            }{' '}
-                                                            pertanyaan dimuat.
-                                                            Unggah file baru
-                                                            untuk mengganti.
+                                                                errors.quiz_questions
+                                                            }
                                                         </FieldDescription>
                                                     )}
+                                                </Field>
+                                            </>
+                                        )}
+                                    </FieldGroup>
 
-                                                {taskQuizQuestionsHasError && (
-                                                    <FieldDescription className="text-destructive">
-                                                        {errors.quiz_questions}
-                                                    </FieldDescription>
-                                                )}
-                                            </Field>
-                                        </>
-                                    )}
+                                    <DialogFooter className="mt-6">
+                                        <DialogClose asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                disabled={isSavingTask}
+                                            >
+                                                Batal
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            disabled={isSavingTask}
+                                        >
+                                            {isSavingTask && (
+                                                <Spinner data-icon="inline-start" />
+                                            )}
+                                            Simpan perubahan
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+
+                        {/* Question Editor Dialog */}
+                        <Dialog
+                            open={questionEditorOpen}
+                            onOpenChange={setQuestionEditorOpen}
+                        >
+                            <DialogContent className="sm:max-w-lg">
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        {editingQuestionIndex !== null
+                                            ? 'Edit Pertanyaan'
+                                            : 'Tambah Pertanyaan'}
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                        Isi pertanyaan, 4 opsi jawaban, dan
+                                        pilih jawaban yang benar.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <FieldGroup>
+                                    <Field>
+                                        <FieldLabel htmlFor="q-question">
+                                            Pertanyaan{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </FieldLabel>
+                                        <Textarea
+                                            id="q-question"
+                                            value={questionForm.question}
+                                            onChange={(e) =>
+                                                setQuestionForm((prev) => ({
+                                                    ...prev,
+                                                    question: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="Masukkan pertanyaan"
+                                            rows={3}
+                                        />
+                                    </Field>
+
+                                    <Field>
+                                        <FieldLabel>
+                                            Opsi Jawaban{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </FieldLabel>
+                                        <div className="space-y-2">
+                                            {questionForm.options.map(
+                                                (opt, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <Input
+                                                            value={opt}
+                                                            onChange={(e) => {
+                                                                const newOptions =
+                                                                    [
+                                                                        ...questionForm.options,
+                                                                    ] as [
+                                                                        string,
+                                                                        string,
+                                                                        string,
+                                                                        string,
+                                                                    ];
+                                                                newOptions[
+                                                                    idx
+                                                                ] =
+                                                                    e.target.value;
+                                                                setQuestionForm(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        options:
+                                                                            newOptions,
+                                                                    }),
+                                                                );
+                                                            }}
+                                                            placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
+                                                        />
+                                                        <Button
+                                                            type="button"
+                                                            variant={
+                                                                questionForm.correct_option ===
+                                                                idx
+                                                                    ? 'default'
+                                                                    : 'outline'
+                                                            }
+                                                            size="sm"
+                                                            className="shrink-0"
+                                                            onClick={() =>
+                                                                setQuestionForm(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        correct_option:
+                                                                            idx,
+                                                                    }),
+                                                                )
+                                                            }
+                                                        >
+                                                            {questionForm.correct_option ===
+                                                            idx ? (
+                                                                <Check className="h-4 w-4" />
+                                                            ) : (
+                                                                'Benar'
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                ),
+                                            )}
+                                        </div>
+                                        <FieldDescription>
+                                            Klik tombol "Benar" untuk menandai
+                                            jawaban yang benar
+                                        </FieldDescription>
+                                    </Field>
+
+                                    <Field>
+                                        <FieldLabel htmlFor="q-explanation">
+                                            Penjelasan
+                                        </FieldLabel>
+                                        <Textarea
+                                            id="q-explanation"
+                                            value={questionForm.explanation}
+                                            onChange={(e) =>
+                                                setQuestionForm((prev) => ({
+                                                    ...prev,
+                                                    explanation: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="Penjelasan jawaban (opsional)"
+                                            rows={2}
+                                        />
+                                    </Field>
                                 </FieldGroup>
 
                                 <DialogFooter className="mt-6">
                                     <DialogClose asChild>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            disabled={isSavingTask}
-                                        >
+                                        <Button type="button" variant="outline">
                                             Batal
                                         </Button>
                                     </DialogClose>
                                     <Button
-                                        type="submit"
-                                        disabled={isSavingTask}
+                                        type="button"
+                                        onClick={saveQuestion}
                                     >
-                                        {isSavingTask && (
-                                            <Spinner data-icon="inline-start" />
-                                        )}
-                                        Simpan perubahan
+                                        {editingQuestionIndex !== null
+                                            ? 'Perbarui'
+                                            : 'Tambah'}
                                     </Button>
                                 </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-
-                    {/* Question Editor Dialog */}
-                    <Dialog
-                        open={questionEditorOpen}
-                        onOpenChange={setQuestionEditorOpen}
-                    >
-                        <DialogContent className="sm:max-w-lg">
-                            <DialogHeader>
-                                <DialogTitle>
-                                    {editingQuestionIndex !== null
-                                        ? 'Edit Pertanyaan'
-                                        : 'Tambah Pertanyaan'}
-                                </DialogTitle>
-                                <DialogDescription>
-                                    Isi pertanyaan, 4 opsi jawaban, dan pilih
-                                    jawaban yang benar.
-                                </DialogDescription>
-                            </DialogHeader>
-
-                            <FieldGroup>
-                                <Field>
-                                    <FieldLabel htmlFor="q-question">
-                                        Pertanyaan{' '}
-                                        <span className="text-destructive">
-                                            *
-                                        </span>
-                                    </FieldLabel>
-                                    <Textarea
-                                        id="q-question"
-                                        value={questionForm.question}
-                                        onChange={(e) =>
-                                            setQuestionForm((prev) => ({
-                                                ...prev,
-                                                question: e.target.value,
-                                            }))
-                                        }
-                                        placeholder="Masukkan pertanyaan"
-                                        rows={3}
-                                    />
-                                </Field>
-
-                                <Field>
-                                    <FieldLabel>
-                                        Opsi Jawaban{' '}
-                                        <span className="text-destructive">
-                                            *
-                                        </span>
-                                    </FieldLabel>
-                                    <div className="space-y-2">
-                                        {questionForm.options.map(
-                                            (opt, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex items-center gap-2"
-                                                >
-                                                    <Input
-                                                        value={opt}
-                                                        onChange={(e) => {
-                                                            const newOptions = [
-                                                                ...questionForm.options,
-                                                            ] as [
-                                                                string,
-                                                                string,
-                                                                string,
-                                                                string,
-                                                            ];
-                                                            newOptions[idx] =
-                                                                e.target.value;
-                                                            setQuestionForm(
-                                                                (prev) => ({
-                                                                    ...prev,
-                                                                    options:
-                                                                        newOptions,
-                                                                }),
-                                                            );
-                                                        }}
-                                                        placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        variant={
-                                                            questionForm.correct_option ===
-                                                            idx
-                                                                ? 'default'
-                                                                : 'outline'
-                                                        }
-                                                        size="sm"
-                                                        className="shrink-0"
-                                                        onClick={() =>
-                                                            setQuestionForm(
-                                                                (prev) => ({
-                                                                    ...prev,
-                                                                    correct_option:
-                                                                        idx,
-                                                                }),
-                                                            )
-                                                        }
-                                                    >
-                                                        {questionForm.correct_option ===
-                                                        idx ? (
-                                                            <Check className="h-4 w-4" />
-                                                        ) : (
-                                                            'Benar'
-                                                        )}
-                                                    </Button>
-                                                </div>
-                                            ),
-                                        )}
-                                    </div>
-                                    <FieldDescription>
-                                        Klik tombol "Benar" untuk menandai
-                                        jawaban yang benar
-                                    </FieldDescription>
-                                </Field>
-
-                                <Field>
-                                    <FieldLabel htmlFor="q-explanation">
-                                        Penjelasan
-                                    </FieldLabel>
-                                    <Textarea
-                                        id="q-explanation"
-                                        value={questionForm.explanation}
-                                        onChange={(e) =>
-                                            setQuestionForm((prev) => ({
-                                                ...prev,
-                                                explanation: e.target.value,
-                                            }))
-                                        }
-                                        placeholder="Penjelasan jawaban (opsional)"
-                                        rows={2}
-                                    />
-                                </Field>
-                            </FieldGroup>
-
-                            <DialogFooter className="mt-6">
-                                <DialogClose asChild>
-                                    <Button type="button" variant="outline">
-                                        Batal
-                                    </Button>
-                                </DialogClose>
-                                <Button type="button" onClick={saveQuestion}>
-                                    {editingQuestionIndex !== null
-                                        ? 'Perbarui'
-                                        : 'Tambah'}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </header>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                }
+            />
 
             <section className="grid gap-4">
                 <div className="flex flex-col gap-4">

@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown, Crown, Flame, Medal, Trophy } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { PageHeader } from '@/components/page-header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,6 @@ import { Input } from '@/components/ui/input';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
@@ -301,18 +301,12 @@ export default function LeaderboardIndex({
         <>
             <Head title="Papan Peringkat" />
 
-            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-                <header className="animate-fade-in-up">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div className="flex flex-col gap-0">
-                            <TypographyH1>Papan Peringkat</TypographyH1>
-                            <TypographyMuted className="text-sm/6">
-                                Peringkat langsung berdasarkan poin yang
-                                diperoleh dari pelajaran dan penyelesaian
-                                kursus.
-                            </TypographyMuted>
-                        </div>
-
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
+                <PageHeader
+                    className="animate-fade-in-up"
+                    title="Papan Peringkat"
+                    description="Peringkat langsung berdasarkan poin yang diperoleh dari pelajaran dan penyelesaian kursus."
+                    actions={
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <Input
                                 value={usernameInput}
@@ -335,8 +329,8 @@ export default function LeaderboardIndex({
                                 </TabsList>
                             </Tabs>
                         </div>
-                    </div>
-                </header>
+                    }
+                />
 
                 {/* Podium Top 3 */}
                 {top3.length > 0 && !isNavigating ? (

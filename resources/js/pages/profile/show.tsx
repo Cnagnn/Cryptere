@@ -31,7 +31,7 @@ export default function ProfileShow({
         return (
             <>
                 <Head title={pageTitle} />
-                <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+                <div className="mx-auto w-full max-w-4xl px-4 pt-6 pb-4 sm:px-6 lg:px-8">
                     <ProfilePrivate user={profileUser} />
                 </div>
             </>
@@ -42,7 +42,7 @@ export default function ProfileShow({
         <>
             <Head title={pageTitle} />
 
-            <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-4 sm:px-6 lg:px-8">
                 <div className="grid gap-6 lg:grid-cols-10">
                     <div className="lg:col-span-3">
                         <ProfileOverviewCard

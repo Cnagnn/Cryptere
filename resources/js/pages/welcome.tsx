@@ -49,7 +49,7 @@ function Hero115({
                         <span className="mx-auto flex size-16 items-center justify-center rounded-full border md:size-20">
                             {icon}
                         </span>
-                        <h1 className="mx-auto max-w-xl text-center text-4xl font-semibold tracking-tight text-pretty md:text-5xl lg:max-w-3xl lg:text-6xl">
+                        <h1 className="mx-auto max-w-xl text-center text-4xl font-semibold text-pretty md:text-5xl lg:max-w-3xl lg:text-6xl">
                             {heading}
                         </h1>
                         <p className="mx-auto max-w-5xl text-center text-lg text-balance text-muted-foreground md:text-xl">

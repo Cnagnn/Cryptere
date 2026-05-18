@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,6 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import {
     canFormatOutput,
     conceptLensByLab,
@@ -443,32 +443,30 @@ export default function LabsShow({ lab }: LabShowProps) {
         <>
             <Head title={`${lab.title} Lab`} />
 
-            <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-6">
-                <section className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex min-w-0 flex-col gap-0">
-                        <TypographyH1>{lab.title}</TypographyH1>
-                        <TypographyMuted className="text-sm/6">
-                            {pageSummary}
-                        </TypographyMuted>
-                    </div>
-
-                    <Tabs
-                        value={mode}
-                        onValueChange={(value) =>
-                            setMode(value as SimulationMode)
-                        }
-                        className="w-full sm:w-auto"
-                    >
-                        <TabsList className="grid h-10 w-full grid-cols-2 sm:w-80">
-                            <TabsTrigger value="encrypt" className="gap-2">
-                                Enkripsi
-                            </TabsTrigger>
-                            <TabsTrigger value="decrypt" className="gap-2">
-                                Dekripsi
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </section>
+            <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-4">
+                <PageHeader
+                    className="relative"
+                    title={lab.title}
+                    description={pageSummary}
+                    actions={
+                        <Tabs
+                            value={mode}
+                            onValueChange={(value) =>
+                                setMode(value as SimulationMode)
+                            }
+                            className="w-full sm:w-auto"
+                        >
+                            <TabsList className="grid h-10 w-full grid-cols-2 sm:w-80">
+                                <TabsTrigger value="encrypt" className="gap-2">
+                                    Enkripsi
+                                </TabsTrigger>
+                                <TabsTrigger value="decrypt" className="gap-2">
+                                    Dekripsi
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    }
+                />
 
                 <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
                     <Card className="lg:col-span-4">
@@ -476,7 +474,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                             <CardTitle className="flex items-center gap-2">
                                 Dasar Algoritma
                             </CardTitle>
-                            <CardDescription className="text-xs">
+                            <CardDescription className="text-sm/6">
                                 Konsep utama sebelum masuk ke operasi.
                             </CardDescription>
                         </CardHeader>
@@ -518,7 +516,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                             <CardTitle className="flex items-center gap-2">
                                 Pembuatan Kunci
                             </CardTitle>
-                            <CardDescription className="text-xs">
+                            <CardDescription className="text-sm/6">
                                 Fondasi awal sebelum pesan diproses.
                             </CardDescription>
                         </CardHeader>
@@ -548,7 +546,6 @@ export default function LabsShow({ lab }: LabShowProps) {
                                         placeholder={keyPlaceholderByLab(
                                             lab.slug,
                                         )}
-                                        className="font-mono"
                                     />
                                 </div>
                             ) : (
@@ -569,7 +566,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                             <CardTitle className="flex items-center gap-2">
                                 Data dan Format
                             </CardTitle>
-                            <CardDescription className="text-xs">
+                            <CardDescription className="text-sm/6">
                                 Siapkan pesan dan bentuk representasinya.
                             </CardDescription>
                         </CardHeader>
@@ -589,9 +586,9 @@ export default function LabsShow({ lab }: LabShowProps) {
                                     placeholder={translateText(
                                         inputPlaceholderByLab(lab.slug, mode),
                                     )}
-                                    className="min-h-28 resize-none font-mono text-sm"
+                                    className="min-h-28 resize-none text-sm"
                                 />
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-sm/6 text-muted-foreground">
                                     {translateText(
                                         inputHelperByLab(lab.slug, mode),
                                     )}
@@ -623,7 +620,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-sm/6 text-muted-foreground">
                                         Disarankan:{' '}
                                         {formatLabelInIndonesian(
                                             recommendedInputFormat,
@@ -657,7 +654,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-sm/6 text-muted-foreground">
                                         Disarankan:{' '}
                                         {formatLabelInIndonesian(
                                             recommendedOutputFormat,
@@ -699,7 +696,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                     <CardTitle className="flex items-center gap-2">
                                         Proses Bertahap
                                     </CardTitle>
-                                    <CardDescription className="text-xs">
+                                    <CardDescription className="text-sm/6">
                                         Ikuti transformasi dari kunci dan pesan
                                         hingga hasil akhir.
                                     </CardDescription>
@@ -811,15 +808,15 @@ export default function LabsShow({ lab }: LabShowProps) {
                                                                     'bg-primary/5',
                                                             )}
                                                         >
-                                                            <TableCell className="font-mono text-xs whitespace-normal">
+                                                            <TableCell className="text-sm whitespace-normal">
                                                                 {row.source}
                                                             </TableCell>
-                                                            <TableCell className="text-xs whitespace-normal text-muted-foreground">
+                                                            <TableCell className="text-sm whitespace-normal text-muted-foreground">
                                                                 {translateText(
                                                                     row.operation,
                                                                 )}
                                                             </TableCell>
-                                                            <TableCell className="font-mono text-xs whitespace-normal">
+                                                            <TableCell className="text-sm whitespace-normal">
                                                                 {row.result}
                                                             </TableCell>
                                                         </TableRow>
@@ -843,13 +840,13 @@ export default function LabsShow({ lab }: LabShowProps) {
                             <CardTitle className="flex items-center gap-2">
                                 Hasil Akhir
                             </CardTitle>
-                            <CardDescription className="text-xs">
+                            <CardDescription className="text-sm/6">
                                 {translatedOutputLabel} dalam format{' '}
                                 {formatLabelInIndonesian(outputFormat)}.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="min-h-40 rounded-lg bg-muted/40 p-3 font-mono text-sm leading-relaxed break-all">
+                            <div className="min-h-40 rounded-lg bg-muted/40 p-3 text-sm leading-relaxed break-all">
                                 {outputPresentation.value || (
                                     <span className="text-muted-foreground italic">
                                         Menunggu input...
@@ -857,7 +854,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 )}
                             </div>
                             {outputPresentation.error && (
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-sm/6 text-muted-foreground">
                                     {outputPresentation.error}
                                 </p>
                             )}

@@ -3,6 +3,7 @@ import { ArrowRight, BookOpenCheck, Filter, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { PageHeader } from '@/components/page-header';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -44,7 +45,6 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { dashboard } from '@/routes';
 import { enroll, reset as resetCourseProgress, show } from '@/routes/courses';
 import { index as coursesIndex } from '@/routes/courses';
@@ -318,7 +318,7 @@ function CatalogStatistics({
                     <p className="text-sm text-muted-foreground">
                         {item.label}
                     </p>
-                    <p className="mt-1 text-lg leading-tight font-semibold tracking-tight">
+                    <p className="mt-1 text-lg leading-tight font-semibold">
                         {item.value}
                     </p>
                 </div>
@@ -513,7 +513,7 @@ function CourseCardGrid({
                     />
 
                     <CardHeader>
-                        <CardTitle className="text-xl leading-tight tracking-tight">
+                        <CardTitle className="text-xl leading-tight">
                             {course.title}
                         </CardTitle>
                         <CardDescription className="text-sm leading-relaxed">
@@ -629,7 +629,7 @@ function EmptyLabCatalogGrid({
                         />
 
                         <div className="flex flex-col gap-2">
-                            <CardTitle className="text-xl leading-tight tracking-tight">
+                            <CardTitle className="text-xl leading-tight">
                                 {course.title}
                             </CardTitle>
                             <CardDescription className="text-sm leading-relaxed">
@@ -862,14 +862,12 @@ export default function CoursesIndex({
         <>
             <Head title={headTitle} />
 
-            <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-6">
-                <div className="animate-fade-in-up flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex flex-col gap-0">
-                        <TypographyH1>{pageTitle}</TypographyH1>
-                        <TypographyMuted>{pageDescription}</TypographyMuted>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2">
+            <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
+                <PageHeader
+                    className="animate-fade-in-up"
+                    title={pageTitle}
+                    description={pageDescription}
+                    actions={
                         <div className="lg:hidden">
                             {sidebarMode === 'filters' ? (
                                 <>
@@ -932,8 +930,8 @@ export default function CoursesIndex({
                                 </Card>
                             )}
                         </div>
-                    </div>
-                </div>
+                    }
+                />
 
                 <section
                     className="animate-fade-in-up grid gap-3 lg:grid-cols-[300px_1fr]"

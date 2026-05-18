@@ -17,6 +17,7 @@ import {
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { PageHeader } from '@/components/page-header';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -88,7 +89,6 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import {
     destroy as destroyAssessment,
     reorder as reorderAssessments,
@@ -848,962 +848,1005 @@ export default function AdminCoursesAssessment({
 
     return (
         <>
-            <div className="flex flex-col gap-6 px-4 pt-3 pb-6">
-                {/* Header */}
-                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-col gap-0">
-                        <TypographyH1>Penilaian</TypographyH1>
-                        <TypographyMuted className="text-sm/6">
-                            Kelola penilaian untuk setiap kursus.
-                        </TypographyMuted>
-                    </div>
+            <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
+                <PageHeader
+                    title="Penilaian"
+                    description="Kelola penilaian untuk setiap kursus."
+                    actions={
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        className="w-full justify-between sm:w-72"
+                                    >
+                                        <span className="truncate">
+                                            {(() => {
+                                                if (!courseFilterSelected) {
+                                                    return 'Pilih Kursus...';
+                                                }
 
-                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    className="w-full justify-between sm:w-72"
-                                >
-                                    <span className="truncate">
-                                        {(() => {
-                                            if (!courseFilterSelected) {
+                                                if (selectedCourseId === 0) {
+                                                    return 'Semua Kursus';
+                                                }
+
+                                                const course =
+                                                    courseOptions.find(
+                                                        (c) =>
+                                                            c.id ===
+                                                            selectedCourseId,
+                                                    );
+
+                                                if (course) {
+                                                    return course.title;
+                                                }
+
                                                 return 'Pilih Kursus...';
-                                            }
+                                            })()}
+                                        </span>
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-72 p-0"
+                                    align="start"
+                                >
+                                    <Command>
+                                        <CommandInput placeholder="Cari kursus..." />
+                                        <CommandList
+                                            style={{
+                                                maxHeight: '16rem',
+                                                overflowY: 'auto',
+                                            }}
+                                        >
+                                            <CommandEmpty>
+                                                Tidak ada hasil ditemukan.
+                                            </CommandEmpty>
+                                            <CommandGroup>
+                                                {courseOptions.map((course) => (
+                                                    <CommandItem
+                                                        key={course.id}
+                                                        value={course.title}
+                                                        onSelect={() => {
+                                                            router.get(
+                                                                sectionUrl({
+                                                                    course_id:
+                                                                        course.id,
+                                                                    page: 1,
+                                                                    per_page:
+                                                                        assessments.per_page,
+                                                                }),
+                                                                {},
+                                                                {
+                                                                    preserveState: true,
+                                                                    preserveScroll: true,
+                                                                },
+                                                            );
+                                                        }}
+                                                    >
+                                                        {course.title}
+                                                        <Check
+                                                            className={`ml-auto h-4 w-4 ${
+                                                                selectedCourseId ===
+                                                                course.id
+                                                                    ? 'opacity-100'
+                                                                    : 'opacity-0'
+                                                            }`}
+                                                        />
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
 
-                                            if (selectedCourseId === 0) {
-                                                return 'Semua Kursus';
-                                            }
+                            <div className="w-full sm:w-80">
+                                <Input
+                                    id="assessment-search"
+                                    placeholder="Cari Penilaian..."
+                                    value={filterValue}
+                                    onChange={(event) =>
+                                        setFilterValue(event.target.value)
+                                    }
+                                />
+                            </div>
 
-                                            const course = courseOptions.find(
-                                                (c) =>
-                                                    c.id === selectedCourseId,
+                            <Dialog
+                                open={createDialogOpen}
+                                onOpenChange={(open) => {
+                                    setCreateDialogOpen(open);
+
+                                    if (!open && !isSaving) {
+                                        resetFormState();
+                                    }
+                                }}
+                            >
+                                <DialogTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        onClick={openCreateDialog}
+                                    >
+                                        <Plus data-icon="inline-start" />
+                                        Buat
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-sm">
+                                    <form
+                                        onSubmit={(event) => {
+                                            event.preventDefault();
+                                            const payload = {
+                                                title: assessmentForm.title,
+                                                description:
+                                                    assessmentForm.description,
+                                                course_id:
+                                                    assessmentForm.course_id > 0
+                                                        ? assessmentForm.course_id
+                                                        : null,
+                                                topic_id: null,
+                                                bloom_level:
+                                                    assessmentForm.bloom_level,
+                                                grading_type:
+                                                    assessmentForm.grading_type,
+                                                passing_score: Number(
+                                                    assessmentForm.passing_score,
+                                                ),
+                                                max_attempts: Number(
+                                                    assessmentForm.max_attempts,
+                                                ),
+                                                time_limit_minutes:
+                                                    assessmentForm.time_limit_minutes
+                                                        ? Number(
+                                                              assessmentForm.time_limit_minutes,
+                                                          )
+                                                        : null,
+                                                quiz_questions:
+                                                    quizQuestions.length > 0
+                                                        ? quizQuestions
+                                                        : undefined,
+                                            };
+
+                                            const requestUrl = isEditMode
+                                                ? updateAssessment.url({
+                                                      assessment:
+                                                          editingAssessment.id,
+                                                  })
+                                                : storeAssessment.url();
+
+                                            const method = isEditMode
+                                                ? 'patch'
+                                                : 'post';
+
+                                            router[method](
+                                                requestUrl,
+                                                payload,
+                                                {
+                                                    preserveScroll: true,
+                                                    preserveState: true,
+                                                    onStart: () =>
+                                                        setIsSaving(true),
+                                                    onSuccess: () => {
+                                                        toast.success(
+                                                            isEditMode
+                                                                ? 'Assessment updated successfully.'
+                                                                : 'Assessment created successfully.',
+                                                        );
+                                                        resetFormState();
+                                                        setCreateDialogOpen(
+                                                            false,
+                                                        );
+                                                    },
+                                                    onError: (formErrors) => {
+                                                        const messages =
+                                                            Object.values(
+                                                                formErrors,
+                                                            )
+                                                                .flat()
+                                                                .join(', ');
+                                                        toast.error(
+                                                            messages ||
+                                                                'Failed to save assessment.',
+                                                        );
+                                                    },
+                                                    onFinish: () =>
+                                                        setIsSaving(false),
+                                                },
                                             );
-
-                                            if (course) {
-                                                return course.title;
-                                            }
-
-                                            return 'Pilih Kursus...';
-                                        })()}
-                                    </span>
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-72 p-0" align="start">
-                                <Command>
-                                    <CommandInput placeholder="Cari kursus..." />
-                                    <CommandList
-                                        style={{
-                                            maxHeight: '16rem',
-                                            overflowY: 'auto',
                                         }}
                                     >
-                                        <CommandEmpty>
-                                            Tidak ada hasil ditemukan.
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                            {courseOptions.map((course) => (
-                                                <CommandItem
-                                                    key={course.id}
-                                                    value={course.title}
-                                                    onSelect={() => {
-                                                        router.get(
-                                                            sectionUrl({
-                                                                course_id:
-                                                                    course.id,
-                                                                page: 1,
-                                                                per_page:
-                                                                    assessments.per_page,
-                                                            }),
-                                                            {},
-                                                            {
-                                                                preserveState: true,
-                                                                preserveScroll: true,
-                                                            },
-                                                        );
-                                                    }}
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                {isEditMode
+                                                    ? 'Edit penilaian'
+                                                    : 'Buat penilaian'}
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                {isEditMode
+                                                    ? 'Perbarui detail penilaian.'
+                                                    : 'Tambahkan penilaian Taksonomi Bloom baru.'}
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <FieldGroup>
+                                            <Field>
+                                                <FieldLabel htmlFor="assessment-course">
+                                                    Kursus{' '}
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
+                                                <Popover
+                                                    open={courseComboboxOpen}
+                                                    onOpenChange={
+                                                        setCourseComboboxOpen
+                                                    }
                                                 >
-                                                    {course.title}
-                                                    <Check
-                                                        className={`ml-auto h-4 w-4 ${
-                                                            selectedCourseId ===
-                                                            course.id
-                                                                ? 'opacity-100'
-                                                                : 'opacity-0'
-                                                        }`}
-                                                    />
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            id="assessment-course"
+                                                            variant="outline"
+                                                            role="combobox"
+                                                            className="w-full justify-between"
+                                                        >
+                                                            <span className="truncate">
+                                                                {(() => {
+                                                                    const course =
+                                                                        courseOptions.find(
+                                                                            (
+                                                                                c,
+                                                                            ) =>
+                                                                                c.id ===
+                                                                                assessmentForm.course_id,
+                                                                        );
 
-                        <div className="w-full sm:w-80">
-                            <Input
-                                id="assessment-search"
-                                placeholder="Cari Penilaian..."
-                                value={filterValue}
-                                onChange={(event) =>
-                                    setFilterValue(event.target.value)
-                                }
-                            />
-                        </div>
+                                                                    if (
+                                                                        course
+                                                                    ) {
+                                                                        return course.title;
+                                                                    }
 
-                        <Dialog
-                            open={createDialogOpen}
-                            onOpenChange={(open) => {
-                                setCreateDialogOpen(open);
+                                                                    return 'Pilih kursus...';
+                                                                })()}
+                                                            </span>
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent
+                                                        className="p-0"
+                                                        align="start"
+                                                        style={{
+                                                            width: 'var(--radix-popover-trigger-width)',
+                                                        }}
+                                                    >
+                                                        <Command>
+                                                            <CommandInput placeholder="Cari kursus..." />
+                                                            <CommandList
+                                                                style={{
+                                                                    maxHeight:
+                                                                        '16rem',
+                                                                    overflowY:
+                                                                        'auto',
+                                                                }}
+                                                            >
+                                                                <CommandEmpty>
+                                                                    No results
+                                                                    found.
+                                                                </CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {courseOptions.map(
+                                                                        (
+                                                                            course,
+                                                                        ) => (
+                                                                            <CommandItem
+                                                                                key={
+                                                                                    course.id
+                                                                                }
+                                                                                value={
+                                                                                    course.title
+                                                                                }
+                                                                                onSelect={() => {
+                                                                                    setAssessmentForm(
+                                                                                        (
+                                                                                            current,
+                                                                                        ) => ({
+                                                                                            ...current,
+                                                                                            course_id:
+                                                                                                course.id,
+                                                                                        }),
+                                                                                    );
+                                                                                    setCourseComboboxOpen(
+                                                                                        false,
+                                                                                    );
+                                                                                }}
+                                                                            >
+                                                                                {
+                                                                                    course.title
+                                                                                }
+                                                                                <Check
+                                                                                    className={`ml-auto h-4 w-4 ${
+                                                                                        assessmentForm.course_id ===
+                                                                                        course.id
+                                                                                            ? 'opacity-100'
+                                                                                            : 'opacity-0'
+                                                                                    }`}
+                                                                                />
+                                                                            </CommandItem>
+                                                                        ),
+                                                                    )}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                        </Command>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </Field>
 
-                                if (!open && !isSaving) {
-                                    resetFormState();
-                                }
-                            }}
-                        >
-                            <DialogTrigger asChild>
-                                <Button
-                                    type="button"
-                                    onClick={openCreateDialog}
-                                >
-                                    <Plus data-icon="inline-start" />
-                                    Buat
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-sm">
-                                <form
-                                    onSubmit={(event) => {
-                                        event.preventDefault();
-                                        const payload = {
-                                            title: assessmentForm.title,
-                                            description:
-                                                assessmentForm.description,
-                                            course_id:
-                                                assessmentForm.course_id > 0
-                                                    ? assessmentForm.course_id
-                                                    : null,
-                                            topic_id: null,
-                                            bloom_level:
-                                                assessmentForm.bloom_level,
-                                            grading_type:
-                                                assessmentForm.grading_type,
-                                            passing_score: Number(
-                                                assessmentForm.passing_score,
-                                            ),
-                                            max_attempts: Number(
-                                                assessmentForm.max_attempts,
-                                            ),
-                                            time_limit_minutes:
-                                                assessmentForm.time_limit_minutes
-                                                    ? Number(
-                                                          assessmentForm.time_limit_minutes,
-                                                      )
-                                                    : null,
-                                            quiz_questions:
-                                                quizQuestions.length > 0
-                                                    ? quizQuestions
-                                                    : undefined,
-                                        };
-
-                                        const requestUrl = isEditMode
-                                            ? updateAssessment.url({
-                                                  assessment:
-                                                      editingAssessment.id,
-                                              })
-                                            : storeAssessment.url();
-
-                                        const method = isEditMode
-                                            ? 'patch'
-                                            : 'post';
-
-                                        router[method](requestUrl, payload, {
-                                            preserveScroll: true,
-                                            preserveState: true,
-                                            onStart: () => setIsSaving(true),
-                                            onSuccess: () => {
-                                                toast.success(
-                                                    isEditMode
-                                                        ? 'Assessment updated successfully.'
-                                                        : 'Assessment created successfully.',
-                                                );
-                                                resetFormState();
-                                                setCreateDialogOpen(false);
-                                            },
-                                            onError: (formErrors) => {
-                                                const messages = Object.values(
-                                                    formErrors,
-                                                )
-                                                    .flat()
-                                                    .join(', ');
-                                                toast.error(
-                                                    messages ||
-                                                        'Failed to save assessment.',
-                                                );
-                                            },
-                                            onFinish: () => setIsSaving(false),
-                                        });
-                                    }}
-                                >
-                                    <DialogHeader>
-                                        <DialogTitle>
-                                            {isEditMode
-                                                ? 'Edit penilaian'
-                                                : 'Buat penilaian'}
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            {isEditMode
-                                                ? 'Perbarui detail penilaian.'
-                                                : 'Tambahkan penilaian Taksonomi Bloom baru.'}
-                                        </DialogDescription>
-                                    </DialogHeader>
-
-                                    <FieldGroup>
-                                        <Field>
-                                            <FieldLabel htmlFor="assessment-course">
-                                                Kursus{' '}
-                                                <span className="text-destructive">
-                                                    *
-                                                </span>
-                                            </FieldLabel>
-                                            <Popover
-                                                open={courseComboboxOpen}
-                                                onOpenChange={
-                                                    setCourseComboboxOpen
+                                            <Field
+                                                className="gap-2"
+                                                data-invalid={
+                                                    !!errors.title || undefined
                                                 }
                                             >
-                                                <PopoverTrigger asChild>
-                                                    <Button
-                                                        id="assessment-course"
-                                                        variant="outline"
-                                                        role="combobox"
-                                                        className="w-full justify-between"
-                                                    >
-                                                        <span className="truncate">
-                                                            {(() => {
-                                                                const course =
-                                                                    courseOptions.find(
-                                                                        (c) =>
-                                                                            c.id ===
-                                                                            assessmentForm.course_id,
-                                                                    );
-
-                                                                if (course) {
-                                                                    return course.title;
-                                                                }
-
-                                                                return 'Pilih kursus...';
-                                                            })()}
-                                                        </span>
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent
-                                                    className="p-0"
-                                                    align="start"
-                                                    style={{
-                                                        width: 'var(--radix-popover-trigger-width)',
-                                                    }}
-                                                >
-                                                    <Command>
-                                                        <CommandInput placeholder="Cari kursus..." />
-                                                        <CommandList
-                                                            style={{
-                                                                maxHeight:
-                                                                    '16rem',
-                                                                overflowY:
-                                                                    'auto',
-                                                            }}
-                                                        >
-                                                            <CommandEmpty>
-                                                                No results
-                                                                found.
-                                                            </CommandEmpty>
-                                                            <CommandGroup>
-                                                                {courseOptions.map(
-                                                                    (
-                                                                        course,
-                                                                    ) => (
-                                                                        <CommandItem
-                                                                            key={
-                                                                                course.id
-                                                                            }
-                                                                            value={
-                                                                                course.title
-                                                                            }
-                                                                            onSelect={() => {
-                                                                                setAssessmentForm(
-                                                                                    (
-                                                                                        current,
-                                                                                    ) => ({
-                                                                                        ...current,
-                                                                                        course_id:
-                                                                                            course.id,
-                                                                                    }),
-                                                                                );
-                                                                                setCourseComboboxOpen(
-                                                                                    false,
-                                                                                );
-                                                                            }}
-                                                                        >
-                                                                            {
-                                                                                course.title
-                                                                            }
-                                                                            <Check
-                                                                                className={`ml-auto h-4 w-4 ${
-                                                                                    assessmentForm.course_id ===
-                                                                                    course.id
-                                                                                        ? 'opacity-100'
-                                                                                        : 'opacity-0'
-                                                                                }`}
-                                                                            />
-                                                                        </CommandItem>
-                                                                    ),
-                                                                )}
-                                                            </CommandGroup>
-                                                        </CommandList>
-                                                    </Command>
-                                                </PopoverContent>
-                                            </Popover>
-                                        </Field>
-
-                                        <Field
-                                            className="gap-2"
-                                            data-invalid={
-                                                !!errors.title || undefined
-                                            }
-                                        >
-                                            <FieldLabel htmlFor="assessment-title">
-                                                Judul{' '}
-                                                <span className="text-destructive">
-                                                    *
-                                                </span>
-                                            </FieldLabel>
-                                            <Input
-                                                id="assessment-title"
-                                                name="title"
-                                                placeholder="e.g., AES — Recall & Recognition"
-                                                value={assessmentForm.title}
-                                                onChange={(e) =>
-                                                    setAssessmentForm((c) => ({
-                                                        ...c,
-                                                        title: e.target.value,
-                                                    }))
-                                                }
-                                                aria-invalid={!!errors.title}
-                                                required
-                                            />
-                                            {errors.title && (
-                                                <FieldDescription className="text-destructive">
-                                                    {errors.title}
-                                                </FieldDescription>
-                                            )}
-                                        </Field>
-
-                                        <Field
-                                            className="gap-2"
-                                            data-invalid={
-                                                !!errors.description ||
-                                                undefined
-                                            }
-                                        >
-                                            <FieldLabel htmlFor="assessment-description">
-                                                Deskripsi
-                                            </FieldLabel>
-                                            <Textarea
-                                                id="assessment-description"
-                                                name="description"
-                                                placeholder="Masukkan deskripsi penilaian"
-                                                value={
-                                                    assessmentForm.description
-                                                }
-                                                onChange={(e) =>
-                                                    setAssessmentForm((c) => ({
-                                                        ...c,
-                                                        description:
-                                                            e.target.value,
-                                                    }))
-                                                }
-                                                rows={3}
-                                            />
-                                            {errors.description && (
-                                                <FieldDescription className="text-destructive">
-                                                    {errors.description}
-                                                </FieldDescription>
-                                            )}
-                                        </Field>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <Field>
-                                                <FieldLabel>
-                                                    Tingkat Bloom{' '}
+                                                <FieldLabel htmlFor="assessment-title">
+                                                    Judul{' '}
                                                     <span className="text-destructive">
                                                         *
                                                     </span>
                                                 </FieldLabel>
-                                                <Select
-                                                    value={
-                                                        assessmentForm.bloom_level
-                                                    }
-                                                    onValueChange={(v) =>
-                                                        setAssessmentForm(
-                                                            (c) => ({
-                                                                ...c,
-                                                                bloom_level:
-                                                                    v as BloomLevel,
-                                                            }),
-                                                        )
-                                                    }
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectGroup>
-                                                            <SelectItem value="C1">
-                                                                C1 — Remember
-                                                            </SelectItem>
-                                                            <SelectItem value="C2">
-                                                                C2 — Understand
-                                                            </SelectItem>
-                                                            <SelectItem value="C3">
-                                                                C3 — Apply
-                                                            </SelectItem>
-                                                            <SelectItem value="C4">
-                                                                C4 — Analyze
-                                                            </SelectItem>
-                                                            <SelectItem value="C5">
-                                                                C5 — Evaluate
-                                                            </SelectItem>
-                                                            <SelectItem value="C6">
-                                                                C6 — Create
-                                                            </SelectItem>
-                                                        </SelectGroup>
-                                                    </SelectContent>
-                                                </Select>
-                                            </Field>
-
-                                            <Field>
-                                                <FieldLabel>
-                                                    Tipe Penilaian{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-                                                <Select
-                                                    value={
-                                                        assessmentForm.grading_type
-                                                    }
-                                                    onValueChange={(v) =>
-                                                        setAssessmentForm(
-                                                            (c) => ({
-                                                                ...c,
-                                                                grading_type:
-                                                                    v as GradingType,
-                                                            }),
-                                                        )
-                                                    }
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectGroup>
-                                                            <SelectItem value="auto">
-                                                                Auto
-                                                            </SelectItem>
-                                                            <SelectItem value="manual">
-                                                                Manual
-                                                            </SelectItem>
-                                                            <SelectItem value="mixed">
-                                                                Mixed
-                                                            </SelectItem>
-                                                        </SelectGroup>
-                                                    </SelectContent>
-                                                </Select>
-                                            </Field>
-                                        </div>
-
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <Field>
-                                                <FieldLabel>
-                                                    Nilai Lulus (%)
-                                                </FieldLabel>
                                                 <Input
-                                                    type="number"
-                                                    min={1}
-                                                    max={100}
+                                                    id="assessment-title"
+                                                    name="title"
+                                                    placeholder="e.g., AES — Recall & Recognition"
+                                                    value={assessmentForm.title}
+                                                    onChange={(e) =>
+                                                        setAssessmentForm(
+                                                            (c) => ({
+                                                                ...c,
+                                                                title: e.target
+                                                                    .value,
+                                                            }),
+                                                        )
+                                                    }
+                                                    aria-invalid={
+                                                        !!errors.title
+                                                    }
+                                                    required
+                                                />
+                                                {errors.title && (
+                                                    <FieldDescription className="text-destructive">
+                                                        {errors.title}
+                                                    </FieldDescription>
+                                                )}
+                                            </Field>
+
+                                            <Field
+                                                className="gap-2"
+                                                data-invalid={
+                                                    !!errors.description ||
+                                                    undefined
+                                                }
+                                            >
+                                                <FieldLabel htmlFor="assessment-description">
+                                                    Deskripsi
+                                                </FieldLabel>
+                                                <Textarea
+                                                    id="assessment-description"
+                                                    name="description"
+                                                    placeholder="Masukkan deskripsi penilaian"
                                                     value={
-                                                        assessmentForm.passing_score
+                                                        assessmentForm.description
                                                     }
                                                     onChange={(e) =>
                                                         setAssessmentForm(
                                                             (c) => ({
                                                                 ...c,
-                                                                passing_score:
+                                                                description:
                                                                     e.target
                                                                         .value,
                                                             }),
                                                         )
                                                     }
+                                                    rows={3}
                                                 />
+                                                {errors.description && (
+                                                    <FieldDescription className="text-destructive">
+                                                        {errors.description}
+                                                    </FieldDescription>
+                                                )}
                                             </Field>
-                                            <Field>
-                                                <FieldLabel>
-                                                    Maks Percobaan
-                                                </FieldLabel>
-                                                <Input
-                                                    type="number"
-                                                    min={1}
-                                                    max={10}
-                                                    value={
-                                                        assessmentForm.max_attempts
-                                                    }
-                                                    onChange={(e) =>
-                                                        setAssessmentForm(
-                                                            (c) => ({
-                                                                ...c,
-                                                                max_attempts:
-                                                                    e.target
-                                                                        .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                />
-                                            </Field>
-                                            <Field>
-                                                <FieldLabel>
-                                                    Waktu (menit)
-                                                </FieldLabel>
-                                                <Input
-                                                    type="number"
-                                                    min={1}
-                                                    max={480}
-                                                    value={
-                                                        assessmentForm.time_limit_minutes
-                                                    }
-                                                    onChange={(e) =>
-                                                        setAssessmentForm(
-                                                            (c) => ({
-                                                                ...c,
-                                                                time_limit_minutes:
-                                                                    e.target
-                                                                        .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                    placeholder="∞"
-                                                />
-                                            </Field>
-                                        </div>
 
-                                        <Field>
-                                            <FieldLabel htmlFor="assessment-quiz-import">
-                                                Impor Soal{' '}
-                                                {!isEditMode &&
-                                                    quizQuestions.length ===
-                                                        0 && (
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <Field>
+                                                    <FieldLabel>
+                                                        Tingkat Bloom{' '}
                                                         <span className="text-destructive">
                                                             *
                                                         </span>
-                                                    )}
-                                            </FieldLabel>
-
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    id="assessment-quiz-import"
-                                                    type="file"
-                                                    accept=".csv"
-                                                    className="flex-1"
-                                                    onChange={async (event) => {
-                                                        const selectedFile =
-                                                            event.target
-                                                                .files?.[0] ??
-                                                            null;
-
-                                                        if (!selectedFile) {
-                                                            setQuizImportFileName(
-                                                                '',
-                                                            );
-                                                            setQuizQuestions(
-                                                                [],
-                                                            );
-
-                                                            return;
+                                                    </FieldLabel>
+                                                    <Select
+                                                        value={
+                                                            assessmentForm.bloom_level
                                                         }
+                                                        onValueChange={(v) =>
+                                                            setAssessmentForm(
+                                                                (c) => ({
+                                                                    ...c,
+                                                                    bloom_level:
+                                                                        v as BloomLevel,
+                                                                }),
+                                                            )
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                <SelectItem value="C1">
+                                                                    C1 —
+                                                                    Remember
+                                                                </SelectItem>
+                                                                <SelectItem value="C2">
+                                                                    C2 —
+                                                                    Understand
+                                                                </SelectItem>
+                                                                <SelectItem value="C3">
+                                                                    C3 — Apply
+                                                                </SelectItem>
+                                                                <SelectItem value="C4">
+                                                                    C4 — Analyze
+                                                                </SelectItem>
+                                                                <SelectItem value="C5">
+                                                                    C5 —
+                                                                    Evaluate
+                                                                </SelectItem>
+                                                                <SelectItem value="C6">
+                                                                    C6 — Create
+                                                                </SelectItem>
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </Field>
 
-                                                        try {
-                                                            const text =
-                                                                await selectedFile.text();
-                                                            const parsedRows =
-                                                                parseQuizImportText(
-                                                                    text,
+                                                <Field>
+                                                    <FieldLabel>
+                                                        Tipe Penilaian{' '}
+                                                        <span className="text-destructive">
+                                                            *
+                                                        </span>
+                                                    </FieldLabel>
+                                                    <Select
+                                                        value={
+                                                            assessmentForm.grading_type
+                                                        }
+                                                        onValueChange={(v) =>
+                                                            setAssessmentForm(
+                                                                (c) => ({
+                                                                    ...c,
+                                                                    grading_type:
+                                                                        v as GradingType,
+                                                                }),
+                                                            )
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                <SelectItem value="auto">
+                                                                    Auto
+                                                                </SelectItem>
+                                                                <SelectItem value="manual">
+                                                                    Manual
+                                                                </SelectItem>
+                                                                <SelectItem value="mixed">
+                                                                    Mixed
+                                                                </SelectItem>
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </Field>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <Field>
+                                                    <FieldLabel>
+                                                        Nilai Lulus (%)
+                                                    </FieldLabel>
+                                                    <Input
+                                                        type="number"
+                                                        min={1}
+                                                        max={100}
+                                                        value={
+                                                            assessmentForm.passing_score
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAssessmentForm(
+                                                                (c) => ({
+                                                                    ...c,
+                                                                    passing_score:
+                                                                        e.target
+                                                                            .value,
+                                                                }),
+                                                            )
+                                                        }
+                                                    />
+                                                </Field>
+                                                <Field>
+                                                    <FieldLabel>
+                                                        Maks Percobaan
+                                                    </FieldLabel>
+                                                    <Input
+                                                        type="number"
+                                                        min={1}
+                                                        max={10}
+                                                        value={
+                                                            assessmentForm.max_attempts
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAssessmentForm(
+                                                                (c) => ({
+                                                                    ...c,
+                                                                    max_attempts:
+                                                                        e.target
+                                                                            .value,
+                                                                }),
+                                                            )
+                                                        }
+                                                    />
+                                                </Field>
+                                                <Field>
+                                                    <FieldLabel>
+                                                        Waktu (menit)
+                                                    </FieldLabel>
+                                                    <Input
+                                                        type="number"
+                                                        min={1}
+                                                        max={480}
+                                                        value={
+                                                            assessmentForm.time_limit_minutes
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAssessmentForm(
+                                                                (c) => ({
+                                                                    ...c,
+                                                                    time_limit_minutes:
+                                                                        e.target
+                                                                            .value,
+                                                                }),
+                                                            )
+                                                        }
+                                                        placeholder="∞"
+                                                    />
+                                                </Field>
+                                            </div>
+
+                                            <Field>
+                                                <FieldLabel htmlFor="assessment-quiz-import">
+                                                    Impor Soal{' '}
+                                                    {!isEditMode &&
+                                                        quizQuestions.length ===
+                                                            0 && (
+                                                            <span className="text-destructive">
+                                                                *
+                                                            </span>
+                                                        )}
+                                                </FieldLabel>
+
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        id="assessment-quiz-import"
+                                                        type="file"
+                                                        accept=".csv"
+                                                        className="flex-1"
+                                                        onChange={async (
+                                                            event,
+                                                        ) => {
+                                                            const selectedFile =
+                                                                event.target
+                                                                    .files?.[0] ??
+                                                                null;
+
+                                                            if (!selectedFile) {
+                                                                setQuizImportFileName(
+                                                                    '',
                                                                 );
-
-                                                            if (
-                                                                parsedRows.length ===
-                                                                0
-                                                            ) {
-                                                                toast.error(
-                                                                    'Tidak ada soal ditemukan di file.',
+                                                                setQuizQuestions(
+                                                                    [],
                                                                 );
 
                                                                 return;
                                                             }
 
-                                                            setQuizQuestions(
-                                                                parsedRows,
-                                                            );
-                                                            setQuizImportFileName(
-                                                                selectedFile.name,
-                                                            );
-                                                            toast.success(
-                                                                `Berhasil mengimpor ${parsedRows.length} soal.`,
-                                                            );
-                                                        } catch {
-                                                            toast.error(
-                                                                'Gagal membaca file. Silakan gunakan format template.',
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    className="shrink-0"
-                                                    onClick={() =>
-                                                        downloadQuizTemplate(
-                                                            'csv',
-                                                            assessmentForm.bloom_level,
-                                                        )
-                                                    }
-                                                >
-                                                    <Download className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                                                            try {
+                                                                const text =
+                                                                    await selectedFile.text();
+                                                                const parsedRows =
+                                                                    parseQuizImportText(
+                                                                        text,
+                                                                    );
 
-                                            <FieldDescription>
-                                                Unggah CSV atau klik tombol di
-                                                bawah untuk tambah manual
-                                            </FieldDescription>
+                                                                if (
+                                                                    parsedRows.length ===
+                                                                    0
+                                                                ) {
+                                                                    toast.error(
+                                                                        'Tidak ada soal ditemukan di file.',
+                                                                    );
 
-                                            {quizImportFileName && (
-                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    <Check className="h-4 w-4 text-green-600" />
-                                                    <span>
-                                                        {quizImportFileName} (
-                                                        {quizQuestions.length}{' '}
-                                                        soal
-                                                        {quizQuestions.length !==
-                                                        1
-                                                            ? 's'
-                                                            : ''}
-                                                        )
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {/* Quiz Preview */}
-                                            {quizQuestions.length > 0 && (
-                                                <>
-                                                    <div className="mt-3 max-h-96 space-y-2 overflow-y-auto rounded-lg border p-3">
-                                                        <div className="mb-2 flex items-center justify-between">
-                                                            <span className="text-sm font-medium">
-                                                                Preview
-                                                                Pertanyaan (
-                                                                {
-                                                                    quizQuestions.length
+                                                                    return;
                                                                 }
-                                                                )
-                                                            </span>
-                                                        </div>
-                                                        <div className="space-y-3">
-                                                            {quizQuestions.map(
-                                                                (q, i) => (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="rounded-lg border bg-muted/30 p-3 text-sm"
-                                                                    >
-                                                                        <div className="mb-2 flex items-start justify-between gap-2">
-                                                                            <p className="flex-1 font-medium">
-                                                                                {i +
-                                                                                    1}
 
-                                                                                .{' '}
-                                                                                {
-                                                                                    q.question
-                                                                                }
-                                                                            </p>
-                                                                            <div className="flex shrink-0 gap-1">
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant="ghost"
-                                                                                    size="sm"
-                                                                                    className="h-7 w-7 p-0"
-                                                                                    onClick={() =>
-                                                                                        openQuestionEditor(
-                                                                                            i,
-                                                                                        )
-                                                                                    }
-                                                                                >
-                                                                                    <Pencil className="h-3.5 w-3.5" />
-                                                                                </Button>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant="ghost"
-                                                                                    size="sm"
-                                                                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                                                                    onClick={() =>
-                                                                                        deleteQuestion(
-                                                                                            i,
-                                                                                        )
-                                                                                    }
-                                                                                >
-                                                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                                                </Button>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="space-y-1 pl-4">
-                                                                            {q.options.map(
-                                                                                (
-                                                                                    opt,
-                                                                                    j,
-                                                                                ) => (
-                                                                                    <div
-                                                                                        key={
-                                                                                            j
-                                                                                        }
-                                                                                        className={
-                                                                                            j ===
-                                                                                            q.correct_option
-                                                                                                ? 'font-medium text-emerald-600'
-                                                                                                : 'text-muted-foreground'
-                                                                                        }
-                                                                                    >
-                                                                                        {j ===
-                                                                                            q.correct_option &&
-                                                                                            '✓ '}
-                                                                                        {
-                                                                                            opt
-                                                                                        }
-                                                                                    </div>
-                                                                                ),
-                                                                            )}
-                                                                        </div>
-                                                                        {q.explanation && (
-                                                                            <p className="mt-2 pl-4 text-xs text-muted-foreground">
-                                                                                💡{' '}
-                                                                                {
-                                                                                    q.explanation
-                                                                                }
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                ),
-                                                            )}
-                                                        </div>
-                                                    </div>
-
+                                                                setQuizQuestions(
+                                                                    parsedRows,
+                                                                );
+                                                                setQuizImportFileName(
+                                                                    selectedFile.name,
+                                                                );
+                                                                toast.success(
+                                                                    `Berhasil mengimpor ${parsedRows.length} soal.`,
+                                                                );
+                                                            } catch {
+                                                                toast.error(
+                                                                    'Gagal membaca file. Silakan gunakan format template.',
+                                                                );
+                                                            }
+                                                        }}
+                                                    />
                                                     <Button
                                                         type="button"
                                                         variant="outline"
-                                                        size="sm"
-                                                        className="w-full"
+                                                        size="icon"
+                                                        className="shrink-0"
                                                         onClick={() =>
-                                                            openQuestionEditor()
+                                                            downloadQuizTemplate(
+                                                                'csv',
+                                                                assessmentForm.bloom_level,
+                                                            )
                                                         }
                                                     >
-                                                        <Plus className="mr-2 h-4 w-4" />
-                                                        Tambah Pertanyaan
+                                                        <Download className="h-4 w-4" />
                                                     </Button>
-                                                </>
-                                            )}
+                                                </div>
+
+                                                <FieldDescription>
+                                                    Unggah CSV atau klik tombol
+                                                    di bawah untuk tambah manual
+                                                </FieldDescription>
+
+                                                {quizImportFileName && (
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                        <Check className="h-4 w-4 text-green-600" />
+                                                        <span>
+                                                            {quizImportFileName}{' '}
+                                                            (
+                                                            {
+                                                                quizQuestions.length
+                                                            }{' '}
+                                                            soal
+                                                            {quizQuestions.length !==
+                                                            1
+                                                                ? 's'
+                                                                : ''}
+                                                            )
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Quiz Preview */}
+                                                {quizQuestions.length > 0 && (
+                                                    <>
+                                                        <div className="mt-3 max-h-96 space-y-2 overflow-y-auto rounded-lg border p-3">
+                                                            <div className="mb-2 flex items-center justify-between">
+                                                                <span className="text-sm font-medium">
+                                                                    Preview
+                                                                    Pertanyaan (
+                                                                    {
+                                                                        quizQuestions.length
+                                                                    }
+                                                                    )
+                                                                </span>
+                                                            </div>
+                                                            <div className="space-y-3">
+                                                                {quizQuestions.map(
+                                                                    (q, i) => (
+                                                                        <div
+                                                                            key={
+                                                                                i
+                                                                            }
+                                                                            className="rounded-lg border bg-muted/30 p-3 text-sm"
+                                                                        >
+                                                                            <div className="mb-2 flex items-start justify-between gap-2">
+                                                                                <p className="flex-1 font-medium">
+                                                                                    {i +
+                                                                                        1}
+
+                                                                                    .{' '}
+                                                                                    {
+                                                                                        q.question
+                                                                                    }
+                                                                                </p>
+                                                                                <div className="flex shrink-0 gap-1">
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        variant="ghost"
+                                                                                        size="sm"
+                                                                                        className="h-7 w-7 p-0"
+                                                                                        onClick={() =>
+                                                                                            openQuestionEditor(
+                                                                                                i,
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        <Pencil className="h-3.5 w-3.5" />
+                                                                                    </Button>
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        variant="ghost"
+                                                                                        size="sm"
+                                                                                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                                                                        onClick={() =>
+                                                                                            deleteQuestion(
+                                                                                                i,
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                                    </Button>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="space-y-1 pl-4">
+                                                                                {q.options.map(
+                                                                                    (
+                                                                                        opt,
+                                                                                        j,
+                                                                                    ) => (
+                                                                                        <div
+                                                                                            key={
+                                                                                                j
+                                                                                            }
+                                                                                            className={
+                                                                                                j ===
+                                                                                                q.correct_option
+                                                                                                    ? 'font-medium text-emerald-600'
+                                                                                                    : 'text-muted-foreground'
+                                                                                            }
+                                                                                        >
+                                                                                            {j ===
+                                                                                                q.correct_option &&
+                                                                                                '✓ '}
+                                                                                            {
+                                                                                                opt
+                                                                                            }
+                                                                                        </div>
+                                                                                    ),
+                                                                                )}
+                                                                            </div>
+                                                                            {q.explanation && (
+                                                                                <p className="mt-2 pl-4 text-xs text-muted-foreground">
+                                                                                    💡{' '}
+                                                                                    {
+                                                                                        q.explanation
+                                                                                    }
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    ),
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="w-full"
+                                                            onClick={() =>
+                                                                openQuestionEditor()
+                                                            }
+                                                        >
+                                                            <Plus className="mr-2 h-4 w-4" />
+                                                            Tambah Pertanyaan
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </Field>
+                                        </FieldGroup>
+
+                                        <DialogFooter className="mt-6">
+                                            <DialogClose asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    type="button"
+                                                    disabled={isSaving}
+                                                >
+                                                    Batal
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="submit"
+                                                disabled={isSaving}
+                                            >
+                                                {isSaving && (
+                                                    <Spinner data-icon="inline-start" />
+                                                )}
+                                                {isEditMode
+                                                    ? 'Simpan perubahan'
+                                                    : 'Buat penilaian'}
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
+
+                            {/* Question Editor Dialog */}
+                            <Dialog
+                                open={questionEditorOpen}
+                                onOpenChange={setQuestionEditorOpen}
+                            >
+                                <DialogContent className="sm:max-w-lg">
+                                    <DialogHeader>
+                                        <DialogTitle>
+                                            {editingQuestionIndex !== null
+                                                ? 'Edit Pertanyaan'
+                                                : 'Tambah Pertanyaan'}
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Isi pertanyaan, 4 opsi jawaban, dan
+                                            pilih jawaban yang benar.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <FieldGroup>
+                                        <Field>
+                                            <FieldLabel htmlFor="q-question">
+                                                Pertanyaan{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Textarea
+                                                id="q-question"
+                                                value={questionForm.question}
+                                                onChange={(e) =>
+                                                    setQuestionForm((prev) => ({
+                                                        ...prev,
+                                                        question:
+                                                            e.target.value,
+                                                    }))
+                                                }
+                                                placeholder="Masukkan pertanyaan"
+                                                rows={3}
+                                            />
+                                        </Field>
+
+                                        <Field>
+                                            <FieldLabel>
+                                                Opsi Jawaban{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <div className="space-y-2">
+                                                {questionForm.options.map(
+                                                    (opt, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <Input
+                                                                value={opt}
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    const newOptions =
+                                                                        [
+                                                                            ...questionForm.options,
+                                                                        ] as [
+                                                                            string,
+                                                                            string,
+                                                                            string,
+                                                                            string,
+                                                                        ];
+                                                                    newOptions[
+                                                                        idx
+                                                                    ] =
+                                                                        e.target.value;
+                                                                    setQuestionForm(
+                                                                        (
+                                                                            prev,
+                                                                        ) => ({
+                                                                            ...prev,
+                                                                            options:
+                                                                                newOptions,
+                                                                        }),
+                                                                    );
+                                                                }}
+                                                                placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant={
+                                                                    questionForm.correct_option ===
+                                                                    idx
+                                                                        ? 'default'
+                                                                        : 'outline'
+                                                                }
+                                                                size="sm"
+                                                                className="shrink-0"
+                                                                onClick={() =>
+                                                                    setQuestionForm(
+                                                                        (
+                                                                            prev,
+                                                                        ) => ({
+                                                                            ...prev,
+                                                                            correct_option:
+                                                                                idx,
+                                                                        }),
+                                                                    )
+                                                                }
+                                                            >
+                                                                {questionForm.correct_option ===
+                                                                idx ? (
+                                                                    <Check className="h-4 w-4" />
+                                                                ) : (
+                                                                    'Benar'
+                                                                )}
+                                                            </Button>
+                                                        </div>
+                                                    ),
+                                                )}
+                                            </div>
+                                            <FieldDescription>
+                                                Klik tombol "Benar" untuk
+                                                menandai jawaban yang benar
+                                            </FieldDescription>
+                                        </Field>
+
+                                        <Field>
+                                            <FieldLabel htmlFor="q-explanation">
+                                                Penjelasan
+                                            </FieldLabel>
+                                            <Textarea
+                                                id="q-explanation"
+                                                value={questionForm.explanation}
+                                                onChange={(e) =>
+                                                    setQuestionForm((prev) => ({
+                                                        ...prev,
+                                                        explanation:
+                                                            e.target.value,
+                                                    }))
+                                                }
+                                                placeholder="Penjelasan jawaban (opsional)"
+                                                rows={2}
+                                            />
                                         </Field>
                                     </FieldGroup>
 
                                     <DialogFooter className="mt-6">
                                         <DialogClose asChild>
                                             <Button
-                                                variant="outline"
                                                 type="button"
-                                                disabled={isSaving}
+                                                variant="outline"
                                             >
                                                 Batal
                                             </Button>
                                         </DialogClose>
                                         <Button
-                                            type="submit"
-                                            disabled={isSaving}
+                                            type="button"
+                                            onClick={saveQuestion}
                                         >
-                                            {isSaving && (
-                                                <Spinner data-icon="inline-start" />
-                                            )}
-                                            {isEditMode
-                                                ? 'Simpan perubahan'
-                                                : 'Buat penilaian'}
+                                            {editingQuestionIndex !== null
+                                                ? 'Perbarui'
+                                                : 'Tambah'}
                                         </Button>
                                     </DialogFooter>
-                                </form>
-                            </DialogContent>
-                        </Dialog>
-
-                        {/* Question Editor Dialog */}
-                        <Dialog
-                            open={questionEditorOpen}
-                            onOpenChange={setQuestionEditorOpen}
-                        >
-                            <DialogContent className="sm:max-w-lg">
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        {editingQuestionIndex !== null
-                                            ? 'Edit Pertanyaan'
-                                            : 'Tambah Pertanyaan'}
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                        Isi pertanyaan, 4 opsi jawaban, dan
-                                        pilih jawaban yang benar.
-                                    </DialogDescription>
-                                </DialogHeader>
-
-                                <FieldGroup>
-                                    <Field>
-                                        <FieldLabel htmlFor="q-question">
-                                            Pertanyaan{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <Textarea
-                                            id="q-question"
-                                            value={questionForm.question}
-                                            onChange={(e) =>
-                                                setQuestionForm((prev) => ({
-                                                    ...prev,
-                                                    question: e.target.value,
-                                                }))
-                                            }
-                                            placeholder="Masukkan pertanyaan"
-                                            rows={3}
-                                        />
-                                    </Field>
-
-                                    <Field>
-                                        <FieldLabel>
-                                            Opsi Jawaban{' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </FieldLabel>
-                                        <div className="space-y-2">
-                                            {questionForm.options.map(
-                                                (opt, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="flex items-center gap-2"
-                                                    >
-                                                        <Input
-                                                            value={opt}
-                                                            onChange={(e) => {
-                                                                const newOptions =
-                                                                    [
-                                                                        ...questionForm.options,
-                                                                    ] as [
-                                                                        string,
-                                                                        string,
-                                                                        string,
-                                                                        string,
-                                                                    ];
-                                                                newOptions[
-                                                                    idx
-                                                                ] =
-                                                                    e.target.value;
-                                                                setQuestionForm(
-                                                                    (prev) => ({
-                                                                        ...prev,
-                                                                        options:
-                                                                            newOptions,
-                                                                    }),
-                                                                );
-                                                            }}
-                                                            placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
-                                                        />
-                                                        <Button
-                                                            type="button"
-                                                            variant={
-                                                                questionForm.correct_option ===
-                                                                idx
-                                                                    ? 'default'
-                                                                    : 'outline'
-                                                            }
-                                                            size="sm"
-                                                            className="shrink-0"
-                                                            onClick={() =>
-                                                                setQuestionForm(
-                                                                    (prev) => ({
-                                                                        ...prev,
-                                                                        correct_option:
-                                                                            idx,
-                                                                    }),
-                                                                )
-                                                            }
-                                                        >
-                                                            {questionForm.correct_option ===
-                                                            idx ? (
-                                                                <Check className="h-4 w-4" />
-                                                            ) : (
-                                                                'Benar'
-                                                            )}
-                                                        </Button>
-                                                    </div>
-                                                ),
-                                            )}
-                                        </div>
-                                        <FieldDescription>
-                                            Klik tombol "Benar" untuk menandai
-                                            jawaban yang benar
-                                        </FieldDescription>
-                                    </Field>
-
-                                    <Field>
-                                        <FieldLabel htmlFor="q-explanation">
-                                            Penjelasan
-                                        </FieldLabel>
-                                        <Textarea
-                                            id="q-explanation"
-                                            value={questionForm.explanation}
-                                            onChange={(e) =>
-                                                setQuestionForm((prev) => ({
-                                                    ...prev,
-                                                    explanation: e.target.value,
-                                                }))
-                                            }
-                                            placeholder="Penjelasan jawaban (opsional)"
-                                            rows={2}
-                                        />
-                                    </Field>
-                                </FieldGroup>
-
-                                <DialogFooter className="mt-6">
-                                    <DialogClose asChild>
-                                        <Button type="button" variant="outline">
-                                            Batal
-                                        </Button>
-                                    </DialogClose>
-                                    <Button
-                                        type="button"
-                                        onClick={saveQuestion}
-                                    >
-                                        {editingQuestionIndex !== null
-                                            ? 'Perbarui'
-                                            : 'Tambah'}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                </header>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                    }
+                />
 
                 {/* Table */}
                 <section className="grid gap-4">
