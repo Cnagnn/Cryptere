@@ -24,7 +24,6 @@ use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\SystemStatsController;
 use App\Models\Assessment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -178,8 +177,6 @@ Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin
     Route::post('assessments/{assessment}/publish', [AdminAssessmentController::class, 'publishAssessment'])->name('assessments.publish');
     Route::post('assessments/{assessment}/archive', [AdminAssessmentController::class, 'archiveAssessment'])->name('assessments.archive');
 
-    // System Stats API
-    Route::get('system-stats', SystemStatsController::class)->name('system-stats');
 });
 
 require __DIR__.'/settings.php';
