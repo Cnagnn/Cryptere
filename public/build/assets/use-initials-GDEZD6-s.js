@@ -1,0 +1,1 @@
+function s(){return i}function i(n){const t=n.trim().split(" ");if(t.length===0)return"";if(t.length===1)return t[0].charAt(0).toUpperCase();const r=t[0].charAt(0),e=t[t.length-1].charAt(0);return`${r}${e}`.toUpperCase()}export{s as u};

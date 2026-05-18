@@ -1,1 +1,0 @@
-import e from"./profile-Bnrx6S0o.js";export{e as default};
