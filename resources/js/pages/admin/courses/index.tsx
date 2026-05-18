@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import type { ComponentProps } from 'react';
 import { dashboard } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import type {
@@ -11,6 +12,7 @@ import type {
 import type { VersionHistoryItem } from '@/components/admin/version-history-dialog';
 import type { CourseRow, LessonRow, TaskRow } from '@/types/course-management';
 import AdminCoursesAssessment from './assessment';
+import AdminCoursesBuilder from './builder';
 import AdminCoursesTask from './task';
 import AdminCoursesTitle from './title';
 import AdminCoursesTopic from './topic';
@@ -19,6 +21,8 @@ type LessonOption = { id: number; course_id: number; title: string };
 
 type Props = {
     section: 'catalog' | 'lesson' | 'task' | 'assessment';
+    builderMode: boolean;
+    builder: ComponentProps<typeof AdminCoursesBuilder>['builder'];
     courses: Paginated<CourseRow>;
     courseOptions: Array<Pick<CourseRow, 'id' | 'title'>>;
     allLessons: LessonOption[];
@@ -49,6 +53,15 @@ type Props = {
 };
 
 export default function AdminCoursesIndex(props: Props) {
+    if (props.builderMode) {
+        return (
+            <>
+                <Head title="Course Builder" />
+                <AdminCoursesBuilder builder={props.builder} />
+            </>
+        );
+    }
+
     return (
         <>
             <Head title="Manajemen - Kursus" />

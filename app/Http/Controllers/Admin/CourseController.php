@@ -63,6 +63,7 @@ class CourseController extends Controller
         $search = trim((string) $request->input('search', ''));
         $perPage = (int) $request->integer('per_page', 10);
         $perPage = max(10, min($perPage, 100));
+        $builderMode = $request->boolean('builder', ! $request->has('section'));
 
         $emptyPaginated = [
             'data' => [],
@@ -457,6 +458,8 @@ class CourseController extends Controller
 
         return Inertia::render('admin/courses/index', [
             'section' => $section,
+            'builderMode' => $builderMode,
+            'builder' => $builderMode ? $this->buildCourseBuilderPayload($request) : null,
             'courses' => $courses,
             'courseOptions' => $courseOptions,
             'allLessons' => $allLessons,
@@ -475,6 +478,128 @@ class CourseController extends Controller
             'questionBank' => $questionBank,
             'versionHistories' => $versionHistories,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildCourseBuilderPayload(Request $request): array
+    {
+        $courseOptions = Course::query()
+            ->withCount(['lessons', 'tasks', 'assessments'])
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->get(['id', 'slug', 'title', 'summary', 'status', 'version'])
+            ->map(fn (Course $course): array => [
+                'id' => $course->id,
+                'slug' => $course->slug,
+                'title' => $course->title,
+                'summary' => $course->summary,
+                'status' => $course->status,
+                'version' => $course->version,
+                'lessons_count' => $course->lessons_count,
+                'tasks_count' => $course->tasks_count,
+                'assessments_count' => $course->assessments_count,
+            ]);
+
+        $selectedCourseId = (int) $request->integer('course_id', (int) ($courseOptions->first()['id'] ?? 0));
+        $activeCourse = Course::query()
+            ->with([
+                'lessons' => fn ($query) => $query
+                    ->with(['tasks', 'topic:id,name'])
+                    ->withCount('tasks')
+                    ->orderBy('position'),
+                'assessments' => fn ($query) => $query
+                    ->with(['questions' => fn ($questionQuery) => $questionQuery->limit(5)])
+                    ->withCount('questions')
+                    ->orderBy('sort_order')
+                    ->orderBy('id'),
+            ])
+            ->withCount(['lessons', 'tasks', 'assessments'])
+            ->when($selectedCourseId > 0, fn ($query) => $query->whereKey($selectedCourseId))
+            ->when($selectedCourseId === 0, fn ($query) => $query->orderBy('sort_order')->orderBy('title'))
+            ->first();
+
+        if ($activeCourse === null) {
+            return [
+                'courseOptions' => $courseOptions->values()->all(),
+                'activeCourse' => null,
+                'outline' => ['lessons' => [], 'assessments' => []],
+                'readiness' => [
+                    'has_course' => false,
+                    'has_topics' => false,
+                    'has_tasks' => false,
+                    'has_assessments' => false,
+                    'has_questions' => false,
+                ],
+            ];
+        }
+
+        $lessons = $activeCourse->lessons->map(fn (Lesson $lesson): array => [
+            'id' => $lesson->id,
+            'title' => $lesson->title,
+            'description' => (string) ($lesson->description ?? ''),
+            'position' => $lesson->position,
+            'status' => $lesson->status,
+            'version' => $lesson->version,
+            'topic_name' => $lesson->topic?->name,
+            'tasks_count' => $lesson->tasks_count,
+            'tasks' => $lesson->tasks->map(fn (LessonTask $task): array => [
+                'id' => $task->id,
+                'title' => $task->title,
+                'type' => $task->type,
+                'status' => $task->status,
+                'version' => $task->version,
+                'estimated_minutes' => $task->estimated_minutes,
+                'sort_order' => $task->sort_order,
+            ])->values()->all(),
+        ])->values();
+
+        $assessments = $activeCourse->assessments->map(fn (Assessment $assessment): array => [
+            'id' => $assessment->id,
+            'title' => $assessment->title,
+            'description' => $assessment->description,
+            'bloom_level' => $assessment->bloom_level,
+            'grading_type' => $assessment->grading_type,
+            'status' => $assessment->status,
+            'version' => $assessment->version,
+            'questions_count' => $assessment->questions_count,
+            'questions' => $assessment->questions->map(fn (AssessmentQuestion $question): array => [
+                'id' => $question->id,
+                'question_text' => $question->question_text,
+                'question_type' => $question->question_type,
+                'bloom_level' => $question->bloom_level,
+                'points' => $question->points,
+                'source_badge' => $question->question_bank_id ? 'From Bank' : 'Local',
+            ])->values()->all(),
+        ])->values();
+
+        return [
+            'courseOptions' => $courseOptions->values()->all(),
+            'activeCourse' => [
+                'id' => $activeCourse->id,
+                'slug' => $activeCourse->slug,
+                'title' => $activeCourse->title,
+                'summary' => $activeCourse->summary,
+                'cover' => $activeCourse->cover,
+                'status' => $activeCourse->status,
+                'version' => $activeCourse->version,
+                'lessons_count' => $activeCourse->lessons_count,
+                'tasks_count' => $activeCourse->tasks_count,
+                'assessments_count' => $activeCourse->assessments_count,
+            ],
+            'outline' => [
+                'lessons' => $lessons->all(),
+                'assessments' => $assessments->all(),
+            ],
+            'readiness' => [
+                'has_course' => true,
+                'has_topics' => $lessons->isNotEmpty(),
+                'has_tasks' => $lessons->contains(fn (array $lesson): bool => count($lesson['tasks']) > 0),
+                'has_assessments' => $assessments->isNotEmpty(),
+                'has_questions' => $assessments->contains(fn (array $assessment): bool => $assessment['questions_count'] > 0),
+            ],
+        ];
     }
 
     /**
