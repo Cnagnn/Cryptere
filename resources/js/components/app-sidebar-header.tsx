@@ -1,10 +1,14 @@
 import { router, usePage } from '@inertiajs/react';
 import {
+    BarChart3,
     BookOpenCheck,
+    ClipboardList,
     FlaskConical,
     KeyRound,
     LayoutGrid,
+    Palette,
     Search,
+    Settings,
     ShieldCheck,
     Trophy,
     User,
@@ -33,12 +37,21 @@ import {
 } from '@/components/ui/command';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
-import { dashboard, search as searchRoute } from '@/routes';
+import { dashboard, onboarding, search as searchRoute } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { index as adminUsersIndex } from '@/routes/admin/users';
+import {
+    index as assessmentsIndex,
+    mastery as assessmentsMastery,
+} from '@/routes/assessments';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex, show as labsShow } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
+import { own as profileOwn } from '@/routes/profile/show';
+import { edit as appearanceEdit } from '@/routes/settings/appearance';
+import { edit as profileEdit } from '@/routes/settings/profile';
+import { edit as securityEdit } from '@/routes/settings/security';
+import { edit as socialAccountsEdit } from '@/routes/settings/social-accounts';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import type { Auth } from '@/types/auth';
 
@@ -85,20 +98,101 @@ const navigationItems: CommandMenuItem[] = [
         url: leaderboardIndex.url(),
         icon: Trophy,
     },
+    {
+        title: 'Assessments',
+        description: 'Practice mastery checks and skill evaluations.',
+        url: assessmentsIndex.url(),
+        icon: ClipboardList,
+    },
+    {
+        title: 'Mastery',
+        description: 'Review assessment mastery and knowledge progress.',
+        url: assessmentsMastery.url(),
+        icon: BarChart3,
+    },
+    {
+        title: 'Onboarding',
+        description: 'Review the initial setup and learning preferences.',
+        url: onboarding.url(),
+        icon: ClipboardList,
+    },
 ];
 
 const managementItems: CommandMenuItem[] = [
     {
-        title: 'Course Management',
+        title: 'Course Management Overview',
         description: 'Manage catalog, topics, tasks, and assessments.',
         url: adminCoursesIndex.url(),
         icon: BookOpenCheck,
+    },
+    {
+        title: 'Manage Course Titles',
+        description: 'Create, publish, archive, and reorder courses.',
+        url: adminCoursesIndex.url({ query: { section: 'catalog' } }),
+        icon: BookOpenCheck,
+    },
+    {
+        title: 'Manage Topics',
+        description: 'Organize lessons and course topic structure.',
+        url: adminCoursesIndex.url({ query: { section: 'lesson' } }),
+        icon: BookOpenCheck,
+    },
+    {
+        title: 'Manage Tasks',
+        description: 'Edit lesson tasks, videos, readings, and quizzes.',
+        url: adminCoursesIndex.url({ query: { section: 'task' } }),
+        icon: ClipboardList,
+    },
+    {
+        title: 'Manage Course Assessments',
+        description: 'Attach and manage assessments inside courses.',
+        url: adminCoursesIndex.url({ query: { section: 'assessment' } }),
+        icon: ClipboardList,
+    },
+    {
+        title: 'Assessment Management',
+        description: 'Manage standalone assessments from the course workspace.',
+        url: adminCoursesIndex.url({ query: { section: 'assessment' } }),
+        icon: ClipboardList,
     },
     {
         title: 'User Management',
         description: 'Manage user accounts and roles.',
         url: adminUsersIndex.url(),
         icon: Users,
+    },
+];
+
+const accountItems: CommandMenuItem[] = [
+    {
+        title: 'Profile',
+        description: 'Open your public profile page.',
+        url: profileOwn.url(),
+        icon: User,
+    },
+    {
+        title: 'Profile Settings',
+        description: 'Update your account profile and avatar.',
+        url: profileEdit.url(),
+        icon: Settings,
+    },
+    {
+        title: 'Security Settings',
+        description: 'Manage password and two-factor authentication.',
+        url: securityEdit.url(),
+        icon: ShieldCheck,
+    },
+    {
+        title: 'Connected Accounts',
+        description: 'Manage Google, GitHub, and other social links.',
+        url: socialAccountsEdit.url(),
+        icon: KeyRound,
+    },
+    {
+        title: 'Appearance Settings',
+        description: 'Change theme and display preferences.',
+        url: appearanceEdit.url(),
+        icon: Palette,
     },
 ];
 
@@ -151,6 +245,7 @@ const resultIcons: Record<string, LucideIcon> = {
     course: BookOpenCheck,
     lesson: BookOpenCheck,
     lab: FlaskConical,
+    assessment: ClipboardList,
     user: User,
 };
 
@@ -324,6 +419,25 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
 
                             <CommandGroup heading="Navigation">
                                 {navigationItems.map((item) => (
+                                    <CommandItem
+                                        key={item.url}
+                                        value={`${item.title} ${item.description}`}
+                                        onSelect={() => visit(item.url)}
+                                    >
+                                        <item.icon className="size-4 text-muted-foreground" />
+                                        <div className="flex min-w-0 flex-col">
+                                            <span>{item.title}</span>
+                                            <span className="truncate text-xs text-muted-foreground">
+                                                {item.description}
+                                            </span>
+                                        </div>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+
+                            <CommandSeparator />
+                            <CommandGroup heading="Account">
+                                {accountItems.map((item) => (
                                     <CommandItem
                                         key={item.url}
                                         value={`${item.title} ${item.description}`}
