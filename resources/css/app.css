@@ -320,6 +320,21 @@
         @apply border-border outline-ring/50;
     }
 
+    html {
+        font-family: var(--font-montreal);
+        text-rendering: optimizeLegibility;
+    }
+
+    body,
+    button,
+    input,
+    textarea,
+    select {
+        font-family: var(--font-montreal);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
     .montreal-serial {
         font-family: var(--font-montreal);
         font-style: normal;
@@ -362,9 +377,6 @@
 
     p {
         @apply leading-7;
-    }
-    html {
-        @apply font-sans;
     }
 }
 
