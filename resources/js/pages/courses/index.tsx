@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRight, BookOpenCheck, Filter, Search, X } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Filter, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -14,7 +14,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -815,21 +814,6 @@ export default function CoursesIndex({
 
     const paginationItems = buildPaginationItems();
 
-    const activeFilterChips = [
-        searchTerm.trim().length > 0
-            ? {
-                  key: 'search',
-                  label: `Pencarian: ${searchTerm.trim()}`,
-                  onClear: () => setSearchTerm(''),
-              }
-            : null,
-    ].filter(
-        (chip): chip is { key: string; label: string; onClear: () => void } =>
-            chip !== null,
-    );
-
-    const activeFilterCount = activeFilterChips.length;
-
     const filterProps = {
         searchTerm,
         isLabsCatalog,
@@ -881,14 +865,6 @@ export default function CoursesIndex({
                                     >
                                         <Filter className="size-4" />
                                         Filter
-                                        {activeFilterCount > 0 ? (
-                                            <Badge
-                                                variant="secondary"
-                                                className="ml-1"
-                                            >
-                                                {activeFilterCount}
-                                            </Badge>
-                                        ) : null}
                                     </Button>
 
                                     <AlertDialog
@@ -965,34 +941,6 @@ export default function CoursesIndex({
                     </Card>
 
                     <div className="flex flex-col gap-4">
-                        {hasPublishedCourses &&
-                            activeFilterChips.length > 0 && (
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {activeFilterChips.map((chip) => (
-                                        <Badge
-                                            key={chip.key}
-                                            variant="secondary"
-                                            className="gap-1 pr-1"
-                                        >
-                                            <span>{chip.label}</span>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon-xs"
-                                                onClick={() => {
-                                                    chip.onClear();
-                                                    setCurrentPage(1);
-                                                }}
-                                                className="size-5"
-                                                aria-label={`Clear ${chip.label}`}
-                                            >
-                                                <X />
-                                            </Button>
-                                        </Badge>
-                                    ))}
-                                </div>
-                            )}
-
                         {!hasPublishedCourses && isLabsCatalog && (
                             <EmptyLabCatalogGrid
                                 courses={hardcodedCatalogCourses}
