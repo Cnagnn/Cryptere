@@ -131,7 +131,9 @@ export function ProfileSettingsForm({
                                     <Input
                                         id="location"
                                         name="location"
-                                        defaultValue={profileUser.location ?? ''}
+                                        defaultValue={
+                                            profileUser.location ?? ''
+                                        }
                                     />
                                     {errors.location && (
                                         <p className="text-sm text-destructive">

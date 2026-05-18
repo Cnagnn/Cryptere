@@ -105,30 +105,41 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
                 onSuccess: () => resolve(),
                 onError: () => {
                     setErrors(['Failed to enable two-factor authentication']);
-                    reject(new Error('Failed to enable two-factor authentication'));
+                    reject(
+                        new Error('Failed to enable two-factor authentication'),
+                    );
                 },
             });
         });
     }, []);
 
-    const confirmTwoFactor = useCallback(async (code: string): Promise<void> => {
-        setErrors([]);
+    const confirmTwoFactor = useCallback(
+        async (code: string): Promise<void> => {
+            setErrors([]);
 
-        await new Promise<void>((resolve, reject) => {
-            router.post(
-                confirm.url(),
-                { code },
-                {
-                    preserveScroll: true,
-                    onSuccess: () => resolve(),
-                    onError: () => {
-                        setErrors(['The verification code was not accepted']);
-                        reject(new Error('The verification code was not accepted'));
+            await new Promise<void>((resolve, reject) => {
+                router.post(
+                    confirm.url(),
+                    { code },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => resolve(),
+                        onError: () => {
+                            setErrors([
+                                'The verification code was not accepted',
+                            ]);
+                            reject(
+                                new Error(
+                                    'The verification code was not accepted',
+                                ),
+                            );
+                        },
                     },
-                },
-            );
-        });
-    }, []);
+                );
+            });
+        },
+        [],
+    );
 
     const disableTwoFactor = useCallback(async (): Promise<void> => {
         setErrors([]);
@@ -143,7 +154,9 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
                 onError: () => {
                     setErrors(['Failed to disable two-factor authentication']);
                     reject(
-                        new Error('Failed to disable two-factor authentication'),
+                        new Error(
+                            'Failed to disable two-factor authentication',
+                        ),
                     );
                 },
             });

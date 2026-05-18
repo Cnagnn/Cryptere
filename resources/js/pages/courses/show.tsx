@@ -956,8 +956,8 @@ function PdfStreamViewer({
         const element = containerRef.current;
 
         if (!element) {
-return;
-}
+            return;
+        }
 
         const updateWidth = () => {
             const width = element.clientWidth - 32; // padding
@@ -976,8 +976,8 @@ return;
         const element = containerRef.current;
 
         if (!element || numPages === 0) {
-return;
-}
+            return;
+        }
 
         const handleScroll = () => {
             const scrollTop = element.scrollTop;

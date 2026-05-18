@@ -340,42 +340,45 @@ export default function AdminCoursesTask({
         setQuizQuestions([]);
     };
 
-    const openEditTaskDialog = useCallback((task: TaskRow) => {
-        setEditingTask(task);
-        setTaskForm({
-            lesson_id: task.lesson_id,
-            title: task.title,
-            description: task.description,
-            type: task.type as 'video' | 'read' | 'quiz',
-            video_url: task.video_url ?? '',
-            estimated_minutes:
-                task.estimated_minutes != null
-                    ? String(task.estimated_minutes)
-                    : '',
-            prerequisite_task_id:
-                task.prerequisite_task_id != null
-                    ? String(task.prerequisite_task_id)
-                    : '',
-            status: task.status || 'draft',
-            document: null,
-        });
-        setQuizImportFileName('');
-        setQuizQuestions(
-            (task.quiz_questions ?? []).map((q) => ({
-                question: q.question,
-                options: q.options as [string, string, string, string],
-                correct_option: q.correct_option,
-                explanation: q.explanation,
-            })),
-        );
-        setCreateTaskDialogOpen(true);
-    }, [
-        setCreateTaskDialogOpen,
-        setEditingTask,
-        setQuizImportFileName,
-        setQuizQuestions,
-        setTaskForm,
-    ]);
+    const openEditTaskDialog = useCallback(
+        (task: TaskRow) => {
+            setEditingTask(task);
+            setTaskForm({
+                lesson_id: task.lesson_id,
+                title: task.title,
+                description: task.description,
+                type: task.type as 'video' | 'read' | 'quiz',
+                video_url: task.video_url ?? '',
+                estimated_minutes:
+                    task.estimated_minutes != null
+                        ? String(task.estimated_minutes)
+                        : '',
+                prerequisite_task_id:
+                    task.prerequisite_task_id != null
+                        ? String(task.prerequisite_task_id)
+                        : '',
+                status: task.status || 'draft',
+                document: null,
+            });
+            setQuizImportFileName('');
+            setQuizQuestions(
+                (task.quiz_questions ?? []).map((q) => ({
+                    question: q.question,
+                    options: q.options as [string, string, string, string],
+                    correct_option: q.correct_option,
+                    explanation: q.explanation,
+                })),
+            );
+            setCreateTaskDialogOpen(true);
+        },
+        [
+            setCreateTaskDialogOpen,
+            setEditingTask,
+            setQuizImportFileName,
+            setQuizQuestions,
+            setTaskForm,
+        ],
+    );
 
     const filteredTasks = useMemo(() => {
         const keyword = filterValue.trim().toLowerCase();

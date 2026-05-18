@@ -736,7 +736,11 @@ function runAesConcept(
                 'Load 128-bit plaintext into the AES state matrix.',
                 'Expand the 128-bit key into 11 round keys.',
                 'Initial AddRoundKey.',
-                ...Array.from({ length: 9 }, (_, index) => `Round ${index + 1}: SubBytes, ShiftRows, MixColumns, AddRoundKey.`),
+                ...Array.from(
+                    { length: 9 },
+                    (_, index) =>
+                        `Round ${index + 1}: SubBytes, ShiftRows, MixColumns, AddRoundKey.`,
+                ),
                 'Final round 10: SubBytes, ShiftRows, AddRoundKey.',
             ],
         };
@@ -753,7 +757,11 @@ function runAesConcept(
             steps: [
                 'Load ciphertext into the AES state matrix.',
                 'Apply inverse final round.',
-                ...Array.from({ length: 9 }, (_, index) => `Inverse round ${10 - index}: InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns.`),
+                ...Array.from(
+                    { length: 9 },
+                    (_, index) =>
+                        `Inverse round ${10 - index}: InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns.`,
+                ),
                 'Recover the original 128-bit plaintext block.',
             ],
         };
@@ -836,7 +844,11 @@ function runDesConcept(
             steps: [
                 'Apply the DES initial permutation to the 64-bit plaintext block.',
                 'Split the permuted block into L0 and R0 halves.',
-                ...Array.from({ length: 16 }, (_, index) => `Round ${index + 1}: expand R, XOR round key, pass through S-boxes, permute, then swap halves.`),
+                ...Array.from(
+                    { length: 16 },
+                    (_, index) =>
+                        `Round ${index + 1}: expand R, XOR round key, pass through S-boxes, permute, then swap halves.`,
+                ),
                 'Apply the final permutation to produce the ciphertext block.',
             ],
         };
@@ -853,7 +865,11 @@ function runDesConcept(
             steps: [
                 'Apply the DES initial permutation to the ciphertext block.',
                 'Use the 16 round keys in reverse order.',
-                ...Array.from({ length: 16 }, (_, index) => `Round ${index + 1}: reverse Feistel flow with K${16 - index}.`),
+                ...Array.from(
+                    { length: 16 },
+                    (_, index) =>
+                        `Round ${index + 1}: reverse Feistel flow with K${16 - index}.`,
+                ),
                 'Apply the final permutation to recover the plaintext block.',
             ],
         };
@@ -874,7 +890,11 @@ function runDesConcept(
         steps: [
             'DES is a legacy 64-bit Feistel cipher; this educational fallback keeps interaction instant.',
             'For the standard DES vector, the lab shows the exact known-vector result.',
-            ...Array.from({ length: 16 }, (_, index) => `Round ${index + 1}: show expansion, key mixing, S-box substitution, and Feistel swap.`),
+            ...Array.from(
+                { length: 16 },
+                (_, index) =>
+                    `Round ${index + 1}: show expansion, key mixing, S-box substitution, and Feistel swap.`,
+            ),
         ],
     };
 }
@@ -1387,7 +1407,10 @@ export function validationErrorByLab(
             return 'DES input must be exactly one 64-bit block: 16 hexadecimal characters.';
         }
 
-        if (!/^[0-9a-fA-F]+$/.test(sanitizedKey) || sanitizedKey.length !== 16) {
+        if (
+            !/^[0-9a-fA-F]+$/.test(sanitizedKey) ||
+            sanitizedKey.length !== 16
+        ) {
             return 'DES key must be exactly 16 hexadecimal characters including parity bits.';
         }
     }

@@ -689,9 +689,10 @@ export default function CoursesIndex({
     const [sortBy, setSortBy] = useState<SortValue>(
         filters?.sort === 'progress' ? 'progress-desc' : 'title-asc',
     );
-    const serverCourses = Array.isArray(courses)
-        ? courses
-        : (courses.data ?? []);
+    const serverCourses = useMemo(
+        () => (Array.isArray(courses) ? courses : (courses.data ?? [])),
+        [courses],
+    );
     const serverMeta = Array.isArray(courses) ? null : courses.meta;
     const [currentPage, setCurrentPage] = useState(
         serverMeta?.current_page ?? 1,

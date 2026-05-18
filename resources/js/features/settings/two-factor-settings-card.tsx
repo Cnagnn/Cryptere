@@ -68,7 +68,9 @@ export function TwoFactorSettingsCard({
                             <CardTitle className="flex items-center gap-2">
                                 Two-Factor Authentication
                                 <Badge
-                                    variant={isEnabled ? 'default' : 'secondary'}
+                                    variant={
+                                        isEnabled ? 'default' : 'secondary'
+                                    }
                                 >
                                     {isEnabled ? 'Enabled' : 'Disabled'}
                                 </Badge>
@@ -92,9 +94,7 @@ export function TwoFactorSettingsCard({
                             </div>
 
                             <TwoFactorRecoveryCodes
-                                recoveryCodesList={
-                                    twoFactor.recoveryCodesList
-                                }
+                                recoveryCodesList={twoFactor.recoveryCodesList}
                                 fetchRecoveryCodes={
                                     twoFactor.fetchRecoveryCodes
                                 }
