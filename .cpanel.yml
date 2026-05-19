@@ -1,8 +1,8 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/fkdzqxmc/cryptere
-    - export PUBLICPATH=/home/fkdzqxmc/public_html
+    - export DEPLOYPATH=/home/u0jqgmaj/cryptere
+    - export PUBLICPATH=/home/u0jqgmaj/public_html
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/mkdir -p $PUBLICPATH
     - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php /usr/local/bin/composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
