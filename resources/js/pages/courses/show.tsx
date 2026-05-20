@@ -27,10 +27,6 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { toast } from 'sonner';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
-import { PageHeader } from '@/components/page-header';
 import {
     Accordion,
     AccordionContent,
@@ -67,6 +63,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import {
@@ -81,6 +78,8 @@ import {
     quiz as submitQuizRoute,
 } from '@/routes/courses/lessons';
 import type { Auth } from '@/types/auth';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 type PlayerSource =
     | { kind: 'youtube' | 'vimeo'; embedId: string }
@@ -213,12 +212,11 @@ type AssessmentQuestion = {
     bloomLevel?: string | null;
     questionType:
         | 'mcq'
+        | 'multiple_select'
         | 'true_false'
+        | 'matching'
         | 'short_answer'
         | 'essay'
-        | 'computation'
-        | 'case_study'
-        | 'design'
         | string;
     questionText: string;
     options?: Array<string | { label?: string; value?: string }> | null;
@@ -403,7 +401,7 @@ function mapLessons(serverLessons: ServerLesson[]): LessonData[] {
                     options: question.options,
                     explanation:
                         question.explanation ??
-                        'Penjelasan tersedia setelah kuis dikirim.',
+                        'Explanation available after quiz is submitted.',
                 })),
                 submission: task.submission ?? null,
             };
@@ -3255,11 +3253,14 @@ export default function CourseShow({
                     </Alert>
                 ) : null}
 
-                <PageHeader
-                    className="animate-fade-in-up"
-                    title={serverCourse.title}
-                    description={serverCourse.summary}
-                />
+                <header className="animate-fade-in-up flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <TypographyH1>{serverCourse.title}</TypographyH1>
+                        <TypographyMuted>
+                            {serverCourse.summary}
+                        </TypographyMuted>
+                    </div>
+                </header>
 
                 {/* Mobile sidebar trigger */}
                 <div className="lg:hidden">

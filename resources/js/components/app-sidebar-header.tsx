@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/command';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
-import { dashboard, onboarding, search as searchRoute } from '@/routes';
+import { dashboard, search as searchRoute } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { index as adminUsersIndex } from '@/routes/admin/users';
 import {
@@ -109,12 +109,6 @@ const navigationItems: CommandMenuItem[] = [
         description: 'Review assessment mastery and knowledge progress.',
         url: assessmentsMastery.url(),
         icon: BarChart3,
-    },
-    {
-        title: 'Onboarding',
-        description: 'Review the initial setup and learning preferences.',
-        url: onboarding.url(),
-        icon: ClipboardList,
     },
 ];
 

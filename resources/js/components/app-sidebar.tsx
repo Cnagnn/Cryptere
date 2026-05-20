@@ -3,6 +3,7 @@ import {
     BookOpenCheck,
     ChevronsUpDown,
     ChevronRight,
+    CircleHelp,
     FlaskConical,
     LayoutGrid,
     LogOut,
@@ -46,6 +47,7 @@ import {
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard, logout } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
+import { index as adminQuestionBankIndex } from '@/routes/admin/question-bank';
 import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex } from '@/routes/labs';
@@ -79,6 +81,11 @@ const mainNavItems: NavItem[] = [
 ];
 
 const managementNavItems: NavItem[] = [
+    {
+        title: 'Question Bank',
+        href: adminQuestionBankIndex(),
+        icon: CircleHelp,
+    },
     {
         title: 'Users',
         href: adminUsersIndex(),

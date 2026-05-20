@@ -6,7 +6,9 @@ import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
 const enableSourceMap = process.env.VITE_BUILD_SOURCEMAP === 'true';
-const enableReactCompiler = process.env.VITE_REACT_COMPILER !== 'false';
+const enableReactCompiler =
+    process.env.NODE_ENV === 'production' &&
+    process.env.VITE_REACT_COMPILER !== 'false';
 
 export default defineConfig({
     build: {

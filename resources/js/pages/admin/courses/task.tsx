@@ -16,22 +16,28 @@ import {
     Pencil,
     Play,
     Plus,
+    RotateCcw,
     Search,
     Trash2,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/page-header';
-import {
-    VersionHistoryDialog,
-    type VersionHistoryItem,
-} from '@/components/admin/version-history-dialog';
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -94,15 +100,38 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as tasksDestroy } from '@/routes/admin/courses/tasks';
 import { reorder as tasksReorder } from '@/routes/admin/courses/tasks';
 import { store as tasksStore } from '@/routes/admin/courses/tasks';
 import { update as tasksUpdate } from '@/routes/admin/courses/tasks';
+import { restore as restoreVersion } from '@/routes/admin/versions';
 import type { Paginated } from '@/types';
 import type { CourseRow, LessonRow, TaskRow } from '@/types/course-management';
 
 type ContentStatus = 'draft' | 'published' | 'archived';
+
+type VersionHistoryItem = {
+    id: number;
+    version_number: number;
+    changed_fields: string[];
+    change_summary: string | null;
+    creator_name: string | null;
+    created_at: string | null;
+    restored_at: string | null;
+};
+
+function formatVersionDate(value: string | null): string {
+    if (!value) {
+        return '-';
+    }
+
+    return new Intl.DateTimeFormat('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(value));
+}
 
 function StatusBadge({
     status,
@@ -114,19 +143,19 @@ function StatusBadge({
     const config = {
         draft: {
             icon: CircleDashed,
-            label: 'Draf',
+            label: 'Draft',
             variant: 'outline' as const,
             iconClass: 'text-amber-500',
         },
         published: {
             icon: BadgeCheck,
-            label: 'Diterbitkan',
+            label: 'Published',
             variant: 'outline' as const,
             iconClass: 'text-emerald-500',
         },
         archived: {
             icon: Archive,
-            label: 'Diarsipkan',
+            label: 'Archived',
             variant: 'destructive' as const,
             iconClass: 'text-red-500',
         },
@@ -229,7 +258,7 @@ function parseQuizImportText(text: string): QuizQuestion[] {
 
     if (missingColumn) {
         throw new Error(
-            'Template header tidak sesuai. Gunakan template download.',
+            'Template header does not match. Use the downloaded template.',
         );
     }
 
@@ -277,9 +306,18 @@ export default function AdminCoursesTask({
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [filterValue, setFilterValue] = useState('');
     const [rows, setRows] = useState<TaskRow[]>(() => tasks.data);
+    const [prevTasksData, setPrevTasksData] = useState(tasks.data);
+
+    if (prevTasksData !== tasks.data) {
+        setPrevTasksData(tasks.data);
+        setRows(tasks.data);
+    }
+
     const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<
         string | null
     >(null);
+    const [restoreTarget, setRestoreTarget] =
+        useState<VersionHistoryItem | null>(null);
     const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
     const [isSavingTask, setIsSavingTask] = useState(false);
@@ -316,7 +354,6 @@ export default function AdminCoursesTask({
         description: '',
         type: 'video' as 'video' | 'read' | 'quiz',
         video_url: '',
-        estimated_minutes: '',
         prerequisite_task_id: '',
         status: 'draft' as 'draft' | 'published' | 'archived',
         document: null as File | null,
@@ -338,7 +375,6 @@ export default function AdminCoursesTask({
             description: '',
             type: 'video',
             video_url: '',
-            estimated_minutes: '',
             prerequisite_task_id: '',
             status: 'draft',
             document: null,
@@ -356,10 +392,6 @@ export default function AdminCoursesTask({
                 description: task.description,
                 type: task.type as 'video' | 'read' | 'quiz',
                 video_url: task.video_url ?? '',
-                estimated_minutes:
-                    task.estimated_minutes != null
-                        ? String(task.estimated_minutes)
-                        : '',
                 prerequisite_task_id:
                     task.prerequisite_task_id != null
                         ? String(task.prerequisite_task_id)
@@ -423,13 +455,13 @@ export default function AdminCoursesTask({
 
     const saveQuestion = () => {
         if (!questionForm.question.trim()) {
-            toast.error('Pertanyaan tidak boleh kosong.');
+            toast.error('Question cannot be empty.');
 
             return;
         }
 
         if (questionForm.options.some((opt) => !opt.trim())) {
-            toast.error('Semua opsi harus diisi.');
+            toast.error('All options must be filled.');
 
             return;
         }
@@ -442,23 +474,23 @@ export default function AdminCoursesTask({
 
                 return updated;
             });
-            toast.success('Pertanyaan berhasil diperbarui.');
+            toast.success('Question updated successfully.');
         } else {
             // Add new
             setQuizQuestions((prev) => [...prev, questionForm]);
-            toast.success('Pertanyaan berhasil ditambahkan.');
+            toast.success('Question added successfully.');
         }
 
         setQuestionEditorOpen(false);
     };
 
     const deleteQuestion = (index: number) => {
-        if (!confirm('Hapus pertanyaan ini?')) {
+        if (!confirm('Delete this question?')) {
             return;
         }
 
         setQuizQuestions((prev) => prev.filter((_, i) => i !== index));
-        toast.success('Pertanyaan berhasil dihapus.');
+        toast.success('Question deleted successfully.');
     };
 
     const reorderRows = (sourceRowId: string, targetRowId: string) => {
@@ -543,10 +575,6 @@ export default function AdminCoursesTask({
             payload.append('video_url', task.video_url);
         }
 
-        if (task.estimated_minutes != null) {
-            payload.append('estimated_minutes', String(task.estimated_minutes));
-        }
-
         if (task.prerequisite_task_id != null) {
             payload.append(
                 'prerequisite_task_id',
@@ -584,14 +612,40 @@ export default function AdminCoursesTask({
             onSuccess: () =>
                 toast.success(
                     status === 'published'
-                        ? 'Tugas diterbitkan.'
-                        : 'Tugas diubah menjadi draf.',
+                        ? 'Task published.'
+                        : 'Task changed to draft.',
                 ),
             onError: (formErrors) => {
                 const messages = Object.values(formErrors).flat().join(', ');
-                toast.error(messages || 'Gagal mengubah status tugas.');
+                toast.error(messages || 'Failed to change task status.');
             },
         });
+    };
+
+    const submitRestoreVersion = () => {
+        if (!restoreTarget) {
+            return;
+        }
+
+        router.post(
+            restoreVersion.url({ version: restoreTarget.id }),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success(
+                        `Version ${restoreTarget.version_number} restored.`,
+                    );
+                    setRestoreTarget(null);
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Failed to restore version.');
+                },
+            },
+        );
     };
 
     const columns = useMemo<ColumnDef<TaskRow>[]>(
@@ -633,7 +687,7 @@ export default function AdminCoursesTask({
             },
             {
                 accessorKey: 'title',
-                header: 'Tugas',
+                header: 'Task',
                 cell: ({ row }) => (
                     <p className="text-left font-medium">
                         {row.original.title}
@@ -642,7 +696,7 @@ export default function AdminCoursesTask({
             },
             {
                 accessorKey: 'type',
-                header: 'Tipe',
+                header: 'Type',
                 cell: ({ row }) => {
                     const type = row.original.type;
                     const config: Record<
@@ -702,7 +756,7 @@ export default function AdminCoursesTask({
             },
             {
                 accessorKey: 'version',
-                header: 'Versi',
+                header: 'Version',
                 cell: ({ row }) => (
                     <div className="text-center">
                         {row.original.version
@@ -712,19 +766,8 @@ export default function AdminCoursesTask({
                 ),
             },
             {
-                accessorKey: 'estimated_minutes',
-                header: 'Estimasi (menit)',
-                cell: ({ row }) => (
-                    <div className="text-center">
-                        {row.original.estimated_minutes ??
-                            row.original.minutes ??
-                            '—'}
-                    </div>
-                ),
-            },
-            {
                 accessorKey: 'created_at',
-                header: 'Dibuat Pada',
+                header: 'Created At',
                 cell: ({ row }) => {
                     const date = row.original.created_at
                         ? new Date(row.original.created_at)
@@ -745,7 +788,7 @@ export default function AdminCoursesTask({
             },
             {
                 accessorKey: 'updated_at',
-                header: 'Diperbarui Pada',
+                header: 'Updated At',
                 cell: ({ row }) => {
                     const date = row.original.updated_at
                         ? new Date(row.original.updated_at)
@@ -789,7 +832,7 @@ export default function AdminCoursesTask({
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                     <DropdownMenuSub>
                                         <DropdownMenuSubTrigger>
                                             <ArrowRightLeft data-icon="inline-start" />
@@ -809,7 +852,7 @@ export default function AdminCoursesTask({
                                                 }
                                             >
                                                 <BadgeCheck data-icon="inline-start" />
-                                                Diterbitkan
+                                                Publish
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 disabled={
@@ -824,7 +867,7 @@ export default function AdminCoursesTask({
                                                 }
                                             >
                                                 <CircleDashed data-icon="inline-start" />
-                                                Draf
+                                                Draft
                                             </DropdownMenuItem>
                                         </DropdownMenuSubContent>
                                     </DropdownMenuSub>
@@ -834,15 +877,10 @@ export default function AdminCoursesTask({
                                         }
                                     >
                                         <Pencil data-icon="inline-start" />
-                                        Ubah
+                                        Edit
                                     </DropdownMenuItem>
-                                    <VersionHistoryDialog
-                                        itemTitle={row.original.title}
-                                        versions={
-                                            versionHistories[row.original.id] ??
-                                            []
-                                        }
-                                        trigger={
+                                    <Dialog>
+                                        <DialogTrigger asChild>
                                             <DropdownMenuItem
                                                 onSelect={(event) =>
                                                     event.preventDefault()
@@ -851,8 +889,119 @@ export default function AdminCoursesTask({
                                                 <History data-icon="inline-start" />
                                                 History
                                             </DropdownMenuItem>
-                                        }
-                                    />
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>
+                                                    Version History
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                    {row.original.title}
+                                                </DialogDescription>
+                                            </DialogHeader>
+
+                                            <div className="max-h-96 space-y-3 overflow-y-auto">
+                                                {(
+                                                    versionHistories[
+                                                        row.original.id
+                                                    ] ?? []
+                                                ).length === 0 ? (
+                                                    <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                                                        No version history for
+                                                        this item yet.
+                                                    </div>
+                                                ) : (
+                                                    (
+                                                        versionHistories[
+                                                            row.original.id
+                                                        ] ?? []
+                                                    ).map((version) => (
+                                                        <div
+                                                            key={version.id}
+                                                            className="rounded-lg border p-4"
+                                                        >
+                                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                                <div className="space-y-2">
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <Badge variant="outline">
+                                                                            v
+                                                                            {
+                                                                                version.version_number
+                                                                            }
+                                                                        </Badge>
+                                                                        {version.restored_at ? (
+                                                                            <Badge variant="secondary">
+                                                                                Restored
+                                                                            </Badge>
+                                                                        ) : null}
+                                                                    </div>
+                                                                    <p className="text-sm font-medium">
+                                                                        {version.change_summary ||
+                                                                            'Content changes'}
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {version.creator_name ||
+                                                                            'System'}{' '}
+                                                                        -{' '}
+                                                                        {formatVersionDate(
+                                                                            version.created_at,
+                                                                        )}
+                                                                    </p>
+                                                                    {version
+                                                                        .changed_fields
+                                                                        .length >
+                                                                    0 ? (
+                                                                        <div className="flex flex-wrap gap-1">
+                                                                            {version.changed_fields.map(
+                                                                                (
+                                                                                    field,
+                                                                                ) => (
+                                                                                    <Badge
+                                                                                        key={
+                                                                                            field
+                                                                                        }
+                                                                                        variant="outline"
+                                                                                    >
+                                                                                        {
+                                                                                            field
+                                                                                        }
+                                                                                    </Badge>
+                                                                                ),
+                                                                            )}
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        setRestoreTarget(
+                                                                            version,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <RotateCcw data-icon="inline-start" />
+                                                                    Restore
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+
+                                            <DialogFooter className="mt-2">
+                                                <DialogClose asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                    >
+                                                        Close
+                                                    </Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
                                     <DropdownMenuItem
                                         onClick={() => {
                                             router.delete(
@@ -874,7 +1023,7 @@ export default function AdminCoursesTask({
                                                                 .join(', ');
                                                         toast.error(
                                                             messages ||
-                                                                'Gagal menghapus tugas.',
+                                                                'Failed to delete task.',
                                                         );
                                                     },
                                                 },
@@ -882,7 +1031,7 @@ export default function AdminCoursesTask({
                                         }}
                                     >
                                         <Trash2 data-icon="inline-start" />
-                                        Hapus
+                                        Delete
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
@@ -893,7 +1042,7 @@ export default function AdminCoursesTask({
                                         }
                                     >
                                         <Eye data-icon="inline-start" />
-                                        Lihat Tugas
+                                        View Task
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -902,7 +1051,7 @@ export default function AdminCoursesTask({
                 },
             },
         ],
-        [openEditTaskDialog],
+        [openEditTaskDialog, versionHistories],
     );
 
     const handlePageChange = (nextPage: number): void => {
@@ -939,11 +1088,13 @@ export default function AdminCoursesTask({
 
     return (
         <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
-            <PageHeader
-                title="Manajemen Tugas"
-                description="Kelola tugas di bawah setiap topik."
-                actions={
-                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <header className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex min-w-0 flex-col gap-1">
+        <TypographyH1>Task Management</TypographyH1>
+        <TypographyMuted>Manage tasks under each topic.</TypographyMuted>
+    </div>
+    <div className="flex shrink-0 items-center justify-end gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
@@ -957,7 +1108,7 @@ export default function AdminCoursesTask({
                                                 selectedLessonId === 0 &&
                                                 selectedCourseId === 0
                                             ) {
-                                                return 'Pilih Topik...';
+                                                return 'Select Topic...';
                                             }
 
                                             const lesson = allLessons.find(
@@ -969,7 +1120,7 @@ export default function AdminCoursesTask({
                                                 return lesson.title;
                                             }
 
-                                            return 'Pilih Topik...';
+                                            return 'Select Topic...';
                                         })()}
                                     </span>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -977,10 +1128,10 @@ export default function AdminCoursesTask({
                             </PopoverTrigger>
                             <PopoverContent className="w-72 p-0" align="start">
                                 <Command>
-                                    <CommandInput placeholder="Cari kursus atau topik..." />
+                                    <CommandInput placeholder="Search course or topic..." />
                                     <CommandList className="max-h-none overflow-y-hidden">
                                         <CommandEmpty>
-                                            Tidak ada hasil ditemukan.
+                                            No results found.
                                         </CommandEmpty>
                                         <ScrollArea className="h-64">
                                             {courseOptions.map((course) => {
@@ -1068,7 +1219,7 @@ export default function AdminCoursesTask({
                         <div className="w-full sm:w-80">
                             <Input
                                 id="task-search"
-                                placeholder="Cari Tugas..."
+                                placeholder="Search Tasks..."
                                 value={filterValue}
                                 onChange={(event) =>
                                     setFilterValue(event.target.value)
@@ -1095,7 +1246,7 @@ export default function AdminCoursesTask({
                                     }}
                                 >
                                     <Plus data-icon="inline-start" />
-                                    Buat
+                                    Create Task
                                 </Button>
                             </DialogTrigger>
 
@@ -1115,13 +1266,6 @@ export default function AdminCoursesTask({
                                             taskForm.description,
                                         );
                                         payload.append('type', taskForm.type);
-
-                                        if (taskForm.estimated_minutes) {
-                                            payload.append(
-                                                'estimated_minutes',
-                                                taskForm.estimated_minutes,
-                                            );
-                                        }
 
                                         if (taskForm.prerequisite_task_id) {
                                             payload.append(
@@ -1155,7 +1299,7 @@ export default function AdminCoursesTask({
                                         if (taskForm.type === 'quiz') {
                                             if (quizQuestions.length === 0) {
                                                 toast.error(
-                                                    'Tambahkan minimal 1 pertanyaan.',
+                                                    'Add at least 1 question.',
                                                 );
 
                                                 return;
@@ -1216,8 +1360,8 @@ export default function AdminCoursesTask({
                                             onSuccess: () => {
                                                 toast.success(
                                                     isEditMode
-                                                        ? 'Tugas berhasil diperbarui.'
-                                                        : 'Tugas berhasil dibuat.',
+                                                        ? 'Task updated successfully.'
+                                                        : 'Task created successfully.',
                                                 );
                                                 resetTaskForm();
                                                 setCreateTaskDialogOpen(false);
@@ -1230,7 +1374,7 @@ export default function AdminCoursesTask({
                                                     .join(', ');
                                                 toast.error(
                                                     messages ||
-                                                        'Gagal menyimpan tugas.',
+                                                        'Failed to save task.',
                                                 );
                                             },
                                             onFinish: () =>
@@ -1241,24 +1385,24 @@ export default function AdminCoursesTask({
                                     <DialogHeader>
                                         <DialogTitle>
                                             {isEditMode
-                                                ? 'Ubah tugas'
-                                                : 'Buat tugas'}
+                                                ? 'Edit Task'
+                                                : 'Create New Task'}
                                         </DialogTitle>
                                         <DialogDescription>
                                             {isEditMode
-                                                ? 'Perbarui detail dan konten tugas.'
-                                                : 'Tambahkan tugas baru di bawah topik yang dipilih.'}
+                                                ? 'Update task details and content.'
+                                                : 'Add a new task under the selected topic.'}
                                         </DialogDescription>
                                     </DialogHeader>
 
-                                    <FieldGroup>
+                                    <FieldGroup className="mt-4">
                                         <Field
                                             data-invalid={
                                                 taskLessonHasError || undefined
                                             }
                                         >
                                             <FieldLabel htmlFor="task-lesson">
-                                                Topik{' '}
+                                                Topic{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
@@ -1292,7 +1436,7 @@ export default function AdminCoursesTask({
                                                                     return lesson.title;
                                                                 }
 
-                                                                return 'Pilih Topik...';
+                                                                return 'Select Topic...';
                                                             })()}
                                                         </span>
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -1306,7 +1450,7 @@ export default function AdminCoursesTask({
                                                     }}
                                                 >
                                                     <Command>
-                                                        <CommandInput placeholder="Cari kursus atau topik..." />
+                                                        <CommandInput placeholder="Search course or topic..." />
                                                         <CommandList
                                                             style={{
                                                                 maxHeight:
@@ -1316,8 +1460,8 @@ export default function AdminCoursesTask({
                                                             }}
                                                         >
                                                             <CommandEmpty>
-                                                                Tidak ada hasil
-                                                                ditemukan.
+                                                                No results
+                                                                found.
                                                             </CommandEmpty>
                                                             {Object.entries(
                                                                 groupedLessons,
@@ -1396,7 +1540,7 @@ export default function AdminCoursesTask({
                                             }
                                         >
                                             <FieldLabel htmlFor="task-title">
-                                                Judul{' '}
+                                                Title{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
@@ -1404,7 +1548,7 @@ export default function AdminCoursesTask({
                                             <Input
                                                 id="task-title"
                                                 name="title"
-                                                placeholder="Masukkan judul tugas"
+                                                placeholder="Enter task title"
                                                 value={taskForm.title}
                                                 onChange={(event) =>
                                                     setTaskForm((current) => ({
@@ -1431,7 +1575,7 @@ export default function AdminCoursesTask({
                                             }
                                         >
                                             <FieldLabel htmlFor="task-description">
-                                                Deskripsi{' '}
+                                                Description{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
@@ -1439,7 +1583,7 @@ export default function AdminCoursesTask({
                                             <Textarea
                                                 id="task-description"
                                                 name="description"
-                                                placeholder="Masukkan deskripsi tugas"
+                                                placeholder="Enter task description"
                                                 value={taskForm.description}
                                                 onChange={(event) =>
                                                     setTaskForm((current) => ({
@@ -1468,7 +1612,7 @@ export default function AdminCoursesTask({
                                             }
                                         >
                                             <FieldLabel htmlFor="task-type">
-                                                Tipe{' '}
+                                                Type{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
@@ -1499,7 +1643,7 @@ export default function AdminCoursesTask({
                                                         taskTypeHasError
                                                     }
                                                 >
-                                                    <SelectValue placeholder="Pilih tipe" />
+                                                    <SelectValue placeholder="Select type" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectGroup>
@@ -1624,7 +1768,7 @@ export default function AdminCoursesTask({
                                             <>
                                                 <Field>
                                                     <FieldLabel htmlFor="task-quiz-import">
-                                                        Impor Pertanyaan{' '}
+                                                        Import Questions{' '}
                                                         {!isEditMode &&
                                                             quizQuestions.length ===
                                                                 0 && (
@@ -1677,7 +1821,7 @@ export default function AdminCoursesTask({
                                                                         0
                                                                     ) {
                                                                         toast.error(
-                                                                            'Tidak ada pertanyaan ditemukan dalam file.',
+                                                                            'No questions found in file.',
                                                                         );
 
                                                                         return;
@@ -1690,11 +1834,11 @@ export default function AdminCoursesTask({
                                                                         selectedFile.name,
                                                                     );
                                                                     toast.success(
-                                                                        `Berhasil mengimpor ${parsedRows.length} pertanyaan.`,
+                                                                        `Successfully imported ${parsedRows.length} questions.`,
                                                                     );
                                                                 } catch {
                                                                     toast.error(
-                                                                        'Gagal membaca file. Silakan gunakan format template.',
+                                                                        'Failed to read file. Please use the template format.',
                                                                     );
                                                                 }
                                                             }}
@@ -1747,9 +1891,9 @@ export default function AdminCoursesTask({
                                                     </div>
 
                                                     <FieldDescription>
-                                                        Unggah CSV/Excel atau
+                                                        Upload CSV/Excel or
                                                         klik tombol di bawah
-                                                        untuk tambah manual
+                                                        add manually
                                                     </FieldDescription>
 
                                                     {quizImportFileName && (
@@ -1764,7 +1908,7 @@ export default function AdminCoursesTask({
                                                                     {
                                                                         quizQuestions.length
                                                                     }{' '}
-                                                                    pertanyaan
+                                                                    questions
                                                                     {quizQuestions.length !==
                                                                     1
                                                                         ? ''
@@ -1790,7 +1934,7 @@ export default function AdminCoursesTask({
                                                                                 <span className="flex items-center gap-2">
                                                                                     <Eye className="h-4 w-4" />
                                                                                     Preview
-                                                                                    Pertanyaan
+                                                                                    Questions
                                                                                     (
                                                                                     {
                                                                                         quizQuestions.length
@@ -1904,8 +2048,8 @@ export default function AdminCoursesTask({
                                                                         }
                                                                     >
                                                                         <Plus className="mr-2 h-4 w-4" />
-                                                                        Tambah
-                                                                        Pertanyaan
+                                                                        Add
+                                                                        Question
                                                                     </Button>
                                                                 </>
                                                             )}
@@ -1920,10 +2064,10 @@ export default function AdminCoursesTask({
                                                                 {
                                                                     quizQuestions.length
                                                                 }{' '}
-                                                                pertanyaan
-                                                                dimuat. Unggah
-                                                                file baru untuk
-                                                                mengganti.
+                                                                questions
+                                                                loaded. Upload a
+                                                                new file to
+                                                                replace.
                                                             </FieldDescription>
                                                         )}
 
@@ -1946,7 +2090,7 @@ export default function AdminCoursesTask({
                                                 variant="outline"
                                                 disabled={isSavingTask}
                                             >
-                                                Batal
+                                                Cancel
                                             </Button>
                                         </DialogClose>
                                         <Button
@@ -1956,7 +2100,7 @@ export default function AdminCoursesTask({
                                             {isSavingTask && (
                                                 <Spinner data-icon="inline-start" />
                                             )}
-                                            Simpan perubahan
+                                            Save changes
                                         </Button>
                                     </DialogFooter>
                                 </form>
@@ -1972,19 +2116,19 @@ export default function AdminCoursesTask({
                                 <DialogHeader>
                                     <DialogTitle>
                                         {editingQuestionIndex !== null
-                                            ? 'Edit Pertanyaan'
-                                            : 'Tambah Pertanyaan'}
+                                            ? 'Edit Question'
+                                            : 'Add Question'}
                                     </DialogTitle>
                                     <DialogDescription>
-                                        Isi pertanyaan, 4 opsi jawaban, dan
-                                        pilih jawaban yang benar.
+                                        Fill in the question, 4 answer options, and
+                                        select the correct answer.
                                     </DialogDescription>
                                 </DialogHeader>
 
-                                <FieldGroup>
+                                <FieldGroup className="mt-4">
                                     <Field>
                                         <FieldLabel htmlFor="q-question">
-                                            Pertanyaan{' '}
+                                            Question{' '}
                                             <span className="text-destructive">
                                                 *
                                             </span>
@@ -1998,14 +2142,14 @@ export default function AdminCoursesTask({
                                                     question: e.target.value,
                                                 }))
                                             }
-                                            placeholder="Masukkan pertanyaan"
+                                            placeholder="Enter question"
                                             rows={3}
                                         />
                                     </Field>
 
                                     <Field>
                                         <FieldLabel>
-                                            Opsi Jawaban{' '}
+                                            Answer Options{' '}
                                             <span className="text-destructive">
                                                 *
                                             </span>
@@ -2041,7 +2185,7 @@ export default function AdminCoursesTask({
                                                                     }),
                                                                 );
                                                             }}
-                                                            placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
+                                                            placeholder={`Option ${String.fromCharCode(65 + idx)}`}
                                                         />
                                                         <Button
                                                             type="button"
@@ -2067,7 +2211,7 @@ export default function AdminCoursesTask({
                                                             idx ? (
                                                                 <Check className="h-4 w-4" />
                                                             ) : (
-                                                                'Benar'
+                                                                'Correct'
                                                             )}
                                                         </Button>
                                                     </div>
@@ -2075,14 +2219,14 @@ export default function AdminCoursesTask({
                                             )}
                                         </div>
                                         <FieldDescription>
-                                            Klik tombol "Benar" untuk menandai
-                                            jawaban yang benar
+                                            Click the "Correct" button to mark
+                                            the correct answer
                                         </FieldDescription>
                                     </Field>
 
                                     <Field>
                                         <FieldLabel htmlFor="q-explanation">
-                                            Penjelasan
+                                            Explanation
                                         </FieldLabel>
                                         <Textarea
                                             id="q-explanation"
@@ -2093,7 +2237,7 @@ export default function AdminCoursesTask({
                                                     explanation: e.target.value,
                                                 }))
                                             }
-                                            placeholder="Penjelasan jawaban (opsional)"
+                                            placeholder="Answer explanation (optional)"
                                             rows={2}
                                         />
                                     </Field>
@@ -2102,7 +2246,7 @@ export default function AdminCoursesTask({
                                 <DialogFooter className="mt-6">
                                     <DialogClose asChild>
                                         <Button type="button" variant="outline">
-                                            Batal
+                                            Cancel
                                         </Button>
                                     </DialogClose>
                                     <Button
@@ -2110,17 +2254,15 @@ export default function AdminCoursesTask({
                                         onClick={saveQuestion}
                                     >
                                         {editingQuestionIndex !== null
-                                            ? 'Perbarui'
-                                            : 'Tambah'}
+                                            ? 'Update'
+                                            : 'Add'}
                                     </Button>
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
                     </div>
-                }
-            />
-
-            <section className="grid gap-4">
+    </div>
+</header>            <section className="grid gap-4">
                 <div className="flex flex-col gap-4">
                     {filteredTasks.length === 0 ? (
                         <Empty>
@@ -2129,11 +2271,11 @@ export default function AdminCoursesTask({
                                     <Search />
                                 </EmptyMedia>
                                 <EmptyTitle>
-                                    Tidak ada tugas ditemukan
+                                    No tasks found
                                 </EmptyTitle>
                                 <EmptyDescription>
-                                    Pilih topik lain atau cari dengan kata kunci
-                                    lain.
+                                    Select another topic or search with a
+                                    different keyword.
                                 </EmptyDescription>
                             </EmptyHeader>
                         </Empty>
@@ -2159,11 +2301,36 @@ export default function AdminCoursesTask({
                             pageSize={tasks.per_page}
                             onPageChange={handlePageChange}
                             onPageSizeChange={handlePageSizeChange}
-                            footerInfo={`Menampilkan ${tasks.from ?? 0} - ${tasks.to ?? 0} dari ${tasks.total} Tugas`}
+                            footerInfo={`Showing ${tasks.from ?? 0} - ${tasks.to ?? 0} of ${tasks.total} Tasks`}
                         />
                     )}
                 </div>
             </section>
+            <AlertDialog
+                open={restoreTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setRestoreTarget(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Restore version?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            The current version will be saved as a snapshot
+                            before the item is restored to version{' '}
+                            {restoreTarget?.version_number}.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={submitRestoreVersion}>
+                            Restore
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

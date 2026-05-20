@@ -25,13 +25,27 @@ class SecurityHeaders
 
         $response = $next($request);
 
+        $scriptSrc = "script-src 'self' 'nonce-{$nonce}' https://*.sentry.io";
+        $styleSrc = "style-src 'self' 'nonce-{$nonce}'";
+        $imgSrc = "img-src 'self' data: blob:";
+        $fontSrc = "font-src 'self' data:";
+        $connectSrc = "connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io";
+
+        if (app()->environment('local', 'testing', 'development')) {
+            $scriptSrc .= " 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173";
+            $styleSrc .= " 'unsafe-inline' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173 https://fonts.googleapis.com";
+            $fontSrc .= ' https://fonts.gstatic.com';
+            $connectSrc .= ' ws://localhost:5173 ws://127.0.0.1:5173 ws://[::1]:5173 http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
+            $imgSrc .= ' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
+        }
+
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'nonce-{$nonce}' https://*.sentry.io",
-            "style-src 'self' 'nonce-{$nonce}'",
-            "img-src 'self' data: blob:",
-            "font-src 'self' data:",
-            "connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io",
+            $scriptSrc,
+            $styleSrc,
+            $imgSrc,
+            $fontSrc,
+            $connectSrc,
             "object-src 'none'",
             "frame-ancestors 'none'",
         ]);

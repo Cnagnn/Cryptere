@@ -4,25 +4,31 @@ import {
     Archive,
     ArrowRightLeft,
     BadgeCheck,
+    BookOpen,
+    Brain,
     Check,
     ChevronsUpDown,
     CircleDashed,
-    Download,
+    ClipboardCheck,
+    Cog,
+    HelpCircle,
     History,
+    Lightbulb,
     MoreHorizontal,
     Pencil,
     Plus,
+    RotateCcw,
     Search,
+    SearchCheck,
+    Sparkles,
     Trash2,
+    X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { PageHeader } from '@/components/page-header';
-import {
-    VersionHistoryDialog,
-    type VersionHistoryItem,
-} from '@/components/admin/version-history-dialog';
+import { cn } from '@/lib/utils';
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -84,6 +90,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -93,22 +100,36 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import {
     destroy as destroyAssessment,
     reorder as reorderAssessments,
     store as storeAssessment,
     update as updateAssessment,
 } from '@/routes/admin/assessments';
-import { store as storeAssessmentQuestion } from '@/routes/admin/assessments/questions';
-import { store as storeQuestionBank } from '@/routes/admin/question-bank';
+import {
+    destroy as destroyAssessmentQuestion,
+    reorder as reorderAssessmentQuestions,
+    store as storeAssessmentQuestion,
+    update as updateAssessmentQuestion,
+} from '@/routes/admin/assessments/questions';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
+import { store as storeQuestionBank } from '@/routes/admin/question-bank';
+import { restore as restoreVersion } from '@/routes/admin/versions';
 import type {
     AdminAssessment,
     AdminAssessmentQuestion,
     BloomLevel,
     GradingType,
     QuestionBank,
+    QuestionType,
 } from '@/types';
 
 type Paginated<T> = {
@@ -123,8 +144,30 @@ type Paginated<T> = {
 
 type LessonOption = { id: number; course_id: number; title: string };
 
+type VersionHistoryItem = {
+    id: number;
+    version_number: number;
+    changed_fields: string[];
+    change_summary: string | null;
+    creator_name: string | null;
+    created_at: string | null;
+    restored_at: string | null;
+};
+
+function formatVersionDate(value: string | null): string {
+    if (!value) {
+        return '-';
+    }
+
+    return new Intl.DateTimeFormat('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(value));
+}
+
 type Props = {
     assessments: Paginated<AdminAssessment>;
+    allAssessments: { id: number; title: string; course_id: number; course_title: string }[];
     questions: AdminAssessmentQuestion[];
     selectedAssessmentId: number;
     courseOptions: { id: number; title: string }[];
@@ -140,14 +183,329 @@ type Props = {
     };
 };
 
-const BLOOM_BADGE_COLORS: Record<BloomLevel, string> = {
-    C1: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-    C2: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-    C3: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-    C4: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-    C5: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
-    C6: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+const BLOOM_CONFIG: Record<BloomLevel, { label: string; icon: typeof BookOpen; iconClass: string }> = {
+    C1: { label: 'C1-Remember', icon: BookOpen, iconClass: 'text-emerald-500' },
+    C2: { label: 'C2-Understand', icon: Lightbulb, iconClass: 'text-blue-500' },
+    C3: { label: 'C3-Apply', icon: Cog, iconClass: 'text-amber-500' },
+    C4: { label: 'C4-Analyze', icon: SearchCheck, iconClass: 'text-purple-500' },
+    C5: { label: 'C5-Evaluate', icon: Brain, iconClass: 'text-rose-500' },
+    C6: { label: 'C6-Create', icon: Sparkles, iconClass: 'text-indigo-500' },
 };
+
+const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
+    { value: 'mcq', label: 'Pilihan Ganda (PG)' },
+    { value: 'multiple_select', label: 'Pilihan Ganda Kompleks (PGK)' },
+    { value: 'true_false', label: 'Benar / Salah (BS)' },
+    { value: 'matching', label: 'Menjodohkan (Matching)' },
+    { value: 'short_answer', label: 'Isian Singkat (Short Answer)' },
+    { value: 'essay', label: 'Esai / Uraian (Essay)' },
+];
+
+// ── Question Type Fields (inlined) ───────────────────────────────────────────
+
+function parseMultiSelectAnswer(value: string): string[] {
+    if (!value) return [];
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed)
+            ? parsed.filter((item): item is string => typeof item === 'string')
+            : [];
+    } catch {
+        return [];
+    }
+}
+
+type MatchingPair = { left: string; right: string };
+
+function parseMatchingPairs(
+    options: string[],
+    correctAnswer: string,
+): MatchingPair[] {
+    let map: Record<string, string> = {};
+    if (correctAnswer) {
+        try {
+            const parsed = JSON.parse(correctAnswer);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                map = Object.fromEntries(
+                    Object.entries(parsed).map(([key, value]) => [String(key), String(value ?? '')]),
+                );
+            }
+        } catch {
+            map = {};
+        }
+    }
+    const fromOptions = (options ?? []).map((entry) => {
+        const [left, right = ''] = String(entry ?? '').split('::');
+        return { left, right };
+    });
+    const merged: MatchingPair[] = fromOptions.map((pair) => ({
+        left: pair.left,
+        right: pair.left && map[pair.left] !== undefined ? map[pair.left] : pair.right,
+    }));
+    while (merged.length < 4) {
+        merged.push({ left: '', right: '' });
+    }
+    return merged;
+}
+
+function QuestionTypeFields({
+    idPrefix,
+    questionType,
+    options,
+    correctAnswer,
+    minWords,
+    maxWords,
+    onOptionsChange,
+    onCorrectAnswerChange,
+    onMinWordsChange,
+    onMaxWordsChange,
+}: {
+    idPrefix: string;
+    questionType: QuestionType;
+    options: string[];
+    correctAnswer: string;
+    minWords: string;
+    maxWords: string;
+    onOptionsChange: (options: string[]) => void;
+    onCorrectAnswerChange: (value: string) => void;
+    onMinWordsChange: (value: string) => void;
+    onMaxWordsChange: (value: string) => void;
+}) {
+    if (questionType === 'mcq') {
+        return (
+            <Field>
+                <FieldLabel>
+                    Pilihan Jawaban <span className="text-destructive">*</span>
+                </FieldLabel>
+                <FieldDescription>
+                    Tandai pilihan yang benar dengan tombol di sebelah kanan.
+                </FieldDescription>
+                <div className="grid gap-2">
+                    {options.map((option, index) => {
+                        const isCorrect =
+                            option.trim() !== '' && correctAnswer.trim() !== '' && correctAnswer === option;
+                        return (
+                            <div key={index} className="flex items-center gap-2">
+                                <Input
+                                    id={`${idPrefix}-option-${index}`}
+                                    value={option}
+                                    placeholder={`Pilihan ${index + 1}`}
+                                    onChange={(event) => {
+                                        const next = [...options];
+                                        const oldValue = next[index];
+                                        next[index] = event.target.value;
+                                        onOptionsChange(next);
+                                        if (correctAnswer === oldValue && oldValue !== '') {
+                                            onCorrectAnswerChange(event.target.value);
+                                        }
+                                    }}
+                                />
+                                <Button
+                                    type="button"
+                                    variant={isCorrect ? 'default' : 'outline'}
+                                    size="icon"
+                                    aria-label={isCorrect ? 'Jawaban benar' : 'Tandai sebagai benar'}
+                                    aria-pressed={isCorrect}
+                                    disabled={option.trim() === ''}
+                                    onClick={() => onCorrectAnswerChange(isCorrect ? '' : option)}
+                                    className={cn('shrink-0', isCorrect && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                                >
+                                    <Check />
+                                </Button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </Field>
+        );
+    }
+
+    if (questionType === 'multiple_select') {
+        const selected = parseMultiSelectAnswer(correctAnswer);
+        const toggleOption = (option: string) => {
+            if (option.trim() === '') return;
+            const next = selected.includes(option)
+                ? selected.filter((value) => value !== option)
+                : [...selected, option];
+            onCorrectAnswerChange(JSON.stringify(next));
+        };
+        return (
+            <Field>
+                <FieldLabel>
+                    Pilihan Jawaban <span className="text-destructive">*</span>
+                </FieldLabel>
+                <FieldDescription>
+                    Tandai semua pilihan yang benar dengan tombol di sebelah kanan.
+                </FieldDescription>
+                <div className="grid gap-2">
+                    {options.map((option, index) => {
+                        const isCorrect = option.trim() !== '' && selected.includes(option);
+                        return (
+                            <div key={index} className="flex items-center gap-2">
+                                <Input
+                                    id={`${idPrefix}-option-${index}`}
+                                    value={option}
+                                    placeholder={`Pilihan ${index + 1}`}
+                                    onChange={(event) => {
+                                        const next = [...options];
+                                        const oldValue = next[index];
+                                        next[index] = event.target.value;
+                                        onOptionsChange(next);
+                                        if (oldValue !== '' && selected.includes(oldValue)) {
+                                            const newSelected = selected.map((s) =>
+                                                s === oldValue ? event.target.value : s,
+                                            );
+                                            onCorrectAnswerChange(JSON.stringify(newSelected));
+                                        }
+                                    }}
+                                />
+                                <Button
+                                    type="button"
+                                    variant={isCorrect ? 'default' : 'outline'}
+                                    size="icon"
+                                    aria-label={isCorrect ? 'Jawaban benar' : 'Tandai sebagai benar'}
+                                    aria-pressed={isCorrect}
+                                    disabled={option.trim() === ''}
+                                    onClick={() => toggleOption(option)}
+                                    className={cn('shrink-0', isCorrect && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                                >
+                                    <Check />
+                                </Button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </Field>
+        );
+    }
+
+    if (questionType === 'true_false') {
+        const isTrue = correctAnswer === 'true';
+        const isFalse = correctAnswer === 'false';
+        return (
+            <Field>
+                <FieldLabel>
+                    Jawaban Benar <span className="text-destructive">*</span>
+                </FieldLabel>
+                <FieldDescription>Tandai jawaban yang benar.</FieldDescription>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button
+                        type="button"
+                        variant={isTrue ? 'default' : 'outline'}
+                        aria-pressed={isTrue}
+                        onClick={() => onCorrectAnswerChange('true')}
+                        className={cn(isTrue && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                    >
+                        <Check />
+                        Benar
+                    </Button>
+                    <Button
+                        type="button"
+                        variant={isFalse ? 'default' : 'outline'}
+                        aria-pressed={isFalse}
+                        onClick={() => onCorrectAnswerChange('false')}
+                        className={cn(isFalse && 'bg-rose-500 text-white hover:bg-rose-600')}
+                    >
+                        <X />
+                        Salah
+                    </Button>
+                </div>
+            </Field>
+        );
+    }
+
+    if (questionType === 'matching') {
+        const pairs = parseMatchingPairs(options, correctAnswer);
+        const updatePair = (index: number, key: 'left' | 'right', value: string) => {
+            const next = pairs.map((pair, i) => (i === index ? { ...pair, [key]: value } : pair));
+            const nextOptions = next.map((pair) => `${pair.left}::${pair.right}`);
+            const nextAnswer = next.reduce<Record<string, string>>((acc, pair) => {
+                if (pair.left.trim() !== '') acc[pair.left] = pair.right;
+                return acc;
+            }, {});
+            onOptionsChange(nextOptions);
+            onCorrectAnswerChange(JSON.stringify(nextAnswer));
+        };
+        return (
+            <Field>
+                <FieldLabel>
+                    Pasangan <span className="text-destructive">*</span>
+                </FieldLabel>
+                <FieldDescription>
+                    Pasangkan premis (kiri) dengan target jawaban (kanan).
+                </FieldDescription>
+                <div className="grid gap-2">
+                    {pairs.map((pair, index) => (
+                        <div key={index} className="grid grid-cols-2 gap-2">
+                            <Input
+                                id={`${idPrefix}-pair-${index}-left`}
+                                value={pair.left}
+                                placeholder={`Premis ${index + 1}`}
+                                onChange={(event) => updatePair(index, 'left', event.target.value)}
+                            />
+                            <Input
+                                id={`${idPrefix}-pair-${index}-right`}
+                                value={pair.right}
+                                placeholder={`Target ${index + 1}`}
+                                onChange={(event) => updatePair(index, 'right', event.target.value)}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </Field>
+        );
+    }
+
+    if (questionType === 'short_answer') {
+        return (
+            <Field>
+                <FieldLabel htmlFor={`${idPrefix}-correct-answer`}>
+                    Jawaban Benar <span className="text-destructive">*</span>
+                </FieldLabel>
+                <Input
+                    id={`${idPrefix}-correct-answer`}
+                    value={correctAnswer}
+                    onChange={(event) => onCorrectAnswerChange(event.target.value)}
+                    placeholder="Jawaban yang diharapkan"
+                />
+            </Field>
+        );
+    }
+
+    // essay
+    return (
+        <div className="grid grid-cols-2 gap-3">
+            <Field>
+                <FieldLabel htmlFor={`${idPrefix}-min-words`}>Min. Kata</FieldLabel>
+                <Input
+                    id={`${idPrefix}-min-words`}
+                    type="number"
+                    min={1}
+                    value={minWords}
+                    onChange={(event) => onMinWordsChange(event.target.value)}
+                    placeholder="Opsional"
+                />
+            </Field>
+            <Field>
+                <FieldLabel htmlFor={`${idPrefix}-max-words`}>Maks. Kata</FieldLabel>
+                <Input
+                    id={`${idPrefix}-max-words`}
+                    type="number"
+                    min={1}
+                    value={maxWords}
+                    onChange={(event) => onMaxWordsChange(event.target.value)}
+                    placeholder="Opsional"
+                />
+            </Field>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+function defaultGradingTypeFor(): GradingType {
+    return 'auto';
+}
 
 type ContentStatus = 'draft' | 'published' | 'archived';
 
@@ -161,19 +519,19 @@ function StatusBadge({
     const config = {
         draft: {
             icon: CircleDashed,
-            label: 'Draf',
+            label: 'Draft',
             variant: 'outline' as const,
             iconClass: 'text-amber-500',
         },
         published: {
             icon: BadgeCheck,
-            label: 'Diterbitkan',
+            label: 'Published',
             variant: 'outline' as const,
             iconClass: 'text-emerald-500',
         },
         archived: {
             icon: Archive,
-            label: 'Diarsipkan',
+            label: 'Archived',
             variant: 'destructive' as const,
             iconClass: 'text-red-500',
         },
@@ -189,212 +547,69 @@ function StatusBadge({
     );
 }
 
-type QuizQuestion = {
-    question: string;
-    options: [string, string, string, string];
-    correct_option: number;
-    explanation: string;
-};
-
-const QUIZ_IMPORT_TEMPLATE_HEADER =
-    'question,option_a,option_b,option_c,option_d,correct_option,explanation';
-
-// Bloom Level specific templates with instructions and examples
-const BLOOM_LEVEL_TEMPLATES: Record<
-    BloomLevel,
-    { instruction: string; example: string }
-> = {
-    C1: {
-        instruction:
-            'C1 - Remember: Test recall of facts, terms, basic concepts, and answers. Use keywords: define, list, name, identify, recall, recognize, state.',
-        example:
-            'What does CIA stand for in information security?,Confidentiality Integrity Availability,Central Intelligence Agency,Computer Internet Access,Cryptographic Information Algorithm,1,CIA triad is the foundation of information security consisting of Confidentiality Integrity and Availability.',
-    },
-    C2: {
-        instruction:
-            'C2 - Understand: Test comprehension and interpretation of information. Use keywords: explain, describe, summarize, interpret, classify, compare.',
-        example:
-            'What is the main purpose of encryption in data security?,To compress data,To protect data confidentiality,To speed up transmission,To backup data,2,Encryption transforms data into unreadable format to protect confidentiality during storage and transmission.',
-    },
-    C3: {
-        instruction:
-            'C3 - Apply: Test ability to use information in new situations. Use keywords: apply, demonstrate, solve, use, implement, execute.',
-        example:
-            'Which encryption algorithm should you use for securing a web application login?,MD5,SHA-1,AES-256,Base64,3,AES-256 is a strong symmetric encryption standard suitable for securing sensitive data like login credentials.',
-    },
-    C4: {
-        instruction:
-            'C4 - Analyze: Test ability to break down information and understand relationships. Use keywords: analyze, compare, contrast, examine, differentiate.',
-        example:
-            'What is the key difference between symmetric and asymmetric encryption?,Speed of encryption,Number of keys used,Algorithm complexity,Data size limit,2,Symmetric uses one shared key while asymmetric uses a public-private key pair for encryption and decryption.',
-    },
-    C5: {
-        instruction:
-            'C5 - Evaluate: Test ability to make judgments based on criteria. Use keywords: evaluate, assess, justify, critique, recommend, prioritize.',
-        example:
-            'Which security measure should be prioritized first for a new web application?,HTTPS/TLS encryption,Input validation,Regular backups,User training,1,HTTPS/TLS should be prioritized first to encrypt all data in transit and establish trust with users.',
-    },
-    C6: {
-        instruction:
-            'C6 - Create: Test ability to create new solutions or products. Use keywords: design, develop, create, formulate, construct, propose.',
-        example:
-            'Design a secure authentication system. Which combination provides the best security?,Password only,Password + Email verification,Password + 2FA + Biometric,Security questions only,3,Multi-factor authentication combining password 2FA and biometric provides layered security against various attack vectors.',
-    },
-};
-
-function downloadQuizTemplate(
-    kind: 'csv' | 'xlsx' | 'xls',
-    bloomLevel: BloomLevel,
-): void {
-    const fileName = `assessment-quiz-${bloomLevel.toLowerCase()}-template.csv`;
-
-    const template = BLOOM_LEVEL_TEMPLATES[bloomLevel];
-    const instructionRow = `# ${template.instruction}`;
-    const headerRow = QUIZ_IMPORT_TEMPLATE_HEADER;
-    const exampleRow = template.example;
-
-    const content = `${instructionRow}\n${headerRow}\n${exampleRow}\n`;
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-}
-
-function normalizeDelimiter(text: string): ',' | ';' | '\t' {
-    const firstLine =
-        text.split(/\r?\n/).find((line) => line.trim() !== '') ?? '';
-
-    if (firstLine.includes('\t')) {
-        return '\t';
-    }
-
-    if (firstLine.includes(';')) {
-        return ';';
-    }
-
-    return ',';
-}
-
-function parseQuizImportText(text: string): QuizQuestion[] {
-    const delimiter = normalizeDelimiter(text);
-    const rows = text
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter((line) => line !== '');
-
-    if (rows.length < 2) {
-        return [];
-    }
-
-    const header = rows[0]
-        .split(delimiter)
-        .map((column) => column.trim().toLowerCase());
-    const requiredColumns = [
-        'question',
-        'option_a',
-        'option_b',
-        'option_c',
-        'option_d',
-        'correct_option',
-    ];
-    const missingColumn = requiredColumns.find(
-        (column) => !header.includes(column),
-    );
-
-    if (missingColumn) {
-        throw new Error(
-            'Template header does not match. Please use the downloaded template.',
-        );
-    }
-
-    const getIndex = (column: string) => header.indexOf(column);
-
-    return rows
-        .slice(1)
-        .map((row) => {
-            const columns = row.split(delimiter).map((column) => column.trim());
-            const rawCorrectOption = Number(
-                columns[getIndex('correct_option')] ?? 0,
-            );
-            const normalizedCorrectOption = Number.isNaN(rawCorrectOption)
-                ? 0
-                : rawCorrectOption > 0
-                  ? rawCorrectOption - 1
-                  : rawCorrectOption;
-
-            return {
-                question: columns[getIndex('question')] ?? '',
-                options: [
-                    columns[getIndex('option_a')] ?? '',
-                    columns[getIndex('option_b')] ?? '',
-                    columns[getIndex('option_c')] ?? '',
-                    columns[getIndex('option_d')] ?? '',
-                ] as [string, string, string, string],
-                correct_option: Math.min(
-                    Math.max(normalizedCorrectOption, 0),
-                    3,
-                ),
-                explanation: columns[getIndex('explanation')] ?? '',
-            };
-        })
-        .filter((row) => row.question !== '');
-}
-
 export default function AdminCoursesAssessment({
     assessments,
+    allAssessments,
     questions,
     selectedAssessmentId,
     courseOptions,
     selectedCourseId,
     courseFilterSelected,
-    questionBank,
     versionHistories,
 }: Props) {
-    const [filterValue, setFilterValue] = useState('');
+    const [filterValue] = useState('');
     const [rows, setRows] = useState<AdminAssessment[]>(assessments.data);
     const [prevData, setPrevData] = useState(assessments.data);
+    const [questionRows, setQuestionRows] =
+        useState<AdminAssessmentQuestion[]>(questions);
+    const [prevQuestions, setPrevQuestions] = useState(questions);
 
     if (prevData !== assessments.data) {
         setPrevData(assessments.data);
         setRows(assessments.data);
     }
 
+    if (prevQuestions !== questions) {
+        setPrevQuestions(questions);
+        setQuestionRows(questions);
+    }
+
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<
         string | null
     >(null);
+    const [questionDragHandleActiveRowId, setQuestionDragHandleActiveRowId] =
+        useState<string | null>(null);
     const [deletingAssessment, setDeletingAssessment] =
         useState<AdminAssessment | null>(null);
+    const [deletingAssessmentQuestion, setDeletingAssessmentQuestion] =
+        useState<AdminAssessmentQuestion | null>(null);
+    const [editingAssessmentQuestion, setEditingAssessmentQuestion] =
+        useState<AdminAssessmentQuestion | null>(null);
+    const [restoreTarget, setRestoreTarget] =
+        useState<VersionHistoryItem | null>(null);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [createQuestionDialogOpen, setCreateQuestionDialogOpen] = useState(false);
     const [editingAssessment, setEditingAssessment] =
         useState<AdminAssessment | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const isEditMode = editingAssessment !== null;
 
+    // Tab state
+    const [activeTab, setActiveTab] = useState<'assessment' | 'question'>('assessment');
+
     // Combobox states
     const [courseComboboxOpen, setCourseComboboxOpen] = useState(false);
 
-    // Quiz import states
-    const [quizImportFileName, setQuizImportFileName] = useState('');
-    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
-
-    // Question editor state
-    const [questionEditorOpen, setQuestionEditorOpen] = useState(false);
-    const [questionBankOpen, setQuestionBankOpen] = useState(false);
-    const [manualQuestionOpen, setManualQuestionOpen] = useState(false);
-    const [editingQuestionIndex, setEditingQuestionIndex] = useState<
-        number | null
-    >(null);
-    const [questionForm, setQuestionForm] = useState<QuizQuestion>({
-        question: '',
-        options: ['', '', '', ''],
-        correct_option: 0,
+    const [assessmentQuestionForm, setAssessmentQuestionForm] = useState({
+        question_text: '',
         explanation: '',
+        points: '10',
+        question_type: 'essay' as QuestionType,
+        options: ['', '', '', ''] as string[],
+        correct_answer: '',
+        min_words: '',
+        max_words: '',
     });
 
     const [assessmentForm, setAssessmentForm] = useState({
@@ -412,6 +627,15 @@ export default function AdminCoursesAssessment({
         (assessment) => assessment.id === selectedAssessmentId,
     );
 
+    // Auto-switch to question tab when assessment is selected
+    useEffect(() => {
+        if (selectedAssessmentId > 0) {
+            setActiveTab('question');
+        } else {
+            setActiveTab('assessment');
+        }
+    }, [selectedAssessmentId]);
+
     const resetFormState = () => {
         setEditingAssessment(null);
         setAssessmentForm({
@@ -424,8 +648,6 @@ export default function AdminCoursesAssessment({
             max_attempts: '3',
             time_limit_minutes: '',
         });
-        setQuizImportFileName('');
-        setQuizQuestions([]);
     };
 
     const openCreateDialog = () => {
@@ -465,159 +687,6 @@ export default function AdminCoursesAssessment({
         );
     }, [filterValue, rows]);
 
-    // Question editor handlers
-    const openQuestionEditor = (index?: number) => {
-        if (index !== undefined) {
-            setEditingQuestionIndex(index);
-            setQuestionForm(quizQuestions[index]);
-        } else {
-            setEditingQuestionIndex(null);
-            setQuestionForm({
-                question: '',
-                options: ['', '', '', ''],
-                correct_option: 0,
-                explanation: '',
-            });
-        }
-
-        setQuestionEditorOpen(true);
-    };
-
-    const saveQuestion = () => {
-        if (!questionForm.question.trim()) {
-            toast.error('Pertanyaan tidak boleh kosong.');
-
-            return;
-        }
-
-        if (questionForm.options.some((opt) => !opt.trim())) {
-            toast.error('Semua opsi harus diisi.');
-
-            return;
-        }
-
-        if (editingQuestionIndex !== null) {
-            setQuizQuestions((prev) => {
-                const updated = [...prev];
-                updated[editingQuestionIndex] = questionForm;
-
-                return updated;
-            });
-            toast.success('Pertanyaan berhasil diperbarui.');
-        } else {
-            setQuizQuestions((prev) => [...prev, questionForm]);
-            toast.success('Pertanyaan berhasil ditambahkan.');
-        }
-
-        setQuestionEditorOpen(false);
-    };
-
-    const deleteQuestion = (index: number) => {
-        if (!confirm('Hapus pertanyaan ini?')) {
-            return;
-        }
-
-        setQuizQuestions((prev) => prev.filter((_, i) => i !== index));
-        toast.success('Pertanyaan berhasil dihapus.');
-    };
-
-    const attachBankQuestion = (question: QuestionBank) => {
-        if (!selectedAssessmentId) {
-            toast.error('Pilih assessment terlebih dahulu.');
-
-            return;
-        }
-
-        router.post(
-            storeAssessmentQuestion.url({ assessment: selectedAssessmentId }),
-            {
-                question_bank_id: question.id,
-                bloom_level: question.bloom_level,
-                question_type: question.question_type,
-                question_text: question.question_text,
-                options: question.options,
-                correct_answer: question.correct_answer,
-                explanation: question.explanation,
-                rubric: question.rubric,
-                points: question.points,
-                grading_type: ['essay', 'case_study', 'design'].includes(
-                    question.question_type,
-                )
-                    ? 'manual'
-                    : 'auto',
-            },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.success('Soal dari Question Bank ditambahkan.');
-                    setQuestionBankOpen(false);
-                },
-                onError: (formErrors) => {
-                    const messages = Object.values(formErrors)
-                        .flat()
-                        .join(', ');
-                    toast.error(messages || 'Gagal menambahkan soal.');
-                },
-            },
-        );
-    };
-
-    const saveManualQuestionToAssessment = () => {
-        if (!selectedAssessmentId) {
-            toast.error('Pilih assessment terlebih dahulu.');
-
-            return;
-        }
-
-        if (!questionForm.question.trim()) {
-            toast.error('Pertanyaan tidak boleh kosong.');
-
-            return;
-        }
-
-        if (questionForm.options.some((option) => !option.trim())) {
-            toast.error('Semua opsi harus diisi.');
-
-            return;
-        }
-
-        router.post(
-            storeAssessmentQuestion.url({ assessment: selectedAssessmentId }),
-            {
-                bloom_level: selectedAssessment?.bloom_level ?? 'C1',
-                question_type: 'mcq',
-                question_text: questionForm.question,
-                options: questionForm.options,
-                correct_answer:
-                    questionForm.options[questionForm.correct_option],
-                explanation: questionForm.explanation,
-                points: 10,
-                grading_type: 'auto',
-            },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.success('Soal manual ditambahkan.');
-                    setManualQuestionOpen(false);
-                    setQuestionForm({
-                        question: '',
-                        options: ['', '', '', ''],
-                        correct_option: 0,
-                        explanation: '',
-                    });
-                },
-                onError: (formErrors) => {
-                    const messages = Object.values(formErrors)
-                        .flat()
-                        .join(', ');
-                    toast.error(messages || 'Gagal menambahkan soal manual.');
-                },
-            },
-        );
-    };
-
     const saveAssessmentQuestionToBank = (
         question: AdminAssessmentQuestion,
     ) => {
@@ -640,13 +709,13 @@ export default function AdminCoursesAssessment({
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () =>
-                    toast.success('Soal disimpan ke Question Bank.'),
+                    toast.success('Question saved to Question Bank.'),
                 onError: (formErrors) => {
                     const messages = Object.values(formErrors)
                         .flat()
                         .join(', ');
                     toast.error(
-                        messages || 'Gagal menyimpan ke Question Bank.',
+                        messages || 'Failed to save to Question Bank.',
                     );
                 },
             },
@@ -690,6 +759,42 @@ export default function AdminCoursesAssessment({
         });
     };
 
+    const reorderQuestionRows = (sourceRowId: string, targetRowId: string) => {
+        if (!selectedAssessmentId || sourceRowId === targetRowId) {
+            return;
+        }
+
+        setQuestionRows((currentRows) => {
+            const sourceIndex = currentRows.findIndex(
+                (question) => String(question.id) === sourceRowId,
+            );
+            const targetIndex = currentRows.findIndex(
+                (question) => String(question.id) === targetRowId,
+            );
+
+            if (sourceIndex < 0 || targetIndex < 0) {
+                return currentRows;
+            }
+
+            const nextRows = [...currentRows];
+            const [movedRow] = nextRows.splice(sourceIndex, 1);
+            nextRows.splice(targetIndex, 0, movedRow);
+
+            router.post(
+                reorderAssessmentQuestions.url(selectedAssessmentId),
+                {
+                    items: nextRows.map((question, index) => ({
+                        id: question.id,
+                        sort_order: index + 1,
+                    })),
+                },
+                { preserveState: true, preserveScroll: true, replace: true },
+            );
+
+            return nextRows;
+        });
+    };
+
     const handleDelete = () => {
         if (!deletingAssessment) {
             return;
@@ -708,6 +813,365 @@ export default function AdminCoursesAssessment({
                         .flat()
                         .join(', ');
                     toast.error(messages || 'Failed to delete assessment.');
+                },
+            },
+        );
+    };
+
+    const openEditAssessmentQuestionDialog = (
+        question: AdminAssessmentQuestion,
+    ): void => {
+        setEditingAssessmentQuestion(question);
+
+        const optionEditableTypes: QuestionType[] = [
+            'mcq',
+            'multiple_select',
+            'matching',
+        ];
+
+        const initialOptions = optionEditableTypes.includes(
+            question.question_type,
+        )
+            ? [
+                  ...((question.options ?? []) as string[]),
+                  '',
+                  '',
+                  '',
+                  '',
+              ].slice(0, Math.max(4, question.options?.length ?? 0))
+            : ['', '', '', ''];
+
+        setAssessmentQuestionForm({
+            question_text: question.question_text,
+            explanation: question.explanation ?? '',
+            points: String(question.points),
+            question_type: question.question_type,
+            options: initialOptions,
+            correct_answer: question.correct_answer ?? '',
+            min_words:
+                question.min_words !== null && question.min_words !== undefined
+                    ? String(question.min_words)
+                    : '',
+            max_words:
+                question.max_words !== null && question.max_words !== undefined
+                    ? String(question.max_words)
+                    : '',
+        });
+    };
+
+    const buildQuestionTypePayload = (type: QuestionType) => {
+        const trimmedOptions = assessmentQuestionForm.options
+            .map((option) => option.trim())
+            .filter((option) => option !== '');
+
+        switch (type) {
+            case 'mcq':
+                return {
+                    options: trimmedOptions,
+                    correct_answer:
+                        assessmentQuestionForm.correct_answer.trim() || null,
+                    min_words: null,
+                    max_words: null,
+                };
+            case 'multiple_select':
+                return {
+                    options: trimmedOptions,
+                    correct_answer:
+                        assessmentQuestionForm.correct_answer.trim() || null,
+                    min_words: null,
+                    max_words: null,
+                };
+            case 'true_false':
+                return {
+                    options: ['true', 'false'],
+                    correct_answer:
+                        assessmentQuestionForm.correct_answer.trim() || null,
+                    min_words: null,
+                    max_words: null,
+                };
+            case 'matching':
+                return {
+                    options: trimmedOptions,
+                    correct_answer:
+                        assessmentQuestionForm.correct_answer.trim() || null,
+                    min_words: null,
+                    max_words: null,
+                };
+            case 'short_answer':
+                return {
+                    options: null,
+                    correct_answer:
+                        assessmentQuestionForm.correct_answer.trim() || null,
+                    min_words: null,
+                    max_words: null,
+                };
+            case 'essay':
+            default:
+                return {
+                    options: null,
+                    correct_answer: null,
+                    min_words: assessmentQuestionForm.min_words
+                        ? Number(assessmentQuestionForm.min_words)
+                        : null,
+                    max_words: assessmentQuestionForm.max_words
+                        ? Number(assessmentQuestionForm.max_words)
+                        : null,
+                };
+        }
+    };
+
+    const validateQuestionTypePayload = (type: QuestionType): boolean => {
+        const filledOptions = assessmentQuestionForm.options.filter(
+            (option) => option.trim() !== '',
+        );
+
+        if (type === 'mcq') {
+            if (filledOptions.length < 2) {
+                toast.error('Sediakan minimal 2 pilihan untuk Pilihan Ganda.');
+
+                return false;
+            }
+
+            if (
+                assessmentQuestionForm.correct_answer.trim() !== '' &&
+                !filledOptions.includes(
+                    assessmentQuestionForm.correct_answer.trim(),
+                )
+            ) {
+                toast.error('Jawaban benar harus salah satu dari pilihan.');
+
+                return false;
+            }
+        }
+
+        if (type === 'multiple_select') {
+            if (filledOptions.length < 2) {
+                toast.error(
+                    'Sediakan minimal 2 pilihan untuk Pilihan Ganda Kompleks.',
+                );
+
+                return false;
+            }
+
+            const selected = parseMultiSelectAnswer(
+                assessmentQuestionForm.correct_answer,
+            );
+
+            if (selected.length === 0) {
+                toast.error('Pilih minimal satu jawaban benar.');
+
+                return false;
+            }
+
+            const invalid = selected.filter(
+                (option) => !filledOptions.includes(option),
+            );
+
+            if (invalid.length > 0) {
+                toast.error('Jawaban benar harus berasal dari daftar pilihan.');
+
+                return false;
+            }
+        }
+
+        if (type === 'matching') {
+            const pairs = parseMatchingPairs(
+                assessmentQuestionForm.options,
+                assessmentQuestionForm.correct_answer,
+            ).filter(
+                (pair) => pair.left.trim() !== '' || pair.right.trim() !== '',
+            );
+
+            if (pairs.length < 2) {
+                toast.error('Sediakan minimal 2 pasangan untuk Menjodohkan.');
+
+                return false;
+            }
+
+            const incomplete = pairs.some(
+                (pair) =>
+                    pair.left.trim() === '' || pair.right.trim() === '',
+            );
+
+            if (incomplete) {
+                toast.error('Setiap pasangan harus diisi premis dan target.');
+
+                return false;
+            }
+        }
+
+        if (type === 'short_answer') {
+            if (assessmentQuestionForm.correct_answer.trim() === '') {
+                toast.error('Jawaban benar wajib diisi.');
+
+                return false;
+            }
+        }
+
+        if (type === 'true_false') {
+            if (assessmentQuestionForm.correct_answer.trim() === '') {
+                toast.error('Pilih jawaban benar atau salah.');
+
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    const saveAssessmentQuestionUpdate = (): void => {
+        if (!selectedAssessmentId || !editingAssessmentQuestion) {
+            return;
+        }
+
+        if (!assessmentQuestionForm.question_text.trim()) {
+            toast.error('Question cannot be empty.');
+
+            return;
+        }
+
+        const questionType = assessmentQuestionForm.question_type;
+
+        if (!validateQuestionTypePayload(questionType)) {
+            return;
+        }
+
+        const typePayload = buildQuestionTypePayload(questionType);
+
+        router.patch(
+            updateAssessmentQuestion.url({
+                assessment: selectedAssessmentId,
+                question: editingAssessmentQuestion.id,
+            }),
+            {
+                bloom_level: editingAssessmentQuestion.bloom_level,
+                question_type: questionType,
+                question_text: assessmentQuestionForm.question_text,
+                options: typePayload.options,
+                correct_answer: typePayload.correct_answer,
+                explanation: assessmentQuestionForm.explanation || null,
+                rubric: editingAssessmentQuestion.rubric,
+                points: 10,
+                grading_type: editingAssessmentQuestion.grading_type,
+                min_words: typePayload.min_words,
+                max_words: typePayload.max_words,
+                question_bank_id: editingAssessmentQuestion.question_bank_id,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.success('Question updated.');
+                    setEditingAssessmentQuestion(null);
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Failed to update question.');
+                },
+            },
+        );
+    };
+
+    const openCreateQuestionDialog = (): void => {
+        setAssessmentQuestionForm({
+            question_text: '',
+            explanation: '',
+            points: '10',
+            question_type: 'essay',
+            options: ['', '', '', ''],
+            correct_answer: '',
+            min_words: '',
+            max_words: '',
+        });
+        setCreateQuestionDialogOpen(true);
+    };
+
+    const saveNewAssessmentQuestion = (): void => {
+        if (!selectedAssessmentId) {
+            toast.error('Select assessment first.');
+
+            return;
+        }
+
+        if (!assessmentQuestionForm.question_text.trim()) {
+            toast.error('Question cannot be empty.');
+
+            return;
+        }
+
+        const questionType = assessmentQuestionForm.question_type;
+
+        if (!validateQuestionTypePayload(questionType)) {
+            return;
+        }
+
+        const typePayload = buildQuestionTypePayload(questionType);
+
+        router.post(
+            storeAssessmentQuestion.url({ assessment: selectedAssessmentId }),
+            {
+                question_text: assessmentQuestionForm.question_text,
+                explanation: assessmentQuestionForm.explanation || null,
+                points: 10,
+                bloom_level: 'C1',
+                question_type: questionType,
+                grading_type: defaultGradingTypeFor(),
+                options: typePayload.options,
+                correct_answer: typePayload.correct_answer,
+                min_words: typePayload.min_words,
+                max_words: typePayload.max_words,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.success('Question added successfully.');
+                    setCreateQuestionDialogOpen(false);
+                    setAssessmentQuestionForm({
+                        question_text: '',
+                        explanation: '',
+                        points: '10',
+                        question_type: 'essay',
+                        options: ['', '', '', ''],
+                        correct_answer: '',
+                        min_words: '',
+                        max_words: '',
+                    });
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Failed to add question.');
+                },
+            },
+        );
+    };
+
+    const deleteAssessmentQuestion = (): void => {
+        if (!selectedAssessmentId || !deletingAssessmentQuestion) {
+            return;
+        }
+
+        router.delete(
+            destroyAssessmentQuestion.url({
+                assessment: selectedAssessmentId,
+                question: deletingAssessmentQuestion.id,
+            }),
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    toast.success('Question deleted.');
+                    setDeletingAssessmentQuestion(null);
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Failed to delete question.');
                 },
             },
         );
@@ -736,16 +1200,42 @@ export default function AdminCoursesAssessment({
                 onSuccess: () =>
                     toast.success(
                         status === 'published'
-                            ? 'Assessment diterbitkan.'
-                            : 'Assessment diubah menjadi draf.',
+                            ? 'Assessment published.'
+                            : 'Assessment changed to draft.',
                     ),
                 onError: (formErrors) => {
                     const messages = Object.values(formErrors)
                         .flat()
                         .join(', ');
                     toast.error(
-                        messages || 'Gagal mengubah status assessment.',
+                        messages || 'Failed to change assessment status.',
                     );
+                },
+            },
+        );
+    };
+
+    const submitRestoreVersion = () => {
+        if (!restoreTarget) {
+            return;
+        }
+
+        router.post(
+            restoreVersion.url({ version: restoreTarget.id }),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success(
+                        `Version ${restoreTarget.version_number} restored.`,
+                    );
+                    setRestoreTarget(null);
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Failed to restore version.');
                 },
             },
         );
@@ -802,11 +1292,13 @@ export default function AdminCoursesAssessment({
                 header: 'Bloom Level',
                 cell: ({ row }) => {
                     const level = row.original.bloom_level;
+                    const { label, icon: Icon, iconClass } = BLOOM_CONFIG[level];
 
                     return (
                         <div className="flex justify-center">
-                            <Badge className={BLOOM_BADGE_COLORS[level]}>
-                                {level}
+                            <Badge variant="outline">
+                                <Icon className={iconClass} />
+                                {label}
                             </Badge>
                         </div>
                     );
@@ -928,7 +1420,7 @@ export default function AdminCoursesAssessment({
                                             }
                                         >
                                             <BadgeCheck data-icon="inline-start" />
-                                            Diterbitkan
+                                            Publish
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             disabled={
@@ -945,7 +1437,7 @@ export default function AdminCoursesAssessment({
                                             }
                                         >
                                             <CircleDashed data-icon="inline-start" />
-                                            Draf
+                                            Draft
                                         </DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
@@ -959,9 +1451,6 @@ export default function AdminCoursesAssessment({
                                     onClick={() =>
                                         router.get(
                                             sectionUrl({
-                                                course_id:
-                                                    row.original.course_id ??
-                                                    undefined,
                                                 assessment_id: row.original.id,
                                                 page: assessments.current_page,
                                                 per_page: assessments.per_page,
@@ -975,14 +1464,10 @@ export default function AdminCoursesAssessment({
                                     }
                                 >
                                     <Search data-icon="inline-start" />
-                                    Kelola Soal
+                                    Manage Questions
                                 </DropdownMenuItem>
-                                <VersionHistoryDialog
-                                    itemTitle={row.original.title}
-                                    versions={
-                                        versionHistories[row.original.id] ?? []
-                                    }
-                                    trigger={
+                                <Dialog>
+                                    <DialogTrigger asChild>
                                         <DropdownMenuItem
                                             onSelect={(event) =>
                                                 event.preventDefault()
@@ -991,8 +1476,119 @@ export default function AdminCoursesAssessment({
                                             <History data-icon="inline-start" />
                                             History
                                         </DropdownMenuItem>
-                                    }
-                                />
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                Version History
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                {row.original.title}
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <div className="max-h-96 space-y-3 overflow-y-auto">
+                                            {(
+                                                versionHistories[
+                                                    row.original.id
+                                                ] ?? []
+                                            ).length === 0 ? (
+                                                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                                                    No version history for
+                                                    this item yet.
+                                                </div>
+                                            ) : (
+                                                (
+                                                    versionHistories[
+                                                        row.original.id
+                                                    ] ?? []
+                                                ).map((version) => (
+                                                    <div
+                                                        key={version.id}
+                                                        className="rounded-lg border p-4"
+                                                    >
+                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                            <div className="space-y-2">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <Badge variant="outline">
+                                                                        v
+                                                                        {
+                                                                            version.version_number
+                                                                        }
+                                                                    </Badge>
+                                                                    {version.restored_at ? (
+                                                                        <Badge variant="secondary">
+                                                                            Restored
+                                                                        </Badge>
+                                                                    ) : null}
+                                                                </div>
+                                                                <p className="text-sm font-medium">
+                                                                    {version.change_summary ||
+                                                                        'Content changes'}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {version.creator_name ||
+                                                                        'System'}{' '}
+                                                                    -{' '}
+                                                                    {formatVersionDate(
+                                                                        version.created_at,
+                                                                    )}
+                                                                </p>
+                                                                {version
+                                                                    .changed_fields
+                                                                    .length >
+                                                                0 ? (
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {version.changed_fields.map(
+                                                                            (
+                                                                                field,
+                                                                            ) => (
+                                                                                <Badge
+                                                                                    key={
+                                                                                        field
+                                                                                    }
+                                                                                    variant="outline"
+                                                                                >
+                                                                                    {
+                                                                                        field
+                                                                                    }
+                                                                                </Badge>
+                                                                            ),
+                                                                        )}
+                                                                    </div>
+                                                                ) : null}
+                                                            </div>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    setRestoreTarget(
+                                                                        version,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <RotateCcw data-icon="inline-start" />
+                                                                Restore
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        <DialogFooter className="mt-2">
+                                            <DialogClose asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                >
+                                                    Close
+                                                </Button>
+                                            </DialogClose>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     className="text-destructive"
@@ -1009,8 +1605,122 @@ export default function AdminCoursesAssessment({
                 ),
             },
         ],
-        [],
+        [assessments.current_page, assessments.per_page, versionHistories],
     );
+
+    const questionColumns: ColumnDef<AdminAssessmentQuestion>[] = [
+        {
+            id: 'reorder',
+            header: '',
+            cell: ({ row }) => (
+                <div className="flex justify-center">
+                    <button
+                        type="button"
+                        data-row-drag-handle="true"
+                        aria-label={`Drag row ${row.original.question_text}`}
+                        onMouseDown={() =>
+                            setQuestionDragHandleActiveRowId(
+                                String(row.original.id),
+                            )
+                        }
+                        className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
+                        style={{ cursor: 'grab' }}
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 14 14"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <circle cx="3" cy="3" r="1" />
+                            <circle cx="7" cy="3" r="1" />
+                            <circle cx="11" cy="3" r="1" />
+                            <circle cx="3" cy="7" r="1" />
+                            <circle cx="7" cy="7" r="1" />
+                            <circle cx="11" cy="7" r="1" />
+                        </svg>
+                    </button>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'question_text',
+            header: 'Questions',
+            cell: ({ row }) => (
+                <p
+                    className="text-left font-medium"
+                    title={row.original.question_text}
+                >
+                    {row.original.question_text}
+                </p>
+            ),
+        },
+        {
+            accessorKey: 'bloom_level',
+            header: 'Bloom Level',
+            cell: ({ row }) => {
+                const level = row.original.bloom_level;
+                const { label, icon: Icon, iconClass } = BLOOM_CONFIG[level];
+
+                return (
+                    <div className="flex justify-center">
+                        <Badge variant="outline">
+                            <Icon className={iconClass} />
+                            {label}
+                        </Badge>
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: 'question_type',
+            header: 'Type',
+            cell: ({ row }) => (
+                <div className="text-center capitalize">
+                    {row.original.question_type.replace(/_/g, ' ')}
+                </div>
+            ),
+        },
+        {
+            id: 'actions',
+            header: '',
+            cell: ({ row }) => (
+                <div className="flex justify-center">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="ghost" size="icon">
+                                <MoreHorizontal />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                                onClick={() =>
+                                    openEditAssessmentQuestionDialog(
+                                        row.original,
+                                    )
+                                }
+                            >
+                                <Pencil data-icon="inline-start" />
+                                Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() =>
+                                    setDeletingAssessmentQuestion(row.original)
+                                }
+                            >
+                                <Trash2 data-icon="inline-start" />
+                                Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            ),
+        },
+    ];
 
     const handlePageChange = (nextPage: number): void => {
         router.get(
@@ -1038,12 +1748,54 @@ export default function AdminCoursesAssessment({
 
     return (
         <>
-            <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
-                <PageHeader
-                    title="Penilaian"
-                    description="Kelola penilaian untuk setiap kursus."
-                    actions={
-                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Tabs
+                value={activeTab}
+                onValueChange={(value) =>
+                    setActiveTab(value as 'assessment' | 'question')
+                }
+            >
+                <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
+                    <header className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:justify-between">
+                        <div className="flex min-w-0 flex-col gap-1">
+                            <TypographyH1>Assessment</TypographyH1>
+                            <TypographyMuted>
+                                Manage assessments for each course.
+                            </TypographyMuted>
+                        </div>
+                        <div className="flex shrink-0 items-center justify-end gap-2">
+                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                            <TabsList>
+                                <TabsTrigger
+                                    value="assessment"
+                                    onClick={() => {
+                                        if (selectedAssessmentId > 0) {
+                                            router.get(
+                                                sectionUrl({
+                                                    course_id: selectedCourseId || undefined,
+                                                    page: assessments.current_page,
+                                                    per_page: assessments.per_page,
+                                                }),
+                                                {},
+                                                {
+                                                    preserveState: true,
+                                                    preserveScroll: true,
+                                                },
+                                            );
+                                        }
+                                    }}
+                                >
+                                    <ClipboardCheck className="size-4" />
+                                    Assessment
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="question"
+                                >
+                                    <HelpCircle className="size-4" />
+                                    Question
+                                </TabsTrigger>
+                            </TabsList>
+
+                            {activeTab === 'assessment' ? (
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
@@ -1053,12 +1805,8 @@ export default function AdminCoursesAssessment({
                                     >
                                         <span className="truncate">
                                             {(() => {
-                                                if (!courseFilterSelected) {
-                                                    return 'Pilih Kursus...';
-                                                }
-
-                                                if (selectedCourseId === 0) {
-                                                    return 'Semua Kursus';
+                                                if (!courseFilterSelected || selectedCourseId === 0) {
+                                                    return 'Select Course...';
                                                 }
 
                                                 const course =
@@ -1068,11 +1816,7 @@ export default function AdminCoursesAssessment({
                                                             selectedCourseId,
                                                     );
 
-                                                if (course) {
-                                                    return course.title;
-                                                }
-
-                                                return 'Pilih Kursus...';
+                                                return course ? course.title : 'Select Course...';
                                             })()}
                                         </span>
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -1083,7 +1827,7 @@ export default function AdminCoursesAssessment({
                                     align="start"
                                 >
                                     <Command>
-                                        <CommandInput placeholder="Cari kursus..." />
+                                        <CommandInput placeholder="Search course..." />
                                         <CommandList
                                             style={{
                                                 maxHeight: '16rem',
@@ -1091,7 +1835,7 @@ export default function AdminCoursesAssessment({
                                             }}
                                         >
                                             <CommandEmpty>
-                                                Tidak ada hasil ditemukan.
+                                                No results found.
                                             </CommandEmpty>
                                             <CommandGroup>
                                                 {courseOptions.map((course) => (
@@ -1115,9 +1859,9 @@ export default function AdminCoursesAssessment({
                                                             );
                                                         }}
                                                     >
-                                                        {course.title}
+                                                        <span className="flex-1 truncate">{course.title}</span>
                                                         <Check
-                                                            className={`ml-auto h-4 w-4 ${
+                                                            className={`ml-auto h-4 w-4 shrink-0 ${
                                                                 selectedCourseId ===
                                                                 course.id
                                                                     ? 'opacity-100'
@@ -1131,18 +1875,94 @@ export default function AdminCoursesAssessment({
                                     </Command>
                                 </PopoverContent>
                             </Popover>
+                            ) : (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        className="w-full justify-between sm:w-72"
+                                    >
+                                        <span className="truncate">
+                                            {selectedAssessmentId > 0
+                                                ? (() => {
+                                                    const assessment = allAssessments.find(a => a.id === selectedAssessmentId);
+                                                    return assessment ? assessment.title : 'Select Assessment...';
+                                                })()
+                                                : 'Select Assessment...'}
+                                        </span>
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-72 p-0"
+                                    align="start"
+                                >
+                                    <Command>
+                                        <CommandInput placeholder="Search course or assessment..." />
+                                        <CommandList className="max-h-none overflow-y-hidden">
+                                            <CommandEmpty>
+                                                No results found.
+                                            </CommandEmpty>
+                                            <ScrollArea className="h-64">
+                                            {courseOptions.map((course) => {
+                                                const courseAssessments = allAssessments.filter(
+                                                    (a) => a.course_id === course.id,
+                                                );
+                                                if (courseAssessments.length === 0) return null;
+                                                return (
+                                                    <CommandGroup
+                                                        key={course.id}
+                                                        heading={course.title}
+                                                    >
+                                                        {courseAssessments.map((assessment) => (
+                                                            <CommandItem
+                                                                key={assessment.id}
+                                                                value={`${course.title} ${assessment.title}`}
+                                                                onSelect={() => {
+                                                                    router.get(
+                                                                        sectionUrl({
+                                                                            assessment_id: assessment.id,
+                                                                            page: 1,
+                                                                        }),
+                                                                        {},
+                                                                        {
+                                                                            preserveState: true,
+                                                                            preserveScroll: true,
+                                                                        },
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <span className="flex-1 truncate">{assessment.title}</span>
+                                                                <Check
+                                                                    className={`ml-auto h-4 w-4 shrink-0 ${
+                                                                        selectedAssessmentId === assessment.id
+                                                                            ? 'opacity-100'
+                                                                            : 'opacity-0'
+                                                                    }`}
+                                                                />
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                );
+                                            })}
+                                            </ScrollArea>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                            )}
 
-                            <div className="w-full sm:w-80">
-                                <Input
-                                    id="assessment-search"
-                                    placeholder="Cari Penilaian..."
-                                    value={filterValue}
-                                    onChange={(event) =>
-                                        setFilterValue(event.target.value)
-                                    }
-                                />
-                            </div>
+                            {/* Create Button - Tab Aware */}
+                            <Button
+                                type="button"
+                                onClick={activeTab === 'assessment' ? openCreateDialog : openCreateQuestionDialog}
+                            >
+                                <Plus data-icon="inline-start" />
+                                Create
+                            </Button>
 
+                            {/* Create Assessment Dialog */}
                             <Dialog
                                 open={createDialogOpen}
                                 onOpenChange={(open) => {
@@ -1153,15 +1973,6 @@ export default function AdminCoursesAssessment({
                                     }
                                 }}
                             >
-                                <DialogTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        onClick={openCreateDialog}
-                                    >
-                                        <Plus data-icon="inline-start" />
-                                        Buat
-                                    </Button>
-                                </DialogTrigger>
                                 <DialogContent className="sm:max-w-sm">
                                     <form
                                         onSubmit={(event) => {
@@ -1191,10 +2002,6 @@ export default function AdminCoursesAssessment({
                                                               assessmentForm.time_limit_minutes,
                                                           )
                                                         : null,
-                                                quiz_questions:
-                                                    quizQuestions.length > 0
-                                                        ? quizQuestions
-                                                        : undefined,
                                             };
 
                                             const requestUrl = isEditMode
@@ -1248,20 +2055,20 @@ export default function AdminCoursesAssessment({
                                         <DialogHeader>
                                             <DialogTitle>
                                                 {isEditMode
-                                                    ? 'Edit penilaian'
-                                                    : 'Buat penilaian'}
+                                                    ? 'Edit assessment'
+                                                    : 'Create assessment'}
                                             </DialogTitle>
                                             <DialogDescription>
                                                 {isEditMode
-                                                    ? 'Perbarui detail penilaian.'
-                                                    : 'Tambahkan penilaian Taksonomi Bloom baru.'}
+                                                    ? 'Update assessment details.'
+                                                    : 'Add a new Bloom Taxonomy assessment.'}
                                             </DialogDescription>
                                         </DialogHeader>
 
-                                        <FieldGroup>
+                                        <FieldGroup className="mt-4">
                                             <Field>
                                                 <FieldLabel htmlFor="assessment-course">
-                                                    Kursus{' '}
+                                                    Course{' '}
                                                     <span className="text-destructive">
                                                         *
                                                     </span>
@@ -1296,7 +2103,7 @@ export default function AdminCoursesAssessment({
                                                                         return course.title;
                                                                     }
 
-                                                                    return 'Pilih kursus...';
+                                                                    return 'Select course...';
                                                                 })()}
                                                             </span>
                                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -1310,7 +2117,7 @@ export default function AdminCoursesAssessment({
                                                         }}
                                                     >
                                                         <Command>
-                                                            <CommandInput placeholder="Cari kursus..." />
+                                                            <CommandInput placeholder="Search course..." />
                                                             <CommandList
                                                                 style={{
                                                                     maxHeight:
@@ -1378,7 +2185,7 @@ export default function AdminCoursesAssessment({
                                                 }
                                             >
                                                 <FieldLabel htmlFor="assessment-title">
-                                                    Judul{' '}
+                                                    Title{' '}
                                                     <span className="text-destructive">
                                                         *
                                                     </span>
@@ -1417,12 +2224,12 @@ export default function AdminCoursesAssessment({
                                                 }
                                             >
                                                 <FieldLabel htmlFor="assessment-description">
-                                                    Deskripsi
+                                                    Description
                                                 </FieldLabel>
                                                 <Textarea
                                                     id="assessment-description"
                                                     name="description"
-                                                    placeholder="Masukkan deskripsi penilaian"
+                                                    placeholder="Enter assessment description"
                                                     value={
                                                         assessmentForm.description
                                                     }
@@ -1445,10 +2252,9 @@ export default function AdminCoursesAssessment({
                                                 )}
                                             </Field>
 
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <Field>
+                                            <Field>
                                                     <FieldLabel>
-                                                        Tingkat Bloom{' '}
+                                                        Bloom Level{' '}
                                                         <span className="text-destructive">
                                                             *
                                                         </span>
@@ -1496,53 +2302,10 @@ export default function AdminCoursesAssessment({
                                                             </SelectGroup>
                                                         </SelectContent>
                                                     </Select>
-                                                </Field>
-
+                                                </Field><div className="grid grid-cols-3 items-end gap-3">
                                                 <Field>
                                                     <FieldLabel>
-                                                        Tipe Penilaian{' '}
-                                                        <span className="text-destructive">
-                                                            *
-                                                        </span>
-                                                    </FieldLabel>
-                                                    <Select
-                                                        value={
-                                                            assessmentForm.grading_type
-                                                        }
-                                                        onValueChange={(v) =>
-                                                            setAssessmentForm(
-                                                                (c) => ({
-                                                                    ...c,
-                                                                    grading_type:
-                                                                        v as GradingType,
-                                                                }),
-                                                            )
-                                                        }
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectGroup>
-                                                                <SelectItem value="auto">
-                                                                    Auto
-                                                                </SelectItem>
-                                                                <SelectItem value="manual">
-                                                                    Manual
-                                                                </SelectItem>
-                                                                <SelectItem value="mixed">
-                                                                    Mixed
-                                                                </SelectItem>
-                                                            </SelectGroup>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </Field>
-                                            </div>
-
-                                            <div className="grid grid-cols-3 gap-3">
-                                                <Field>
-                                                    <FieldLabel>
-                                                        Nilai Lulus (%)
+                                                        Pass Score (%)
                                                     </FieldLabel>
                                                     <Input
                                                         type="number"
@@ -1565,7 +2328,7 @@ export default function AdminCoursesAssessment({
                                                 </Field>
                                                 <Field>
                                                     <FieldLabel>
-                                                        Maks Percobaan
+                                                        Max Attempts
                                                     </FieldLabel>
                                                     <Input
                                                         type="number"
@@ -1588,7 +2351,7 @@ export default function AdminCoursesAssessment({
                                                 </Field>
                                                 <Field>
                                                     <FieldLabel>
-                                                        Waktu (menit)
+                                                        Time (minutes)
                                                     </FieldLabel>
                                                     <Input
                                                         type="number"
@@ -1611,237 +2374,6 @@ export default function AdminCoursesAssessment({
                                                     />
                                                 </Field>
                                             </div>
-
-                                            <Field>
-                                                <FieldLabel htmlFor="assessment-quiz-import">
-                                                    Impor Soal{' '}
-                                                    {!isEditMode &&
-                                                        quizQuestions.length ===
-                                                            0 && (
-                                                            <span className="text-destructive">
-                                                                *
-                                                            </span>
-                                                        )}
-                                                </FieldLabel>
-
-                                                <div className="flex gap-2">
-                                                    <Input
-                                                        id="assessment-quiz-import"
-                                                        type="file"
-                                                        accept=".csv"
-                                                        className="flex-1"
-                                                        onChange={async (
-                                                            event,
-                                                        ) => {
-                                                            const selectedFile =
-                                                                event.target
-                                                                    .files?.[0] ??
-                                                                null;
-
-                                                            if (!selectedFile) {
-                                                                setQuizImportFileName(
-                                                                    '',
-                                                                );
-                                                                setQuizQuestions(
-                                                                    [],
-                                                                );
-
-                                                                return;
-                                                            }
-
-                                                            try {
-                                                                const text =
-                                                                    await selectedFile.text();
-                                                                const parsedRows =
-                                                                    parseQuizImportText(
-                                                                        text,
-                                                                    );
-
-                                                                if (
-                                                                    parsedRows.length ===
-                                                                    0
-                                                                ) {
-                                                                    toast.error(
-                                                                        'Tidak ada soal ditemukan di file.',
-                                                                    );
-
-                                                                    return;
-                                                                }
-
-                                                                setQuizQuestions(
-                                                                    parsedRows,
-                                                                );
-                                                                setQuizImportFileName(
-                                                                    selectedFile.name,
-                                                                );
-                                                                toast.success(
-                                                                    `Berhasil mengimpor ${parsedRows.length} soal.`,
-                                                                );
-                                                            } catch {
-                                                                toast.error(
-                                                                    'Gagal membaca file. Silakan gunakan format template.',
-                                                                );
-                                                            }
-                                                        }}
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        className="shrink-0"
-                                                        onClick={() =>
-                                                            downloadQuizTemplate(
-                                                                'csv',
-                                                                assessmentForm.bloom_level,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Download className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-
-                                                <FieldDescription>
-                                                    Unggah CSV atau klik tombol
-                                                    di bawah untuk tambah manual
-                                                </FieldDescription>
-
-                                                {quizImportFileName && (
-                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                        <Check className="h-4 w-4 text-green-600" />
-                                                        <span>
-                                                            {quizImportFileName}{' '}
-                                                            (
-                                                            {
-                                                                quizQuestions.length
-                                                            }{' '}
-                                                            soal
-                                                            {quizQuestions.length !==
-                                                            1
-                                                                ? 's'
-                                                                : ''}
-                                                            )
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                                {/* Quiz Preview */}
-                                                {quizQuestions.length > 0 && (
-                                                    <>
-                                                        <div className="mt-3 max-h-96 space-y-2 overflow-y-auto rounded-lg border p-3">
-                                                            <div className="mb-2 flex items-center justify-between">
-                                                                <span className="text-sm font-medium">
-                                                                    Preview
-                                                                    Pertanyaan (
-                                                                    {
-                                                                        quizQuestions.length
-                                                                    }
-                                                                    )
-                                                                </span>
-                                                            </div>
-                                                            <div className="space-y-3">
-                                                                {quizQuestions.map(
-                                                                    (q, i) => (
-                                                                        <div
-                                                                            key={
-                                                                                i
-                                                                            }
-                                                                            className="rounded-lg border bg-muted/30 p-3 text-sm"
-                                                                        >
-                                                                            <div className="mb-2 flex items-start justify-between gap-2">
-                                                                                <p className="flex-1 font-medium">
-                                                                                    {i +
-                                                                                        1}
-
-                                                                                    .{' '}
-                                                                                    {
-                                                                                        q.question
-                                                                                    }
-                                                                                </p>
-                                                                                <div className="flex shrink-0 gap-1">
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        className="h-7 w-7 p-0"
-                                                                                        onClick={() =>
-                                                                                            openQuestionEditor(
-                                                                                                i,
-                                                                                            )
-                                                                                        }
-                                                                                    >
-                                                                                        <Pencil className="h-3.5 w-3.5" />
-                                                                                    </Button>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                                                                        onClick={() =>
-                                                                                            deleteQuestion(
-                                                                                                i,
-                                                                                            )
-                                                                                        }
-                                                                                    >
-                                                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="space-y-1 pl-4">
-                                                                                {q.options.map(
-                                                                                    (
-                                                                                        opt,
-                                                                                        j,
-                                                                                    ) => (
-                                                                                        <div
-                                                                                            key={
-                                                                                                j
-                                                                                            }
-                                                                                            className={
-                                                                                                j ===
-                                                                                                q.correct_option
-                                                                                                    ? 'font-medium text-emerald-600'
-                                                                                                    : 'text-muted-foreground'
-                                                                                            }
-                                                                                        >
-                                                                                            {j ===
-                                                                                                q.correct_option &&
-                                                                                                '✓ '}
-                                                                                            {
-                                                                                                opt
-                                                                                            }
-                                                                                        </div>
-                                                                                    ),
-                                                                                )}
-                                                                            </div>
-                                                                            {q.explanation && (
-                                                                                <p className="mt-2 pl-4 text-xs text-muted-foreground">
-                                                                                    💡{' '}
-                                                                                    {
-                                                                                        q.explanation
-                                                                                    }
-                                                                                </p>
-                                                                            )}
-                                                                        </div>
-                                                                    ),
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="w-full"
-                                                            onClick={() =>
-                                                                openQuestionEditor()
-                                                            }
-                                                        >
-                                                            <Plus className="mr-2 h-4 w-4" />
-                                                            Tambah Pertanyaan
-                                                        </Button>
-                                                    </>
-                                                )}
-                                            </Field>
                                         </FieldGroup>
 
                                         <DialogFooter className="mt-6">
@@ -1851,7 +2383,7 @@ export default function AdminCoursesAssessment({
                                                     type="button"
                                                     disabled={isSaving}
                                                 >
-                                                    Batal
+                                                    Cancel
                                                 </Button>
                                             </DialogClose>
                                             <Button
@@ -1862,620 +2394,429 @@ export default function AdminCoursesAssessment({
                                                     <Spinner data-icon="inline-start" />
                                                 )}
                                                 {isEditMode
-                                                    ? 'Simpan perubahan'
-                                                    : 'Buat penilaian'}
+                                                    ? 'Save changes'
+                                                    : 'Create assessment'}
                                             </Button>
                                         </DialogFooter>
                                     </form>
                                 </DialogContent>
                             </Dialog>
 
-                            {/* Question Editor Dialog */}
+                            {/* Create Question Dialog */}
                             <Dialog
-                                open={questionEditorOpen}
-                                onOpenChange={setQuestionEditorOpen}
+                                open={createQuestionDialogOpen}
+                                onOpenChange={(open) => {
+                                    setCreateQuestionDialogOpen(open);
+
+                                    if (!open) {
+                                        setAssessmentQuestionForm({
+                                            question_text: '',
+                                            explanation: '',
+                                            points: '10',
+                                            question_type: 'essay',
+                                            options: ['', '', '', ''],
+                                            correct_answer: '',
+                                            min_words: '',
+                                            max_words: '',
+                                        });
+                                    }
+                                }}
                             >
-                                <DialogContent className="sm:max-w-lg">
-                                    <DialogHeader>
-                                        <DialogTitle>
-                                            {editingQuestionIndex !== null
-                                                ? 'Edit Pertanyaan'
-                                                : 'Tambah Pertanyaan'}
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            Isi pertanyaan, 4 opsi jawaban, dan
-                                            pilih jawaban yang benar.
-                                        </DialogDescription>
-                                    </DialogHeader>
-
-                                    <FieldGroup>
-                                        <Field>
-                                            <FieldLabel htmlFor="q-question">
-                                                Pertanyaan{' '}
-                                                <span className="text-destructive">
-                                                    *
-                                                </span>
-                                            </FieldLabel>
-                                            <Textarea
-                                                id="q-question"
-                                                value={questionForm.question}
-                                                onChange={(e) =>
-                                                    setQuestionForm((prev) => ({
-                                                        ...prev,
-                                                        question:
-                                                            e.target.value,
-                                                    }))
-                                                }
-                                                placeholder="Masukkan pertanyaan"
-                                                rows={3}
-                                            />
-                                        </Field>
-
-                                        <Field>
-                                            <FieldLabel>
-                                                Opsi Jawaban{' '}
-                                                <span className="text-destructive">
-                                                    *
-                                                </span>
-                                            </FieldLabel>
-                                            <div className="space-y-2">
-                                                {questionForm.options.map(
-                                                    (opt, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="flex items-center gap-2"
-                                                        >
-                                                            <Input
-                                                                value={opt}
-                                                                onChange={(
-                                                                    e,
-                                                                ) => {
-                                                                    const newOptions =
-                                                                        [
-                                                                            ...questionForm.options,
-                                                                        ] as [
-                                                                            string,
-                                                                            string,
-                                                                            string,
-                                                                            string,
-                                                                        ];
-                                                                    newOptions[
-                                                                        idx
-                                                                    ] =
-                                                                        e.target.value;
-                                                                    setQuestionForm(
-                                                                        (
-                                                                            prev,
-                                                                        ) => ({
-                                                                            ...prev,
-                                                                            options:
-                                                                                newOptions,
-                                                                        }),
-                                                                    );
-                                                                }}
-                                                                placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
-                                                            />
-                                                            <Button
-                                                                type="button"
-                                                                variant={
-                                                                    questionForm.correct_option ===
-                                                                    idx
-                                                                        ? 'default'
-                                                                        : 'outline'
-                                                                }
-                                                                size="sm"
-                                                                className="shrink-0"
-                                                                onClick={() =>
-                                                                    setQuestionForm(
-                                                                        (
-                                                                            prev,
-                                                                        ) => ({
-                                                                            ...prev,
-                                                                            correct_option:
-                                                                                idx,
-                                                                        }),
-                                                                    )
-                                                                }
-                                                            >
-                                                                {questionForm.correct_option ===
-                                                                idx ? (
-                                                                    <Check className="h-4 w-4" />
-                                                                ) : (
-                                                                    'Benar'
-                                                                )}
-                                                            </Button>
-                                                        </div>
-                                                    ),
-                                                )}
-                                            </div>
-                                            <FieldDescription>
-                                                Klik tombol "Benar" untuk
-                                                menandai jawaban yang benar
-                                            </FieldDescription>
-                                        </Field>
-
-                                        <Field>
-                                            <FieldLabel htmlFor="q-explanation">
-                                                Penjelasan
-                                            </FieldLabel>
-                                            <Textarea
-                                                id="q-explanation"
-                                                value={questionForm.explanation}
-                                                onChange={(e) =>
-                                                    setQuestionForm((prev) => ({
-                                                        ...prev,
-                                                        explanation:
-                                                            e.target.value,
-                                                    }))
-                                                }
-                                                placeholder="Penjelasan jawaban (opsional)"
-                                                rows={2}
-                                            />
-                                        </Field>
-                                    </FieldGroup>
-
-                                    <DialogFooter className="mt-6">
-                                        <DialogClose asChild>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                            >
-                                                Batal
-                                            </Button>
-                                        </DialogClose>
-                                        <Button
-                                            type="button"
-                                            onClick={saveQuestion}
-                                        >
-                                            {editingQuestionIndex !== null
-                                                ? 'Perbarui'
-                                                : 'Tambah'}
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
-                    }
-                />
-
-                {/* Table */}
-                <section className="grid gap-4">
-                    <div className="flex flex-col gap-4">
-                        {selectedCourseId === 0 && filterValue.trim() === '' ? (
-                            <Empty>
-                                <EmptyHeader>
-                                    <EmptyMedia variant="icon">
-                                        <Search />
-                                    </EmptyMedia>
-                                    <EmptyTitle>
-                                        Tidak ada penilaian ditemukan
-                                    </EmptyTitle>
-                                    <EmptyDescription>
-                                        Pilih kursus lain atau cari dengan kata
-                                        kunci lain.
-                                    </EmptyDescription>
-                                </EmptyHeader>
-                            </Empty>
-                        ) : filteredAssessments.length === 0 ? (
-                            <Empty>
-                                <EmptyHeader>
-                                    <EmptyMedia variant="icon">
-                                        <Search />
-                                    </EmptyMedia>
-                                    <EmptyTitle>
-                                        Tidak ada penilaian ditemukan
-                                    </EmptyTitle>
-                                    <EmptyDescription>
-                                        Coba kursus atau kata kunci lain.
-                                    </EmptyDescription>
-                                </EmptyHeader>
-                            </Empty>
-                        ) : (
-                            <DataTable
-                                columns={columns}
-                                data={filteredAssessments}
-                                centered
-                                showFilterInput={false}
-                                showColumnToggle={false}
-                                showPageInfo={false}
-                                enableDefaultIdSort={false}
-                                getRowDataId={(row) => String(row.id)}
-                                dragHandleActiveRowId={dragHandleActiveRowId}
-                                onRowDrop={reorderRows}
-                                onRowDragEnd={() =>
-                                    setDragHandleActiveRowId(null)
-                                }
-                                page={assessments.current_page}
-                                pageCount={assessments.last_page}
-                                pageSize={assessments.per_page}
-                                onPageChange={handlePageChange}
-                                onPageSizeChange={handlePageSizeChange}
-                                footerInfo={`Showing ${assessments.from ?? 0} - ${assessments.to ?? 0} of ${assessments.total} Assessments`}
-                            />
-                        )}
-                    </div>
-                </section>
-
-                <section className="grid gap-4">
-                    <div className="rounded-lg border bg-card p-4">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <h2 className="text-base font-semibold">
-                                    Question Builder
-                                </h2>
-                                <p className="text-sm text-muted-foreground">
-                                    {selectedAssessment
-                                        ? `Kelola soal untuk ${selectedAssessment.title}.`
-                                        : 'Pilih Kelola Soal pada salah satu assessment untuk membuka daftar soal.'}
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                <Dialog
-                                    open={manualQuestionOpen}
-                                    onOpenChange={(open) => {
-                                        setManualQuestionOpen(open);
-
-                                        if (open) {
-                                            setQuestionForm({
-                                                question: '',
-                                                options: ['', '', '', ''],
-                                                correct_option: 0,
-                                                explanation: '',
-                                            });
-                                        }
-                                    }}
-                                >
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            disabled={!selectedAssessmentId}
-                                        >
-                                            <Plus data-icon="inline-start" />
-                                            Add Manual Question
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-lg">
+                                <DialogContent className="sm:max-w-sm">
+                                    <form
+                                        onSubmit={(event) => {
+                                            event.preventDefault();
+                                            saveNewAssessmentQuestion();
+                                        }}
+                                    >
                                         <DialogHeader>
-                                            <DialogTitle>
-                                                Add Manual Question
-                                            </DialogTitle>
+                                            <DialogTitle>Create New Question</DialogTitle>
                                             <DialogDescription>
-                                                Buat soal lokal yang hanya
-                                                melekat pada assessment ini.
+                                                Create a new question for this assessment.
                                             </DialogDescription>
                                         </DialogHeader>
 
-                                        <FieldGroup>
-                                            <Field>
-                                                <FieldLabel htmlFor="manual-question-text">
-                                                    Pertanyaan{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-                                                <Textarea
-                                                    id="manual-question-text"
-                                                    value={
-                                                        questionForm.question
-                                                    }
-                                                    onChange={(e) =>
-                                                        setQuestionForm(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                question:
-                                                                    e.target
-                                                                        .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                    placeholder="Masukkan pertanyaan"
-                                                    rows={3}
-                                                />
-                                            </Field>
-
-                                            <Field>
-                                                <FieldLabel>
-                                                    Opsi Jawaban{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-                                                <div className="space-y-2">
-                                                    {questionForm.options.map(
-                                                        (option, index) => (
-                                                            <div
-                                                                key={index}
-                                                                className="flex items-center gap-2"
-                                                            >
-                                                                <Input
+                                        <FieldGroup className="mt-4">
+                                        <Field>
+                                            <FieldLabel htmlFor="new-question-type">
+                                                Question Type{' '}
+                                                <span className="text-destructive">*</span>
+                                            </FieldLabel>
+                                            <Select
+                                                value={
+                                                    assessmentQuestionForm.question_type
+                                                }
+                                                onValueChange={(value) =>
+                                                    setAssessmentQuestionForm(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            question_type:
+                                                                value as QuestionType,
+                                                            options: [
+                                                                '',
+                                                                '',
+                                                                '',
+                                                                '',
+                                                            ],
+                                                            correct_answer: '',
+                                                            min_words: '',
+                                                            max_words: '',
+                                                        }),
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger id="new-question-type">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {QUESTION_TYPE_OPTIONS.map(
+                                                            (option) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        option.value
+                                                                    }
                                                                     value={
-                                                                        option
-                                                                    }
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) => {
-                                                                        const nextOptions =
-                                                                            [
-                                                                                ...questionForm.options,
-                                                                            ] as [
-                                                                                string,
-                                                                                string,
-                                                                                string,
-                                                                                string,
-                                                                            ];
-                                                                        nextOptions[
-                                                                            index
-                                                                        ] =
-                                                                            e.target.value;
-                                                                        setQuestionForm(
-                                                                            (
-                                                                                prev,
-                                                                            ) => ({
-                                                                                ...prev,
-                                                                                options:
-                                                                                    nextOptions,
-                                                                            }),
-                                                                        );
-                                                                    }}
-                                                                    placeholder={`Opsi ${String.fromCharCode(65 + index)}`}
-                                                                />
-                                                                <Button
-                                                                    type="button"
-                                                                    variant={
-                                                                        questionForm.correct_option ===
-                                                                        index
-                                                                            ? 'default'
-                                                                            : 'outline'
-                                                                    }
-                                                                    size="sm"
-                                                                    className="shrink-0"
-                                                                    onClick={() =>
-                                                                        setQuestionForm(
-                                                                            (
-                                                                                prev,
-                                                                            ) => ({
-                                                                                ...prev,
-                                                                                correct_option:
-                                                                                    index,
-                                                                            }),
-                                                                        )
+                                                                        option.value
                                                                     }
                                                                 >
-                                                                    {questionForm.correct_option ===
-                                                                    index ? (
-                                                                        <Check className="h-4 w-4" />
-                                                                    ) : (
-                                                                        'Benar'
-                                                                    )}
-                                                                </Button>
-                                                            </div>
-                                                        ),
-                                                    )}
-                                                </div>
-                                            </Field>
+                                                                    {
+                                                                        option.label
+                                                                    }
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </Field>
 
-                                            <Field>
-                                                <FieldLabel htmlFor="manual-question-explanation">
-                                                    Penjelasan
-                                                </FieldLabel>
-                                                <Textarea
-                                                    id="manual-question-explanation"
-                                                    value={
-                                                        questionForm.explanation
-                                                    }
-                                                    onChange={(e) =>
-                                                        setQuestionForm(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                explanation:
-                                                                    e.target
-                                                                        .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                    placeholder="Penjelasan jawaban (opsional)"
-                                                    rows={2}
-                                                />
-                                            </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="new-question-text">
+                                                Question{' '}
+                                                <span className="text-destructive">*</span>
+                                            </FieldLabel>
+                                            <Textarea
+                                                id="new-question-text"
+                                                value={assessmentQuestionForm.question_text}
+                                                onChange={(event) =>
+                                                    setAssessmentQuestionForm((prev) => ({
+                                                        ...prev,
+                                                        question_text: event.target.value,
+                                                    }))
+                                                }
+                                                rows={4}
+                                                placeholder="Enter question..."
+                                            />
+                                        </Field>
+
+                                        <QuestionTypeFields
+                                            idPrefix="new-question"
+                                            questionType={
+                                                assessmentQuestionForm.question_type
+                                            }
+                                            options={
+                                                assessmentQuestionForm.options
+                                            }
+                                            correctAnswer={
+                                                assessmentQuestionForm.correct_answer
+                                            }
+                                            minWords={
+                                                assessmentQuestionForm.min_words
+                                            }
+                                            maxWords={
+                                                assessmentQuestionForm.max_words
+                                            }
+                                            onOptionsChange={(next) =>
+                                                setAssessmentQuestionForm(
+                                                    (prev) => ({
+                                                        ...prev,
+                                                        options: next,
+                                                    }),
+                                                )
+                                            }
+                                            onCorrectAnswerChange={(value) =>
+                                                setAssessmentQuestionForm(
+                                                    (prev) => ({
+                                                        ...prev,
+                                                        correct_answer: value,
+                                                    }),
+                                                )
+                                            }
+                                            onMinWordsChange={(value) =>
+                                                setAssessmentQuestionForm(
+                                                    (prev) => ({
+                                                        ...prev,
+                                                        min_words: value,
+                                                    }),
+                                                )
+                                            }
+                                            onMaxWordsChange={(value) =>
+                                                setAssessmentQuestionForm(
+                                                    (prev) => ({
+                                                        ...prev,
+                                                        max_words: value,
+                                                    }),
+                                                )
+                                            }
+                                        />
+
+                                        <Field>
+                                            <FieldLabel htmlFor="new-question-explanation">
+                                                Explanation
+                                            </FieldLabel>
+                                            <Textarea
+                                                id="new-question-explanation"
+                                                value={assessmentQuestionForm.explanation}
+                                                onChange={(event) =>
+                                                    setAssessmentQuestionForm((prev) => ({
+                                                        ...prev,
+                                                        explanation: event.target.value,
+                                                    }))
+                                                }
+                                                rows={3}
+                                                placeholder="Answer explanation (optional)"
+                                            />
+                                        </Field>
                                         </FieldGroup>
 
                                         <DialogFooter className="mt-6">
-                                            <DialogClose asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                >
-                                                    Batal
-                                                </Button>
-                                            </DialogClose>
-                                            <Button
-                                                type="button"
-                                                onClick={
-                                                    saveManualQuestionToAssessment
-                                                }
-                                            >
-                                                Simpan Soal
+                                            <Button type="button" variant="outline" onClick={() => setCreateQuestionDialogOpen(false)}>
+                                                Cancel
+                                            </Button>
+                                            <Button type="submit">
+                                                Add Question
                                             </Button>
                                         </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-
-                                <Dialog
-                                    open={questionBankOpen}
-                                    onOpenChange={setQuestionBankOpen}
-                                >
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            disabled={!selectedAssessmentId}
-                                        >
-                                            <Search data-icon="inline-start" />
-                                            Pick From Bank
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-3xl">
-                                        <DialogHeader>
-                                            <DialogTitle>
-                                                Question Bank
-                                            </DialogTitle>
-                                            <DialogDescription>
-                                                Cari soal reusable dan tambahkan
-                                                ke assessment terpilih sebagai
-                                                snapshot.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="max-h-[30rem] space-y-3 overflow-y-auto pr-1">
-                                            {questionBank.data.length === 0 ? (
-                                                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                                                    Belum ada soal aktif di
-                                                    Question Bank.
-                                                </div>
-                                            ) : (
-                                                questionBank.data.map(
-                                                    (question) => (
-                                                        <div
-                                                            key={question.id}
-                                                            className="rounded-lg border p-4"
-                                                        >
-                                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                                                <div className="space-y-2">
-                                                                    <div className="flex flex-wrap items-center gap-2">
-                                                                        <Badge variant="secondary">
-                                                                            From
-                                                                            Bank
-                                                                        </Badge>
-                                                                        <Badge variant="outline">
-                                                                            {
-                                                                                question.bloom_level
-                                                                            }
-                                                                        </Badge>
-                                                                        <Badge variant="outline">
-                                                                            {
-                                                                                question.question_type
-                                                                            }
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <p className="font-medium">
-                                                                        {
-                                                                            question.title
-                                                                        }
-                                                                    </p>
-                                                                    <p className="text-sm text-muted-foreground">
-                                                                        {
-                                                                            question.question_text
-                                                                        }
-                                                                    </p>
-                                                                    {question.category ? (
-                                                                        <p className="text-xs text-muted-foreground">
-                                                                            Category:{' '}
-                                                                            {
-                                                                                question.category
-                                                                            }
-                                                                        </p>
-                                                                    ) : null}
-                                                                </div>
-                                                                <Button
-                                                                    type="button"
-                                                                    size="sm"
-                                                                    onClick={() =>
-                                                                        attachBankQuestion(
-                                                                            question,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Plus data-icon="inline-start" />
-                                                                    Tambahkan
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    ),
-                                                )
-                                            )}
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                         </div>
-
-                        {selectedAssessmentId ? (
-                            <div className="mt-4 grid gap-3">
-                                {questions.length === 0 ? (
-                                    <div className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
-                                        Assessment ini belum memiliki soal.
-                                    </div>
-                                ) : (
-                                    questions.map((question, index) => (
-                                        <div
-                                            key={question.id}
-                                            className="rounded-lg border p-4"
-                                        >
-                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                                <div className="space-y-2">
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Badge
-                                                            variant={
-                                                                question.question_bank_id
-                                                                    ? 'secondary'
-                                                                    : 'outline'
-                                                            }
-                                                        >
-                                                            {question.question_bank_id
-                                                                ? 'From Bank'
-                                                                : 'Local'}
-                                                        </Badge>
-                                                        <Badge variant="outline">
-                                                            {
-                                                                question.bloom_level
-                                                            }
-                                                        </Badge>
-                                                        <Badge variant="outline">
-                                                            {
-                                                                question.question_type
-                                                            }
-                                                        </Badge>
-                                                    </div>
-                                                    <p className="font-medium">
-                                                        {index + 1}.{' '}
-                                                        {question.question_text}
-                                                    </p>
-                                                    {question.explanation ? (
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {
-                                                                question.explanation
-                                                            }
-                                                        </p>
-                                                    ) : null}
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                                    {!question.question_bank_id ? (
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() =>
-                                                                saveAssessmentQuestionToBank(
-                                                                    question,
-                                                                )
-                                                            }
-                                                        >
-                                                            <Plus data-icon="inline-start" />
-                                                            Save to Bank
-                                                        </Button>
-                                                    ) : null}
-                                                    <Badge variant="outline">
-                                                        {question.points} pts
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        ) : null}
                     </div>
-                </section>
+                </header>
+                {/* Table */}
+                <TabsContent value="assessment">
+                    <section className="grid min-w-0 gap-4">
+                        <div className="flex min-w-0 flex-col gap-4">
+                            {filteredAssessments.length === 0 ? (
+                                <Empty>
+                                    <EmptyHeader>
+                                        <EmptyMedia variant="icon">
+                                            <Search />
+                                        </EmptyMedia>
+                                        <EmptyTitle>
+                                            No assessments found
+                                        </EmptyTitle>
+                                        <EmptyDescription>
+                                            Try another course or different keywords.
+                                        </EmptyDescription>
+                                    </EmptyHeader>
+                                </Empty>
+                            ) : (
+                                <DataTable
+                                    columns={columns}
+                                    data={filteredAssessments}
+                                    centered
+                                    showFilterInput={false}
+                                    showColumnToggle={false}
+                                    showPageInfo={false}
+                                    enableDefaultIdSort={false}
+                                    getRowDataId={(row) => String(row.id)}
+                                    dragHandleActiveRowId={
+                                        dragHandleActiveRowId
+                                    }
+                                    onRowDrop={reorderRows}
+                                    onRowDragEnd={() =>
+                                        setDragHandleActiveRowId(null)
+                                    }
+                                    page={assessments.current_page}
+                                    pageCount={assessments.last_page}
+                                    pageSize={assessments.per_page}
+                                    onPageChange={handlePageChange}
+                                    onPageSizeChange={handlePageSizeChange}
+                                    footerInfo={`Showing ${assessments.from ?? 0} - ${assessments.to ?? 0} of ${assessments.total} Assessments`}
+                                />
+                            )}
+                        </div>
+                    </section>
+                </TabsContent>
+
+                <TabsContent value="question">
+                    <section className="grid min-w-0 content-start gap-4">
+                        <div className="min-w-0">
+                            {questionRows.length === 0 ? (
+                                <Empty>
+                                    <EmptyHeader>
+                                        <EmptyMedia variant="icon">
+                                            <Search />
+                                        </EmptyMedia>
+                                        <EmptyTitle>
+                                            No questions found
+                                        </EmptyTitle>
+                                        <EmptyDescription>
+                                            Create a question from the Assessment tab.
+                                        </EmptyDescription>
+                                    </EmptyHeader>
+                                </Empty>
+                            ) : (
+                                <DataTable
+                                    columns={questionColumns}
+                                    data={questionRows}
+                                    centered
+                                    showFilterInput={false}
+                                    showColumnToggle={false}
+                                    showPageInfo={false}
+                                    enableDefaultIdSort={false}
+                                    getRowDataId={(row) => String(row.id)}
+                                    dragHandleActiveRowId={
+                                        questionDragHandleActiveRowId
+                                    }
+                                    onRowDrop={reorderQuestionRows}
+                                    onRowDragEnd={() =>
+                                        setQuestionDragHandleActiveRowId(null)
+                                    }
+                                    footerInfo={`Showing ${questionRows.length} of ${questionRows.length} Questions`}
+                                />
+                            )}
+                        </div>
+                    </section>
+                </TabsContent>
             </div>
+        </Tabs>
+
+            <Dialog
+                open={editingAssessmentQuestion !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setEditingAssessmentQuestion(null);
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Edit Question</DialogTitle>
+                        <DialogDescription>
+                            Update the question details.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            saveAssessmentQuestionUpdate();
+                        }}
+                    >
+                    <FieldGroup className="mt-4">
+                        <Field>
+                            <FieldLabel htmlFor="edit-question-type">
+                                Question Type
+                            </FieldLabel>
+                            <Select
+                                value={assessmentQuestionForm.question_type}
+                                disabled
+                            >
+                                <SelectTrigger id="edit-question-type">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {QUESTION_TYPE_OPTIONS.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+
+                        <Field>
+                            <FieldLabel htmlFor="assessment-question-text">
+                                Question{' '}
+                                <span className="text-destructive">*</span>
+                            </FieldLabel>
+                            <Textarea
+                                id="assessment-question-text"
+                                value={assessmentQuestionForm.question_text}
+                                onChange={(event) =>
+                                    setAssessmentQuestionForm((prev) => ({
+                                        ...prev,
+                                        question_text: event.target.value,
+                                    }))
+                                }
+                                rows={4}
+                                placeholder="Enter question..."
+                            />
+                        </Field>
+
+                        <QuestionTypeFields
+                            idPrefix="edit-question"
+                            questionType={assessmentQuestionForm.question_type}
+                            options={assessmentQuestionForm.options}
+                            correctAnswer={assessmentQuestionForm.correct_answer}
+                            minWords={assessmentQuestionForm.min_words}
+                            maxWords={assessmentQuestionForm.max_words}
+                            onOptionsChange={(next) =>
+                                setAssessmentQuestionForm((prev) => ({
+                                    ...prev,
+                                    options: next,
+                                }))
+                            }
+                            onCorrectAnswerChange={(value) =>
+                                setAssessmentQuestionForm((prev) => ({
+                                    ...prev,
+                                    correct_answer: value,
+                                }))
+                            }
+                            onMinWordsChange={(value) =>
+                                setAssessmentQuestionForm((prev) => ({
+                                    ...prev,
+                                    min_words: value,
+                                }))
+                            }
+                            onMaxWordsChange={(value) =>
+                                setAssessmentQuestionForm((prev) => ({
+                                    ...prev,
+                                    max_words: value,
+                                }))
+                            }
+                        />
+
+                        <Field>
+                            <FieldLabel htmlFor="assessment-question-explanation">
+                                Explanation
+                            </FieldLabel>
+                            <Textarea
+                                id="assessment-question-explanation"
+                                value={assessmentQuestionForm.explanation}
+                                onChange={(event) =>
+                                    setAssessmentQuestionForm((prev) => ({
+                                        ...prev,
+                                        explanation: event.target.value,
+                                    }))
+                                }
+                                rows={3}
+                                placeholder="Answer explanation (optional)"
+                            />
+                        </Field>
+                    </FieldGroup>
+
+                    <DialogFooter className="mt-6">
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline">
+                                Cancel
+                            </Button>
+                        </DialogClose>
+                        <Button type="submit">
+                            Save changes
+                        </Button>
+                    </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             {/* Delete Confirmation */}
             <AlertDialog
@@ -2499,6 +2840,62 @@ export default function AdminCoursesAssessment({
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
                             Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={deletingAssessmentQuestion !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDeletingAssessmentQuestion(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete question?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Question &quot;
+                            {deletingAssessmentQuestion?.question_text}&quot;
+                            will be deleted from this assessment. This action
+                            cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={deleteAssessmentQuestion}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={restoreTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setRestoreTarget(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Restore version?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            The current version will be saved as a snapshot
+                            before the item is restored to version{' '}
+                            {restoreTarget?.version_number}.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={submitRestoreVersion}>
+                            Restore
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

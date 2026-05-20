@@ -14,9 +14,9 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { PageHeader } from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 
 type BuilderCourseOption = {
@@ -163,7 +163,7 @@ export default function AdminCoursesBuilder({ builder }: Props) {
                     section: 'catalog',
                     course_id: builder.activeCourse.id,
                 }),
-                primaryLabel: 'Kelola Course',
+                primaryLabel: 'Manage Course',
             };
         }
 
@@ -186,7 +186,7 @@ export default function AdminCoursesBuilder({ builder }: Props) {
                     section: 'lesson',
                     course_id: builder.activeCourse.id,
                 }),
-                primaryLabel: 'Kelola Topic',
+                primaryLabel: 'Manage Topic',
             };
         }
 
@@ -209,7 +209,7 @@ export default function AdminCoursesBuilder({ builder }: Props) {
                     section: 'task',
                     course_id: builder.activeCourse.id,
                 }),
-                primaryLabel: 'Kelola Task',
+                primaryLabel: 'Manage Task',
             };
         }
 
@@ -234,7 +234,7 @@ export default function AdminCoursesBuilder({ builder }: Props) {
                 course_id: builder.activeCourse.id,
                 assessment_id: assessment.id,
             }),
-            primaryLabel: 'Kelola Assessment',
+            primaryLabel: 'Manage Assessment',
         };
     }, [builder, selected]);
 
@@ -250,34 +250,37 @@ export default function AdminCoursesBuilder({ builder }: Props) {
 
     if (!builder?.activeCourse) {
         return (
-            <PageHeader
-                title="Course Builder"
-                description="Susun course dari outline utama."
-                actions={
-                    <Button asChild>
+            <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex min-w-0 flex-col gap-1">
+        <TypographyH1>Course Builder</TypographyH1>
+        <TypographyMuted>Build courses from the main outline.</TypographyMuted>
+    </div>
+    <div className="flex shrink-0 items-center justify-end gap-2">
+        <Button asChild>
                         <Link href={managementHref({ section: 'catalog' })}>
                             <Plus data-icon="inline-start" />
-                            Tambah Course
+                            Add Course
                         </Link>
                     </Button>
-                }
-            />
-        );
+    </div>
+</header>       );
     }
 
     const activeCourse = builder.activeCourse;
 
     return (
         <div className="grid gap-5">
-            <PageHeader
-                title="Course Builder"
-                description="Satu outline untuk menyusun course, topic, task, assessment, question, dan history."
-                actions={
-                    <>
+            <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex min-w-0 flex-col gap-1">
+        <TypographyH1>Course Builder</TypographyH1>
+        <TypographyMuted>One outline to build courses, topics, tasks, assessments, questions, and history.</TypographyMuted>
+    </div>
+    <div className="flex shrink-0 items-center justify-end gap-2">
+        <>
                         <Button asChild>
                             <Link href={managementHref({ section: 'catalog' })}>
                                 <Plus data-icon="inline-start" />
-                                Tambah Course
+                                Add Course
                             </Link>
                         </Button>
                         <Button variant="outline" asChild>
@@ -286,10 +289,8 @@ export default function AdminCoursesBuilder({ builder }: Props) {
                             </Link>
                         </Button>
                     </>
-                }
-            />
-
-            <section className="grid gap-3 rounded-lg border bg-card p-3">
+    </div>
+</header>            <section className="grid gap-3 rounded-lg border bg-card p-3">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -499,7 +500,7 @@ export default function AdminCoursesBuilder({ builder }: Props) {
                                                 }
                                             >
                                                 <FileQuestion data-icon="inline-start" />
-                                                Kelola Soal
+                                                Manage Questions
                                             </Link>
                                         </Button>
                                     </div>
@@ -541,7 +542,7 @@ export default function AdminCoursesBuilder({ builder }: Props) {
                                         </div>
                                     ) : (
                                         <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                                            Assessment ini belum punya soal.
+                                            This assessment has no questions yet.
                                         </div>
                                     )}
                                 </div>
@@ -553,15 +554,15 @@ export default function AdminCoursesBuilder({ builder }: Props) {
                                     Next best action
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    Gunakan outline kiri untuk memilih item.
-                                    Gunakan tombol kelola untuk masuk ke editor
-                                    penuh tanpa kehilangan konteks course.
+                                    Use the left outline to select items.
+                                    Use the manage button to enter the full editor
+                                    without losing course context.
                                 </p>
                             </div>
                         </div>
                     ) : (
                         <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-                            Pilih item dari outline untuk mulai mengelola.
+                            Select an item from the outline to start managing.
                         </div>
                     )}
                 </div>

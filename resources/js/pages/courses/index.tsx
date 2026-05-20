@@ -3,7 +3,6 @@ import { ArrowRight, BookOpenCheck, Filter, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { PageHeader } from '@/components/page-header';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -44,6 +43,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { dashboard } from '@/routes';
 import { enroll, reset as resetCourseProgress, show } from '@/routes/courses';
 import { index as coursesIndex } from '@/routes/courses';
@@ -847,11 +847,12 @@ export default function CoursesIndex({
             <Head title={headTitle} />
 
             <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
-                <PageHeader
-                    className="animate-fade-in-up"
-                    title={pageTitle}
-                    description={pageDescription}
-                    actions={
+                <header className="animate-fade-in-up flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <TypographyH1>{pageTitle}</TypographyH1>
+                        <TypographyMuted>{pageDescription}</TypographyMuted>
+                    </div>
+                    <div className="flex shrink-0 items-center justify-end gap-2">
                         <div className="lg:hidden">
                             {sidebarMode === 'filters' ? (
                                 <>
@@ -906,8 +907,8 @@ export default function CoursesIndex({
                                 </Card>
                             )}
                         </div>
-                    }
-                />
+                    </div>
+                </header>
 
                 <section
                     className="animate-fade-in-up grid gap-3 lg:grid-cols-[300px_1fr]"

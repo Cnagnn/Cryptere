@@ -21,8 +21,8 @@ return new class extends Migration
             $table->foreignId('question_id')->constrained('assessment_questions')->cascadeOnDelete();
 
             // Student's answer
-            $table->text('answer_text')->nullable(); // For essay/computation/case_study/design
-            $table->string('selected_option')->nullable(); // For MCQ/true_false
+            $table->text('answer_text')->nullable(); // For essay/short_answer
+            $table->string('selected_option')->nullable(); // For MCQ/multiple_select/true_false/matching
 
             // Grading results
             $table->boolean('is_correct')->nullable(); // null = not yet graded (manual)

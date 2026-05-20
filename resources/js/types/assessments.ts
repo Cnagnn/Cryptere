@@ -10,16 +10,15 @@ export type BloomLabel =
     | 'Evaluate'
     | 'Create';
 
-export type GradingType = 'auto' | 'manual' | 'mixed';
+export type GradingType = 'auto';
 
 export type QuestionType =
     | 'mcq'
+    | 'multiple_select'
     | 'true_false'
+    | 'matching'
     | 'short_answer'
-    | 'essay'
-    | 'computation'
-    | 'case_study'
-    | 'design';
+    | 'essay';
 
 export type SubmissionStatus =
     | 'in_progress'
@@ -298,7 +297,6 @@ export type QuestionBank = {
     id: number;
     title: string;
     category: string | null;
-    bloom_level: BloomLevel;
     question_type: QuestionType;
     question_text: string;
     options: string[] | null;

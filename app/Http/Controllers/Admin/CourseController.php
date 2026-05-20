@@ -62,7 +62,7 @@ class CourseController extends Controller
 
         $search = trim((string) $request->input('search', ''));
         $perPage = (int) $request->integer('per_page', 10);
-        $perPage = max(10, min($perPage, 100));
+        $perPage = max(10, min($perPage, 9999));
         $builderMode = $request->boolean('builder', ! $request->has('section'));
 
         $emptyPaginated = [
@@ -147,20 +147,6 @@ class CourseController extends Controller
                     $selectedCourseId = (int) $selectedLesson->course_id;
                 }
             }
-
-            if ($selectedLessonId === 0) {
-                $selectedLesson = Lesson::query()
-                    ->with('course:id,slug,title')
-                    ->when($selectedCourseId > 0, fn ($q) => $q->where('course_id', $selectedCourseId))
-                    ->orderBy('course_id')
-                    ->orderBy('position')
-                    ->first(['id', 'course_id', 'slug', 'title', 'content']);
-
-                if ($selectedLesson !== null) {
-                    $selectedCourseId = (int) $selectedLesson->course_id;
-                    $selectedLessonId = (int) $selectedLesson->id;
-                }
-            }
         }
 
         $lessons = $emptyPaginated;
@@ -240,7 +226,6 @@ class CourseController extends Controller
                             'content' => (string) ($task->description ?? ''),
                             'position' => $task->sort_order,
                             'minutes' => $task->minutes,
-                            'estimated_minutes' => $task->estimated_minutes,
                             'status' => $task->status,
                             'version' => $task->version,
                             'published_by_name' => $task->publishedBy?->name,
@@ -312,6 +297,64 @@ class CourseController extends Controller
                         'to' => $legacyPaginator->lastItem(),
                     ];
                 }
+            } else {
+                // No lesson selected — show all tasks across all lessons
+                $taskPaginator = LessonTask::query()
+                    ->with(['lesson:id,title,course_id', 'lesson.course:id,slug,title', 'quizQuestions:id,lesson_task_id,question,options,correct_option,explanation,sort_order', 'publishedBy:id,name'])
+                    ->when($selectedCourseId > 0, fn ($q) => $q->whereHas('lesson', fn ($lq) => $lq->where('course_id', $selectedCourseId)))
+                    ->orderBy('lesson_id')
+                    ->orderBy('sort_order')
+                    ->orderBy('id')
+                    ->paginate($perPage)
+                    ->withQueryString();
+
+                $taskPaginator->getCollection()->transform(function (LessonTask $task, int $index) use ($taskPaginator): array {
+                    $globalIndex = (($taskPaginator->currentPage() - 1) * $taskPaginator->perPage()) + $index;
+
+                    return [
+                        'id' => $task->id,
+                        'management_id' => 'task-'.$task->id,
+                        'is_legacy' => false,
+                        'task_index' => $globalIndex,
+                        'lesson_id' => $task->lesson_id,
+                        'lesson_title' => $task->lesson?->title,
+                        'course_id' => $task->lesson?->course_id,
+                        'course_slug' => $task->lesson?->course?->slug,
+                        'type' => $task->type,
+                        'title' => $task->title,
+                        'description' => (string) ($task->description ?? ''),
+                        'content' => (string) ($task->description ?? ''),
+                        'position' => $task->sort_order,
+                        'status' => $task->status,
+                        'version' => $task->version,
+                        'published_by_name' => $task->publishedBy?->name,
+                        'prerequisite_task_id' => $task->prerequisite_task_id,
+                        'video_url' => $task->video_url,
+                        'video_processing_status' => $task->video_processing_status,
+                        'video_mp4_url' => $task->video_mp4_url,
+                        'document_name' => $task->document_name,
+                        'conversion_status' => $task->conversion_status,
+                        'pdf_url' => $task->pdf_url,
+                        'created_at' => $task->created_at?->toIso8601String(),
+                        'updated_at' => $task->updated_at?->toIso8601String(),
+                        'quiz_questions' => $task->quizQuestions->map(fn (QuizQuestion $q): array => [
+                            'question' => $q->question,
+                            'options' => $q->options,
+                            'correct_option' => $q->correct_option,
+                            'explanation' => $q->explanation,
+                        ])->values()->all(),
+                    ];
+                });
+
+                $tasks = [
+                    'data' => $taskPaginator->items(),
+                    'current_page' => $taskPaginator->currentPage(),
+                    'last_page' => $taskPaginator->lastPage(),
+                    'per_page' => $taskPaginator->perPage(),
+                    'total' => $taskPaginator->total(),
+                    'from' => $taskPaginator->firstItem(),
+                    'to' => $taskPaginator->lastItem(),
+                ];
             }
         }
 
@@ -335,6 +378,7 @@ class CourseController extends Controller
                 ->when($bloomFilter, fn ($q) => $q->where('bloom_level', $bloomFilter))
                 ->when($assessmentCourseId > 0, fn ($q) => $q->where('course_id', $assessmentCourseId))
                 ->withCount('questions')
+                ->orderBy('course_id')
                 ->orderBy('sort_order')
                 ->paginate($perPage)
                 ->withQueryString();
@@ -376,12 +420,27 @@ class CourseController extends Controller
                 'to' => $assessmentPaginator->lastItem(),
             ];
 
+            // All assessments for the dropdown (ungrouped by pagination)
+            $allAssessments = Assessment::query()
+                ->with('course:id,title')
+                ->orderBy('course_id')
+                ->orderBy('sort_order')
+                ->get(['id', 'title', 'course_id', 'bloom_level'])
+                ->map(fn (Assessment $a) => [
+                    'id' => $a->id,
+                    'title' => $a->title,
+                    'course_id' => $a->course_id,
+                    'course_title' => $a->course?->title,
+                ])
+                ->values()
+                ->all();
+
             $selectedAssessmentId = $request->integer('assessment_id');
 
             if ($selectedAssessmentId > 0) {
                 $assessmentQuestions = AssessmentQuestion::query()
                     ->where('assessment_id', $selectedAssessmentId)
-                    ->with('questionBank:id,title')
+                    ->with(['questionBank:id,title', 'assessment:id,title,bloom_level', 'assessment.course:id,title'])
                     ->orderBy('sort_order')
                     ->get()
                     ->makeVisible('correct_answer')
@@ -389,6 +448,30 @@ class CourseController extends Controller
                         ...$question->toArray(),
                         'source_badge' => $question->question_bank_id ? 'From Bank' : 'Local',
                         'question_bank_title' => $question->questionBank?->title,
+                        'assessment_title' => $question->assessment?->title,
+                        'assessment_bloom_level' => $question->assessment?->bloom_level,
+                        'course_title' => $question->assessment?->course?->title,
+                    ])
+                    ->values()
+                    ->all();
+            } else {
+                $assessmentQuestions = AssessmentQuestion::query()
+                    ->with(['questionBank:id,title', 'assessment:id,title,bloom_level,course_id,sort_order', 'assessment.course:id,title'])
+                    ->join('assessments', 'assessment_questions.assessment_id', '=', 'assessments.id')
+                    ->when($assessmentCourseId > 0, fn ($q) => $q->where('assessments.course_id', $assessmentCourseId))
+                    ->orderBy('assessments.course_id')
+                    ->orderBy('assessments.sort_order')
+                    ->orderBy('assessment_questions.sort_order')
+                    ->select('assessment_questions.*')
+                    ->get()
+                    ->makeVisible('correct_answer')
+                    ->map(fn (AssessmentQuestion $question): array => [
+                        ...$question->toArray(),
+                        'source_badge' => $question->question_bank_id ? 'From Bank' : 'Local',
+                        'question_bank_title' => $question->questionBank?->title,
+                        'assessment_title' => $question->assessment?->title,
+                        'assessment_bloom_level' => $question->assessment?->bloom_level,
+                        'course_title' => $question->assessment?->course?->title,
                     ])
                     ->values()
                     ->all();
@@ -450,7 +533,7 @@ class CourseController extends Controller
         }
 
         $versionHistories = $this->buildVersionHistories(
-            courses: data_get($courses, 'data', []),
+            courses: $this->paginatedItems($courses),
             lessons: data_get($lessons, 'data', []),
             tasks: data_get($tasks, 'data', []),
             assessments: data_get($assessments, 'data', []),
@@ -470,6 +553,7 @@ class CourseController extends Controller
             'filters' => ['search' => $search],
             // Assessment section data
             'assessments' => $assessments,
+            'allAssessments' => $allAssessments ?? [],
             'assessmentQuestions' => $assessmentQuestions,
             'selectedAssessmentId' => $selectedAssessmentId,
             'assessmentTopics' => $assessmentTopics,
@@ -550,7 +634,6 @@ class CourseController extends Controller
                 'type' => $task->type,
                 'status' => $task->status,
                 'version' => $task->version,
-                'estimated_minutes' => $task->estimated_minutes,
                 'sort_order' => $task->sort_order,
             ])->values()->all(),
         ])->values();
@@ -600,6 +683,22 @@ class CourseController extends Controller
                 'has_questions' => $assessments->contains(fn (array $assessment): bool => $assessment['questions_count'] > 0),
             ],
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function paginatedItems(mixed $value): array
+    {
+        if (is_array($value)) {
+            return data_get($value, 'data', []);
+        }
+
+        if (method_exists($value, 'items')) {
+            return $value->items();
+        }
+
+        return [];
     }
 
     /**
@@ -681,7 +780,6 @@ class CourseController extends Controller
             'title' => $validated['title'],
             'summary' => $validated['description'],
             'cover_path' => $coverPath,
-            'estimated_minutes' => (int) ($validated['estimated_minutes'] ?? 30),
             'sort_order' => $nextSortOrder,
             'is_published' => (bool) ($validated['is_published'] ?? false),
             'status' => $validated['status'] ?? 'draft',
@@ -717,7 +815,6 @@ class CourseController extends Controller
             'title' => $validated['title'],
             'summary' => $validated['description'],
             'cover_path' => $coverPath,
-            'estimated_minutes' => (int) ($validated['estimated_minutes'] ?? $course->estimated_minutes),
             'is_published' => (bool) ($validated['is_published'] ?? true),
         ];
 

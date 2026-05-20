@@ -9,13 +9,22 @@ import type {
     Paginated,
     QuestionBank,
 } from '@/types';
-import type { VersionHistoryItem } from '@/components/admin/version-history-dialog';
 import type { CourseRow, LessonRow, TaskRow } from '@/types/course-management';
 import AdminCoursesAssessment from './assessment';
 import AdminCoursesBuilder from './builder';
 import AdminCoursesTask from './task';
 import AdminCoursesTitle from './title';
 import AdminCoursesTopic from './topic';
+
+type VersionHistoryItem = {
+    id: number;
+    version_number: number;
+    changed_fields: string[];
+    change_summary: string | null;
+    creator_name: string | null;
+    created_at: string | null;
+    restored_at: string | null;
+};
 
 type LessonOption = { id: number; course_id: number; title: string };
 
@@ -35,6 +44,7 @@ type Props = {
     };
     // Assessment section data
     assessments: Paginated<AdminAssessment>;
+    allAssessments: { id: number; title: string; course_id: number; course_title: string }[];
     assessmentQuestions: AdminAssessmentQuestion[];
     selectedAssessmentId: number;
     assessmentTopics: { id: number; name: string }[];
@@ -64,7 +74,7 @@ export default function AdminCoursesIndex(props: Props) {
 
     return (
         <>
-            <Head title="Manajemen - Kursus" />
+            <Head title="Management - Courses" />
 
             {props.section === 'lesson' ? (
                 <AdminCoursesTopic
@@ -97,6 +107,7 @@ export default function AdminCoursesIndex(props: Props) {
             {props.section === 'assessment' ? (
                 <AdminCoursesAssessment
                     assessments={props.assessments}
+                    allAssessments={props.allAssessments ?? []}
                     questions={props.assessmentQuestions}
                     selectedAssessmentId={props.selectedAssessmentId}
                     courseOptions={props.courseOptions}
@@ -116,11 +127,11 @@ export default function AdminCoursesIndex(props: Props) {
 AdminCoursesIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Beranda',
+            title: 'Home',
             href: dashboard(),
         },
         {
-            title: 'Kursus',
+            title: 'Courses',
             href: adminCoursesIndex(),
         },
     ],

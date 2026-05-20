@@ -24,7 +24,6 @@ class CourseFactory extends Factory
             'slug' => Str::slug($title).'-'.fake()->unique()->numberBetween(10, 999),
             'title' => $title,
             'summary' => fake()->paragraph(),
-            'estimated_minutes' => fake()->numberBetween(20, 120),
             'sort_order' => fake()->numberBetween(1, 40),
             'status' => 'published',
         ];

@@ -55,7 +55,6 @@ test('admin course management returns lesson task and assessment data contracts'
         'status' => 'draft',
         'version' => 4,
         'published_by' => $publisher->id,
-        'estimated_minutes' => 12,
         'prerequisite_task_id' => null,
     ]);
     $assessment = Assessment::factory()->for($course)->create([
@@ -90,7 +89,6 @@ test('admin course management returns lesson task and assessment data contracts'
                 ->where('status', 'draft')
                 ->where('version', 4)
                 ->where('published_by_name', 'Publisher')
-                ->where('estimated_minutes', 12)
                 ->has('prerequisite_task_id')
                 ->has('video_processing_status')
                 ->has('conversion_status')

@@ -229,11 +229,11 @@ class Assessment extends Model
     }
 
     /**
-     * Determine if this assessment requires manual grading.
+     * Manual grading is no longer supported. Kept for backwards compatibility.
      */
     public function requiresManualGrading(): bool
     {
-        return in_array($this->grading_type, [self::GRADING_MANUAL, self::GRADING_MIXED]);
+        return false;
     }
 
     /**

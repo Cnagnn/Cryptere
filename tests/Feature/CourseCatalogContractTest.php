@@ -15,7 +15,6 @@ test('course catalog returns searchable paginated learner contract', function ()
         'is_published' => true,
         'category' => 'cryptography',
         'difficulty' => 'intermediate',
-        'estimated_minutes' => 90,
     ]);
 
     Course::factory()->create([

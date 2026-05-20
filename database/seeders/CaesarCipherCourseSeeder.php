@@ -38,7 +38,6 @@ class CaesarCipherCourseSeeder extends Seeder
                     'summary' => 'Kursus berbahasa Indonesia untuk memahami Sandi Caesar dari sejarah, praktik enkripsi, kriptanalisis, hingga proyek mini.',
                     'category' => 'Kriptografi',
                     'difficulty' => 'Pemula',
-                    'estimated_minutes' => 360,
                     'status' => Course::STATUS_PUBLISHED,
                     'is_published' => true,
                     'version' => 1,
@@ -87,7 +86,6 @@ class CaesarCipherCourseSeeder extends Seeder
                 'type' => 'video',
                 'video_url' => $lessonData['video']['url'],
                 'video_processing_status' => 'ready',
-                'estimated_minutes' => $lessonData['video']['minutes'],
                 'status' => LessonTask::STATUS_PUBLISHED,
                 'version' => 1,
                 'published_at' => now(),
@@ -108,7 +106,6 @@ class CaesarCipherCourseSeeder extends Seeder
                 'document_name' => basename($documentPath),
                 'conversion_status' => 'converted',
                 'pdf_url' => Storage::disk('public')->url($documentPath),
-                'estimated_minutes' => $lessonData['document']['minutes'],
                 'prerequisite_task_id' => $videoTask->id,
                 'status' => LessonTask::STATUS_PUBLISHED,
                 'version' => 1,
@@ -121,7 +118,6 @@ class CaesarCipherCourseSeeder extends Seeder
                 'title' => $lessonData['quiz']['title'],
                 'description' => $lessonData['quiz']['description'],
                 'type' => 'quiz',
-                'estimated_minutes' => $lessonData['quiz']['minutes'],
                 'prerequisite_task_id' => $readTask->id,
                 'status' => LessonTask::STATUS_PUBLISHED,
                 'version' => 1,
@@ -757,7 +753,7 @@ HTML;
                 'title' => 'C2: Memahami Konsep Caesar',
                 'description' => 'Menguji pemahaman hubungan key, modulo, dan kelemahan dasar Caesar.',
                 'bloom_level' => Assessment::BLOOM_C2,
-                'grading_type' => Assessment::GRADING_MIXED,
+                'grading_type' => Assessment::GRADING_AUTO,
                 'time_limit_minutes' => 25,
                 'sort_order' => 2,
                 'questions' => [
@@ -786,7 +782,7 @@ HTML;
                     $this->shortAnswer('Enkripsi kata DATA dengan key 3. Tulis ciphertext dengan huruf kapital.', 'GDWD', 'D menjadi G, A menjadi D, T menjadi W, A menjadi D.'),
                     $this->shortAnswer('Dekripsi ciphertext KHOOR dengan key 3. Tulis plaintext dengan huruf kapital.', 'HELLO', 'Setiap huruf mundur 3 posisi menghasilkan HELLO.'),
                     $this->shortAnswer('Decode ROT13 dari URYYB. Tulis plaintext dengan huruf kapital.', 'HELLO', 'ROT13 menggeser 13 posisi dan mengembalikan URYYB menjadi HELLO.'),
-                    $this->computation('Jika P = 25 dan k = 4, berapa nilai C = (P + k) mod 26?', '3', '(25 + 4) mod 26 = 29 mod 26 = 3.'),
+                    $this->shortAnswer('Jika P = 25 dan k = 4, berapa nilai C = (P + k) mod 26?', '3', '(25 + 4) mod 26 = 29 mod 26 = 3.'),
                 ],
             ],
             [
@@ -794,16 +790,16 @@ HTML;
                 'title' => 'C4: Menganalisis Ciphertext Caesar',
                 'description' => 'Menguji kemampuan membedah pola, kunci, dan bukti pada ciphertext.',
                 'bloom_level' => Assessment::BLOOM_C4,
-                'grading_type' => Assessment::GRADING_MANUAL,
+                'grading_type' => Assessment::GRADING_AUTO,
                 'time_limit_minutes' => 40,
                 'sort_order' => 4,
                 'questions' => [
-                    $this->manualQuestion('case_study', 'Anda menerima ciphertext "WKH FLSKHU LV HDVB". Analisis kemungkinan key dan plaintext-nya. Jelaskan langkah yang Anda pakai.', 'Jawaban ideal mencoba brute force atau mengenali key 3 sehingga plaintext menjadi THE CIPHER IS EASY.', 25, 140, 380, $this->rubric([
+                    $this->manualQuestion('essay', 'Anda menerima ciphertext "WKH FLSKHU LV HDVB". Analisis kemungkinan key dan plaintext-nya. Jelaskan langkah yang Anda pakai.', 'Jawaban ideal mencoba brute force atau mengenali key 3 sehingga plaintext menjadi THE CIPHER IS EASY.', 25, 140, 380, $this->rubric([
                         ['name' => 'Metode analisis', 'description' => 'Menjelaskan brute force atau petunjuk pola.', 'max_points' => 9],
                         ['name' => 'Hasil dekripsi', 'description' => 'Menemukan plaintext dan key yang benar.', 'max_points' => 8],
                         ['name' => 'Argumentasi', 'description' => 'Menghubungkan bukti dengan kesimpulan.', 'max_points' => 8],
                     ])),
-                    $this->manualQuestion('case_study', 'Bandingkan dua ciphertext pendek: "KHOOR" dan "MJQQT". Keduanya tampak mirip. Analisis bagaimana Anda menentukan key masing-masing.', 'Jawaban harus membahas pengujian key, hasil plaintext yang masuk akal, dan kebutuhan konteks bahasa.', 20, 120, 320, $this->rubric([
+                    $this->manualQuestion('essay', 'Bandingkan dua ciphertext pendek: "KHOOR" dan "MJQQT". Keduanya tampak mirip. Analisis bagaimana Anda menentukan key masing-masing.', 'Jawaban harus membahas pengujian key, hasil plaintext yang masuk akal, dan kebutuhan konteks bahasa.', 20, 120, 320, $this->rubric([
                         ['name' => 'Perbandingan', 'description' => 'Menganalisis dua kasus secara terpisah.', 'max_points' => 7],
                         ['name' => 'Pengujian key', 'description' => 'Menjelaskan cara mencoba key.', 'max_points' => 7],
                         ['name' => 'Konteks bahasa', 'description' => 'Menilai plaintext yang masuk akal.', 'max_points' => 6],
@@ -813,7 +809,7 @@ HTML;
                         ['name' => 'Kaitan dengan substitusi', 'description' => 'Menjelaskan mengapa pola tetap tampak.', 'max_points' => 8],
                         ['name' => 'Contoh', 'description' => 'Memberi contoh yang relevan.', 'max_points' => 4],
                     ])),
-                    $this->manualQuestion('case_study', 'Sebuah kelas memakai Caesar untuk menyembunyikan jawaban quiz. Analisis risiko jika semua siswa tahu algoritmanya tetapi tidak tahu key.', 'Jawaban ideal membahas Kerckhoffs, ruang kunci kecil, dan brute force.', 20, 120, 320, $this->rubric([
+                    $this->manualQuestion('essay', 'Sebuah kelas memakai Caesar untuk menyembunyikan jawaban quiz. Analisis risiko jika semua siswa tahu algoritmanya tetapi tidak tahu key.', 'Jawaban ideal membahas Kerckhoffs, ruang kunci kecil, dan brute force.', 20, 120, 320, $this->rubric([
                         ['name' => 'Risiko keyspace', 'description' => 'Menjelaskan keyspace Caesar yang kecil.', 'max_points' => 8],
                         ['name' => 'Prinsip keamanan', 'description' => 'Membahas algoritma diketahui publik.', 'max_points' => 6],
                         ['name' => 'Rekomendasi', 'description' => 'Memberi saran penggunaan yang tepat.', 'max_points' => 6],
@@ -825,7 +821,7 @@ HTML;
                 'title' => 'C5: Mengevaluasi Relevansi Caesar',
                 'description' => 'Menguji kemampuan menilai manfaat dan keterbatasan Caesar dalam konteks modern.',
                 'bloom_level' => Assessment::BLOOM_C5,
-                'grading_type' => Assessment::GRADING_MANUAL,
+                'grading_type' => Assessment::GRADING_AUTO,
                 'time_limit_minutes' => 45,
                 'sort_order' => 5,
                 'questions' => [
@@ -857,31 +853,31 @@ HTML;
                 'title' => 'C6: Mencipta Aktivitas Caesar',
                 'description' => 'Menguji kemampuan merancang varian, aktivitas, atau alat belajar berbasis Caesar.',
                 'bloom_level' => Assessment::BLOOM_C6,
-                'grading_type' => Assessment::GRADING_MANUAL,
+                'grading_type' => Assessment::GRADING_AUTO,
                 'time_limit_minutes' => 60,
                 'sort_order' => 6,
                 'questions' => [
-                    $this->manualQuestion('design', 'Rancang aktivitas belajar Sandi Caesar untuk siswa baru. Sertakan tujuan, alat, langkah, contoh, dan cara mengecek jawaban.', 'Jawaban ideal berupa rancangan aktivitas lengkap yang dapat dijalankan di kelas.', 40, 260, 900, $this->rubric([
+                    $this->manualQuestion('essay', 'Rancang aktivitas belajar Sandi Caesar untuk siswa baru. Sertakan tujuan, alat, langkah, contoh, dan cara mengecek jawaban.', 'Jawaban ideal berupa rancangan aktivitas lengkap yang dapat dijalankan di kelas.', 40, 260, 900, $this->rubric([
                         ['name' => 'Kelengkapan rancangan', 'description' => 'Tujuan, alat, langkah, dan evaluasi jelas.', 'max_points' => 10],
                         ['name' => 'Ketepatan teknis', 'description' => 'Aturan Caesar benar.', 'max_points' => 10],
                         ['name' => 'Keterujian', 'description' => 'Ada contoh dan cara cek jawaban.', 'max_points' => 8],
                         ['name' => 'Kejelasan penyajian', 'description' => 'Instruksi mudah diikuti.', 'max_points' => 6],
                         ['name' => 'Refleksi keamanan', 'description' => 'Membahas batas keamanan.', 'max_points' => 6],
                     ])),
-                    $this->manualQuestion('design', 'Buat varian Caesar yang memakai dua key bergantian. Jelaskan aturan enkripsi, dekripsi, contoh, dan kelemahannya.', 'Jawaban ideal mendefinisikan aturan bergantian, memberi contoh, dan menilai keyspace serta pola.', 35, 240, 800, $this->rubric([
+                    $this->manualQuestion('essay', 'Buat varian Caesar yang memakai dua key bergantian. Jelaskan aturan enkripsi, dekripsi, contoh, dan kelemahannya.', 'Jawaban ideal mendefinisikan aturan bergantian, memberi contoh, dan menilai keyspace serta pola.', 35, 240, 800, $this->rubric([
                         ['name' => 'Definisi aturan', 'description' => 'Aturan dua key jelas dan konsisten.', 'max_points' => 9],
                         ['name' => 'Contoh kerja', 'description' => 'Memberi enkripsi dan dekripsi.', 'max_points' => 8],
                         ['name' => 'Analisis kelemahan', 'description' => 'Menilai pola dan serangan.', 'max_points' => 8],
                         ['name' => 'Orisinalitas', 'description' => 'Ada ide pengembangan yang masuk akal.', 'max_points' => 5],
                         ['name' => 'Kejelasan', 'description' => 'Dokumentasi mudah diuji.', 'max_points' => 5],
                     ])),
-                    $this->manualQuestion('design', 'Rancang lembar peer review untuk menilai proyek Caesar teman Anda. Minimal ada empat kriteria penilaian.', 'Jawaban ideal menghasilkan instrumen penilaian yang spesifik, terukur, dan relevan.', 25, 180, 600, $this->rubric([
+                    $this->manualQuestion('essay', 'Rancang lembar peer review untuk menilai proyek Caesar teman Anda. Minimal ada empat kriteria penilaian.', 'Jawaban ideal menghasilkan instrumen penilaian yang spesifik, terukur, dan relevan.', 25, 180, 600, $this->rubric([
                         ['name' => 'Kriteria relevan', 'description' => 'Kriteria sesuai proyek Caesar.', 'max_points' => 8],
                         ['name' => 'Skala penilaian', 'description' => 'Ada cara memberi skor atau level.', 'max_points' => 6],
                         ['name' => 'Umpan balik', 'description' => 'Memuat ruang saran perbaikan.', 'max_points' => 6],
                         ['name' => 'Keterpakaian', 'description' => 'Mudah dipakai oleh teman.', 'max_points' => 5],
                     ])),
-                    $this->manualQuestion('design', 'Buat prompt proyek akhir: peserta harus membuat pesan rahasia, memberi petunjuk, dan menulis pembahasan keamanan. Susun instruksinya.', 'Jawaban ideal berupa brief proyek akhir yang lengkap dan dapat dieksekusi.', 30, 220, 700, $this->rubric([
+                    $this->manualQuestion('essay', 'Buat prompt proyek akhir: peserta harus membuat pesan rahasia, memberi petunjuk, dan menulis pembahasan keamanan. Susun instruksinya.', 'Jawaban ideal berupa brief proyek akhir yang lengkap dan dapat dieksekusi.', 30, 220, 700, $this->rubric([
                         ['name' => 'Brief proyek', 'description' => 'Instruksi proyek lengkap.', 'max_points' => 8],
                         ['name' => 'Komponen teknis', 'description' => 'Memuat plaintext, key, ciphertext, dan dekripsi.', 'max_points' => 8],
                         ['name' => 'Pembahasan keamanan', 'description' => 'Meminta analisis kelemahan.', 'max_points' => 7],
@@ -941,21 +937,8 @@ HTML;
     }
 
     /**
-     * @return array<string, mixed>
-     */
-    private function computation(string $questionText, string $correctAnswer, string $explanation, int $points = 15): array
-    {
-        return [
-            'question_type' => AssessmentQuestion::TYPE_COMPUTATION,
-            'question_text' => $questionText,
-            'correct_answer' => $correctAnswer,
-            'explanation' => $explanation,
-            'points' => $points,
-            'grading_type' => Assessment::GRADING_AUTO,
-        ];
-    }
-
-    /**
+     * @param  array<int, array{name: string, description: string, max_points: int}>  $rubric
+     * @param  array<int, string>  $keywords
      * @return array<string, mixed>
      */
     private function manualQuestion(
@@ -966,15 +949,36 @@ HTML;
         int $minWords,
         int $maxWords,
         array $rubric,
+        array $keywords = [],
     ): array {
+        // With auto-only grading, "manual" essay/short-answer questions are
+        // converted to keyword-coverage auto grading. Keywords are pulled from
+        // an explicit list when provided, otherwise inferred from the rubric
+        // criteria names so each criterion contributes a hint to the grader.
+        $criteria = $rubric['criteria'] ?? $rubric;
+
+        $derivedKeywords = $keywords !== []
+            ? $keywords
+            : array_values(array_filter(array_map(
+                fn (array $criterion): string => mb_strtolower((string) ($criterion['name'] ?? '')),
+                $criteria,
+            ), fn (string $keyword): bool => $keyword !== ''));
+
+        $spec = [
+            'keywords' => array_values(array_unique($derivedKeywords)),
+            'min_matches' => max(1, (int) floor(count($derivedKeywords) / 2)),
+            'min_words' => $minWords,
+            'max_words' => $maxWords,
+        ];
+
         return [
             'question_type' => $type,
             'question_text' => $questionText,
-            'correct_answer' => null,
+            'correct_answer' => json_encode($spec, JSON_UNESCAPED_UNICODE),
             'explanation' => $explanation,
             'rubric' => $rubric,
             'points' => $points,
-            'grading_type' => Assessment::GRADING_MANUAL,
+            'grading_type' => Assessment::GRADING_AUTO,
             'min_words' => $minWords,
             'max_words' => $maxWords,
         ];

@@ -9,7 +9,6 @@ import {
     UserRound,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PageHeader } from '@/components/page-header';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -59,6 +58,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import { destroy, index as usersIndex, update } from '@/routes/admin/users';
@@ -233,7 +233,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         () => [
             {
                 accessorKey: 'name',
-                header: 'Pengguna',
+                header: 'User',
                 cell: ({ row }) => (
                     <div className="flex items-center gap-3 text-left">
                         <Avatar>
@@ -257,7 +257,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
             },
             {
                 accessorKey: 'email',
-                header: 'Alamat Email',
+                header: 'Email Address',
                 cell: ({ row }) => {
                     const { localPart, domain } = splitEmail(
                         row.original.email,
@@ -275,7 +275,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
             },
             {
                 accessorKey: 'role',
-                header: 'Peran',
+                header: 'Role',
                 cell: ({ row }) => (
                     <div className="flex justify-center">
                         <Badge variant="outline" className="capitalize">
@@ -291,7 +291,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
             },
             {
                 accessorKey: 'points',
-                header: 'Poin',
+                header: 'Points',
                 cell: ({ row }) =>
                     `${pointsFormatter.format(row.original.points)} pts`,
             },
@@ -311,7 +311,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem
                                     onClick={() => {
                                         setEditingUser(row.original);
@@ -324,7 +324,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     }}
                                 >
                                     <Pencil data-icon="inline-start" />
-                                    Ubah
+                                    Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     disabled={!row.original.can_delete}
@@ -337,7 +337,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     }}
                                 >
                                     <Trash2 data-icon="inline-start" />
-                                    Hapus
+                                    Delete
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -351,7 +351,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     }}
                                 >
                                     <Eye data-icon="inline-start" />
-                                    Lihat pengguna
+                                    View user
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -364,13 +364,17 @@ export default function AdminUsersIndex({ users, filters }: Props) {
 
     return (
         <>
-            <Head title="Manajemen - Pengguna" />
+            <Head title="Management - Users" />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
-                <PageHeader
-                    title="Manajemen Pengguna"
-                    description="Kelola peran pengguna dan saldo poin dari satu ruang kerja."
-                    actions={
+                <header className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <TypographyH1>User Management</TypographyH1>
+                        <TypographyMuted>
+                            Manage user roles and point balances from one workspace.
+                        </TypographyMuted>
+                    </div>
+                    <div className="flex shrink-0 items-center justify-end gap-2">
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <div className="w-full sm:w-80">
                                 <Input
@@ -389,7 +393,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                             );
                                         }
                                     }}
-                                    placeholder="Cari nama pengguna..."
+                                    placeholder="Search username..."
                                 />
                             </div>
 
@@ -405,25 +409,25 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     id="role-filter"
                                     className="w-full sm:w-40"
                                 >
-                                    <SelectValue placeholder="Semua peran" />
+                                    <SelectValue placeholder="All roles" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         <SelectItem value="all">
-                                            Semua peran
+                                            All roles
                                         </SelectItem>
                                         <SelectItem value="admin">
                                             Admin
                                         </SelectItem>
                                         <SelectItem value="member">
-                                            Anggota
+                                            Member
                                         </SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
                         </div>
-                    }
-                />
+                    </div>
+                </header>
 
                 <section className="grid gap-4">
                     <div className="flex flex-col gap-4">
@@ -434,11 +438,10 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         <UserRound />
                                     </EmptyMedia>
                                     <EmptyTitle>
-                                        Tidak ada pengguna ditemukan
+                                        No users found
                                     </EmptyTitle>
                                     <EmptyDescription>
-                                        Coba filter atau kata kunci yang
-                                        berbeda.
+                                        Try different filters or keywords.
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -469,7 +472,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         nextPageSize,
                                     )
                                 }
-                                footerInfo={`Menampilkan ${users.from ?? 0} - ${users.to ?? 0} dari ${users.total} pengguna`}
+                                footerInfo={`Showing ${users.from ?? 0} - ${users.to ?? 0} of ${users.total} users`}
                             />
                         )}
                     </div>
@@ -492,19 +495,19 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                             }}
                         >
                             <DialogHeader className="pr-10">
-                                <DialogTitle>Edit Akses Pengguna</DialogTitle>
+                                <DialogTitle>Edit User Access</DialogTitle>
                                 <DialogDescription>
-                                    Perbarui peran dan poin untuk{' '}
+                                    Update role and points for{' '}
                                     {editingUser?.username
                                         ? `@${editingUser.username}`
-                                        : (editingUser?.name ?? 'pengguna ini')}
+                                        : (editingUser?.name ?? 'this user')}
                                     .
                                 </DialogDescription>
                             </DialogHeader>
 
                             <FieldGroup className="gap-3">
                                 <Field className="gap-2">
-                                    <FieldLabel>Nama Pengguna</FieldLabel>
+                                    <FieldLabel>Username</FieldLabel>
                                     <Input
                                         value={editingUser?.username ?? '-'}
                                         readOnly
@@ -521,7 +524,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
 
                                 <Field className="gap-2">
                                     <FieldLabel htmlFor="edit-user-role">
-                                        Peran
+                                        Role
                                     </FieldLabel>
                                     <Select
                                         value={editingRole}
@@ -530,7 +533,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         ) => setEditingRole(value)}
                                     >
                                         <SelectTrigger id="edit-user-role">
-                                            <SelectValue placeholder="Pilih peran" />
+                                            <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectGroup>
@@ -538,7 +541,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                                     Admin
                                                 </SelectItem>
                                                 <SelectItem value="member">
-                                                    Anggota
+                                                    Member
                                                 </SelectItem>
                                             </SelectGroup>
                                         </SelectContent>
@@ -547,7 +550,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
 
                                 <Field className="gap-2">
                                     <FieldLabel htmlFor="edit-user-points">
-                                        Poin
+                                        Points
                                     </FieldLabel>
                                     <Input
                                         id="edit-user-points"
@@ -571,7 +574,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         variant="outline"
                                         disabled={isSubmittingEdit}
                                     >
-                                        Batal
+                                        Cancel
                                     </Button>
                                 </DialogClose>
                                 <Button
@@ -581,7 +584,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     {isSubmittingEdit && (
                                         <Spinner data-icon="inline-start" />
                                     )}
-                                    Simpan perubahan
+                                    Save changes
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -594,14 +597,14 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                 >
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Hapus pengguna?</AlertDialogTitle>
+                            <AlertDialogTitle>Delete user?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Tindakan ini tidak dapat dibatalkan.{' '}
+                                This action cannot be undone.{' '}
                                 {deletingUser?.username
                                     ? `@${deletingUser.username}`
                                     : (deletingUser?.name ??
-                                      'Pengguna ini')}{' '}
-                                akan kehilangan akses secara permanen.
+                                      'This user')}{' '}
+                                will permanently lose access.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -609,14 +612,14 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 type="button"
                                 onClick={() => setDeletingUser(null)}
                             >
-                                Batal
+                                Cancel
                             </AlertDialogCancel>
                             <AlertDialogAction
                                 type="button"
                                 onClick={submitDelete}
                                 disabled={isSubmittingDelete}
                             >
-                                {isSubmittingDelete ? 'Menghapus...' : 'Hapus'}
+                                {isSubmittingDelete ? 'Deleting...' : 'Delete'}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

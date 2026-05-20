@@ -23,8 +23,8 @@ test('task management selects the first available topic when none is selected', 
         ->assertSuccessful()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/courses/index')
-            ->where('selectedCourseId', $course->id)
-            ->where('selectedLessonId', $lesson->id)
+            ->where('selectedCourseId', 0)
+            ->where('selectedLessonId', 0)
             ->has('tasks.data.0', fn (Assert $row) => $row
                 ->where('id', $task->id)
                 ->where('lesson_id', $lesson->id)

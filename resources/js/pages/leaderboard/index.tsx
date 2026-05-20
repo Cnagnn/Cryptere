@@ -1,9 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, Crown, Flame, Medal, Trophy } from 'lucide-react';
+import { ArrowUpDown, CalendarDays, CalendarRange, Crown, Flame, Infinity as InfinityIcon, Medal, Trophy } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { PageHeader } from '@/components/page-header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,7 @@ import { Input } from '@/components/ui/input';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
@@ -48,9 +48,15 @@ type CurrentUserStanding = {
 };
 
 const TIMEFRAME_LABELS: Record<string, string> = {
-    all: 'Sepanjang Waktu',
-    weekly: 'Mingguan',
-    monthly: 'Bulanan',
+    all: 'All Time',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+};
+
+const TIMEFRAME_ICONS: Record<string, typeof CalendarDays> = {
+    all: InfinityIcon,
+    weekly: CalendarDays,
+    monthly: CalendarRange,
 };
 
 type Props = {
@@ -108,7 +114,7 @@ export default function LeaderboardIndex({
     timeframes,
 }: Props) {
     const getInitials = useInitials();
-    const pointsFormatter = useMemo(() => new Intl.NumberFormat('id-ID'), []);
+    const pointsFormatter = useMemo(() => new Intl.NumberFormat('en-US'), []);
     const [usernameInput, setUsernameInput] = useState('');
     const [usernameFilter, setUsernameFilter] = useState('');
     const [isNavigating, setIsNavigating] = useState(false);
@@ -162,7 +168,7 @@ export default function LeaderboardIndex({
                                   : 'descending'
                         }
                     >
-                        Peringkat
+                        Rank
                         <ArrowUpDown className="size-4" />
                     </Button>
                 ),
@@ -170,7 +176,7 @@ export default function LeaderboardIndex({
             },
             {
                 accessorKey: 'username',
-                header: 'Nama Pengguna',
+                header: 'Username',
                 cell: ({ row }) => (
                     <div className="flex justify-center">
                         <div className="grid w-64 grid-cols-[2rem_1fr] items-center gap-3 text-left">
@@ -199,7 +205,7 @@ export default function LeaderboardIndex({
                                         variant="secondary"
                                         className="shrink-0 text-xs"
                                     >
-                                        Anda
+                                        You
                                     </Badge>
                                 ) : null}
                             </div>
@@ -230,7 +236,7 @@ export default function LeaderboardIndex({
             },
             {
                 accessorKey: 'points',
-                header: 'Poin',
+                header: 'Points',
                 cell: ({ row }) => (
                     <div className="inline-flex items-center justify-center gap-2">
                         <span className="text-sm font-semibold">
@@ -299,21 +305,22 @@ export default function LeaderboardIndex({
 
     return (
         <>
-            <Head title="Papan Peringkat" />
+            <Head title="Leaderboard" />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
-                <PageHeader
-                    className="animate-fade-in-up"
-                    title="Papan Peringkat"
-                    description="Peringkat langsung berdasarkan poin yang diperoleh dari pelajaran dan penyelesaian kursus."
-                    actions={
-                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-fade-in-up">
+    <div className="flex min-w-0 flex-col gap-1">
+        <TypographyH1>Leaderboard</TypographyH1>
+        <TypographyMuted>Live ranking based on points earned from lessons and course completions.</TypographyMuted>
+    </div>
+    <div className="flex shrink-0 items-center justify-end gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <Input
                                 value={usernameInput}
                                 onChange={(event) =>
                                     setUsernameInput(event.target.value)
                                 }
-                                placeholder="Cari nama pengguna..."
+                                placeholder="Search username..."
                                 className="w-full sm:w-64"
                             />
                             <Tabs
@@ -321,18 +328,27 @@ export default function LeaderboardIndex({
                                 onValueChange={handleTimeframeChange}
                             >
                                 <TabsList>
-                                    {timeframes.map((tf) => (
-                                        <TabsTrigger key={tf} value={tf}>
-                                            {TIMEFRAME_LABELS[tf] ?? tf}
-                                        </TabsTrigger>
-                                    ))}
+                                    {timeframes.map((tf) => {
+                                        const Icon =
+                                            TIMEFRAME_ICONS[tf] ?? null;
+
+                                        return (
+                                            <TabsTrigger key={tf} value={tf}>
+                                                {Icon ? (
+                                                    <Icon
+                                                        className="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                ) : null}
+                                                {TIMEFRAME_LABELS[tf] ?? tf}
+                                            </TabsTrigger>
+                                        );
+                                    })}
                                 </TabsList>
                             </Tabs>
                         </div>
-                    }
-                />
-
-                {/* Podium Top 3 */}
+    </div>
+</header>                {/* Podium Top 3 */}
                 {top3.length > 0 && !isNavigating ? (
                     <div
                         className="animate-fade-in-up"
@@ -390,18 +406,18 @@ export default function LeaderboardIndex({
                                 </EmptyMedia>
                                 <EmptyHeader>
                                     <EmptyTitle>
-                                        Papan Peringkat Kosong
+                                        Leaderboard is Empty
                                     </EmptyTitle>
                                     <EmptyDescription>
-                                        Belum ada poin peserta yang tercatat.
-                                        Selesaikan pelajaran untuk muncul di
-                                        sini.
+                                        No participant points have been
+                                        recorded yet. Complete lessons to
+                                        appear here.
                                     </EmptyDescription>
                                 </EmptyHeader>
                                 <EmptyContent>
                                     <Button asChild>
                                         <Link href={coursesIndex()}>
-                                            Jelajahi Kursus
+                                            Browse Courses
                                         </Link>
                                     </Button>
                                 </EmptyContent>
@@ -425,7 +441,7 @@ export default function LeaderboardIndex({
                                         pageSize={leaders.per_page}
                                         onPageChange={handlePageChange}
                                         onPageSizeChange={handlePageSizeChange}
-                                        footerInfo={`Menampilkan ${leaders.from ?? 0} - ${leaders.to ?? 0} dari ${leaders.total} peserta`}
+                                        footerInfo={`Showing ${leaders.from ?? 0} - ${leaders.to ?? 0} of ${leaders.total} participants`}
                                         getRowClassName={getRowClassName}
                                     />
                                 </div>
@@ -439,9 +455,9 @@ export default function LeaderboardIndex({
                                     />
 
                                     <div className="mt-2 text-center text-xs text-muted-foreground">
-                                        Menampilkan {leaders.from ?? 0} -{' '}
-                                        {leaders.to ?? 0} dari {leaders.total}{' '}
-                                        peserta
+                                        Showing {leaders.from ?? 0} -{' '}
+                                        {leaders.to ?? 0} of {leaders.total}{' '}
+                                        participants
                                     </div>
 
                                     {leaders.last_page > 1 ? (
@@ -459,7 +475,7 @@ export default function LeaderboardIndex({
                                                     )
                                                 }
                                             >
-                                                Sebelumnya
+                                                Previous
                                             </Button>
                                             <span className="text-sm text-muted-foreground">
                                                 {leaders.current_page} /{' '}
@@ -479,7 +495,7 @@ export default function LeaderboardIndex({
                                                     )
                                                 }
                                             >
-                                                Selanjutnya
+                                                Next
                                             </Button>
                                         </div>
                                     ) : null}
@@ -663,7 +679,7 @@ function MobileLeaderboardCards({
                                             variant="secondary"
                                             className="shrink-0 text-xs"
                                         >
-                                            Anda
+                                            You
                                         </Badge>
                                     ) : null}
                                 </div>

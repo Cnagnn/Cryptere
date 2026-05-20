@@ -21,7 +21,6 @@ class UpdateAdminCourseRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
             'cover_image' => ['nullable', 'file', 'mimetypes:image/*', 'max:10240'],
-            'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:999'],
             'is_published' => ['nullable', 'boolean'],
         ];
     }

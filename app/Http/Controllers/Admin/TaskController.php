@@ -69,7 +69,6 @@ class TaskController extends Controller
                 'sort_order' => $nextOrder,
                 'published_at' => null,
                 'published_by' => null,
-                'estimated_minutes' => $validated['estimated_minutes'] ?? null,
                 'prerequisite_task_id' => $validated['prerequisite_task_id'] ?? null,
                 'status' => $validated['status'] ?? 'draft',
                 'version' => 1,
@@ -166,10 +165,6 @@ class TaskController extends Controller
                 'conversion_status' => $conversionStatus,
                 'pdf_url' => $pdfUrl,
             ];
-
-            if (isset($validated['estimated_minutes'])) {
-                $updateData['estimated_minutes'] = $validated['estimated_minutes'];
-            }
 
             if (isset($validated['prerequisite_task_id'])) {
                 // Validate no circular dependency

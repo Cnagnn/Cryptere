@@ -15,7 +15,6 @@ function createQuestionBankQuestion(User $creator, array $overrides = []): Quest
     return QuestionBank::query()->create([
         'title' => 'Reusable Caesar Question',
         'category' => 'Classical Crypto',
-        'bloom_level' => 'C1',
         'question_type' => 'mcq',
         'question_text' => 'What shift is used by a Caesar cipher?',
         'options' => ['Fixed shift', 'Prime modulus', 'Public key', 'Hash block'],
@@ -92,6 +91,33 @@ test('assessment management exposes question bank and version history data for i
                 ->where('id', $version->id)
                 ->where('version_number', 1)
                 ->where('change_summary', 'Initial assessment version')
+                ->etc()
+            )
+        );
+});
+
+test('course catalog management exposes version history data for integrated UI', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true]);
+    $course = Course::factory()->create(['title' => 'Caesar Catalog']);
+    $version = ContentVersion::query()->create([
+        'versionable_type' => Course::class,
+        'versionable_id' => $course->id,
+        'version_number' => 1,
+        'content_snapshot' => $course->only(['title', 'summary', 'status']),
+        'changed_fields' => ['title'],
+        'change_summary' => 'Initial course version',
+        'created_by' => $admin->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.courses.index', ['section' => 'catalog']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/courses/index')
+            ->has('versionHistories.courses.'.$course->id.'.0', fn (Assert $row) => $row
+                ->where('id', $version->id)
+                ->where('version_number', 1)
+                ->where('change_summary', 'Initial course version')
                 ->etc()
             )
         );

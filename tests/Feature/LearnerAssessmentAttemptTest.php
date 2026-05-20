@@ -17,8 +17,8 @@ test('enrolled learner can start and continue a published bloom assessment', fun
 
     AssessmentQuestion::factory()->for($assessment)->create([
         'bloom_level' => 'C4',
-        'question_type' => 'case_study',
-        'grading_type' => 'manual',
+        'question_type' => 'essay',
+        'grading_type' => 'auto',
         'points' => 10,
     ]);
 

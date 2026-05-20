@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Services\CacheService;
 use App\Services\LeaderboardService;
 use App\Services\LevelService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,54 +28,23 @@ class LeaderboardController extends Controller
         $previousRanks = $this->leaderboardService->getPreviousRankSnapshot($timeframe);
 
         $leaders->setCollection(
-            $leaders->getCollection()->values()->map(function (User $leader, int $index) use ($offset, $timeframe, $previousRanks): array {
-                $levelInfo = $this->levelService->getLevelForXp($leader->xp);
-                $rank = $offset + $index + 1;
-                $previousRank = $previousRanks[$leader->id] ?? null;
-
-                return [
-                    'id' => $leader->id,
-                    'rank' => $rank,
-                    'name' => $leader->name,
-                    'username' => $leader->username,
-                    'avatar' => $leader->avatar,
-                    'points' => $timeframe === 'all' ? $leader->points : (int) ($leader->period_points ?? 0),
-                    'level' => $levelInfo['level'],
-                    'longestStreak' => $leader->longest_streak ?? 0,
-                    'currentStreak' => $leader->current_streak ?? 0,
-                    'rankChange' => $this->leaderboardService->computeRankChange($rank, $previousRank),
-                ];
-            })
+            $leaders->getCollection()->values()->map(
+                fn (array $leader, int $index): array => $this->decorateLeader(
+                    $leader,
+                    $offset + $index + 1,
+                    $previousRanks[$leader['id']] ?? null,
+                )
+            )
         );
 
-        // Fetch top 3 separately (always from rank 1, regardless of current page) — cached 5 min
-        $mapTop3 = fn ($users) => $users->values()->map(function (User $user, int $index) use ($timeframe, $previousRanks): array {
-            $levelInfo = $this->levelService->getLevelForXp($user->xp);
-            $rank = $index + 1;
-            $previousRank = $previousRanks[$user->id] ?? null;
-
-            return [
-                'id' => $user->id,
-                'rank' => $rank,
-                'name' => $user->name,
-                'username' => $user->username,
-                'avatar' => $user->avatar,
-                'points' => $timeframe === 'all' ? $user->points : (int) ($user->period_points ?? 0),
-                'level' => $levelInfo['level'],
-                'longestStreak' => $user->longest_streak ?? 0,
-                'currentStreak' => $user->current_streak ?? 0,
-                'rankChange' => $this->leaderboardService->computeRankChange($rank, $previousRank),
-            ];
-        })->all();
-
-        try {
-            $top3Users = Cache::remember("leaderboard_top3_{$timeframe}", CacheService::TTL_MEDIUM, fn () => $this->leaderboardService->getTop3Users($timeframe));
-            $top3 = $mapTop3($top3Users);
-        } catch (\Throwable) {
-            // Cached object was corrupted (incomplete unserialization) — re-fetch from DB
-            Cache::forget("leaderboard_top3_{$timeframe}");
-            $top3 = $mapTop3($this->leaderboardService->getTop3Users($timeframe));
-        }
+        $top3 = collect($this->leaderboardService->getTop3($timeframe))
+            ->values()
+            ->map(fn (array $leader, int $index): array => $this->decorateLeader(
+                $leader,
+                $index + 1,
+                $previousRanks[$leader['id']] ?? null,
+            ))
+            ->all();
 
         $currentUser = $request->user();
         $topScore = (int) ($top3[0]['points'] ?? $this->leaderboardService->getTopScore($timeframe));
@@ -99,5 +65,29 @@ class LeaderboardController extends Controller
             'timeframe' => $timeframe,
             'timeframes' => LeaderboardService::VALID_TIMEFRAMES,
         ]);
+    }
+
+    /**
+     * Decorate a cached leader payload with rank, level, and rank-change info.
+     *
+     * @param  array<string, mixed>  $leader
+     * @return array<string, mixed>
+     */
+    private function decorateLeader(array $leader, int $rank, ?int $previousRank): array
+    {
+        $levelInfo = $this->levelService->getLevelForXp((int) ($leader['xp'] ?? 0));
+
+        return [
+            'id' => (int) $leader['id'],
+            'rank' => $rank,
+            'name' => $leader['name'] ?? '',
+            'username' => $leader['username'] ?? null,
+            'avatar' => $leader['avatar'] ?? null,
+            'points' => (int) ($leader['points'] ?? 0),
+            'level' => $levelInfo['level'],
+            'longestStreak' => (int) ($leader['longest_streak'] ?? 0),
+            'currentStreak' => (int) ($leader['current_streak'] ?? 0),
+            'rankChange' => $this->leaderboardService->computeRankChange($rank, $previousRank),
+        ];
     }
 }

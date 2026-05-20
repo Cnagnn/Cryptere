@@ -20,7 +20,6 @@ use Illuminate\Support\Str;
     'title',
     'summary',
     'cover_path',
-    'estimated_minutes',
     'sort_order',
     'prerequisite_course_id',
     'category',
@@ -46,7 +45,6 @@ class Course extends Model
     protected function casts(): array
     {
         return [
-            'estimated_minutes' => 'integer',
             'status' => 'string',
             'version' => 'integer',
             'is_published' => 'boolean',

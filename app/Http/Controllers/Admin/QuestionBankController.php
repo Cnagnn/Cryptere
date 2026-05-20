@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\QuestionBank;
 use App\Services\AuditService;
-use App\Services\RubricScoringService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,17 +13,12 @@ use Inertia\Response;
 
 class QuestionBankController extends Controller
 {
-    public function __construct(
-        private readonly RubricScoringService $rubricService,
-    ) {}
-
     /**
      * Display question bank listing.
      */
     public function index(Request $request): Response
     {
         $search = trim((string) $request->input('search', ''));
-        $bloomFilter = $request->input('bloom_level');
         $typeFilter = $request->input('question_type');
         $categoryFilter = $request->input('category');
         $activeFilter = $request->input('is_active');
@@ -36,7 +30,6 @@ class QuestionBankController extends Controller
                     ->orWhere('question_text', 'like', "%{$search}%")
                     ->orWhere('category', 'like', "%{$search}%");
             }))
-            ->when($bloomFilter, fn ($q) => $q->where('bloom_level', $bloomFilter))
             ->when($typeFilter, fn ($q) => $q->where('question_type', $typeFilter))
             ->when($categoryFilter, fn ($q) => $q->where('category', $categoryFilter))
             ->when($activeFilter !== null, fn ($q) => $q->where('is_active', (bool) $activeFilter))
@@ -50,7 +43,6 @@ class QuestionBankController extends Controller
             'questions' => $questions,
             'filters' => [
                 'search' => $search,
-                'bloom_level' => $bloomFilter,
                 'question_type' => $typeFilter,
                 'category' => $categoryFilter,
                 'is_active' => $activeFilter,
@@ -66,8 +58,7 @@ class QuestionBankController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:100'],
-            'bloom_level' => ['required', 'in:C1,C2,C3,C4,C5,C6'],
-            'question_type' => ['required', 'in:mcq,true_false,short_answer,essay,computation,case_study,design'],
+            'question_type' => ['required', 'in:mcq,multiple_select,true_false,matching,short_answer,essay'],
             'question_text' => ['required', 'string', 'max:5000'],
             'options' => ['nullable', 'array'],
             'options.*' => ['string', 'max:500'],
@@ -77,15 +68,6 @@ class QuestionBankController extends Controller
             'points' => ['required', 'integer', 'min:1', 'max:100'],
             'is_active' => ['boolean'],
         ]);
-
-        // Auto-generate rubric if not provided for manual grading types
-        if (empty($validated['rubric']) && in_array($validated['question_type'], ['essay', 'case_study', 'design'])) {
-            $validated['rubric'] = $this->rubricService->generateDefaultRubric(
-                $validated['bloom_level'],
-                $validated['question_type'],
-                $validated['points'],
-            );
-        }
 
         $question = QuestionBank::create([
             ...$validated,
@@ -107,8 +89,7 @@ class QuestionBankController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:100'],
-            'bloom_level' => ['required', 'in:C1,C2,C3,C4,C5,C6'],
-            'question_type' => ['required', 'in:mcq,true_false,short_answer,essay,computation,case_study,design'],
+            'question_type' => ['required', 'in:mcq,multiple_select,true_false,matching,short_answer,essay'],
             'question_text' => ['required', 'string', 'max:5000'],
             'options' => ['nullable', 'array'],
             'options.*' => ['string', 'max:500'],
@@ -179,6 +160,7 @@ class QuestionBankController extends Controller
             if ($format === 'json') {
                 $data = json_decode($file->get(), true);
                 foreach ($data as $item) {
+                    unset($item['bloom_level']);
                     QuestionBank::create([
                         ...$item,
                         'created_by' => $request->user()->id,
@@ -195,7 +177,6 @@ class QuestionBankController extends Controller
                     QuestionBank::create([
                         'title' => $data['title'] ?? '',
                         'category' => $data['category'] ?? null,
-                        'bloom_level' => $data['bloom_level'] ?? 'C1',
                         'question_type' => $data['question_type'] ?? 'mcq',
                         'question_text' => $data['question_text'] ?? '',
                         'options' => isset($data['options']) ? json_decode($data['options'], true) : null,

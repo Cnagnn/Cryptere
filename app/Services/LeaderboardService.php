@@ -6,6 +6,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -41,52 +42,13 @@ class LeaderboardService
     }
 
     /**
-     * All-time leaderboard (original behavior).
-     */
-    public function allTimeLeaders(int $perPage): LengthAwarePaginator
-    {
-        return User::query()
-            ->orderByDesc('points')
-            ->orderBy('name')
-            ->paginate($perPage, ['id', 'name', 'username', 'points', 'xp', 'current_streak', 'longest_streak', 'avatar_path', 'avatar_image', 'avatar_mime_type'])
-            ->withQueryString();
-    }
-
-    /**
-     * Timeframe-based leaderboard using aggregated points from recent activity.
-     * Results are cached for 5 minutes keyed by timeframe and perPage (not page number).
-     */
-    public function timeframeLeaders(string $timeframe, int $perPage): LengthAwarePaginator
-    {
-        $page = request()->input('page', 1);
-        // Cache key based on timeframe and perPage only (not page number)
-        $cacheKey = "leaderboard_timeframe_{$timeframe}_page_1_perpage_{$perPage}";
-
-        $results = Cache::remember($cacheKey, 300, function () use ($timeframe) {
-            $since = $this->resolveSinceDate($timeframe);
-
-            return $this->periodPointsQuery($since)
-                ->whereRaw('COALESCE(lp.total, 0) > 0')
-                ->orderByDesc('period_points')
-                ->orderBy('name')
-                ->get(['users.*']);
-        });
-
-        // Paginate the cached collection without re-running the query
-        return new \Illuminate\Pagination\LengthAwarePaginator(
-            $results->forPage($page, $perPage),
-            $results->count(),
-            $perPage,
-            $page,
-            [
-                'path' => request()->url(),
-                'query' => request()->query(),
-            ]
-        );
-    }
-
-    /**
      * Get paginated leaders for any timeframe.
+     *
+     * Returns a paginator whose collection is composed of plain arrays — never
+     * Eloquent models — so any cached payload is safe across deploys that
+     * change the User model definition.
+     *
+     * @return LengthAwarePaginator<int, LeaderArray>
      */
     public function getLeaders(string $timeframe, int $perPage): LengthAwarePaginator
     {
@@ -95,6 +57,66 @@ class LeaderboardService
                 ? $this->allTimeLeaders($perPage)
                 : $this->timeframeLeaders($timeframe, $perPage);
         });
+    }
+
+    /**
+     * All-time leaderboard (no cache; mapped to plain arrays).
+     *
+     * @return LengthAwarePaginator<int, LeaderArray>
+     */
+    public function allTimeLeaders(int $perPage): LengthAwarePaginator
+    {
+        $paginator = User::query()
+            ->orderByDesc('points')
+            ->orderBy('name')
+            ->paginate($perPage, ['id', 'name', 'username', 'points', 'xp', 'current_streak', 'longest_streak', 'avatar_path', 'avatar_image', 'avatar_mime_type'])
+            ->withQueryString();
+
+        $paginator->setCollection(
+            $paginator->getCollection()->map(fn (User $user): array => $this->userToArray($user, 'all'))
+        );
+
+        return $paginator;
+    }
+
+    /**
+     * Timeframe-based leaderboard using aggregated points from recent activity.
+     *
+     * The cache stores a plain array of user dictionaries — never an Eloquent
+     * collection — so deploy-time changes to the User model can never produce
+     * an incomplete-object error.
+     *
+     * @return LengthAwarePaginator<int, LeaderArray>
+     */
+    public function timeframeLeaders(string $timeframe, int $perPage): LengthAwarePaginator
+    {
+        $page = (int) request()->input('page', 1);
+        $cacheKey = "leaderboard_timeframe_{$timeframe}_perpage_{$perPage}";
+
+        $rows = $this->rememberArray(
+            $cacheKey,
+            CacheService::TTL_MEDIUM,
+            fn (): array => $this->periodPointsQuery($this->resolveSinceDate($timeframe))
+                ->whereRaw('COALESCE(lp.total, 0) > 0')
+                ->orderByDesc('period_points')
+                ->orderBy('name')
+                ->get(['users.*'])
+                ->map(fn (User $user): array => $this->userToArray($user, $timeframe))
+                ->all(),
+        );
+
+        $items = collect($rows);
+
+        return new Paginator(
+            $items->forPage($page, $perPage)->values()->all(),
+            $items->count(),
+            $perPage,
+            $page,
+            [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]
+        );
     }
 
     /**
@@ -206,33 +228,48 @@ class LeaderboardService
         $cacheKey = "leaderboard_standing_{$timeframe}_user_{$user->id}";
         CacheService::trackLeaderboardRankUser($user->id);
 
-        $standing = Cache::remember($cacheKey, 120, function () use ($points, $timeframe, $user): object {
+        // Cache as a plain array, not the stdClass row from the query builder,
+        // so it cannot become an incomplete object after deploy-time changes.
+        $standing = $this->rememberArray($cacheKey, 120, function () use ($points, $timeframe, $user): array {
             $since = $this->resolveSinceDate($timeframe);
 
-            return DB::query()
+            $row = DB::query()
                 ->fromSub($this->periodPointsQuery($since)->toBase(), 'ranked_users')
                 ->selectRaw('COUNT(CASE WHEN period_points > ? THEN 1 END) + 1 as rank_position', [$points])
                 ->selectRaw('MIN(CASE WHEN period_points > ? THEN period_points END) as next_rank_points', [$points])
                 ->where('id', '!=', $user->id)
                 ->first();
+
+            return [
+                'rank_position' => $row->rank_position ?? 1,
+                'next_rank_points' => $row->next_rank_points ?? null,
+            ];
         });
 
         return [
             'points' => $points,
-            'rank' => (int) $standing->rank_position,
-            'nextRankPoints' => $standing->next_rank_points !== null ? (int) $standing->next_rank_points : null,
+            'rank' => (int) $standing['rank_position'],
+            'nextRankPoints' => $standing['next_rank_points'] !== null ? (int) $standing['next_rank_points'] : null,
         ];
     }
 
     /**
-     * Get top 3 users for the podium display.
+     * Get top 3 leaders for the podium display as plain arrays.
      *
-     * @return Collection<int, User>
+     * Stored as a plain array in the cache so it survives any User model change.
+     *
+     * @return array<int, LeaderArray>
      */
-    public function getTop3Users(string $timeframe): Collection
+    public function getTop3(string $timeframe): array
     {
         return $this->traceSpan('leaderboard.get_top3', "Get top 3 ({$timeframe})", function () use ($timeframe) {
-            return $this->fetchTop3Users($timeframe);
+            return $this->rememberArray(
+                "leaderboard_top3_{$timeframe}",
+                CacheService::TTL_MEDIUM,
+                fn (): array => $this->fetchTop3Users($timeframe)
+                    ->map(fn (User $user): array => $this->userToArray($user, $timeframe))
+                    ->all(),
+            );
         });
     }
 
@@ -297,6 +334,8 @@ class LeaderboardService
 
     /**
      * Store current rank snapshot in cache for future comparison.
+     *
+     * @param  LengthAwarePaginator<int, LeaderArray>  $leaders
      */
     public function storeRankSnapshot(string $timeframe, LengthAwarePaginator $leaders): void
     {
@@ -376,6 +415,59 @@ class LeaderboardService
     }
 
     /**
+     * Project a User model into a plain array for caching and frontend payloads.
+     *
+     * @return LeaderArray
+     */
+    private function userToArray(User $user, string $timeframe): array
+    {
+        return [
+            'id' => (int) $user->id,
+            'name' => (string) $user->name,
+            'username' => $user->username,
+            'avatar' => $user->avatar,
+            'points' => $timeframe === 'all'
+                ? (int) $user->points
+                : (int) ($user->period_points ?? 0),
+            'xp' => (int) $user->xp,
+            'current_streak' => (int) ($user->current_streak ?? 0),
+            'longest_streak' => (int) ($user->longest_streak ?? 0),
+        ];
+    }
+
+    /**
+     * Wrap Cache::remember with a self-healing guard against corrupted /
+     * incomplete-object payloads. Always returns an array.
+     *
+     * @template TValue of array<mixed, mixed>
+     *
+     * @param  callable(): TValue  $callback
+     * @return TValue
+     */
+    private function rememberArray(string $key, int $ttl, callable $callback): array
+    {
+        try {
+            $value = Cache::remember($key, $ttl, $callback);
+        } catch (\Throwable) {
+            // Cached payload was corrupted (e.g. partial unserialize after a
+            // model change). Drop it and re-compute from source.
+            Cache::forget($key);
+
+            return $callback();
+        }
+
+        // If a previous deploy stored a non-array (Eloquent collection or
+        // stdClass), discard it and recompute as an array.
+        if (! is_array($value)) {
+            Cache::forget($key);
+
+            return $callback();
+        }
+
+        return $value;
+    }
+
+    /**
      * Execute a callback within a Sentry performance span.
      *
      * @template T
@@ -408,3 +500,16 @@ class LeaderboardService
         return $result;
     }
 }
+
+/**
+ * @phpstan-type LeaderArray array{
+ *     id:int,
+ *     name:string,
+ *     username:?string,
+ *     avatar:?string,
+ *     points:int,
+ *     xp:int,
+ *     current_streak:int,
+ *     longest_streak:int
+ * }
+ */

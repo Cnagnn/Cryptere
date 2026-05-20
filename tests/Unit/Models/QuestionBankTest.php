@@ -10,7 +10,6 @@ function createQuestionBank(array $attributes = []): QuestionBank
     return QuestionBank::query()->create(array_merge([
         'title' => 'Caesar basics',
         'category' => 'cryptography',
-        'bloom_level' => 'C1',
         'question_type' => 'mcq',
         'question_text' => 'What is Caesar cipher?',
         'options' => ['Cipher', 'Hash'],

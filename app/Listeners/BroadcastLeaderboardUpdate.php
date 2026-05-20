@@ -23,15 +23,12 @@ class BroadcastLeaderboardUpdate
 
         // Fetch the current top 3 for each active timeframe and broadcast
         foreach (['weekly', 'monthly', 'all'] as $timeframe) {
-            $top3 = $this->leaderboardService
-                ->getTop3Users($timeframe)
-                ->map(fn ($user): array => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'username' => $user->username,
-                    'points' => $timeframe === 'all'
-                        ? $user->points
-                        : (int) ($user->period_points ?? $user->points),
+            $top3 = collect($this->leaderboardService->getTop3($timeframe))
+                ->map(fn (array $user): array => [
+                    'id' => (int) $user['id'],
+                    'name' => (string) ($user['name'] ?? ''),
+                    'username' => $user['username'] ?? null,
+                    'points' => (int) ($user['points'] ?? 0),
                 ])
                 ->all();
 

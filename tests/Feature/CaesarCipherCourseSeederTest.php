@@ -28,7 +28,6 @@ test('seeder creates published Caesar Chiper course with Indonesian learning pat
 
     expect($course)->not->toBeNull();
     expect($course->is_published)->toBeTrue();
-    expect($course->estimated_minutes)->toBe(360);
     expect($course->summary)->toContain('berbahasa Indonesia');
 });
 
@@ -117,23 +116,36 @@ test('assessments cover all Bloom taxonomy levels with complete question sets', 
     }
 });
 
-test('assessment grading configuration matches Bloom level behavior', function (): void {
+test('assessment grading configuration is auto-only across all Bloom levels', function (): void {
     Artisan::call('db:seed', ['--class' => 'CaesarCipherCourseSeeder']);
 
-    expect(Assessment::where('slug', 'caesar-cipher-c1-remember')->firstOrFail()->grading_type)->toBe('auto');
-    expect(Assessment::where('slug', 'caesar-cipher-c2-understand')->firstOrFail()->grading_type)->toBe('mixed');
-    expect(Assessment::where('slug', 'caesar-cipher-c3-apply')->firstOrFail()->grading_type)->toBe('auto');
-    expect(Assessment::where('slug', 'caesar-cipher-c4-analyze')->firstOrFail()->grading_type)->toBe('manual');
-    expect(Assessment::where('slug', 'caesar-cipher-c5-evaluate')->firstOrFail()->grading_type)->toBe('manual');
-    expect(Assessment::where('slug', 'caesar-cipher-c6-create')->firstOrFail()->grading_type)->toBe('manual');
+    foreach ([
+        'caesar-cipher-c1-remember',
+        'caesar-cipher-c2-understand',
+        'caesar-cipher-c3-apply',
+        'caesar-cipher-c4-analyze',
+        'caesar-cipher-c5-evaluate',
+        'caesar-cipher-c6-create',
+    ] as $slug) {
+        expect(Assessment::where('slug', $slug)->firstOrFail()->grading_type)->toBe('auto');
+    }
 
-    $manualQuestions = AssessmentQuestion::whereIn('grading_type', ['manual'])->get();
-    expect($manualQuestions->count())->toBeGreaterThanOrEqual(8);
+    $essayQuestions = AssessmentQuestion::where('question_type', 'essay')->get();
+    expect($essayQuestions->count())->toBeGreaterThanOrEqual(8);
 
-    foreach ($manualQuestions as $question) {
+    foreach ($essayQuestions as $question) {
+        // Auto-grading uses correct_answer as a JSON keyword spec for essay questions.
+        expect($question->grading_type)->toBe('auto');
+        expect($question->correct_answer)->not->toBeEmpty();
+
+        $spec = json_decode((string) $question->correct_answer, true);
+        expect($spec)->toBeArray();
+        expect($spec)->toHaveKey('keywords');
+        expect($spec['keywords'])->not->toBeEmpty();
+
+        // Rubric is preserved as authoring metadata.
         expect($question->rubric)->toBeArray();
         expect($question->rubric)->toHaveKey('criteria');
-        expect($question->rubric['criteria'])->not->toBeEmpty();
     }
 });
 

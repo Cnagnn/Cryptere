@@ -55,7 +55,6 @@ class UpdateAdminLessonTaskRequest extends FormRequest
             'quiz_questions.*.options.*' => ['required', 'string', 'max:255'],
             'quiz_questions.*.correct_option' => ['required', 'integer', 'min:0', 'max:3'],
             'quiz_questions.*.explanation' => ['nullable', 'string', 'max:1000'],
-            'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'prerequisite_task_id' => ['nullable', 'integer', 'exists:lesson_tasks,id'],
             'status' => ['nullable', 'string', 'in:draft,published,archived'],
         ];

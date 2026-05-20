@@ -9,6 +9,7 @@ use App\Services\SocialAvatarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
@@ -31,7 +32,7 @@ class SocialAuthController extends Controller
     {
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
 
-        return Socialite::driver($provider)->redirect();
+        return Socialite::driver($provider)->stateless()->redirect();
     }
 
     /**
@@ -42,8 +43,12 @@ class SocialAuthController extends Controller
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
 
         try {
-            $socialUser = Socialite::driver($provider)->user();
+            $socialUser = Socialite::driver($provider)->stateless()->user();
         } catch (\Exception $e) {
+            Log::error('Social auth failed for '.$provider.': '.$e->getMessage(), [
+                'exception' => $e,
+            ]);
+
             return redirect()->route('login')->withErrors([
                 'email' => 'Unable to authenticate with '.ucfirst($provider).'. Please try again.',
             ]);

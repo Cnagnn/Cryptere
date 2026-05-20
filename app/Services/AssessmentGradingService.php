@@ -4,48 +4,35 @@ namespace App\Services;
 
 use App\Events\CourseCompleted;
 use App\Events\XpAwarded;
-use App\Models\AssessmentAnswer;
 use App\Models\AssessmentSubmission;
 use App\Models\Enrollment;
-use App\Models\User;
 use App\Notifications\AssessmentGradedNotification;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class AssessmentGradingService
 {
     public function __construct(
-        private readonly RubricScoringService $rubricService,
         private readonly XpService $xpService,
     ) {}
 
     /**
-     * Process a submission after student submits.
+     * Process a submission after a learner submits.
      *
-     * 1. Auto-grade all objective questions immediately
-     * 2. If all questions are auto-gradable, finalize immediately
-     * 3. Otherwise, queue for manual grading
+     * Every supported question type is auto-gradable, so every submission is
+     * finalized inline.
      */
     public function processSubmission(AssessmentSubmission $submission): void
     {
         DB::transaction(function () use ($submission) {
-            // Auto-grade objective answers
-            $this->autoGradeObjectiveAnswers($submission);
-
-            // Check if all answers are now graded
-            if ($submission->isFullyGraded()) {
-                $this->finalizeSubmission($submission);
-            } else {
-                // Queue for manual grading
-                $submission->update(['status' => AssessmentSubmission::STATUS_SUBMITTED]);
-            }
+            $this->autoGradeAllAnswers($submission);
+            $this->finalizeSubmission($submission);
         });
     }
 
     /**
-     * Auto-grade all objective (auto-gradable) answers in a submission.
+     * Auto-grade every answer in the submission. Returns how many were graded.
      */
-    public function autoGradeObjectiveAnswers(AssessmentSubmission $submission): int
+    public function autoGradeAllAnswers(AssessmentSubmission $submission): int
     {
         $gradedCount = 0;
 
@@ -55,57 +42,27 @@ class AssessmentGradingService
             ->get();
 
         foreach ($answers as $answer) {
-            if ($answer->question->isAutoGradable()) {
-                $answer->autoGrade();
-                $gradedCount++;
+            if ($answer->question === null) {
+                continue;
             }
+
+            $answer->autoGrade();
+            $gradedCount++;
         }
 
         return $gradedCount;
     }
 
     /**
-     * Manually grade a single answer using rubric scores.
-     *
-     * @param  array<string, array{score: int, feedback?: string}>  $rubricScores
-     */
-    public function gradeAnswer(
-        AssessmentAnswer $answer,
-        array $rubricScores,
-        ?string $feedback,
-        User $grader,
-    ): void {
-        DB::transaction(function () use ($answer, $rubricScores, $feedback, $grader) {
-            $answer->manualGrade($rubricScores, $feedback);
-
-            $submission = $answer->submission;
-
-            // Update submission status to grading if not already
-            if ($submission->status === AssessmentSubmission::STATUS_SUBMITTED) {
-                $submission->update([
-                    'status' => AssessmentSubmission::STATUS_GRADING,
-                    'graded_by' => $grader->id,
-                ]);
-            }
-
-            // Check if all answers are now graded
-            if ($submission->fresh()->isFullyGraded()) {
-                $this->finalizeSubmission($submission->fresh(), $grader);
-            }
-        });
-    }
-
-    /**
      * Finalize a fully-graded submission: calculate score, determine pass/fail, award XP.
      */
-    public function finalizeSubmission(AssessmentSubmission $submission, ?User $grader = null): void
+    public function finalizeSubmission(AssessmentSubmission $submission): void
     {
         $submission->calculateScore();
 
         $submission->update([
             'status' => AssessmentSubmission::STATUS_GRADED,
             'graded_at' => now(),
-            'graded_by' => $grader?->id ?? $submission->graded_by,
         ]);
 
         // Award XP if passed
@@ -188,43 +145,6 @@ class AssessmentGradingService
                 $submission->user,
                 $bloomMultiplier,
             );
-        }
-    }
-
-    /**
-     * Get the admin grading queue: submissions awaiting manual grading.
-     *
-     * @return Collection<int, AssessmentSubmission>
-     */
-    public function getGradingQueue(int $limit = 20): Collection
-    {
-        return AssessmentSubmission::query()
-            ->with(['user:id,name,email', 'assessment:id,title,bloom_level', 'answers.question'])
-            ->whereIn('status', [
-                AssessmentSubmission::STATUS_SUBMITTED,
-                AssessmentSubmission::STATUS_GRADING,
-            ])
-            ->orderBy('submitted_at')
-            ->limit($limit)
-            ->get();
-    }
-
-    /**
-     * Provide overall feedback and finalize a submission that's being manually graded.
-     */
-    public function submitOverallFeedback(
-        AssessmentSubmission $submission,
-        string $feedback,
-        User $grader,
-    ): void {
-        $submission->update([
-            'overall_feedback' => $feedback,
-            'graded_by' => $grader->id,
-        ]);
-
-        // If fully graded, finalize
-        if ($submission->isFullyGraded()) {
-            $this->finalizeSubmission($submission, $grader);
         }
     }
 }

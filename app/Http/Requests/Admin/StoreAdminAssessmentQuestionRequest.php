@@ -18,7 +18,7 @@ class StoreAdminAssessmentQuestionRequest extends FormRequest
     {
         return [
             'bloom_level' => ['required', 'in:C1,C2,C3,C4,C5,C6'],
-            'question_type' => ['required', 'in:mcq,true_false,short_answer,essay,computation,case_study,design'],
+            'question_type' => ['required', 'in:mcq,multiple_select,true_false,matching,short_answer,essay'],
             'question_text' => ['required', 'string', 'max:5000'],
             'options' => ['nullable', 'array'],
             'options.*' => ['string', 'max:500'],
@@ -26,10 +26,15 @@ class StoreAdminAssessmentQuestionRequest extends FormRequest
             'explanation' => ['nullable', 'string', 'max:2000'],
             'rubric' => ['nullable', 'array'],
             'points' => ['required', 'integer', 'min:1', 'max:100'],
-            'grading_type' => ['required', 'in:auto,manual'],
+            'grading_type' => ['nullable', 'in:auto'],
             'min_words' => ['nullable', 'integer', 'min:1'],
             'max_words' => ['nullable', 'integer', 'min:1'],
             'question_bank_id' => ['nullable', 'integer', 'exists:question_bank,id'],
         ];
+    }
+
+    protected function passedValidation(): void
+    {
+        $this->merge(['grading_type' => 'auto']);
     }
 }

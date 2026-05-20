@@ -489,6 +489,7 @@ export function DataTable<TData, TValue>({
                                     <SelectItem value="25">25</SelectItem>
                                     <SelectItem value="50">50</SelectItem>
                                     <SelectItem value="100">100</SelectItem>
+                                    <SelectItem value="9999">All</SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>

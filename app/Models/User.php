@@ -17,7 +17,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'password', 'points', 'xp', 'current_streak', 'longest_streak', 'last_active_date', 'daily_xp_earned', 'daily_goal_met_at', 'ability_estimate', 'is_admin', 'role', 'status', 'onboarding_completed_at', 'bio', 'pronoun', 'location', 'profile_visibility'])]
+#[Fillable(['name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'password', 'points', 'xp', 'current_streak', 'longest_streak', 'last_active_date', 'daily_xp_earned', 'daily_goal_met_at', 'ability_estimate', 'is_admin', 'role', 'status', 'bio', 'pronoun', 'location', 'profile_visibility'])]
 #[Hidden(['password', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -53,7 +53,6 @@ class User extends Authenticatable implements MustVerifyEmail
             'ability_estimate' => 'float',
             'is_admin' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
-            'onboarding_completed_at' => 'datetime',
             'profile_visibility' => 'string',
         ];
     }

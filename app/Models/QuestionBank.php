@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'title',
     'category',
-    'bloom_level',
     'question_type',
     'question_text',
     'options',
@@ -78,14 +77,6 @@ class QuestionBank extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope by Bloom's taxonomy level.
-     */
-    public function scopeByBloomLevel(Builder $query, string $level): Builder
-    {
-        return $query->where('bloom_level', $level);
     }
 
     /**

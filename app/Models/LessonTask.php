@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'sort_order',
     'published_at',
     'published_by',
-    'estimated_minutes',
     'prerequisite_task_id',
     'status',
     'version',
@@ -49,7 +48,6 @@ class LessonTask extends Model
             'sort_order' => 'integer',
             'published_at' => 'datetime',
             'published_by' => 'integer',
-            'estimated_minutes' => 'integer',
             'status' => 'string',
             'version' => 'integer',
         ];

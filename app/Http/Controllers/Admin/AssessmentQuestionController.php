@@ -9,15 +9,10 @@ use App\Http\Requests\Admin\UpdateAdminAssessmentQuestionRequest;
 use App\Models\Assessment;
 use App\Models\AssessmentQuestion;
 use App\Models\QuestionBank;
-use App\Services\RubricScoringService;
 use Illuminate\Http\RedirectResponse;
 
 class AssessmentQuestionController extends Controller
 {
-    public function __construct(
-        private readonly RubricScoringService $rubricService,
-    ) {}
-
     /**
      * Store a new question for an assessment.
      */
@@ -26,15 +21,6 @@ class AssessmentQuestionController extends Controller
         $validated = $request->validated();
 
         $nextSortOrder = (int) $assessment->questions()->max('sort_order') + 1;
-
-        // Auto-generate rubric if manual grading and no rubric provided
-        if ($validated['grading_type'] === 'manual' && empty($validated['rubric'])) {
-            $validated['rubric'] = $this->rubricService->generateDefaultRubric(
-                $validated['bloom_level'],
-                $validated['question_type'],
-                $validated['points'],
-            );
-        }
 
         $assessment->questions()->create([
             ...$validated,

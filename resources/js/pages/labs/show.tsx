@@ -1,7 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +33,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import {
     canFormatOutput,
     conceptLensByLab,
@@ -444,12 +444,13 @@ export default function LabsShow({ lab }: LabShowProps) {
             <Head title={`${lab.title} Lab`} />
 
             <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-4">
-                <PageHeader
-                    className="relative"
-                    title={lab.title}
-                    description={pageSummary}
-                    actions={
-                        <Tabs
+                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between relative">
+    <div className="flex min-w-0 flex-col gap-1">
+        <TypographyH1>{lab.title}</TypographyH1>
+        <TypographyMuted>{pageSummary}</TypographyMuted>
+    </div>
+    <div className="flex shrink-0 items-center justify-end gap-2">
+        <Tabs
                             value={mode}
                             onValueChange={(value) =>
                                 setMode(value as SimulationMode)
@@ -465,10 +466,8 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 </TabsTrigger>
                             </TabsList>
                         </Tabs>
-                    }
-                />
-
-                <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+    </div>
+</header>                <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
                     <Card className="lg:col-span-4">
                         <CardHeader className="gap-1 pb-4">
                             <CardTitle className="flex items-center gap-2">

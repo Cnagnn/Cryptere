@@ -10,16 +10,12 @@ import {
     MoreHorizontal,
     Pencil,
     Plus,
+    RotateCcw,
     Search,
     Trash2,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/page-header';
-import {
-    VersionHistoryDialog,
-    type VersionHistoryItem,
-} from '@/components/admin/version-history-dialog';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -71,6 +67,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import {
     destroy as coursesDestroy,
     index as adminCoursesIndex,
@@ -78,11 +75,33 @@ import {
     togglePublish as coursesTogglePublish,
     update as coursesUpdate,
 } from '@/routes/admin/courses';
+import { restore as restoreVersion } from '@/routes/admin/versions';
 import { show as coursesShow } from '@/routes/courses';
 import type { Paginated } from '@/types';
 import type { CourseRow } from '@/types/course-management';
 
 type ContentStatus = 'draft' | 'published' | 'archived';
+
+type VersionHistoryItem = {
+    id: number;
+    version_number: number;
+    changed_fields: string[];
+    change_summary: string | null;
+    creator_name: string | null;
+    created_at: string | null;
+    restored_at: string | null;
+};
+
+function formatVersionDate(value: string | null): string {
+    if (!value) {
+        return '-';
+    }
+
+    return new Intl.DateTimeFormat('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(value));
+}
 
 function StatusBadge({
     status,
@@ -94,19 +113,19 @@ function StatusBadge({
     const config = {
         draft: {
             icon: CircleDashed,
-            label: 'Draf',
+            label: 'Draft',
             variant: 'outline' as const,
             iconClass: 'text-amber-500',
         },
         published: {
             icon: BadgeCheck,
-            label: 'Diterbitkan',
+            label: 'Published',
             variant: 'outline' as const,
             iconClass: 'text-emerald-500',
         },
         archived: {
             icon: Archive,
-            label: 'Diarsipkan',
+            label: 'Archived',
             variant: 'destructive' as const,
             iconClass: 'text-red-500',
         },
@@ -135,6 +154,8 @@ export default function AdminCoursesTitle({
     const [deletingCourse, setDeletingCourse] = useState<CourseRow | null>(
         null,
     );
+    const [restoreTarget, setRestoreTarget] =
+        useState<VersionHistoryItem | null>(null);
     const [editingCourse, setEditingCourse] = useState<CourseRow | null>(null);
     const [courseFilterValue, setCourseFilterValue] = useState('');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -204,22 +225,48 @@ export default function AdminCoursesTitle({
         router.delete(coursesDestroy.url({ course: deletingCourse.id }), {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success('Kursus berhasil dihapus.');
+                toast.success('Course deleted successfully.');
                 setDeletingCourse(null);
             },
             onError: (formErrors) => {
                 const messages = Object.values(formErrors).flat().join(', ');
-                toast.error(messages || 'Gagal menghapus kursus.');
+                toast.error(messages || 'Failed to delete course.');
                 setDeletingCourse(null);
             },
         });
+    };
+
+    const submitRestoreVersion = () => {
+        if (!restoreTarget) {
+            return;
+        }
+
+        router.post(
+            restoreVersion.url({ version: restoreTarget.id }),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success(
+                        `Version ${restoreTarget.version_number} restored.`,
+                    );
+                    setRestoreTarget(null);
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Failed to restore version.');
+                },
+            },
+        );
     };
 
     const columns = useMemo<ColumnDef<CourseRow>[]>(
         () => [
             {
                 accessorKey: 'title',
-                header: 'Judul',
+                header: 'Title',
                 cell: ({ row }) => (
                     <div className="max-w-sm min-w-48 text-left">
                         <p
@@ -248,7 +295,7 @@ export default function AdminCoursesTitle({
             },
             {
                 accessorKey: 'version',
-                header: 'Versi',
+                header: 'Version',
                 cell: ({ row }) => (
                     <div className="text-center">
                         {row.original.version
@@ -259,7 +306,7 @@ export default function AdminCoursesTitle({
             },
             {
                 accessorKey: 'published_by_name',
-                header: 'Diterbitkan Oleh',
+                header: 'Published By',
                 cell: ({ row }) => (
                     <div className="text-center">
                         {row.original.published_by_name || '—'}
@@ -268,11 +315,11 @@ export default function AdminCoursesTitle({
             },
             {
                 accessorKey: 'enrollments_count',
-                header: 'Pendaftaran',
+                header: 'Enrollments',
             },
             {
                 accessorKey: 'created_at',
-                header: 'Dibuat Pada',
+                header: 'Created At',
                 cell: ({ row }) => {
                     const date = row.original.created_at
                         ? new Date(row.original.created_at)
@@ -293,7 +340,7 @@ export default function AdminCoursesTitle({
             },
             {
                 accessorKey: 'updated_at',
-                header: 'Diperbarui Pada',
+                header: 'Updated At',
                 cell: ({ row }) => {
                     const date = row.original.updated_at
                         ? new Date(row.original.updated_at)
@@ -330,7 +377,7 @@ export default function AdminCoursesTitle({
                             <DropdownMenuContent align="end">
                                 <DropdownMenuGroup>
                                     <DropdownMenuLabel className="text-muted-foreground">
-                                        Aksi
+                                        Actions
                                     </DropdownMenuLabel>
                                     <DropdownMenuSub>
                                         <DropdownMenuSubTrigger>
@@ -359,7 +406,7 @@ export default function AdminCoursesTitle({
                                                 }
                                             >
                                                 <BadgeCheck data-icon="inline-start" />
-                                                Diterbitkan
+                                                Publish
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 disabled={
@@ -382,7 +429,7 @@ export default function AdminCoursesTitle({
                                                 }
                                             >
                                                 <CircleDashed data-icon="inline-start" />
-                                                Draf
+                                                Draft
                                             </DropdownMenuItem>
                                         </DropdownMenuSubContent>
                                     </DropdownMenuSub>
@@ -392,15 +439,10 @@ export default function AdminCoursesTitle({
                                         }
                                     >
                                         <Pencil data-icon="inline-start" />
-                                        Ubah
+                                        Edit
                                     </DropdownMenuItem>
-                                    <VersionHistoryDialog
-                                        itemTitle={row.original.title}
-                                        versions={
-                                            versionHistories[row.original.id] ??
-                                            []
-                                        }
-                                        trigger={
+                                    <Dialog>
+                                        <DialogTrigger asChild>
                                             <DropdownMenuItem
                                                 onSelect={(event) =>
                                                     event.preventDefault()
@@ -409,15 +451,126 @@ export default function AdminCoursesTitle({
                                                 <History data-icon="inline-start" />
                                                 History
                                             </DropdownMenuItem>
-                                        }
-                                    />
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>
+                                                    Version History
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                    {row.original.title}
+                                                </DialogDescription>
+                                            </DialogHeader>
+
+                                            <div className="max-h-96 space-y-3 overflow-y-auto">
+                                                {(
+                                                    versionHistories[
+                                                        row.original.id
+                                                    ] ?? []
+                                                ).length === 0 ? (
+                                                    <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                                                        No version history for
+                                                        this item yet.
+                                                    </div>
+                                                ) : (
+                                                    (
+                                                        versionHistories[
+                                                            row.original.id
+                                                        ] ?? []
+                                                    ).map((version) => (
+                                                        <div
+                                                            key={version.id}
+                                                            className="rounded-lg border p-4"
+                                                        >
+                                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                                <div className="space-y-2">
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <Badge variant="outline">
+                                                                            v
+                                                                            {
+                                                                                version.version_number
+                                                                            }
+                                                                        </Badge>
+                                                                        {version.restored_at ? (
+                                                                            <Badge variant="secondary">
+                                                                                Restored
+                                                                            </Badge>
+                                                                        ) : null}
+                                                                    </div>
+                                                                    <p className="text-sm font-medium">
+                                                                        {version.change_summary ||
+                                                                            'Content changes'}
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {version.creator_name ||
+                                                                            'System'}{' '}
+                                                                        -{' '}
+                                                                        {formatVersionDate(
+                                                                            version.created_at,
+                                                                        )}
+                                                                    </p>
+                                                                    {version
+                                                                        .changed_fields
+                                                                        .length >
+                                                                    0 ? (
+                                                                        <div className="flex flex-wrap gap-1">
+                                                                            {version.changed_fields.map(
+                                                                                (
+                                                                                    field,
+                                                                                ) => (
+                                                                                    <Badge
+                                                                                        key={
+                                                                                            field
+                                                                                        }
+                                                                                        variant="outline"
+                                                                                    >
+                                                                                        {
+                                                                                            field
+                                                                                        }
+                                                                                    </Badge>
+                                                                                ),
+                                                                            )}
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        setRestoreTarget(
+                                                                            version,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <RotateCcw data-icon="inline-start" />
+                                                                    Restore
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+
+                                            <DialogFooter className="mt-2">
+                                                <DialogClose asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                    >
+                                                        Close
+                                                    </Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
                                     <DropdownMenuItem
                                         onClick={() =>
                                             setDeletingCourse(row.original)
                                         }
                                     >
                                         <Trash2 data-icon="inline-start" />
-                                        Hapus
+                                        Delete
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
@@ -429,7 +582,7 @@ export default function AdminCoursesTitle({
                                     }
                                 >
                                     <Eye data-icon="inline-start" />
-                                    Lihat Kursus
+                                    View Course
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -437,7 +590,7 @@ export default function AdminCoursesTitle({
                 ),
             },
         ],
-        [],
+        [versionHistories],
     );
 
     const handlePageChange = (nextPage: number): void => {
@@ -467,15 +620,19 @@ export default function AdminCoursesTitle({
     return (
         <>
             <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
-                <PageHeader
-                    title="Manajemen Judul"
-                    description="Kelola judul kursus, status publikasi, dan metadata tingkat tinggi."
-                    actions={
+                <header className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <TypographyH1>Title Management</TypographyH1>
+                        <TypographyMuted>
+                            Manage course titles, publication status, and high-level metadata.
+                        </TypographyMuted>
+                    </div>
+                    <div className="flex shrink-0 items-center justify-end gap-2">
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <div className="w-full sm:w-80">
                                 <Input
                                     id="course-search"
-                                    placeholder="Cari Kursus..."
+                                    placeholder="Search Courses..."
                                     value={courseFilterValue}
                                     onChange={(event) =>
                                         setCourseFilterValue(event.target.value)
@@ -488,7 +645,7 @@ export default function AdminCoursesTitle({
                                     if (!open && isDirty && !isSavingCourse) {
                                         if (
                                             !confirm(
-                                                'Perubahan belum disimpan. Tutup dialog?',
+                                                'Changes not saved. Close dialog?',
                                             )
                                         ) {
                                             return;
@@ -509,7 +666,7 @@ export default function AdminCoursesTitle({
                                         onClick={openCreateDialog}
                                     >
                                         <Plus data-icon="inline-start" />
-                                        Buat
+                                        Create Course
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-sm">
@@ -543,8 +700,8 @@ export default function AdminCoursesTitle({
                                                 onSuccess: () => {
                                                     toast.success(
                                                         isEditMode
-                                                            ? 'Kursus berhasil diperbarui.'
-                                                            : 'Kursus berhasil dibuat.',
+                                                            ? 'Course updated successfully.'
+                                                            : 'Course created successfully.',
                                                     );
                                                     resetCourseDialogState();
                                                     setIsCreateDialogOpen(
@@ -560,7 +717,7 @@ export default function AdminCoursesTitle({
                                                             .join(', ');
                                                     toast.error(
                                                         messages ||
-                                                            'Gagal menyimpan kursus.',
+                                                            'Failed to save course.',
                                                     );
                                                 },
                                                 onFinish: () => {
@@ -572,23 +729,23 @@ export default function AdminCoursesTitle({
                                         <DialogHeader>
                                             <DialogTitle>
                                                 {isEditMode
-                                                    ? 'Ubah kursus'
-                                                    : 'Buat kursus'}
+                                                    ? 'Edit Course'
+                                                    : 'Create New Course'}
                                             </DialogTitle>
                                             <DialogDescription>
                                                 {isEditMode
-                                                    ? 'Perbarui judul, ringkasan, dan gambar sampul kursus.'
-                                                    : 'Tambahkan judul dan ringkasan kursus baru.'}
+                                                    ? 'Update Course title, summary, and cover image.'
+                                                    : 'Add a new course title and summary.'}
                                             </DialogDescription>
                                         </DialogHeader>
-                                        <FieldGroup>
+                                        <FieldGroup className="mt-4">
                                             <Field
                                                 data-invalid={
                                                     titleHasError || undefined
                                                 }
                                             >
                                                 <FieldLabel htmlFor="course-title">
-                                                    Judul{' '}
+                                                    Title{' '}
                                                     <span className="text-destructive">
                                                         *
                                                     </span>
@@ -596,7 +753,7 @@ export default function AdminCoursesTitle({
                                                 <Input
                                                     id="course-title"
                                                     name="title"
-                                                    placeholder="Masukkan judul kursus"
+                                                    placeholder="Enter course title"
                                                     value={courseForm.title}
                                                     onChange={(event) => {
                                                         setCourseForm(
@@ -625,7 +782,7 @@ export default function AdminCoursesTitle({
                                                 }
                                             >
                                                 <FieldLabel htmlFor="course-description">
-                                                    Deskripsi{' '}
+                                                    Description{' '}
                                                     <span className="text-destructive">
                                                         *
                                                     </span>
@@ -633,7 +790,7 @@ export default function AdminCoursesTitle({
                                                 <Textarea
                                                     id="course-description"
                                                     name="description"
-                                                    placeholder="Masukkan deskripsi kursus"
+                                                    placeholder="Enter course description"
                                                     value={
                                                         courseForm.description
                                                     }
@@ -667,7 +824,7 @@ export default function AdminCoursesTitle({
                                                 }
                                             >
                                                 <FieldLabel htmlFor="course-picture">
-                                                    Unggah Sampul{' '}
+                                                    Upload Cover{' '}
                                                     <span className="text-destructive"></span>
                                                 </FieldLabel>
                                                 <Input
@@ -713,7 +870,7 @@ export default function AdminCoursesTitle({
                                                     }}
                                                 />
                                                 {coverImagePreview && (
-                                                    <div className="mt-2">
+                                                    <div className="mt-3">
                                                         <img
                                                             src={
                                                                 coverImagePreview
@@ -730,8 +887,8 @@ export default function AdminCoursesTitle({
                                                 )}
                                                 <FieldDescription>
                                                     {isEditMode
-                                                        ? 'Biarkan kosong untuk mempertahankan sampul saat ini.'
-                                                        : 'Biarkan kosong untuk menggunakan sampul bawaan sistem.'}
+                                                        ? 'Leave blank to keep the current cover.'
+                                                        : 'Leave blank to use the system default cover.'}
                                                 </FieldDescription>
                                             </Field>
                                         </FieldGroup>
@@ -742,7 +899,7 @@ export default function AdminCoursesTitle({
                                                     type="button"
                                                     disabled={isSavingCourse}
                                                 >
-                                                    Batal
+                                                    Cancel
                                                 </Button>
                                             </DialogClose>
                                             <Button
@@ -753,16 +910,16 @@ export default function AdminCoursesTitle({
                                                     <Spinner data-icon="inline-start" />
                                                 )}
                                                 {isEditMode
-                                                    ? 'Perbarui Kursus'
-                                                    : 'Simpan Draf'}
+                                                    ? 'Update Course'
+                                                    : 'Save Draft'}
                                             </Button>
                                         </DialogFooter>
                                     </form>
                                 </DialogContent>
                             </Dialog>
                         </div>
-                    }
-                />
+                    </div>
+                </header>
 
                 <section className="grid gap-4">
                     <div className="flex flex-col gap-4">
@@ -773,10 +930,10 @@ export default function AdminCoursesTitle({
                                         <Search />
                                     </EmptyMedia>
                                     <EmptyTitle>
-                                        Tidak ada judul kursus ditemukan
+                                        No course titles found
                                     </EmptyTitle>
                                     <EmptyDescription>
-                                        Coba kata kunci lain.
+                                        Try a different keyword.
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -794,7 +951,7 @@ export default function AdminCoursesTitle({
                                 pageSize={courses.per_page}
                                 onPageChange={handlePageChange}
                                 onPageSizeChange={handlePageSizeChange}
-                                footerInfo={`Menampilkan ${courses.from ?? 0} - ${courses.to ?? 0} dari ${courses.total} Judul Kursus`}
+                                footerInfo={`Showing ${courses.from ?? 0} - ${courses.to ?? 0} of ${courses.total} Course Titles`}
                             />
                         )}
                     </div>
@@ -811,16 +968,42 @@ export default function AdminCoursesTitle({
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus kursus?</AlertDialogTitle>
+                        <AlertDialogTitle>Delete course?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Tindakan ini akan menghapus kursus ini dan data
-                            terkaitnya secara permanen.
+                            This action will permanently delete this course and its
+                            related data.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={submitDeleteCourse}>
-                            Hapus
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={restoreTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setRestoreTarget(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Restore version?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            The current version will be saved as a snapshot
+                            before the item is restored to version{' '}
+                            {restoreTarget?.version_number}.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={submitRestoreVersion}>
+                            Restore
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

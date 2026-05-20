@@ -77,7 +77,6 @@ class CourseController extends Controller
                 'slug' => $course->slug,
                 'title' => $course->title,
                 'summary' => $course->summary,
-                'estimatedMinutes' => $course->estimated_minutes,
                 'enrollmentCount' => $course->enrollments_count,
             ],
             'lessons' => $lessons,

@@ -22,13 +22,12 @@ return new class extends Migration
             // Question classification
             $table->enum('bloom_level', ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'])->index();
             $table->enum('question_type', [
-                'mcq',           // Multiple choice
-                'true_false',    // True/False
-                'short_answer',  // Short text, auto-gradable
-                'essay',         // Free-form essay
-                'computation',   // Deterministic computation
-                'case_study',    // Case analysis
-                'design',        // Design document
+                'mcq',              // Pilihan Ganda
+                'multiple_select',  // Pilihan Ganda Kompleks (PGK)
+                'true_false',       // Benar / Salah
+                'matching',         // Menjodohkan
+                'short_answer',     // Isian Singkat
+                'essay',            // Esai / Uraian
             ])->index();
 
             // Question content

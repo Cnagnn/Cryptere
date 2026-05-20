@@ -101,14 +101,13 @@ class LearnerDashboardBuilder
             ->orderBy('sort_order')
             ->orderBy('title')
             ->take(3)
-            ->get(['id', 'slug', 'title', 'summary', 'difficulty', 'estimated_minutes'])
+            ->get(['id', 'slug', 'title', 'summary', 'difficulty'])
             ->map(fn (Course $course): array => [
                 'id' => $course->id,
                 'slug' => $course->slug,
                 'title' => $course->title,
                 'summary' => $course->summary,
                 'difficulty' => $course->difficulty,
-                'estimatedMinutes' => $course->estimated_minutes,
                 'lessonCount' => $course->lessons_count,
             ])->values();
     }

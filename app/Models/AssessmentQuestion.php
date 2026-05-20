@@ -40,42 +40,31 @@ class AssessmentQuestion extends Model
     // Question types
     public const TYPE_MCQ = 'mcq';
 
+    public const TYPE_MULTIPLE_SELECT = 'multiple_select';
+
     public const TYPE_TRUE_FALSE = 'true_false';
+
+    public const TYPE_MATCHING = 'matching';
 
     public const TYPE_SHORT_ANSWER = 'short_answer';
 
     public const TYPE_ESSAY = 'essay';
 
-    public const TYPE_COMPUTATION = 'computation';
-
-    public const TYPE_CASE_STUDY = 'case_study';
-
-    public const TYPE_DESIGN = 'design';
-
     public const TYPES = [
         self::TYPE_MCQ,
+        self::TYPE_MULTIPLE_SELECT,
         self::TYPE_TRUE_FALSE,
+        self::TYPE_MATCHING,
         self::TYPE_SHORT_ANSWER,
         self::TYPE_ESSAY,
-        self::TYPE_COMPUTATION,
-        self::TYPE_CASE_STUDY,
-        self::TYPE_DESIGN,
     ];
 
-    // Types that can be auto-graded
-    public const AUTO_GRADABLE_TYPES = [
-        self::TYPE_MCQ,
-        self::TYPE_TRUE_FALSE,
-        self::TYPE_SHORT_ANSWER,
-        self::TYPE_COMPUTATION,
-    ];
-
-    // Types that require manual grading
-    public const MANUAL_GRADED_TYPES = [
-        self::TYPE_ESSAY,
-        self::TYPE_CASE_STUDY,
-        self::TYPE_DESIGN,
-    ];
+    /**
+     * All question types are auto-gradable. Essays are auto-graded using a
+     * keyword-detection scheme stored in correct_answer; other types use
+     * deterministic comparison.
+     */
+    public const AUTO_GRADABLE_TYPES = self::TYPES;
 
     /**
      * Get the attributes that should be cast.
@@ -121,40 +110,48 @@ class AssessmentQuestion extends Model
     // ── Helpers ──
 
     /**
-     * Check whether the given answer is correct (for auto-gradable types).
+     * Grade a learner answer for this question and return a 0..1 score fraction.
+     *
+     * 1.0 = full credit, 0.0 = no credit. Intermediate values are reserved for
+     * essay questions which support partial credit based on keyword coverage.
+     */
+    public function gradeAnswer(?string $answer): float
+    {
+        $answer = (string) ($answer ?? '');
+
+        return match ($this->question_type) {
+            self::TYPE_MCQ, self::TYPE_TRUE_FALSE => $this->gradeSingleChoice($answer),
+            self::TYPE_MULTIPLE_SELECT => $this->gradeMultipleSelect($answer),
+            self::TYPE_MATCHING => $this->gradeMatching($answer),
+            self::TYPE_SHORT_ANSWER => $this->gradeShortAnswer($answer),
+            self::TYPE_ESSAY => $this->gradeEssay($answer),
+            default => 0.0,
+        };
+    }
+
+    /**
+     * Backwards-compatible boolean check used by legacy callers.
      */
     public function isCorrect(string $answer): bool
     {
-        if (! $this->isAutoGradable()) {
-            return false;
-        }
-
-        if ($this->question_type === self::TYPE_MCQ || $this->question_type === self::TYPE_TRUE_FALSE) {
-            return Str::lower(trim($answer)) === Str::lower(trim($this->correct_answer));
-        }
-
-        // For short_answer and computation: normalize whitespace and case
-        $normalized = Str::squish(Str::lower($answer));
-        $expected = Str::squish(Str::lower($this->correct_answer));
-
-        return $normalized === $expected;
+        return $this->gradeAnswer($answer) >= 1.0;
     }
 
     /**
-     * Determine if this question can be auto-graded.
+     * Determine if this question can be auto-graded. With the auto-only
+     * grading model this is true for every supported question type.
      */
     public function isAutoGradable(): bool
     {
-        return $this->grading_type === 'auto'
-            && in_array($this->question_type, self::AUTO_GRADABLE_TYPES);
+        return in_array($this->question_type, self::AUTO_GRADABLE_TYPES, true);
     }
 
     /**
-     * Determine if this question requires manual grading.
+     * Manual grading is no longer supported.
      */
     public function requiresManualGrading(): bool
     {
-        return $this->grading_type === 'manual';
+        return false;
     }
 
     /**
@@ -204,5 +201,247 @@ class AssessmentQuestion extends Model
         // Placeholder: implement based on your analytics requirements
         // For now, just save difficulty
         $this->saveQuietly();
+    }
+
+    // ── Per-type grading helpers ──
+
+    private function gradeSingleChoice(string $answer): float
+    {
+        return $this->normalize($answer) === $this->normalize((string) $this->correct_answer)
+            ? 1.0
+            : 0.0;
+    }
+
+    private function gradeMultipleSelect(string $answer): float
+    {
+        $given = $this->normalizeSet($this->decodeArray($answer));
+        $expected = $this->normalizeSet($this->decodeArray((string) $this->correct_answer));
+
+        if (count($expected) === 0) {
+            return 0.0;
+        }
+
+        return $given === $expected ? 1.0 : 0.0;
+    }
+
+    private function gradeMatching(string $answer): float
+    {
+        $given = $this->normalizeAssoc($this->decodeAssoc($answer));
+        $expected = $this->normalizeAssoc($this->decodeAssoc((string) $this->correct_answer));
+
+        if (count($expected) === 0) {
+            return 0.0;
+        }
+
+        return $given === $expected ? 1.0 : 0.0;
+    }
+
+    private function gradeShortAnswer(string $answer): float
+    {
+        $normalized = $this->normalize($answer);
+
+        if ($normalized === '') {
+            return 0.0;
+        }
+
+        foreach ($this->acceptedShortAnswers() as $accepted) {
+            if ($this->normalize($accepted) === $normalized) {
+                return 1.0;
+            }
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Auto-grade an essay answer using keyword-coverage and word-count rules
+     * stored in the correct_answer JSON payload, e.g.
+     *
+     *   {"keywords":["kunci","modulo"],"min_matches":2,"min_words":30}
+     *
+     * If correct_answer is not a JSON spec, falls back to a word-count rule
+     * driven by min_words/max_words on the question.
+     */
+    private function gradeEssay(string $answer): float
+    {
+        $trimmed = trim($answer);
+
+        if ($trimmed === '') {
+            return 0.0;
+        }
+
+        $wordCount = preg_match_all('/\\S+/u', $trimmed) ?: 0;
+        $spec = $this->decodeEssaySpec((string) $this->correct_answer);
+
+        $minWords = (int) ($spec['min_words'] ?? $this->min_words ?? 0);
+        $maxWords = (int) ($spec['max_words'] ?? $this->max_words ?? 0);
+
+        if ($maxWords > 0 && $wordCount > $maxWords) {
+            // Hard cap: exceeding max_words drops to half credit.
+            $wordCountPenalty = 0.5;
+        } else {
+            $wordCountPenalty = 1.0;
+        }
+
+        $keywords = array_values(array_filter(array_map(
+            fn ($keyword): string => $this->normalize((string) $keyword),
+            $spec['keywords'] ?? [],
+        ), fn (string $keyword): bool => $keyword !== ''));
+
+        if ($keywords === []) {
+            // No keyword spec: grade purely on word-count threshold.
+            if ($minWords <= 0) {
+                return 1.0 * $wordCountPenalty;
+            }
+
+            return $wordCount >= $minWords ? 1.0 * $wordCountPenalty : 0.0;
+        }
+
+        $haystack = $this->normalize($trimmed);
+        $matches = 0;
+
+        foreach ($keywords as $keyword) {
+            if ($keyword !== '' && str_contains($haystack, $keyword)) {
+                $matches++;
+            }
+        }
+
+        $required = (int) ($spec['min_matches'] ?? count($keywords));
+        $required = max(1, min($required, count($keywords)));
+
+        $coverage = $matches / count($keywords);
+
+        if ($matches >= $required && ($minWords <= 0 || $wordCount >= $minWords)) {
+            return 1.0 * $wordCountPenalty;
+        }
+
+        // Partial credit proportional to coverage, capped at 0.9 of word penalty.
+        return min(0.9, $coverage) * $wordCountPenalty;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function acceptedShortAnswers(): array
+    {
+        $raw = (string) $this->correct_answer;
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = $this->decodeArray($raw);
+
+        if ($decoded !== null && $decoded !== []) {
+            return array_values(array_map('strval', $decoded));
+        }
+
+        // Allow pipe- or newline-separated alternates as a simple authoring shorthand.
+        $parts = preg_split('/\\s*(?:\\||\\n)\\s*/u', $raw) ?: [];
+
+        return array_values(array_filter(array_map('trim', $parts), fn (string $p): bool => $p !== ''));
+    }
+
+    private function normalize(string $value): string
+    {
+        return Str::squish(Str::lower($value));
+    }
+
+    /**
+     * @param  list<mixed>  $values
+     * @return list<string>
+     */
+    private function normalizeSet(array $values): array
+    {
+        $normalized = array_values(array_unique(array_map(
+            fn ($v): string => $this->normalize((string) $v),
+            $values,
+        )));
+        sort($normalized);
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $assoc
+     * @return array<string, string>
+     */
+    private function normalizeAssoc(array $assoc): array
+    {
+        $result = [];
+
+        foreach ($assoc as $key => $value) {
+            $normalizedKey = $this->normalize((string) $key);
+
+            if ($normalizedKey === '') {
+                continue;
+            }
+
+            $result[$normalizedKey] = $this->normalize((string) $value);
+        }
+
+        ksort($result);
+
+        return $result;
+    }
+
+    /**
+     * @return list<mixed>|null
+     */
+    private function decodeArray(string $raw): ?array
+    {
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (is_array($decoded) && array_is_list($decoded)) {
+            return $decoded;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int|string, mixed>
+     */
+    private function decodeAssoc(string $raw): array
+    {
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (is_array($decoded) && ! array_is_list($decoded)) {
+            return $decoded;
+        }
+
+        return [];
+    }
+
+    /**
+     * @return array{keywords?: list<string>, min_matches?: int, min_words?: int, max_words?: int}
+     */
+    private function decodeEssaySpec(string $raw): array
+    {
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (is_array($decoded) && ! array_is_list($decoded)) {
+            return $decoded;
+        }
+
+        return [];
     }
 }

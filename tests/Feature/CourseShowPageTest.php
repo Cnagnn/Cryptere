@@ -49,7 +49,6 @@ it('renders the course detail page with safe learning props', function () {
                 ->where('slug', $course->slug)
                 ->where('title', 'Applied Cryptography')
                 ->where('summary', 'Learn modern cryptography workflows.')
-                ->has('estimatedMinutes')
                 ->has('enrollmentCount')
             )
             ->has('lessons', 1)

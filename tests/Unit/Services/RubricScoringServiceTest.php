@@ -121,7 +121,7 @@ test('generates C2 understand rubric', function () {
 });
 
 test('generates C4 analyze rubric', function () {
-    $rubric = $this->service->generateDefaultRubric('C4', 'case_study', 30);
+    $rubric = $this->service->generateDefaultRubric('C4', 'essay', 30);
 
     expect($rubric['criteria'])->toHaveCount(3)
         ->and($rubric['criteria'][0]['name'])->toBe('Identification')
@@ -130,7 +130,7 @@ test('generates C4 analyze rubric', function () {
 });
 
 test('generates C6 create rubric', function () {
-    $rubric = $this->service->generateDefaultRubric('C6', 'design', 50);
+    $rubric = $this->service->generateDefaultRubric('C6', 'essay', 50);
 
     expect($rubric['criteria'])->toHaveCount(5)
         ->and($rubric['criteria'][0]['name'])->toBe('Completeness');

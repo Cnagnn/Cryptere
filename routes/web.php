@@ -21,7 +21,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\Lab\LabController;
 use App\Http\Controllers\LeaderboardController;
-use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Models\Assessment;
@@ -107,10 +106,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('labs/{lab}', [LabController::class, 'show'])->name('labs.show');
 
     Route::get('search', SearchController::class)->middleware('throttle:30,1')->name('search');
-
-    Route::get('onboarding', [OnboardingController::class, 'show'])->name('onboarding');
-    Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
-    Route::post('onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
 
     // Story and CTF removed
 });

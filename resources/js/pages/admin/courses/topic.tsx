@@ -12,16 +12,22 @@ import {
     MoreHorizontal,
     Pencil,
     Plus,
+    RotateCcw,
     Search,
     Trash2,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/page-header';
 import {
-    VersionHistoryDialog,
-    type VersionHistoryItem,
-} from '@/components/admin/version-history-dialog';
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,15 +82,38 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { destroy as lessonsDestroy } from '@/routes/admin/courses/lessons';
 import { reorder as lessonsReorder } from '@/routes/admin/courses/lessons';
 import { store as lessonsStore } from '@/routes/admin/courses/lessons';
 import { update as lessonsUpdate } from '@/routes/admin/courses/lessons';
+import { restore as restoreVersion } from '@/routes/admin/versions';
 import type { Paginated } from '@/types';
 import type { CourseRow, LessonRow } from '@/types/course-management';
 
 type ContentStatus = 'draft' | 'published' | 'archived';
+
+type VersionHistoryItem = {
+    id: number;
+    version_number: number;
+    changed_fields: string[];
+    change_summary: string | null;
+    creator_name: string | null;
+    created_at: string | null;
+    restored_at: string | null;
+};
+
+function formatVersionDate(value: string | null): string {
+    if (!value) {
+        return '-';
+    }
+
+    return new Intl.DateTimeFormat('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(value));
+}
 
 function StatusBadge({
     status,
@@ -96,19 +125,19 @@ function StatusBadge({
     const config = {
         draft: {
             icon: CircleDashed,
-            label: 'Draf',
+            label: 'Draft',
             variant: 'outline' as const,
             iconClass: 'text-amber-500',
         },
         published: {
             icon: BadgeCheck,
-            label: 'Diterbitkan',
+            label: 'Published',
             variant: 'outline' as const,
             iconClass: 'text-emerald-500',
         },
         archived: {
             icon: Archive,
-            label: 'Diarsipkan',
+            label: 'Archived',
             variant: 'destructive' as const,
             iconClass: 'text-red-500',
         },
@@ -144,9 +173,18 @@ export default function AdminCoursesTopic({
     const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [filterValue, setFilterValue] = useState('');
     const [rows, setRows] = useState<LessonRow[]>(() => lessons.data);
+    const [prevLessonsData, setPrevLessonsData] = useState(lessons.data);
+
+    if (prevLessonsData !== lessons.data) {
+        setPrevLessonsData(lessons.data);
+        setRows(lessons.data);
+    }
+
     const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<
         string | null
     >(null);
+    const [restoreTarget, setRestoreTarget] =
+        useState<VersionHistoryItem | null>(null);
     const [createTopicDialogOpen, setCreateTopicDialogOpen] = useState(false);
     const [editingTopic, setEditingTopic] = useState<LessonRow | null>(null);
     const [isSavingTopic, setIsSavingTopic] = useState(false);
@@ -254,14 +292,40 @@ export default function AdminCoursesTopic({
                 onSuccess: () =>
                     toast.success(
                         status === 'published'
-                            ? 'Topik diterbitkan.'
-                            : 'Topik diubah menjadi draf.',
+                            ? 'Topic published.'
+                            : 'Topic changed to draft.',
                     ),
                 onError: (formErrors) => {
                     const messages = Object.values(formErrors)
                         .flat()
                         .join(', ');
-                    toast.error(messages || 'Gagal mengubah status topik.');
+                    toast.error(messages || 'Failed to change topic status.');
+                },
+            },
+        );
+    };
+
+    const submitRestoreVersion = () => {
+        if (!restoreTarget) {
+            return;
+        }
+
+        router.post(
+            restoreVersion.url({ version: restoreTarget.id }),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success(
+                        `Version ${restoreTarget.version_number} restored.`,
+                    );
+                    setRestoreTarget(null);
+                },
+                onError: (formErrors) => {
+                    const messages = Object.values(formErrors)
+                        .flat()
+                        .join(', ');
+                    toast.error(messages || 'Failed to restore version.');
                 },
             },
         );
@@ -306,7 +370,7 @@ export default function AdminCoursesTopic({
             },
             {
                 accessorKey: 'title',
-                header: 'Topik',
+                header: 'Topic',
                 cell: ({ row }) => (
                     <div className="text-left">
                         <p className="font-medium">{row.original.title}</p>
@@ -315,7 +379,7 @@ export default function AdminCoursesTopic({
             },
             {
                 accessorKey: 'course_title',
-                header: 'Judul',
+                header: 'Title',
             },
             {
                 accessorKey: 'status',
@@ -332,7 +396,7 @@ export default function AdminCoursesTopic({
             },
             {
                 accessorKey: 'version',
-                header: 'Versi',
+                header: 'Version',
                 cell: ({ row }) => (
                     <div className="text-center">
                         {row.original.version
@@ -342,17 +406,8 @@ export default function AdminCoursesTopic({
                 ),
             },
             {
-                accessorKey: 'topic_name',
-                header: 'Topik',
-                cell: ({ row }) => (
-                    <div className="text-center">
-                        {row.original.topic_name || '—'}
-                    </div>
-                ),
-            },
-            {
                 accessorKey: 'created_at',
-                header: 'Dibuat Pada',
+                header: 'Created At',
                 cell: ({ row }) => {
                     const date = row.original.created_at
                         ? new Date(row.original.created_at)
@@ -373,7 +428,7 @@ export default function AdminCoursesTopic({
             },
             {
                 accessorKey: 'updated_at',
-                header: 'Diperbarui Pada',
+                header: 'Updated At',
                 cell: ({ row }) => {
                     const date = row.original.updated_at
                         ? new Date(row.original.updated_at)
@@ -408,7 +463,7 @@ export default function AdminCoursesTopic({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>
                                         <ArrowRightLeft data-icon="inline-start" />
@@ -428,7 +483,7 @@ export default function AdminCoursesTopic({
                                             }
                                         >
                                             <BadgeCheck data-icon="inline-start" />
-                                            Diterbitkan
+                                            Publish
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             disabled={
@@ -443,7 +498,7 @@ export default function AdminCoursesTopic({
                                             }
                                         >
                                             <CircleDashed data-icon="inline-start" />
-                                            Draf
+                                            Draft
                                         </DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
@@ -453,14 +508,10 @@ export default function AdminCoursesTopic({
                                     }
                                 >
                                     <Pencil data-icon="inline-start" />
-                                    Ubah
+                                    Edit
                                 </DropdownMenuItem>
-                                <VersionHistoryDialog
-                                    itemTitle={row.original.title}
-                                    versions={
-                                        versionHistories[row.original.id] ?? []
-                                    }
-                                    trigger={
+                                <Dialog>
+                                    <DialogTrigger asChild>
                                         <DropdownMenuItem
                                             onSelect={(event) =>
                                                 event.preventDefault()
@@ -469,8 +520,119 @@ export default function AdminCoursesTopic({
                                             <History data-icon="inline-start" />
                                             History
                                         </DropdownMenuItem>
-                                    }
-                                />
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                Version History
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                {row.original.title}
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <div className="max-h-96 space-y-3 overflow-y-auto">
+                                            {(
+                                                versionHistories[
+                                                    row.original.id
+                                                ] ?? []
+                                            ).length === 0 ? (
+                                                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                                                    No version history for
+                                                    this item yet.
+                                                </div>
+                                            ) : (
+                                                (
+                                                    versionHistories[
+                                                        row.original.id
+                                                    ] ?? []
+                                                ).map((version) => (
+                                                    <div
+                                                        key={version.id}
+                                                        className="rounded-lg border p-4"
+                                                    >
+                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                            <div className="space-y-2">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <Badge variant="outline">
+                                                                        v
+                                                                        {
+                                                                            version.version_number
+                                                                        }
+                                                                    </Badge>
+                                                                    {version.restored_at ? (
+                                                                        <Badge variant="secondary">
+                                                                            Restored
+                                                                        </Badge>
+                                                                    ) : null}
+                                                                </div>
+                                                                <p className="text-sm font-medium">
+                                                                    {version.change_summary ||
+                                                                        'Content changes'}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {version.creator_name ||
+                                                                        'System'}{' '}
+                                                                    -{' '}
+                                                                    {formatVersionDate(
+                                                                        version.created_at,
+                                                                    )}
+                                                                </p>
+                                                                {version
+                                                                    .changed_fields
+                                                                    .length >
+                                                                0 ? (
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {version.changed_fields.map(
+                                                                            (
+                                                                                field,
+                                                                            ) => (
+                                                                                <Badge
+                                                                                    key={
+                                                                                        field
+                                                                                    }
+                                                                                    variant="outline"
+                                                                                >
+                                                                                    {
+                                                                                        field
+                                                                                    }
+                                                                                </Badge>
+                                                                            ),
+                                                                        )}
+                                                                    </div>
+                                                                ) : null}
+                                                            </div>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    setRestoreTarget(
+                                                                        version,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <RotateCcw data-icon="inline-start" />
+                                                                Restore
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        <DialogFooter className="mt-2">
+                                            <DialogClose asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                >
+                                                    Close
+                                                </Button>
+                                            </DialogClose>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                                 <DropdownMenuItem
                                     onClick={() => {
                                         router.delete(
@@ -481,7 +643,7 @@ export default function AdminCoursesTopic({
                                                 preserveScroll: true,
                                                 onSuccess: () =>
                                                     toast.success(
-                                                        'Topik berhasil dihapus.',
+                                                        'Topic deleted successfully.',
                                                     ),
                                                 onError: (formErrors) => {
                                                     const messages =
@@ -492,7 +654,7 @@ export default function AdminCoursesTopic({
                                                             .join(', ');
                                                     toast.error(
                                                         messages ||
-                                                            'Gagal menghapus topik.',
+                                                            'Failed to delete topic.',
                                                     );
                                                 },
                                             },
@@ -500,7 +662,7 @@ export default function AdminCoursesTopic({
                                     }}
                                 >
                                     <Trash2 data-icon="inline-start" />
-                                    Hapus
+                                    Delete
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -518,7 +680,7 @@ export default function AdminCoursesTopic({
                                     }
                                 >
                                     <Eye data-icon="inline-start" />
-                                    Lihat Topik
+                                    View Topic
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -526,7 +688,7 @@ export default function AdminCoursesTopic({
                 ),
             },
         ],
-        [],
+        [versionHistories],
     );
 
     const handlePageChange = (nextPage: number): void => {
@@ -561,10 +723,14 @@ export default function AdminCoursesTopic({
 
     return (
         <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
-            <PageHeader
-                title="Manajemen Topik"
-                description="Kelola topik untuk setiap kursus."
-                actions={
+            <header className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex min-w-0 flex-col gap-1">
+                    <TypographyH1>Topic Management</TypographyH1>
+                    <TypographyMuted>
+                        Manage topics for each course.
+                    </TypographyMuted>
+                </div>
+                <div className="flex shrink-0 items-center justify-end gap-2">
                     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                         <Popover>
                             <PopoverTrigger asChild>
@@ -584,7 +750,7 @@ export default function AdminCoursesTopic({
                                                 return course.title;
                                             }
 
-                                            return 'Pilih Kursus...';
+                                            return 'Select Course...';
                                         })()}
                                     </span>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -592,10 +758,10 @@ export default function AdminCoursesTopic({
                             </PopoverTrigger>
                             <PopoverContent className="w-72 p-0" align="start">
                                 <Command>
-                                    <CommandInput placeholder="Cari kursus..." />
+                                    <CommandInput placeholder="Search courses..." />
                                     <CommandList className="max-h-none overflow-y-hidden">
                                         <CommandEmpty>
-                                            Tidak ada hasil ditemukan.
+                                            No results found.
                                         </CommandEmpty>
                                         <ScrollArea className="h-64">
                                             <CommandGroup>
@@ -650,7 +816,7 @@ export default function AdminCoursesTopic({
                         <div className="w-full sm:w-80">
                             <Input
                                 id="topic-search"
-                                placeholder="Cari Topik..."
+                                placeholder="Search Topics..."
                                 value={filterValue}
                                 onChange={(event) =>
                                     setFilterValue(event.target.value)
@@ -677,7 +843,7 @@ export default function AdminCoursesTopic({
                                     }}
                                 >
                                     <Plus data-icon="inline-start" />
-                                    Buat
+                                    Create Topic
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-sm">
@@ -717,8 +883,8 @@ export default function AdminCoursesTopic({
                                             onSuccess: () => {
                                                 toast.success(
                                                     isEditMode
-                                                        ? 'Topik berhasil diperbarui.'
-                                                        : 'Topik berhasil dibuat.',
+                                                        ? 'Topic updated successfully.'
+                                                        : 'Topic created successfully.',
                                                 );
                                                 resetTopicForm();
                                                 setCreateTopicDialogOpen(false);
@@ -731,7 +897,7 @@ export default function AdminCoursesTopic({
                                                     .join(', ');
                                                 toast.error(
                                                     messages ||
-                                                        'Gagal menyimpan topik.',
+                                                        'Failed to save topic.',
                                                 );
                                             },
                                             onFinish: () =>
@@ -742,24 +908,24 @@ export default function AdminCoursesTopic({
                                     <DialogHeader>
                                         <DialogTitle>
                                             {isEditMode
-                                                ? 'Ubah topik'
-                                                : 'Buat topik'}
+                                                ? 'Edit Topic'
+                                                : 'Create New Topic'}
                                         </DialogTitle>
                                         <DialogDescription>
                                             {isEditMode
-                                                ? 'Perbarui judul dan deskripsi topik.'
-                                                : 'Tambahkan topik baru untuk judul kursus yang dipilih.'}
+                                                ? 'Update topic title and description.'
+                                                : 'Add a new topic for the selected course title.'}
                                         </DialogDescription>
                                     </DialogHeader>
 
-                                    <FieldGroup>
+                                    <FieldGroup className="mt-4">
                                         <Field
                                             data-invalid={
                                                 topicCourseHasError || undefined
                                             }
                                         >
                                             <FieldLabel htmlFor="topic-course">
-                                                Kursus{' '}
+                                                Course{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
@@ -793,7 +959,7 @@ export default function AdminCoursesTopic({
                                                                     return course.title;
                                                                 }
 
-                                                                return 'Pilih Kursus...';
+                                                                return 'Select Course...';
                                                             })()}
                                                         </span>
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -807,7 +973,7 @@ export default function AdminCoursesTopic({
                                                     }}
                                                 >
                                                     <Command>
-                                                        <CommandInput placeholder="Cari kursus..." />
+                                                        <CommandInput placeholder="Search courses..." />
                                                         <CommandList
                                                             style={{
                                                                 maxHeight:
@@ -817,8 +983,8 @@ export default function AdminCoursesTopic({
                                                             }}
                                                         >
                                                             <CommandEmpty>
-                                                                Tidak ada hasil
-                                                                ditemukan.
+                                                                No results
+                                                                found.
                                                             </CommandEmpty>
                                                             <CommandGroup>
                                                                 {courseOptions.map(
@@ -880,7 +1046,7 @@ export default function AdminCoursesTopic({
                                             }
                                         >
                                             <FieldLabel htmlFor="topic-title">
-                                                Judul{' '}
+                                                Title{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
@@ -888,7 +1054,7 @@ export default function AdminCoursesTopic({
                                             <Input
                                                 id="topic-title"
                                                 name="title"
-                                                placeholder="Masukkan judul topik"
+                                                placeholder="Enter topic title"
                                                 value={topicForm.title}
                                                 onChange={(event) =>
                                                     setTopicForm((current) => ({
@@ -917,7 +1083,7 @@ export default function AdminCoursesTopic({
                                             }
                                         >
                                             <FieldLabel htmlFor="topic-description">
-                                                Deskripsi{' '}
+                                                Description{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
@@ -925,7 +1091,7 @@ export default function AdminCoursesTopic({
                                             <Textarea
                                                 id="topic-description"
                                                 name="description"
-                                                placeholder="Masukkan deskripsi topik"
+                                                placeholder="Enter topic description"
                                                 value={topicForm.description}
                                                 onChange={(event) =>
                                                     setTopicForm((current) => ({
@@ -955,7 +1121,7 @@ export default function AdminCoursesTopic({
                                                 variant="outline"
                                                 disabled={isSavingTopic}
                                             >
-                                                Batal
+                                                Cancel
                                             </Button>
                                         </DialogClose>
                                         <Button
@@ -965,44 +1131,29 @@ export default function AdminCoursesTopic({
                                             {isSavingTopic && (
                                                 <Spinner data-icon="inline-start" />
                                             )}
-                                            Simpan perubahan
+                                            Save changes
                                         </Button>
                                     </DialogFooter>
                                 </form>
                             </DialogContent>
                         </Dialog>
                     </div>
-                }
-            />
+                </div>
+            </header>
 
             <section className="grid gap-4">
                 <div className="flex flex-col gap-4">
-                    {selectedCourseId === 0 && filterValue.trim() === '' ? (
+                    {filteredLessons.length === 0 ? (
                         <Empty>
                             <EmptyHeader>
                                 <EmptyMedia variant="icon">
                                     <Search />
                                 </EmptyMedia>
                                 <EmptyTitle>
-                                    Tidak ada topik ditemukan
+                                    No topics found
                                 </EmptyTitle>
                                 <EmptyDescription>
-                                    Pilih kursus lain atau cari dengan kata
-                                    kunci lain.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                        </Empty>
-                    ) : filteredLessons.length === 0 ? (
-                        <Empty>
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <Search />
-                                </EmptyMedia>
-                                <EmptyTitle>
-                                    Tidak ada topik ditemukan
-                                </EmptyTitle>
-                                <EmptyDescription>
-                                    Coba judul kursus atau kata kunci lain.
+                                    Try another course title or keyword.
                                 </EmptyDescription>
                             </EmptyHeader>
                         </Empty>
@@ -1028,11 +1179,36 @@ export default function AdminCoursesTopic({
                             pageSize={lessons.per_page}
                             onPageChange={handlePageChange}
                             onPageSizeChange={handlePageSizeChange}
-                            footerInfo={`Menampilkan ${lessons.from ?? 0} - ${lessons.to ?? 0} dari ${lessons.total} Topik`}
+                            footerInfo={`Showing ${lessons.from ?? 0} - ${lessons.to ?? 0} of ${lessons.total} Topics`}
                         />
                     )}
                 </div>
             </section>
+            <AlertDialog
+                open={restoreTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setRestoreTarget(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Restore version?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            The current version will be saved as a snapshot
+                            before the item is restored to version{' '}
+                            {restoreTarget?.version_number}.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={submitRestoreVersion}>
+                            Restore
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

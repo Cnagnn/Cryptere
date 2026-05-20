@@ -15,7 +15,6 @@ import {
 import { useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 
-import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +47,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
 import { index as coursesIndex, show as courseShow } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
@@ -891,16 +891,19 @@ function LearnerDashboard({
                 </div>
             )}
 
-            <PageHeader
-                className="animate-fade-in-up relative"
-                title={`${greeting.text} ${greeting.emoji}`}
-                description={
-                    auth.user.current_streak > 0
-                        ? `${greeting.subtitle} Anda sedang dalam konsistensi ${auth.user.current_streak} hari berturut-turut!`
-                        : greeting.subtitle
-                }
-                actions={adminTabs}
-            />
+            <header className="animate-fade-in-up relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex min-w-0 flex-col gap-1">
+                    <TypographyH1>{`${greeting.text} ${greeting.emoji}`}</TypographyH1>
+                    <TypographyMuted>
+                        {auth.user.current_streak > 0
+                            ? `${greeting.subtitle} Anda sedang dalam konsistensi ${auth.user.current_streak} hari berturut-turut!`
+                            : greeting.subtitle}
+                    </TypographyMuted>
+                </div>
+                <div className="flex shrink-0 items-center justify-end gap-2">
+                    {adminTabs}
+                </div>
+            </header>
 
             <section
                 className="animate-fade-in-up grid grid-cols-2 gap-3 md:grid-cols-6 lg:grid-cols-12"
@@ -1326,12 +1329,18 @@ function AdminDashboard({
     return (
         <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-4">
             {/* Header Section */}
-            <PageHeader
-                className="animate-fade-in-up relative"
-                title={`${greeting.text} ${greeting.emoji}`}
-                description="Ringkasan pertumbuhan, keterlibatan, dan kinerja konten platform"
-                actions={adminTabs}
-            />
+            <header className="animate-fade-in-up relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex min-w-0 flex-col gap-1">
+                    <TypographyH1>{`${greeting.text} ${greeting.emoji}`}</TypographyH1>
+                    <TypographyMuted>
+                        Ringkasan pertumbuhan, keterlibatan, dan kinerja konten
+                        platform
+                    </TypographyMuted>
+                </div>
+                <div className="flex shrink-0 items-center justify-end gap-2">
+                    {adminTabs}
+                </div>
+            </header>
 
             {/* Stats Cards - 4 columns */}
             <section

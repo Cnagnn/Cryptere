@@ -58,7 +58,6 @@ class CourseCatalogBuilder
                     'coverImage' => $course->cover,
                     'category' => $course->category,
                     'difficulty' => $course->difficulty,
-                    'estimatedMinutes' => $course->estimated_minutes,
                     'lessonCount' => $course->lessons_count,
                     'enrollmentCount' => $course->enrollments_count,
                     'isEnrolled' => $isEnrolled,

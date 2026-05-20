@@ -87,11 +87,14 @@ class AssessmentAnswer extends Model
         }
 
         $answer = $this->answer_text ?? $this->selected_option ?? '';
-        $isCorrect = $question->isCorrect($answer);
+        $fraction = $question->gradeAnswer($answer);
+        $maxPoints = (int) $question->points;
+        $awarded = (int) round($fraction * $maxPoints);
 
         $this->update([
-            'is_correct' => $isCorrect,
-            'points_awarded' => $isCorrect ? $question->points : 0,
+            'is_correct' => $fraction >= 1.0,
+            'points_awarded' => $awarded,
+            'max_points' => $maxPoints,
             'graded_at' => now(),
         ]);
     }

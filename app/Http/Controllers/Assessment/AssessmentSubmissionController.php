@@ -75,19 +75,15 @@ class AssessmentSubmissionController extends Controller
             'submitted_at' => now(),
         ]);
 
-        // Process grading (auto-grade objective, queue manual)
+        // Process grading (auto-grade everything)
         $this->gradingService->processSubmission($submission);
-
-        $message = $assessment->requiresManualGrading()
-            ? 'Assessment submitted! Objective questions have been auto-graded. Subjective answers are queued for manual review.'
-            : 'Assessment submitted and graded!';
 
         $redirectRoute = $assessment->course_id
             ? route('courses.show', $assessment->course->slug)
             : route('assessments.show', $assessment->slug);
 
         return redirect($redirectRoute)
-            ->with('success', $message);
+            ->with('success', 'Assessment submitted and graded!');
     }
 
     /**
