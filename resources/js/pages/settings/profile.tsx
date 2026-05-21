@@ -5,8 +5,8 @@ import { ProfileOverviewCard } from '@/features/profile/profile-overview-card';
 import { AccountDeleteCard } from '@/features/settings/account-delete-card';
 import { AvatarSettingsCard } from '@/features/settings/avatar-settings-card';
 import { ProfileSettingsForm } from '@/features/settings/profile-settings-form';
-import { edit as settingsProfileEdit } from '@/routes/settings/profile';
 import type { ProfileBadge, ProfileUser, SocialAccount } from '@/types/profile';
+import { edit as settingsProfileEdit } from '@/routes/settings/profile';
 
 type Props = {
     profileUser: ProfileUser;

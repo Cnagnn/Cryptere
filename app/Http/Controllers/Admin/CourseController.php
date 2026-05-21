@@ -63,7 +63,6 @@ class CourseController extends Controller
         $search = trim((string) $request->input('search', ''));
         $perPage = (int) $request->integer('per_page', 10);
         $perPage = max(10, min($perPage, 9999));
-        $builderMode = $request->boolean('builder', ! $request->has('section'));
 
         $emptyPaginated = [
             'data' => [],
@@ -81,6 +80,7 @@ class CourseController extends Controller
 
         if ($section === self::SECTION_CATALOG) {
             $coursePaginator = Course::query()
+                ->select(['id', 'slug', 'title', 'summary', 'cover_path', 'status', 'version', 'published_by', 'sort_order', 'created_at', 'updated_at'])
                 ->with('publishedBy:id,name')
                 ->withCount(['enrollments', 'lessons', 'tasks'])
                 ->searchManagement($search)
@@ -154,6 +154,7 @@ class CourseController extends Controller
 
         if ($section === self::SECTION_LESSON || $section === self::SECTION_TASK) {
             $lessonPaginator = Lesson::query()
+                ->select(['id', 'course_id', 'topic_id', 'prerequisite_lesson_id', 'slug', 'title', 'description', 'content', 'position', 'status', 'version', 'published_by', 'created_at', 'updated_at'])
                 ->with(['course:id,slug,title', 'topic:id,name', 'publishedBy:id,name'])
                 ->withCount('tasks')
                 ->when($selectedCourseId > 0, fn ($q) => $q->where('course_id', $selectedCourseId))
@@ -201,8 +202,12 @@ class CourseController extends Controller
             if ($selectedLesson !== null) {
                 if ($selectedLesson->tasks()->exists()) {
                     $taskPaginator = LessonTask::query()
+                        ->select(['id', 'lesson_id', 'type', 'title', 'description', 'sort_order', 'minutes', 'status', 'version', 'published_by', 'prerequisite_task_id', 'video_url', 'video_processing_status', 'video_mp4_url', 'document_name', 'conversion_status', 'pdf_url', 'created_at', 'updated_at'])
                         ->where('lesson_id', $selectedLesson->id)
-                        ->with(['quizQuestions:id,lesson_task_id,question,options,correct_option,explanation,sort_order', 'publishedBy:id,name'])
+                        ->with([
+                            'quizQuestions' => fn($q) => $q->select(['id', 'lesson_task_id', 'question', 'options', 'correct_option', 'explanation', 'sort_order'])->orderBy('sort_order'),
+                            'publishedBy:id,name'
+                        ])
                         ->orderBy('sort_order')
                         ->orderBy('id')
                         ->paginate($perPage)
@@ -300,8 +305,14 @@ class CourseController extends Controller
             } else {
                 // No lesson selected — show all tasks across all lessons
                 $taskPaginator = LessonTask::query()
-                    ->with(['lesson:id,title,course_id', 'lesson.course:id,slug,title', 'quizQuestions:id,lesson_task_id,question,options,correct_option,explanation,sort_order', 'publishedBy:id,name'])
-                    ->when($selectedCourseId > 0, fn ($q) => $q->whereHas('lesson', fn ($lq) => $lq->where('course_id', $selectedCourseId)))
+                    ->select(['id', 'lesson_id', 'type', 'title', 'description', 'sort_order', 'status', 'version', 'published_by', 'prerequisite_task_id', 'video_url', 'video_processing_status', 'video_mp4_url', 'document_name', 'conversion_status', 'pdf_url', 'created_at', 'updated_at'])
+                    ->with([
+                        'lesson:id,title,course_id',
+                        'lesson.course:id,slug,title',
+                        'quizQuestions' => fn($q) => $q->select(['id', 'lesson_task_id', 'question', 'options', 'correct_option', 'explanation', 'sort_order'])->orderBy('sort_order'),
+                        'publishedBy:id,name'
+                    ])
+                    ->when($selectedCourseId > 0, fn ($q) => $q->whereIn('lesson_id', fn($sub) => $sub->select('id')->from('lessons')->where('course_id', $selectedCourseId)))
                     ->orderBy('lesson_id')
                     ->orderBy('sort_order')
                     ->orderBy('id')
@@ -373,6 +384,7 @@ class CourseController extends Controller
             $assessmentCourseId = $courseFilterSelected ? (int) $request->integer('course_id') : 0;
 
             $assessmentPaginator = Assessment::query()
+                ->select(['id', 'slug', 'title', 'description', 'course_id', 'topic_id', 'bloom_level', 'grading_type', 'passing_score', 'max_attempts', 'time_limit_minutes', 'status', 'version', 'published_by', 'available_from', 'available_until', 'sort_order', 'created_at', 'updated_at'])
                 ->with(['course:id,title', 'publishedBy:id,name'])
                 ->searchManagement($search)
                 ->when($bloomFilter, fn ($q) => $q->where('bloom_level', $bloomFilter))
@@ -439,8 +451,9 @@ class CourseController extends Controller
 
             if ($selectedAssessmentId > 0) {
                 $assessmentQuestions = AssessmentQuestion::query()
+                    ->select(['id', 'assessment_id', 'question_bank_id', 'question_text', 'question_type', 'options', 'correct_answer', 'points', 'explanation', 'rubric', 'sort_order', 'created_at', 'updated_at'])
                     ->where('assessment_id', $selectedAssessmentId)
-                    ->with(['questionBank:id,title', 'assessment:id,title,bloom_level', 'assessment.course:id,title'])
+                    ->with(['questionBank:id,title', 'assessment:id,title,bloom_level,course_id', 'assessment.course:id,title'])
                     ->orderBy('sort_order')
                     ->get()
                     ->makeVisible('correct_answer')
@@ -456,13 +469,13 @@ class CourseController extends Controller
                     ->all();
             } else {
                 $assessmentQuestions = AssessmentQuestion::query()
+                    ->select(['assessment_questions.id', 'assessment_questions.assessment_id', 'assessment_questions.question_bank_id', 'assessment_questions.question_text', 'assessment_questions.question_type', 'assessment_questions.options', 'assessment_questions.correct_answer', 'assessment_questions.points', 'assessment_questions.explanation', 'assessment_questions.rubric', 'assessment_questions.sort_order', 'assessment_questions.created_at', 'assessment_questions.updated_at'])
                     ->with(['questionBank:id,title', 'assessment:id,title,bloom_level,course_id,sort_order', 'assessment.course:id,title'])
                     ->join('assessments', 'assessment_questions.assessment_id', '=', 'assessments.id')
                     ->when($assessmentCourseId > 0, fn ($q) => $q->where('assessments.course_id', $assessmentCourseId))
                     ->orderBy('assessments.course_id')
                     ->orderBy('assessments.sort_order')
                     ->orderBy('assessment_questions.sort_order')
-                    ->select('assessment_questions.*')
                     ->get()
                     ->makeVisible('correct_answer')
                     ->map(fn (AssessmentQuestion $question): array => [
@@ -478,6 +491,7 @@ class CourseController extends Controller
             }
 
             $bankPaginator = QuestionBank::query()
+                ->select(['id', 'title', 'category', 'bloom_level', 'question_type', 'question_text', 'options', 'correct_answer', 'explanation', 'rubric', 'points', 'is_active', 'times_used', 'created_by', 'created_at', 'updated_at'])
                 ->active()
                 ->when($search, fn ($q) => $q->where(function ($query) use ($search) {
                     $query->where('title', 'like', "%{$search}%")
@@ -541,8 +555,6 @@ class CourseController extends Controller
 
         return Inertia::render('admin/courses/index', [
             'section' => $section,
-            'builderMode' => $builderMode,
-            'builder' => $builderMode ? $this->buildCourseBuilderPayload($request) : null,
             'courses' => $courses,
             'courseOptions' => $courseOptions,
             'allLessons' => $allLessons,
@@ -562,127 +574,6 @@ class CourseController extends Controller
             'questionBank' => $questionBank,
             'versionHistories' => $versionHistories,
         ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildCourseBuilderPayload(Request $request): array
-    {
-        $courseOptions = Course::query()
-            ->withCount(['lessons', 'tasks', 'assessments'])
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->get(['id', 'slug', 'title', 'summary', 'status', 'version'])
-            ->map(fn (Course $course): array => [
-                'id' => $course->id,
-                'slug' => $course->slug,
-                'title' => $course->title,
-                'summary' => $course->summary,
-                'status' => $course->status,
-                'version' => $course->version,
-                'lessons_count' => $course->lessons_count,
-                'tasks_count' => $course->tasks_count,
-                'assessments_count' => $course->assessments_count,
-            ]);
-
-        $selectedCourseId = (int) $request->integer('course_id', (int) ($courseOptions->first()['id'] ?? 0));
-        $activeCourse = Course::query()
-            ->with([
-                'lessons' => fn ($query) => $query
-                    ->with(['tasks', 'topic:id,name'])
-                    ->withCount('tasks')
-                    ->orderBy('position'),
-                'assessments' => fn ($query) => $query
-                    ->with(['questions' => fn ($questionQuery) => $questionQuery->limit(5)])
-                    ->withCount('questions')
-                    ->orderBy('sort_order')
-                    ->orderBy('id'),
-            ])
-            ->withCount(['lessons', 'tasks', 'assessments'])
-            ->when($selectedCourseId > 0, fn ($query) => $query->whereKey($selectedCourseId))
-            ->when($selectedCourseId === 0, fn ($query) => $query->orderBy('sort_order')->orderBy('title'))
-            ->first();
-
-        if ($activeCourse === null) {
-            return [
-                'courseOptions' => $courseOptions->values()->all(),
-                'activeCourse' => null,
-                'outline' => ['lessons' => [], 'assessments' => []],
-                'readiness' => [
-                    'has_course' => false,
-                    'has_topics' => false,
-                    'has_tasks' => false,
-                    'has_assessments' => false,
-                    'has_questions' => false,
-                ],
-            ];
-        }
-
-        $lessons = $activeCourse->lessons->map(fn (Lesson $lesson): array => [
-            'id' => $lesson->id,
-            'title' => $lesson->title,
-            'description' => (string) ($lesson->description ?? ''),
-            'position' => $lesson->position,
-            'status' => $lesson->status,
-            'version' => $lesson->version,
-            'topic_name' => $lesson->topic?->name,
-            'tasks_count' => $lesson->tasks_count,
-            'tasks' => $lesson->tasks->map(fn (LessonTask $task): array => [
-                'id' => $task->id,
-                'title' => $task->title,
-                'type' => $task->type,
-                'status' => $task->status,
-                'version' => $task->version,
-                'sort_order' => $task->sort_order,
-            ])->values()->all(),
-        ])->values();
-
-        $assessments = $activeCourse->assessments->map(fn (Assessment $assessment): array => [
-            'id' => $assessment->id,
-            'title' => $assessment->title,
-            'description' => $assessment->description,
-            'bloom_level' => $assessment->bloom_level,
-            'grading_type' => $assessment->grading_type,
-            'status' => $assessment->status,
-            'version' => $assessment->version,
-            'questions_count' => $assessment->questions_count,
-            'questions' => $assessment->questions->map(fn (AssessmentQuestion $question): array => [
-                'id' => $question->id,
-                'question_text' => $question->question_text,
-                'question_type' => $question->question_type,
-                'bloom_level' => $question->bloom_level,
-                'points' => $question->points,
-                'source_badge' => $question->question_bank_id ? 'From Bank' : 'Local',
-            ])->values()->all(),
-        ])->values();
-
-        return [
-            'courseOptions' => $courseOptions->values()->all(),
-            'activeCourse' => [
-                'id' => $activeCourse->id,
-                'slug' => $activeCourse->slug,
-                'title' => $activeCourse->title,
-                'summary' => $activeCourse->summary,
-                'cover' => $activeCourse->cover,
-                'status' => $activeCourse->status,
-                'version' => $activeCourse->version,
-                'lessons_count' => $activeCourse->lessons_count,
-                'tasks_count' => $activeCourse->tasks_count,
-                'assessments_count' => $activeCourse->assessments_count,
-            ],
-            'outline' => [
-                'lessons' => $lessons->all(),
-                'assessments' => $assessments->all(),
-            ],
-            'readiness' => [
-                'has_course' => true,
-                'has_topics' => $lessons->isNotEmpty(),
-                'has_tasks' => $lessons->contains(fn (array $lesson): bool => count($lesson['tasks']) > 0),
-                'has_assessments' => $assessments->isNotEmpty(),
-                'has_questions' => $assessments->contains(fn (array $assessment): bool => $assessment['questions_count'] > 0),
-            ],
-        ];
     }
 
     /**
@@ -730,6 +621,7 @@ class CourseController extends Controller
         }
 
         return ContentVersion::query()
+            ->select(['id', 'versionable_type', 'versionable_id', 'version_number', 'changed_fields', 'change_summary', 'created_by', 'created_at', 'restored_at'])
             ->where('versionable_type', $modelClass)
             ->whereIn('versionable_id', $ids)
             ->with('creator:id,name')
@@ -871,20 +763,27 @@ class CourseController extends Controller
 
     public function reorder(ReorderAdminCoursesRequest $request): RedirectResponse
     {
-        $items = collect($request->validated('items'));
+        $sourceId = $request->integer('source_id');
+        $targetId = $request->integer('target_id');
 
-        DB::transaction(function () use ($items): void {
-            $items->each(function (array $item): void {
-                Course::query()
-                    ->whereKey((int) $item['id'])
-                    ->update(['sort_order' => (int) $item['sort_order'] + 1000]);
-            });
+        $source = Course::findOrFail($sourceId);
+        $target = Course::findOrFail($targetId);
 
-            $items->each(function (array $item): void {
-                Course::query()
-                    ->whereKey((int) $item['id'])
-                    ->update(['sort_order' => (int) $item['sort_order']]);
-            });
+        DB::transaction(function () use ($source, $target): void {
+            $sourceSortOrder = $source->sort_order;
+            $targetSortOrder = $target->sort_order;
+
+            if ($sourceSortOrder < $targetSortOrder) {
+                // Moving down: decrement items between source and target
+                Course::whereBetween('sort_order', [$sourceSortOrder + 1, $targetSortOrder])
+                    ->decrement('sort_order');
+            } else {
+                // Moving up: increment items between target and source
+                Course::whereBetween('sort_order', [$targetSortOrder, $sourceSortOrder - 1])
+                    ->increment('sort_order');
+            }
+
+            $source->update(['sort_order' => $targetSortOrder]);
         });
 
         return back(fallback: route('admin.courses.index'));

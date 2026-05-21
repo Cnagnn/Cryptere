@@ -95,20 +95,25 @@ class LessonController extends Controller
 
     public function reorder(ReorderAdminLessonsRequest $request): RedirectResponse
     {
-        $items = collect($request->validated('items'));
+        $sourceId = $request->integer('source_id');
+        $targetId = $request->integer('target_id');
 
-        DB::transaction(function () use ($items): void {
-            $items->each(function (array $item): void {
-                Lesson::query()
-                    ->whereKey((int) $item['id'])
-                    ->update(['position' => (int) $item['position'] + 1000]);
-            });
+        $source = Lesson::findOrFail($sourceId);
+        $target = Lesson::findOrFail($targetId);
 
-            $items->each(function (array $item): void {
-                Lesson::query()
-                    ->whereKey((int) $item['id'])
-                    ->update(['position' => (int) $item['position']]);
-            });
+        DB::transaction(function () use ($source, $target): void {
+            $sourcePosition = $source->position;
+            $targetPosition = $target->position;
+
+            if ($sourcePosition < $targetPosition) {
+                Lesson::whereBetween('position', [$sourcePosition + 1, $targetPosition])
+                    ->decrement('position');
+            } else {
+                Lesson::whereBetween('position', [$targetPosition, $sourcePosition - 1])
+                    ->increment('position');
+            }
+
+            $source->update(['position' => $targetPosition]);
         });
 
         return back();

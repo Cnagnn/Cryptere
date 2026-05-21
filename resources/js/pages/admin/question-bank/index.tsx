@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { cn } from '@/lib/utils';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -72,6 +71,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import {
     destroy,
@@ -167,9 +167,13 @@ function questionTypeLabel(value: QuestionType): string {
 // ── Question Type Fields (inlined) ───────────────────────────────────────────
 
 function parseMultiSelectAnswer(value: string): string[] {
-    if (!value) return [];
+    if (!value) {
+return [];
+}
+
     try {
         const parsed = JSON.parse(value);
+
         return Array.isArray(parsed)
             ? parsed.filter((item): item is string => typeof item === 'string')
             : [];
@@ -185,9 +189,11 @@ function parseMatchingPairs(
     correctAnswer: string,
 ): MatchingPair[] {
     let map: Record<string, string> = {};
+
     if (correctAnswer) {
         try {
             const parsed = JSON.parse(correctAnswer);
+
             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
                 map = Object.fromEntries(
                     Object.entries(parsed).map(([key, value]) => [String(key), String(value ?? '')]),
@@ -197,17 +203,21 @@ function parseMatchingPairs(
             map = {};
         }
     }
+
     const fromOptions = (options ?? []).map((entry) => {
         const [left, right = ''] = String(entry ?? '').split('::');
+
         return { left, right };
     });
     const merged: MatchingPair[] = fromOptions.map((pair) => ({
         left: pair.left,
         right: pair.left && map[pair.left] !== undefined ? map[pair.left] : pair.right,
     }));
+
     while (merged.length < 4) {
         merged.push({ left: '', right: '' });
     }
+
     return merged;
 }
 
@@ -247,6 +257,7 @@ function QuestionTypeFields({
                     {options.map((option, index) => {
                         const isCorrect =
                             option.trim() !== '' && correctAnswer.trim() !== '' && correctAnswer === option;
+
                         return (
                             <div key={index} className="flex items-center gap-2">
                                 <Input
@@ -258,6 +269,7 @@ function QuestionTypeFields({
                                         const oldValue = next[index];
                                         next[index] = event.target.value;
                                         onOptionsChange(next);
+
                                         if (correctAnswer === oldValue && oldValue !== '') {
                                             onCorrectAnswerChange(event.target.value);
                                         }
@@ -286,12 +298,16 @@ function QuestionTypeFields({
     if (questionType === 'multiple_select') {
         const selected = parseMultiSelectAnswer(correctAnswer);
         const toggleOption = (option: string) => {
-            if (option.trim() === '') return;
+            if (option.trim() === '') {
+return;
+}
+
             const next = selected.includes(option)
                 ? selected.filter((value) => value !== option)
                 : [...selected, option];
             onCorrectAnswerChange(JSON.stringify(next));
         };
+
         return (
             <Field>
                 <FieldLabel>
@@ -303,6 +319,7 @@ function QuestionTypeFields({
                 <div className="grid gap-2">
                     {options.map((option, index) => {
                         const isCorrect = option.trim() !== '' && selected.includes(option);
+
                         return (
                             <div key={index} className="flex items-center gap-2">
                                 <Input
@@ -314,6 +331,7 @@ function QuestionTypeFields({
                                         const oldValue = next[index];
                                         next[index] = event.target.value;
                                         onOptionsChange(next);
+
                                         if (oldValue !== '' && selected.includes(oldValue)) {
                                             const newSelected = selected.map((s) =>
                                                 s === oldValue ? event.target.value : s,
@@ -345,6 +363,7 @@ function QuestionTypeFields({
     if (questionType === 'true_false') {
         const isTrue = correctAnswer === 'true';
         const isFalse = correctAnswer === 'false';
+
         return (
             <Field>
                 <FieldLabel>
@@ -383,12 +402,16 @@ function QuestionTypeFields({
             const next = pairs.map((pair, i) => (i === index ? { ...pair, [key]: value } : pair));
             const nextOptions = next.map((pair) => `${pair.left}::${pair.right}`);
             const nextAnswer = next.reduce<Record<string, string>>((acc, pair) => {
-                if (pair.left.trim() !== '') acc[pair.left] = pair.right;
+                if (pair.left.trim() !== '') {
+acc[pair.left] = pair.right;
+}
+
                 return acc;
             }, {});
             onOptionsChange(nextOptions);
             onCorrectAnswerChange(JSON.stringify(nextAnswer));
         };
+
         return (
             <Field>
                 <FieldLabel>
@@ -748,9 +771,9 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
                 <header className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex min-w-0 flex-col gap-1">
+                    <div className="flex min-w-0 flex-col gap-4">
                         <TypographyH1>Question Bank</TypographyH1>
-                        <TypographyMuted>
+                        <TypographyMuted className="-mt-3 text-base md:text-sm">
                             Manage reusable questions for quizzes and assessments.
                         </TypographyMuted>
                     </div>

@@ -164,11 +164,11 @@ class Assessment extends Model
             return $query;
         }
 
-        return $query->where(function (Builder $builder) use ($keyword): void {
-            $builder
-                ->where('title', 'like', "%{$keyword}%")
-                ->orWhere('description', 'like', "%{$keyword}%");
-        });
+        // Use FULLTEXT search for better performance (index exists)
+        return $query->whereRaw(
+            'MATCH(title, description) AGAINST(? IN BOOLEAN MODE)',
+            [$keyword.'*']
+        );
     }
 
     // ── Helpers ──

@@ -225,20 +225,25 @@ class TaskController extends Controller
 
     public function reorder(ReorderAdminTasksRequest $request): RedirectResponse
     {
-        $items = collect($request->validated('items'));
+        $sourceId = $request->integer('source_id');
+        $targetId = $request->integer('target_id');
 
-        DB::transaction(function () use ($items): void {
-            $items->each(function (array $item): void {
-                LessonTask::query()
-                    ->whereKey((int) $item['id'])
-                    ->update(['sort_order' => (int) $item['sort_order'] + 1000]);
-            });
+        $source = LessonTask::findOrFail($sourceId);
+        $target = LessonTask::findOrFail($targetId);
 
-            $items->each(function (array $item): void {
-                LessonTask::query()
-                    ->whereKey((int) $item['id'])
-                    ->update(['sort_order' => (int) $item['sort_order']]);
-            });
+        DB::transaction(function () use ($source, $target): void {
+            $sourceSortOrder = $source->sort_order;
+            $targetSortOrder = $target->sort_order;
+
+            if ($sourceSortOrder < $targetSortOrder) {
+                LessonTask::whereBetween('sort_order', [$sourceSortOrder + 1, $targetSortOrder])
+                    ->decrement('sort_order');
+            } else {
+                LessonTask::whereBetween('sort_order', [$targetSortOrder, $sourceSortOrder - 1])
+                    ->increment('sort_order');
+            }
+
+            $source->update(['sort_order' => $targetSortOrder]);
         });
 
         return back();

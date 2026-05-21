@@ -193,7 +193,8 @@ export default function Login({
                         )}
 
                         <Form
-                            {...store.form()}
+                            action={store.url()}
+                            method="post"
                             resetOnSuccess={['password']}
                             className="grid gap-4"
                         >

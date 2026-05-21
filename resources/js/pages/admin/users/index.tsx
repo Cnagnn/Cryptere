@@ -368,9 +368,9 @@ export default function AdminUsersIndex({ users, filters }: Props) {
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
                 <header className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex min-w-0 flex-col gap-1">
+                    <div className="flex min-w-0 flex-col gap-4">
                         <TypographyH1>User Management</TypographyH1>
-                        <TypographyMuted>
+                        <TypographyMuted className="-mt-3 text-base md:text-sm">
                             Manage user roles and point balances from one workspace.
                         </TypographyMuted>
                     </div>

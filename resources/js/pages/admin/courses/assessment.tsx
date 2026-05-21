@@ -24,10 +24,8 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
-import { cn } from '@/lib/utils';
 
 import {
     AlertDialog,
@@ -99,6 +97,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import {
     Tabs,
@@ -108,6 +107,7 @@ import {
 } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
+import { cn } from '@/lib/utils';
 import {
     destroy as destroyAssessment,
     reorder as reorderAssessments,
@@ -121,8 +121,6 @@ import {
     update as updateAssessmentQuestion,
 } from '@/routes/admin/assessments/questions';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
-import { store as storeQuestionBank } from '@/routes/admin/question-bank';
-import { restore as restoreVersion } from '@/routes/admin/versions';
 import type {
     AdminAssessment,
     AdminAssessmentQuestion,
@@ -204,9 +202,13 @@ const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
 // ── Question Type Fields (inlined) ───────────────────────────────────────────
 
 function parseMultiSelectAnswer(value: string): string[] {
-    if (!value) return [];
+    if (!value) {
+        return [];
+    }
+
     try {
         const parsed = JSON.parse(value);
+
         return Array.isArray(parsed)
             ? parsed.filter((item): item is string => typeof item === 'string')
             : [];
@@ -215,6 +217,7 @@ function parseMultiSelectAnswer(value: string): string[] {
     }
 }
 
+
 type MatchingPair = { left: string; right: string };
 
 function parseMatchingPairs(
@@ -222,9 +225,11 @@ function parseMatchingPairs(
     correctAnswer: string,
 ): MatchingPair[] {
     let map: Record<string, string> = {};
+
     if (correctAnswer) {
         try {
             const parsed = JSON.parse(correctAnswer);
+
             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
                 map = Object.fromEntries(
                     Object.entries(parsed).map(([key, value]) => [String(key), String(value ?? '')]),
@@ -234,17 +239,22 @@ function parseMatchingPairs(
             map = {};
         }
     }
+
     const fromOptions = (options ?? []).map((entry) => {
         const [left, right = ''] = String(entry ?? '').split('::');
+
         return { left, right };
     });
+
     const merged: MatchingPair[] = fromOptions.map((pair) => ({
         left: pair.left,
         right: pair.left && map[pair.left] !== undefined ? map[pair.left] : pair.right,
     }));
+
     while (merged.length < 4) {
         merged.push({ left: '', right: '' });
     }
+
     return merged;
 }
 
@@ -284,6 +294,7 @@ function QuestionTypeFields({
                     {options.map((option, index) => {
                         const isCorrect =
                             option.trim() !== '' && correctAnswer.trim() !== '' && correctAnswer === option;
+
                         return (
                             <div key={index} className="flex items-center gap-2">
                                 <Input
@@ -295,6 +306,7 @@ function QuestionTypeFields({
                                         const oldValue = next[index];
                                         next[index] = event.target.value;
                                         onOptionsChange(next);
+
                                         if (correctAnswer === oldValue && oldValue !== '') {
                                             onCorrectAnswerChange(event.target.value);
                                         }
@@ -322,13 +334,18 @@ function QuestionTypeFields({
 
     if (questionType === 'multiple_select') {
         const selected = parseMultiSelectAnswer(correctAnswer);
+
         const toggleOption = (option: string) => {
-            if (option.trim() === '') return;
+            if (option.trim() === '') {
+                return;
+            }
+
             const next = selected.includes(option)
                 ? selected.filter((value) => value !== option)
                 : [...selected, option];
             onCorrectAnswerChange(JSON.stringify(next));
         };
+
         return (
             <Field>
                 <FieldLabel>
@@ -340,6 +357,7 @@ function QuestionTypeFields({
                 <div className="grid gap-2">
                     {options.map((option, index) => {
                         const isCorrect = option.trim() !== '' && selected.includes(option);
+
                         return (
                             <div key={index} className="flex items-center gap-2">
                                 <Input
@@ -351,6 +369,7 @@ function QuestionTypeFields({
                                         const oldValue = next[index];
                                         next[index] = event.target.value;
                                         onOptionsChange(next);
+
                                         if (oldValue !== '' && selected.includes(oldValue)) {
                                             const newSelected = selected.map((s) =>
                                                 s === oldValue ? event.target.value : s,
@@ -382,6 +401,7 @@ function QuestionTypeFields({
     if (questionType === 'true_false') {
         const isTrue = correctAnswer === 'true';
         const isFalse = correctAnswer === 'false';
+
         return (
             <Field>
                 <FieldLabel>
@@ -416,16 +436,21 @@ function QuestionTypeFields({
 
     if (questionType === 'matching') {
         const pairs = parseMatchingPairs(options, correctAnswer);
+
         const updatePair = (index: number, key: 'left' | 'right', value: string) => {
             const next = pairs.map((pair, i) => (i === index ? { ...pair, [key]: value } : pair));
             const nextOptions = next.map((pair) => `${pair.left}::${pair.right}`);
             const nextAnswer = next.reduce<Record<string, string>>((acc, pair) => {
-                if (pair.left.trim() !== '') acc[pair.left] = pair.right;
+                if (pair.left.trim() !== '') {
+                    acc[pair.left] = pair.right;
+                }
+
                 return acc;
             }, {});
             onOptionsChange(nextOptions);
             onCorrectAnswerChange(JSON.stringify(nextAnswer));
         };
+
         return (
             <Field>
                 <FieldLabel>
@@ -597,6 +622,11 @@ export default function AdminCoursesAssessment({
 
     // Tab state
     const [activeTab, setActiveTab] = useState<'assessment' | 'question'>('assessment');
+    const [isLoading, setIsLoading] = useState(false);
+    const [cachedData, setCachedData] = useState({
+        assessments: assessments,
+        questions: questions,
+    });
 
     // Combobox states
     const [courseComboboxOpen, setCourseComboboxOpen] = useState(false);
@@ -623,10 +653,6 @@ export default function AdminCoursesAssessment({
         time_limit_minutes: '',
     });
 
-    const selectedAssessment = rows.find(
-        (assessment) => assessment.id === selectedAssessmentId,
-    );
-
     // Auto-switch to question tab when assessment is selected
     useEffect(() => {
         if (selectedAssessmentId > 0) {
@@ -635,6 +661,49 @@ export default function AdminCoursesAssessment({
             setActiveTab('assessment');
         }
     }, [selectedAssessmentId]);
+
+    const sectionUrl = useCallback(
+        (query: Record<string, unknown>) =>
+            adminCoursesIndex.url({ query: { section: 'assessment', ...query } }),
+        [],
+    );
+
+    // Instant tab switching with lazy loading
+    const handleTabChange = useCallback((value: string) => {
+        setActiveTab(value as 'assessment' | 'question');
+        window.history.replaceState(
+            null,
+            '',
+            sectionUrl({
+                course_id: selectedCourseId || undefined,
+                page: value === 'assessment' ? assessments.current_page : 1,
+                per_page: assessments.per_page,
+            }),
+        );
+
+        const needsData =
+            (value === 'assessment' &&
+                (!cachedData.assessments ||
+                    !cachedData.assessments.data ||
+                    cachedData.assessments.data.length === 0)) ||
+            (value === 'question' &&
+                selectedAssessmentId > 0 &&
+                (!cachedData.questions || cachedData.questions.length === 0));
+
+        if (needsData) {
+            setIsLoading(true);
+            router.reload({
+                only: ['assessments', 'questions'],
+                onSuccess: (page: any) => {
+                    setCachedData({
+                        assessments: page.props.assessments || cachedData.assessments,
+                        questions: page.props.questions || cachedData.questions,
+                    });
+                    setIsLoading(false);
+                },
+            });
+        }
+    }, [cachedData, selectedCourseId, selectedAssessmentId, assessments.current_page, assessments.per_page, sectionUrl]);
 
     const resetFormState = () => {
         setEditingAssessment(null);
@@ -670,9 +739,6 @@ export default function AdminCoursesAssessment({
         setCreateDialogOpen(true);
     };
 
-    const sectionUrl = (query: Record<string, unknown>) =>
-        adminCoursesIndex.url({ query: { section: 'assessment', ...query } });
-
     const filteredAssessments = useMemo(() => {
         const keyword = filterValue.trim().toLowerCase();
 
@@ -686,41 +752,6 @@ export default function AdminCoursesAssessment({
                 a.bloom_level.toLowerCase().includes(keyword),
         );
     }, [filterValue, rows]);
-
-    const saveAssessmentQuestionToBank = (
-        question: AdminAssessmentQuestion,
-    ) => {
-        router.post(
-            storeQuestionBank.url(),
-            {
-                title: question.question_text.slice(0, 120),
-                category: selectedAssessment?.course_title ?? null,
-                bloom_level: question.bloom_level,
-                question_type: question.question_type,
-                question_text: question.question_text,
-                options: question.options,
-                correct_answer: question.correct_answer,
-                explanation: question.explanation,
-                rubric: question.rubric,
-                points: question.points,
-                is_active: true,
-            },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () =>
-                    toast.success('Question saved to Question Bank.'),
-                onError: (formErrors) => {
-                    const messages = Object.values(formErrors)
-                        .flat()
-                        .join(', ');
-                    toast.error(
-                        messages || 'Failed to save to Question Bank.',
-                    );
-                },
-            },
-        );
-    };
 
     const reorderRows = (sourceRowId: string, targetRowId: string) => {
         if (sourceRowId === targetRowId) {
@@ -1221,7 +1252,7 @@ export default function AdminCoursesAssessment({
         }
 
         router.post(
-            restoreVersion.url({ version: restoreTarget.id }),
+            `/admin/versions/${restoreTarget.id}/restore`,
             {},
             {
                 preserveScroll: true,
@@ -1605,7 +1636,7 @@ export default function AdminCoursesAssessment({
                 ),
             },
         ],
-        [assessments.current_page, assessments.per_page, versionHistories],
+        [assessments.current_page, assessments.per_page, versionHistories, sectionUrl],
     );
 
     const questionColumns: ColumnDef<AdminAssessmentQuestion>[] = [
@@ -1750,20 +1781,12 @@ export default function AdminCoursesAssessment({
         <>
             <Tabs
                 value={activeTab}
-                onValueChange={(value) =>
-                    setActiveTab(value as 'assessment' | 'question')
-                }
+                onValueChange={handleTabChange}
             >
-                <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
-                    <header className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:justify-between">
-                        <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
                             <TypographyH1>Assessment</TypographyH1>
-                            <TypographyMuted>
-                                Manage assessments for each course.
-                            </TypographyMuted>
-                        </div>
-                        <div className="flex shrink-0 items-center justify-end gap-2">
-                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <TabsList>
                                 <TabsTrigger
                                     value="assessment"
@@ -1787,14 +1810,17 @@ export default function AdminCoursesAssessment({
                                     <ClipboardCheck className="size-4" />
                                     Assessment
                                 </TabsTrigger>
-                                <TabsTrigger
-                                    value="question"
-                                >
+                                <TabsTrigger value="question">
                                     <HelpCircle className="size-4" />
                                     Question
                                 </TabsTrigger>
                             </TabsList>
-
+                        </div>
+                        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between -mt-3">
+                            <TypographyMuted className="text-base md:text-sm">
+                                Manage assessments for each course.
+                            </TypographyMuted>
+                            <div className="flex shrink-0 items-center gap-2">
                             {activeTab === 'assessment' ? (
                             <Popover>
                                 <PopoverTrigger asChild>
@@ -1887,6 +1913,7 @@ export default function AdminCoursesAssessment({
                                             {selectedAssessmentId > 0
                                                 ? (() => {
                                                     const assessment = allAssessments.find(a => a.id === selectedAssessmentId);
+
                                                     return assessment ? assessment.title : 'Select Assessment...';
                                                 })()
                                                 : 'Select Assessment...'}
@@ -1909,7 +1936,11 @@ export default function AdminCoursesAssessment({
                                                 const courseAssessments = allAssessments.filter(
                                                     (a) => a.course_id === course.id,
                                                 );
-                                                if (courseAssessments.length === 0) return null;
+
+                                                if (courseAssessments.length === 0) {
+                                                    return null;
+                                                }
+
                                                 return (
                                                     <CommandGroup
                                                         key={course.id}
@@ -1961,644 +1992,17 @@ export default function AdminCoursesAssessment({
                                 <Plus data-icon="inline-start" />
                                 Create
                             </Button>
-
-                            {/* Create Assessment Dialog */}
-                            <Dialog
-                                open={createDialogOpen}
-                                onOpenChange={(open) => {
-                                    setCreateDialogOpen(open);
-
-                                    if (!open && !isSaving) {
-                                        resetFormState();
-                                    }
-                                }}
-                            >
-                                <DialogContent className="sm:max-w-sm">
-                                    <form
-                                        onSubmit={(event) => {
-                                            event.preventDefault();
-                                            const payload = {
-                                                title: assessmentForm.title,
-                                                description:
-                                                    assessmentForm.description,
-                                                course_id:
-                                                    assessmentForm.course_id > 0
-                                                        ? assessmentForm.course_id
-                                                        : null,
-                                                topic_id: null,
-                                                bloom_level:
-                                                    assessmentForm.bloom_level,
-                                                grading_type:
-                                                    assessmentForm.grading_type,
-                                                passing_score: Number(
-                                                    assessmentForm.passing_score,
-                                                ),
-                                                max_attempts: Number(
-                                                    assessmentForm.max_attempts,
-                                                ),
-                                                time_limit_minutes:
-                                                    assessmentForm.time_limit_minutes
-                                                        ? Number(
-                                                              assessmentForm.time_limit_minutes,
-                                                          )
-                                                        : null,
-                                            };
-
-                                            const requestUrl = isEditMode
-                                                ? updateAssessment.url({
-                                                      assessment:
-                                                          editingAssessment.id,
-                                                  })
-                                                : storeAssessment.url();
-
-                                            const method = isEditMode
-                                                ? 'patch'
-                                                : 'post';
-
-                                            router[method](
-                                                requestUrl,
-                                                payload,
-                                                {
-                                                    preserveScroll: true,
-                                                    preserveState: true,
-                                                    onStart: () =>
-                                                        setIsSaving(true),
-                                                    onSuccess: () => {
-                                                        toast.success(
-                                                            isEditMode
-                                                                ? 'Assessment updated successfully.'
-                                                                : 'Assessment created successfully.',
-                                                        );
-                                                        resetFormState();
-                                                        setCreateDialogOpen(
-                                                            false,
-                                                        );
-                                                    },
-                                                    onError: (formErrors) => {
-                                                        const messages =
-                                                            Object.values(
-                                                                formErrors,
-                                                            )
-                                                                .flat()
-                                                                .join(', ');
-                                                        toast.error(
-                                                            messages ||
-                                                                'Failed to save assessment.',
-                                                        );
-                                                    },
-                                                    onFinish: () =>
-                                                        setIsSaving(false),
-                                                },
-                                            );
-                                        }}
-                                    >
-                                        <DialogHeader>
-                                            <DialogTitle>
-                                                {isEditMode
-                                                    ? 'Edit assessment'
-                                                    : 'Create assessment'}
-                                            </DialogTitle>
-                                            <DialogDescription>
-                                                {isEditMode
-                                                    ? 'Update assessment details.'
-                                                    : 'Add a new Bloom Taxonomy assessment.'}
-                                            </DialogDescription>
-                                        </DialogHeader>
-
-                                        <FieldGroup className="mt-4">
-                                            <Field>
-                                                <FieldLabel htmlFor="assessment-course">
-                                                    Course{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-                                                <Popover
-                                                    open={courseComboboxOpen}
-                                                    onOpenChange={
-                                                        setCourseComboboxOpen
-                                                    }
-                                                >
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            id="assessment-course"
-                                                            variant="outline"
-                                                            role="combobox"
-                                                            className="w-full justify-between"
-                                                        >
-                                                            <span className="truncate">
-                                                                {(() => {
-                                                                    const course =
-                                                                        courseOptions.find(
-                                                                            (
-                                                                                c,
-                                                                            ) =>
-                                                                                c.id ===
-                                                                                assessmentForm.course_id,
-                                                                        );
-
-                                                                    if (
-                                                                        course
-                                                                    ) {
-                                                                        return course.title;
-                                                                    }
-
-                                                                    return 'Select course...';
-                                                                })()}
-                                                            </span>
-                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent
-                                                        className="p-0"
-                                                        align="start"
-                                                        style={{
-                                                            width: 'var(--radix-popover-trigger-width)',
-                                                        }}
-                                                    >
-                                                        <Command>
-                                                            <CommandInput placeholder="Search course..." />
-                                                            <CommandList
-                                                                style={{
-                                                                    maxHeight:
-                                                                        '16rem',
-                                                                    overflowY:
-                                                                        'auto',
-                                                                }}
-                                                            >
-                                                                <CommandEmpty>
-                                                                    No results
-                                                                    found.
-                                                                </CommandEmpty>
-                                                                <CommandGroup>
-                                                                    {courseOptions.map(
-                                                                        (
-                                                                            course,
-                                                                        ) => (
-                                                                            <CommandItem
-                                                                                key={
-                                                                                    course.id
-                                                                                }
-                                                                                value={
-                                                                                    course.title
-                                                                                }
-                                                                                onSelect={() => {
-                                                                                    setAssessmentForm(
-                                                                                        (
-                                                                                            current,
-                                                                                        ) => ({
-                                                                                            ...current,
-                                                                                            course_id:
-                                                                                                course.id,
-                                                                                        }),
-                                                                                    );
-                                                                                    setCourseComboboxOpen(
-                                                                                        false,
-                                                                                    );
-                                                                                }}
-                                                                            >
-                                                                                {
-                                                                                    course.title
-                                                                                }
-                                                                                <Check
-                                                                                    className={`ml-auto h-4 w-4 ${
-                                                                                        assessmentForm.course_id ===
-                                                                                        course.id
-                                                                                            ? 'opacity-100'
-                                                                                            : 'opacity-0'
-                                                                                    }`}
-                                                                                />
-                                                                            </CommandItem>
-                                                                        ),
-                                                                    )}
-                                                                </CommandGroup>
-                                                            </CommandList>
-                                                        </Command>
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </Field>
-
-                                            <Field
-                                                className="gap-2"
-                                                data-invalid={
-                                                    !!errors.title || undefined
-                                                }
-                                            >
-                                                <FieldLabel htmlFor="assessment-title">
-                                                    Title{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-                                                <Input
-                                                    id="assessment-title"
-                                                    name="title"
-                                                    placeholder="e.g., AES — Recall & Recognition"
-                                                    value={assessmentForm.title}
-                                                    onChange={(e) =>
-                                                        setAssessmentForm(
-                                                            (c) => ({
-                                                                ...c,
-                                                                title: e.target
-                                                                    .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                    aria-invalid={
-                                                        !!errors.title
-                                                    }
-                                                    required
-                                                />
-                                                {errors.title && (
-                                                    <FieldDescription className="text-destructive">
-                                                        {errors.title}
-                                                    </FieldDescription>
-                                                )}
-                                            </Field>
-
-                                            <Field
-                                                className="gap-2"
-                                                data-invalid={
-                                                    !!errors.description ||
-                                                    undefined
-                                                }
-                                            >
-                                                <FieldLabel htmlFor="assessment-description">
-                                                    Description
-                                                </FieldLabel>
-                                                <Textarea
-                                                    id="assessment-description"
-                                                    name="description"
-                                                    placeholder="Enter assessment description"
-                                                    value={
-                                                        assessmentForm.description
-                                                    }
-                                                    onChange={(e) =>
-                                                        setAssessmentForm(
-                                                            (c) => ({
-                                                                ...c,
-                                                                description:
-                                                                    e.target
-                                                                        .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                    rows={3}
-                                                />
-                                                {errors.description && (
-                                                    <FieldDescription className="text-destructive">
-                                                        {errors.description}
-                                                    </FieldDescription>
-                                                )}
-                                            </Field>
-
-                                            <Field>
-                                                    <FieldLabel>
-                                                        Bloom Level{' '}
-                                                        <span className="text-destructive">
-                                                            *
-                                                        </span>
-                                                    </FieldLabel>
-                                                    <Select
-                                                        value={
-                                                            assessmentForm.bloom_level
-                                                        }
-                                                        onValueChange={(v) =>
-                                                            setAssessmentForm(
-                                                                (c) => ({
-                                                                    ...c,
-                                                                    bloom_level:
-                                                                        v as BloomLevel,
-                                                                }),
-                                                            )
-                                                        }
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectGroup>
-                                                                <SelectItem value="C1">
-                                                                    C1 —
-                                                                    Remember
-                                                                </SelectItem>
-                                                                <SelectItem value="C2">
-                                                                    C2 —
-                                                                    Understand
-                                                                </SelectItem>
-                                                                <SelectItem value="C3">
-                                                                    C3 — Apply
-                                                                </SelectItem>
-                                                                <SelectItem value="C4">
-                                                                    C4 — Analyze
-                                                                </SelectItem>
-                                                                <SelectItem value="C5">
-                                                                    C5 —
-                                                                    Evaluate
-                                                                </SelectItem>
-                                                                <SelectItem value="C6">
-                                                                    C6 — Create
-                                                                </SelectItem>
-                                                            </SelectGroup>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </Field><div className="grid grid-cols-3 items-end gap-3">
-                                                <Field>
-                                                    <FieldLabel>
-                                                        Pass Score (%)
-                                                    </FieldLabel>
-                                                    <Input
-                                                        type="number"
-                                                        min={1}
-                                                        max={100}
-                                                        value={
-                                                            assessmentForm.passing_score
-                                                        }
-                                                        onChange={(e) =>
-                                                            setAssessmentForm(
-                                                                (c) => ({
-                                                                    ...c,
-                                                                    passing_score:
-                                                                        e.target
-                                                                            .value,
-                                                                }),
-                                                            )
-                                                        }
-                                                    />
-                                                </Field>
-                                                <Field>
-                                                    <FieldLabel>
-                                                        Max Attempts
-                                                    </FieldLabel>
-                                                    <Input
-                                                        type="number"
-                                                        min={1}
-                                                        max={10}
-                                                        value={
-                                                            assessmentForm.max_attempts
-                                                        }
-                                                        onChange={(e) =>
-                                                            setAssessmentForm(
-                                                                (c) => ({
-                                                                    ...c,
-                                                                    max_attempts:
-                                                                        e.target
-                                                                            .value,
-                                                                }),
-                                                            )
-                                                        }
-                                                    />
-                                                </Field>
-                                                <Field>
-                                                    <FieldLabel>
-                                                        Time (minutes)
-                                                    </FieldLabel>
-                                                    <Input
-                                                        type="number"
-                                                        min={1}
-                                                        max={480}
-                                                        value={
-                                                            assessmentForm.time_limit_minutes
-                                                        }
-                                                        onChange={(e) =>
-                                                            setAssessmentForm(
-                                                                (c) => ({
-                                                                    ...c,
-                                                                    time_limit_minutes:
-                                                                        e.target
-                                                                            .value,
-                                                                }),
-                                                            )
-                                                        }
-                                                        placeholder="∞"
-                                                    />
-                                                </Field>
-                                            </div>
-                                        </FieldGroup>
-
-                                        <DialogFooter className="mt-6">
-                                            <DialogClose asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    type="button"
-                                                    disabled={isSaving}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            </DialogClose>
-                                            <Button
-                                                type="submit"
-                                                disabled={isSaving}
-                                            >
-                                                {isSaving && (
-                                                    <Spinner data-icon="inline-start" />
-                                                )}
-                                                {isEditMode
-                                                    ? 'Save changes'
-                                                    : 'Create assessment'}
-                                            </Button>
-                                        </DialogFooter>
-                                    </form>
-                                </DialogContent>
-                            </Dialog>
-
-                            {/* Create Question Dialog */}
-                            <Dialog
-                                open={createQuestionDialogOpen}
-                                onOpenChange={(open) => {
-                                    setCreateQuestionDialogOpen(open);
-
-                                    if (!open) {
-                                        setAssessmentQuestionForm({
-                                            question_text: '',
-                                            explanation: '',
-                                            points: '10',
-                                            question_type: 'essay',
-                                            options: ['', '', '', ''],
-                                            correct_answer: '',
-                                            min_words: '',
-                                            max_words: '',
-                                        });
-                                    }
-                                }}
-                            >
-                                <DialogContent className="sm:max-w-sm">
-                                    <form
-                                        onSubmit={(event) => {
-                                            event.preventDefault();
-                                            saveNewAssessmentQuestion();
-                                        }}
-                                    >
-                                        <DialogHeader>
-                                            <DialogTitle>Create New Question</DialogTitle>
-                                            <DialogDescription>
-                                                Create a new question for this assessment.
-                                            </DialogDescription>
-                                        </DialogHeader>
-
-                                        <FieldGroup className="mt-4">
-                                        <Field>
-                                            <FieldLabel htmlFor="new-question-type">
-                                                Question Type{' '}
-                                                <span className="text-destructive">*</span>
-                                            </FieldLabel>
-                                            <Select
-                                                value={
-                                                    assessmentQuestionForm.question_type
-                                                }
-                                                onValueChange={(value) =>
-                                                    setAssessmentQuestionForm(
-                                                        (prev) => ({
-                                                            ...prev,
-                                                            question_type:
-                                                                value as QuestionType,
-                                                            options: [
-                                                                '',
-                                                                '',
-                                                                '',
-                                                                '',
-                                                            ],
-                                                            correct_answer: '',
-                                                            min_words: '',
-                                                            max_words: '',
-                                                        }),
-                                                    )
-                                                }
-                                            >
-                                                <SelectTrigger id="new-question-type">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectGroup>
-                                                        {QUESTION_TYPE_OPTIONS.map(
-                                                            (option) => (
-                                                                <SelectItem
-                                                                    key={
-                                                                        option.value
-                                                                    }
-                                                                    value={
-                                                                        option.value
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        option.label
-                                                                    }
-                                                                </SelectItem>
-                                                            ),
-                                                        )}
-                                                    </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                        </Field>
-
-                                        <Field>
-                                            <FieldLabel htmlFor="new-question-text">
-                                                Question{' '}
-                                                <span className="text-destructive">*</span>
-                                            </FieldLabel>
-                                            <Textarea
-                                                id="new-question-text"
-                                                value={assessmentQuestionForm.question_text}
-                                                onChange={(event) =>
-                                                    setAssessmentQuestionForm((prev) => ({
-                                                        ...prev,
-                                                        question_text: event.target.value,
-                                                    }))
-                                                }
-                                                rows={4}
-                                                placeholder="Enter question..."
-                                            />
-                                        </Field>
-
-                                        <QuestionTypeFields
-                                            idPrefix="new-question"
-                                            questionType={
-                                                assessmentQuestionForm.question_type
-                                            }
-                                            options={
-                                                assessmentQuestionForm.options
-                                            }
-                                            correctAnswer={
-                                                assessmentQuestionForm.correct_answer
-                                            }
-                                            minWords={
-                                                assessmentQuestionForm.min_words
-                                            }
-                                            maxWords={
-                                                assessmentQuestionForm.max_words
-                                            }
-                                            onOptionsChange={(next) =>
-                                                setAssessmentQuestionForm(
-                                                    (prev) => ({
-                                                        ...prev,
-                                                        options: next,
-                                                    }),
-                                                )
-                                            }
-                                            onCorrectAnswerChange={(value) =>
-                                                setAssessmentQuestionForm(
-                                                    (prev) => ({
-                                                        ...prev,
-                                                        correct_answer: value,
-                                                    }),
-                                                )
-                                            }
-                                            onMinWordsChange={(value) =>
-                                                setAssessmentQuestionForm(
-                                                    (prev) => ({
-                                                        ...prev,
-                                                        min_words: value,
-                                                    }),
-                                                )
-                                            }
-                                            onMaxWordsChange={(value) =>
-                                                setAssessmentQuestionForm(
-                                                    (prev) => ({
-                                                        ...prev,
-                                                        max_words: value,
-                                                    }),
-                                                )
-                                            }
-                                        />
-
-                                        <Field>
-                                            <FieldLabel htmlFor="new-question-explanation">
-                                                Explanation
-                                            </FieldLabel>
-                                            <Textarea
-                                                id="new-question-explanation"
-                                                value={assessmentQuestionForm.explanation}
-                                                onChange={(event) =>
-                                                    setAssessmentQuestionForm((prev) => ({
-                                                        ...prev,
-                                                        explanation: event.target.value,
-                                                    }))
-                                                }
-                                                rows={3}
-                                                placeholder="Answer explanation (optional)"
-                                            />
-                                        </Field>
-                                        </FieldGroup>
-
-                                        <DialogFooter className="mt-6">
-                                            <Button type="button" variant="outline" onClick={() => setCreateQuestionDialogOpen(false)}>
-                                                Cancel
-                                            </Button>
-                                            <Button type="submit">
-                                                Add Question
-                                            </Button>
-                                        </DialogFooter>
-                                    </form>
-                                </DialogContent>
-                            </Dialog>
+                            </div>
                         </div>
                     </div>
-                </header>
-                {/* Table */}
+
+                {/* TabsContent */}
                 <TabsContent value="assessment">
-                    <section className="grid min-w-0 gap-4">
-                        <div className="flex min-w-0 flex-col gap-4">
-                            {filteredAssessments.length === 0 ? (
+                    <section className="grid gap-4">
+                        <div className="flex flex-col gap-4">
+                            {isLoading ? (
+                                <Skeleton className="h-150 w-full rounded-lg" />
+                            ) : filteredAssessments.length === 0 ? (
                                 <Empty>
                                     <EmptyHeader>
                                         <EmptyMedia variant="icon">
@@ -2642,9 +2046,11 @@ export default function AdminCoursesAssessment({
                 </TabsContent>
 
                 <TabsContent value="question">
-                    <section className="grid min-w-0 content-start gap-4">
-                        <div className="min-w-0">
-                            {questionRows.length === 0 ? (
+                    <section className="grid gap-4">
+                        <div className="flex flex-col gap-4">
+                            {isLoading ? (
+                                <Skeleton className="h-150 w-full rounded-lg" />
+                            ) : questionRows.length === 0 ? (
                                 <Empty>
                                     <EmptyHeader>
                                         <EmptyMedia variant="icon">
@@ -2682,7 +2088,639 @@ export default function AdminCoursesAssessment({
                     </section>
                 </TabsContent>
             </div>
-        </Tabs>
+            </Tabs>
+
+            {/* Create Assessment Dialog */}
+            <Dialog
+                open={createDialogOpen}
+                onOpenChange={(open) => {
+                    setCreateDialogOpen(open);
+
+                    if (!open && !isSaving) {
+                        resetFormState();
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-sm">
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            const payload = {
+                                title: assessmentForm.title,
+                                description:
+                                    assessmentForm.description,
+                                course_id:
+                                    assessmentForm.course_id > 0
+                                        ? assessmentForm.course_id
+                                        : null,
+                                topic_id: null,
+                                bloom_level:
+                                    assessmentForm.bloom_level,
+                                grading_type:
+                                    assessmentForm.grading_type,
+                                passing_score: Number(
+                                    assessmentForm.passing_score,
+                                ),
+                                max_attempts: Number(
+                                    assessmentForm.max_attempts,
+                                ),
+                                time_limit_minutes:
+                                    assessmentForm.time_limit_minutes
+                                        ? Number(
+                                              assessmentForm.time_limit_minutes,
+                                          )
+                                        : null,
+                            };
+
+                            const requestUrl = isEditMode
+                                ? updateAssessment.url({
+                                      assessment:
+                                          editingAssessment.id,
+                                  })
+                                : storeAssessment.url();
+
+                            const method = isEditMode
+                                ? 'patch'
+                                : 'post';
+
+                            router[method](
+                                requestUrl,
+                                payload,
+                                {
+                                    preserveScroll: true,
+                                    preserveState: true,
+                                    onStart: () =>
+                                        setIsSaving(true),
+                                    onSuccess: () => {
+                                        toast.success(
+                                            isEditMode
+                                                ? 'Assessment updated successfully.'
+                                                : 'Assessment created successfully.',
+                                        );
+                                        resetFormState();
+                                        setCreateDialogOpen(
+                                            false,
+                                        );
+                                    },
+                                    onError: (formErrors) => {
+                                        const messages =
+                                            Object.values(
+                                                formErrors,
+                                            )
+                                                .flat()
+                                                .join(', ');
+                                        toast.error(
+                                            messages ||
+                                                'Failed to save assessment.',
+                                        );
+                                    },
+                                    onFinish: () =>
+                                        setIsSaving(false),
+                                },
+                            );
+                        }}
+                    >
+                        <DialogHeader>
+                            <DialogTitle>
+                                {isEditMode
+                                    ? 'Edit Assessment'
+                                    : 'Create New Assessment'}
+                            </DialogTitle>
+                            <DialogDescription>
+                                {isEditMode
+                                    ? 'Update Assessment Details.'
+                                    : 'Add a new Bloom Taxonomy Assessment.'}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <FieldGroup className="mt-4">
+                            <Field>
+                                <FieldLabel htmlFor="assessment-course">
+                                    Course{' '}
+                                    <span className="text-destructive">
+                                        *
+                                    </span>
+                                </FieldLabel>
+                                <Popover
+                                    open={courseComboboxOpen}
+                                    onOpenChange={
+                                        setCourseComboboxOpen
+                                    }
+                                >
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            id="assessment-course"
+                                            variant="outline"
+                                            role="combobox"
+                                            className="w-full justify-between"
+                                        >
+                                            <span className="truncate">
+                                                {(() => {
+                                                    const course =
+                                                        courseOptions.find(
+                                                            (
+                                                                c,
+                                                            ) =>
+                                                                c.id ===
+                                                                assessmentForm.course_id,
+                                                        );
+
+                                                    if (
+                                                        course
+                                                    ) {
+                                                        return course.title;
+                                                    }
+
+                                                    return 'Select course...';
+                                                })()}
+                                            </span>
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        className="p-0"
+                                        align="start"
+                                        style={{
+                                            width: 'var(--radix-popover-trigger-width)',
+                                        }}
+                                    >
+                                        <Command>
+                                            <CommandInput placeholder="Search course..." />
+                                            <CommandList
+                                                style={{
+                                                    maxHeight:
+                                                        '16rem',
+                                                    overflowY:
+                                                        'auto',
+                                                }}
+                                            >
+                                                <CommandEmpty>
+                                                    No results
+                                                    found.
+                                                </CommandEmpty>
+                                                <CommandGroup>
+                                                    {courseOptions.map(
+                                                        (
+                                                            course,
+                                                        ) => (
+                                                            <CommandItem
+                                                                key={
+                                                                    course.id
+                                                                }
+                                                                value={
+                                                                    course.title
+                                                                }
+                                                                onSelect={() => {
+                                                                    setAssessmentForm(
+                                                                        (
+                                                                            current,
+                                                                        ) => ({
+                                                                            ...current,
+                                                                            course_id:
+                                                                                course.id,
+                                                                        }),
+                                                                    );
+                                                                    setCourseComboboxOpen(
+                                                                        false,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {
+                                                                    course.title
+                                                                }
+                                                                <Check
+                                                                    className={`ml-auto h-4 w-4 ${
+                                                                        assessmentForm.course_id ===
+                                                                        course.id
+                                                                            ? 'opacity-100'
+                                                                            : 'opacity-0'
+                                                                    }`}
+                                                                />
+                                                            </CommandItem>
+                                                        ),
+                                                    )}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </Field>
+
+                            <Field
+                                className="gap-2"
+                                data-invalid={
+                                    !!errors.title || undefined
+                                }
+                            >
+                                <FieldLabel htmlFor="assessment-title">
+                                    Title{' '}
+                                    <span className="text-destructive">
+                                        *
+                                    </span>
+                                </FieldLabel>
+                                <Input
+                                    id="assessment-title"
+                                    name="title"
+                                    placeholder="e.g., AES — Recall & Recognition"
+                                    value={assessmentForm.title}
+                                    onChange={(e) =>
+                                        setAssessmentForm(
+                                            (c) => ({
+                                                ...c,
+                                                title: e.target
+                                                    .value,
+                                            }),
+                                        )
+                                    }
+                                    aria-invalid={
+                                        !!errors.title
+                                    }
+                                    required
+                                />
+                                {errors.title && (
+                                    <FieldDescription className="text-destructive">
+                                        {errors.title}
+                                    </FieldDescription>
+                                )}
+                            </Field>
+
+                            <Field
+                                className="gap-2"
+                                data-invalid={
+                                    !!errors.description ||
+                                    undefined
+                                }
+                            >
+                                <FieldLabel htmlFor="assessment-description">
+                                    Description
+                                </FieldLabel>
+                                <Textarea
+                                    id="assessment-description"
+                                    name="description"
+                                    placeholder="Enter assessment description"
+                                    value={
+                                        assessmentForm.description
+                                    }
+                                    onChange={(e) =>
+                                        setAssessmentForm(
+                                            (c) => ({
+                                                ...c,
+                                                description:
+                                                    e.target
+                                                        .value,
+                                            }),
+                                        )
+                                    }
+                                    rows={3}
+                                />
+                                {errors.description && (
+                                    <FieldDescription className="text-destructive">
+                                        {errors.description}
+                                    </FieldDescription>
+                                )}
+                            </Field>
+
+                            <Field>
+                                <FieldLabel>
+                                    Bloom Level{' '}
+                                    <span className="text-destructive">
+                                        *
+                                    </span>
+                                </FieldLabel>
+                                <Select
+                                    value={
+                                        assessmentForm.bloom_level
+                                    }
+                                    onValueChange={(v) =>
+                                        setAssessmentForm(
+                                            (c) => ({
+                                                ...c,
+                                                bloom_level:
+                                                    v as BloomLevel,
+                                            }),
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectItem value="C1">
+                                                C1 —
+                                                Remember
+                                            </SelectItem>
+                                            <SelectItem value="C2">
+                                                C2 —
+                                                Understand
+                                            </SelectItem>
+                                            <SelectItem value="C3">
+                                                C3 — Apply
+                                            </SelectItem>
+                                            <SelectItem value="C4">
+                                                C4 — Analyze
+                                            </SelectItem>
+                                            <SelectItem value="C5">
+                                                C5 —
+                                                Evaluate
+                                            </SelectItem>
+                                            <SelectItem value="C6">
+                                                C6 — Create
+                                            </SelectItem>
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+
+                            <div className="grid grid-cols-3 items-end gap-3">
+                                <Field>
+                                    <FieldLabel>
+                                        Pass Score (%)
+                                    </FieldLabel>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={100}
+                                        value={
+                                            assessmentForm.passing_score
+                                        }
+                                        onChange={(e) =>
+                                            setAssessmentForm(
+                                                (c) => ({
+                                                    ...c,
+                                                    passing_score:
+                                                        e.target
+                                                            .value,
+                                                }),
+                                            )
+                                        }
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>
+                                        Max Attempts
+                                    </FieldLabel>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={10}
+                                        value={
+                                            assessmentForm.max_attempts
+                                        }
+                                        onChange={(e) =>
+                                            setAssessmentForm(
+                                                (c) => ({
+                                                    ...c,
+                                                    max_attempts:
+                                                        e.target
+                                                            .value,
+                                                }),
+                                            )
+                                        }
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>
+                                        Time (minutes)
+                                    </FieldLabel>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={480}
+                                        value={
+                                            assessmentForm.time_limit_minutes
+                                        }
+                                        onChange={(e) =>
+                                            setAssessmentForm(
+                                                (c) => ({
+                                                    ...c,
+                                                    time_limit_minutes:
+                                                        e.target
+                                                            .value,
+                                                }),
+                                            )
+                                        }
+                                        placeholder="∞"
+                                    />
+                                </Field>
+                            </div>
+                        </FieldGroup>
+
+                        <DialogFooter className="mt-6">
+                            <DialogClose asChild>
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    disabled={isSaving}
+                                >
+                                    Cancel
+                                </Button>
+                            </DialogClose>
+                            <Button
+                                type="submit"
+                                disabled={isSaving}
+                            >
+                                {isSaving && (
+                                    <Spinner data-icon="inline-start" />
+                                )}
+                                {isEditMode
+                                    ? 'Save changes'
+                                    : 'Create assessment'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Create Question Dialog */}
+            <Dialog
+                open={createQuestionDialogOpen}
+                onOpenChange={(open) => {
+                    setCreateQuestionDialogOpen(open);
+
+                    if (!open) {
+                        setAssessmentQuestionForm({
+                            question_text: '',
+                            explanation: '',
+                            points: '10',
+                            question_type: 'essay',
+                            options: ['', '', '', ''],
+                            correct_answer: '',
+                            min_words: '',
+                            max_words: '',
+                        });
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-sm">
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            saveNewAssessmentQuestion();
+                        }}
+                    >
+                        <DialogHeader>
+                            <DialogTitle>Create New Question</DialogTitle>
+                            <DialogDescription>
+                                Create a new question for this assessment.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <FieldGroup className="mt-4">
+                            <Field>
+                                <FieldLabel htmlFor="new-question-type">
+                                    Question Type{' '}
+                                    <span className="text-destructive">*</span>
+                                </FieldLabel>
+                                <Select
+                                    value={
+                                        assessmentQuestionForm.question_type
+                                    }
+                                    onValueChange={(value) =>
+                                        setAssessmentQuestionForm(
+                                            (prev) => ({
+                                                ...prev,
+                                                question_type:
+                                                    value as QuestionType,
+                                                options: [
+                                                    '',
+                                                    '',
+                                                    '',
+                                                    '',
+                                                ],
+                                                correct_answer: '',
+                                                min_words: '',
+                                                max_words: '',
+                                            }),
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="new-question-type">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {QUESTION_TYPE_OPTIONS.map(
+                                                (option) => (
+                                                    <SelectItem
+                                                        key={
+                                                            option.value
+                                                        }
+                                                        value={
+                                                            option.value
+                                                        }
+                                                    >
+                                                        {
+                                                            option.label
+                                                        }
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+
+                            <Field>
+                                <FieldLabel htmlFor="new-question-text">
+                                    Question{' '}
+                                    <span className="text-destructive">*</span>
+                                </FieldLabel>
+                                <Textarea
+                                    id="new-question-text"
+                                    value={assessmentQuestionForm.question_text}
+                                    onChange={(event) =>
+                                        setAssessmentQuestionForm((prev) => ({
+                                            ...prev,
+                                            question_text: event.target.value,
+                                        }))
+                                    }
+                                    rows={4}
+                                    placeholder="Enter question..."
+                                />
+                            </Field>
+
+                            <QuestionTypeFields
+                                idPrefix="new-question"
+                                questionType={
+                                    assessmentQuestionForm.question_type
+                                }
+                                options={
+                                    assessmentQuestionForm.options
+                                }
+                                correctAnswer={
+                                    assessmentQuestionForm.correct_answer
+                                }
+                                minWords={
+                                    assessmentQuestionForm.min_words
+                                }
+                                maxWords={
+                                    assessmentQuestionForm.max_words
+                                }
+                                onOptionsChange={(next) =>
+                                    setAssessmentQuestionForm(
+                                        (prev) => ({
+                                            ...prev,
+                                            options: next,
+                                        }),
+                                    )
+                                }
+                                onCorrectAnswerChange={(value) =>
+                                    setAssessmentQuestionForm(
+                                        (prev) => ({
+                                            ...prev,
+                                            correct_answer: value,
+                                        }),
+                                    )
+                                }
+                                onMinWordsChange={(value) =>
+                                    setAssessmentQuestionForm(
+                                        (prev) => ({
+                                            ...prev,
+                                            min_words: value,
+                                        }),
+                                    )
+                                }
+                                onMaxWordsChange={(value) =>
+                                    setAssessmentQuestionForm(
+                                        (prev) => ({
+                                            ...prev,
+                                            max_words: value,
+                                        }),
+                                    )
+                                }
+                            />
+
+                            <Field>
+                                <FieldLabel htmlFor="new-question-explanation">
+                                    Explanation
+                                </FieldLabel>
+                                <Textarea
+                                    id="new-question-explanation"
+                                    value={assessmentQuestionForm.explanation}
+                                    onChange={(event) =>
+                                        setAssessmentQuestionForm((prev) => ({
+                                            ...prev,
+                                            explanation: event.target.value,
+                                        }))
+                                    }
+                                    rows={3}
+                                    placeholder="Answer explanation (optional)"
+                                />
+                            </Field>
+                        </FieldGroup>
+
+                        <DialogFooter className="mt-6">
+                            <Button type="button" variant="outline" onClick={() => setCreateQuestionDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit">
+                                Add Question
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             <Dialog
                 open={editingAssessmentQuestion !== null}
@@ -2894,7 +2932,7 @@ export default function AdminCoursesAssessment({
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={submitRestoreVersion}>
+                        <AlertDialogAction onClick={() => submitRestoreVersion()}>
                             Restore
                         </AlertDialogAction>
                     </AlertDialogFooter>

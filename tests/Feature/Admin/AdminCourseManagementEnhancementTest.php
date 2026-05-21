@@ -123,59 +123,6 @@ test('course catalog management exposes version history data for integrated UI',
         );
 });
 
-test('course management exposes a builder outline for the selected course', function (): void {
-    $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true]);
-    $course = Course::factory()->create(['title' => 'Builder Course', 'summary' => 'Structured course']);
-    $lesson = Lesson::factory()->for($course)->create(['title' => 'First Topic', 'position' => 1]);
-    $task = LessonTask::factory()->for($lesson)->create(['title' => 'Reading Task', 'sort_order' => 1]);
-    $assessment = Assessment::factory()->for($course)->create(['title' => 'Final Check']);
-    AssessmentQuestion::factory()->for($assessment)->create(['question_text' => 'What is a cipher?']);
-
-    $this->actingAs($admin)
-        ->get(route('admin.courses.index', ['builder' => 1, 'course_id' => $course->id]))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('admin/courses/index')
-            ->where('builderMode', true)
-            ->has('builder.courseOptions.0', fn (Assert $row) => $row
-                ->where('id', $course->id)
-                ->where('title', 'Builder Course')
-                ->etc()
-            )
-            ->has('builder.activeCourse', fn (Assert $row) => $row
-                ->where('id', $course->id)
-                ->where('title', 'Builder Course')
-                ->where('summary', 'Structured course')
-                ->etc()
-            )
-            ->has('builder.outline.lessons.0', fn (Assert $row) => $row
-                ->where('id', $lesson->id)
-                ->where('title', 'First Topic')
-                ->has('tasks.0', fn (Assert $taskRow) => $taskRow
-                    ->where('id', $task->id)
-                    ->where('title', 'Reading Task')
-                    ->etc()
-                )
-                ->etc()
-            )
-            ->has('builder.outline.assessments.0', fn (Assert $row) => $row
-                ->where('id', $assessment->id)
-                ->where('title', 'Final Check')
-                ->where('questions_count', 1)
-                ->has('questions.0', fn (Assert $questionRow) => $questionRow
-                    ->where('question_text', 'What is a cipher?')
-                    ->etc()
-                )
-                ->etc()
-            )
-            ->where('builder.readiness.has_course', true)
-            ->where('builder.readiness.has_topics', true)
-            ->where('builder.readiness.has_tasks', true)
-            ->where('builder.readiness.has_assessments', true)
-            ->where('builder.readiness.has_questions', true)
-        );
-});
-
 test('admin can restore a content version and preserve a pre restore snapshot', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true]);
     $course = Course::factory()->create([

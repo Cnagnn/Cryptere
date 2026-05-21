@@ -28,8 +28,8 @@ export default defineConfig({
                 : undefined,
         }),
         tailwindcss(),
-        wayfinder({
-            formVariants: true,
-        }),
+        // wayfinder({
+        //     formVariants: true,
+        // }),
     ],
 });
