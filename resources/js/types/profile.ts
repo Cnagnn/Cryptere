@@ -17,6 +17,8 @@ export type ProfileUser = {
     username: string | null;
     email?: string | null;
     avatar?: string | null;
+    has_custom_avatar?: boolean;
+    pixabot_avatar_id?: string | null;
     bio?: string | null;
     pronoun?: string | null;
     location?: string | null;
@@ -26,6 +28,11 @@ export type ProfileUser = {
     current_streak?: number;
     longest_streak?: number;
     created_at?: string;
+};
+
+export type AvatarOption = {
+    baseUrl: string;
+    ids: string[];
 };
 
 export type SocialAccount = {

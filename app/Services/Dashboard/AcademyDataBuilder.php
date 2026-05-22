@@ -28,7 +28,7 @@ class AcademyDataBuilder
         $displayName = $firstName !== '' ? $firstName : 'Learner';
 
         $topLearners = User::query()
-            ->select(['id', 'name', 'username', 'points', 'avatar_path', 'avatar_image', 'avatar_mime_type'])
+            ->select(['id', 'name', 'username', 'points', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id'])
             ->orderByDesc('points')
             ->orderBy('name')
             ->take(5)

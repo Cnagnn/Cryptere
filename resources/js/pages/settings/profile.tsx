@@ -5,11 +5,17 @@ import { ProfileOverviewCard } from '@/features/profile/profile-overview-card';
 import { AccountDeleteCard } from '@/features/settings/account-delete-card';
 import { AvatarSettingsCard } from '@/features/settings/avatar-settings-card';
 import { ProfileSettingsForm } from '@/features/settings/profile-settings-form';
-import type { ProfileBadge, ProfileUser, SocialAccount } from '@/types/profile';
 import { edit as settingsProfileEdit } from '@/routes/settings/profile';
+import type {
+    AvatarOption,
+    ProfileBadge,
+    ProfileUser,
+    SocialAccount,
+} from '@/types/profile';
 
 type Props = {
     profileUser: ProfileUser;
+    avatarOptions: AvatarOption;
     profileUrl: string;
     badges: ProfileBadge[];
     mustVerifyEmail?: boolean;
@@ -23,6 +29,7 @@ type Props = {
 
 export default function SettingsProfile({
     profileUser,
+    avatarOptions,
     profileUrl,
     badges,
 }: Props) {
@@ -38,7 +45,10 @@ export default function SettingsProfile({
                         editHref={`${settingsProfileEdit.url()}#edit-profile`}
                         profileUrl={profileUrl}
                     />
-                    <AvatarSettingsCard profileUser={profileUser} />
+                    <AvatarSettingsCard
+                        profileUser={profileUser}
+                        avatarOptions={avatarOptions}
+                    />
                 </div>
 
                 <div className="flex flex-col gap-6">

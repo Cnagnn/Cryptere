@@ -19,6 +19,8 @@ class ProfilePageData
             'username' => $user->username,
             'email' => $isOwner ? $user->email : null,
             'avatar' => $user->avatar,
+            'has_custom_avatar' => $user->avatar_path !== null || $user->avatar_image !== null,
+            'pixabot_avatar_id' => $user->pixabot_avatar_id,
             'bio' => $user->bio,
             'pronoun' => $user->pronoun,
             'location' => $user->location,

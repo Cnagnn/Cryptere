@@ -61,10 +61,16 @@ class CacheService
         Cache::forget('leaderboard_top3_all');
         Cache::forget('leaderboard_top3_weekly');
         Cache::forget('leaderboard_top3_monthly');
+        Cache::forget('leaderboard_top3_pixabot_v1_all');
+        Cache::forget('leaderboard_top3_pixabot_v1_weekly');
+        Cache::forget('leaderboard_top3_pixabot_v1_monthly');
 
-        // Timeframe leaderboard page caches (clear first 10 pages for each timeframe/perPage combo)
+        // Timeframe leaderboard caches.
         foreach (['weekly', 'monthly'] as $timeframe) {
             foreach ([10, 25, 50, 100] as $perPage) {
+                Cache::forget("leaderboard_timeframe_{$timeframe}_perpage_{$perPage}");
+                Cache::forget("leaderboard_timeframe_pixabot_v1_{$timeframe}_perpage_{$perPage}");
+
                 for ($page = 1; $page <= 10; $page++) {
                     Cache::forget("leaderboard_timeframe_{$timeframe}_page_{$page}_perpage_{$perPage}");
                 }

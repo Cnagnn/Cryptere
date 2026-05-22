@@ -219,6 +219,34 @@ test('user can upload an avatar from settings', function (): void {
     Storage::disk('public')->assertExists($user->avatar_path);
 });
 
+test('profile settings exposes pixabot avatar choices', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('settings.profile.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('avatarOptions.ids')
+            ->where('avatarOptions.baseUrl', asset('avatars/pixabots/webp/480'))
+            ->where('profileUser.avatar', fn (?string $avatar): bool => str_contains($avatar ?? '', '/avatars/pixabots/webp/480/'))
+        );
+});
+
+test('user can select a pixabot avatar from settings', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patch(route('settings.avatar.pixabot'), [
+            'pixabot_avatar_id' => '4411',
+        ])
+        ->assertRedirect(route('settings.profile.edit'));
+
+    $user->refresh();
+
+    expect($user->pixabot_avatar_id)->toBe('4411')
+        ->and($user->avatar)->toContain('/avatars/pixabots/webp/480/4411.webp');
+});
+
 test('user can remove their avatar from settings', function (): void {
     Storage::fake('public');
     $user = User::factory()->create([

@@ -30,7 +30,7 @@ class UserController extends Controller
             ->searchManagement($search)
             ->filterManagementRole($role)
             ->orderBy('name')
-            ->paginate($perPage, ['id', 'name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'username', 'points', 'role', 'created_at'])
+            ->paginate($perPage, ['id', 'name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id', 'username', 'points', 'role', 'created_at'])
             ->through(function (User $user) use ($adminCount, $authenticatedUserId): array {
                 $cannotDeleteLastAdmin = $user->role === 'admin' && $adminCount <= 1;
                 $cannotDeleteSelf = (int) $user->getKey() === $authenticatedUserId;

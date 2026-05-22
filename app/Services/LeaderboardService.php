@@ -15,6 +15,8 @@ use Sentry\Tracing\SpanContext;
 
 class LeaderboardService
 {
+    private const AVATAR_CACHE_VERSION = 'pixabot_v1';
+
     public const PER_PAGE = 10;
 
     public const PER_PAGE_OPTIONS = [10, 25, 50, 100];
@@ -69,7 +71,7 @@ class LeaderboardService
         $paginator = User::query()
             ->orderByDesc('points')
             ->orderBy('name')
-            ->paginate($perPage, ['id', 'name', 'username', 'points', 'xp', 'current_streak', 'longest_streak', 'avatar_path', 'avatar_image', 'avatar_mime_type'])
+            ->paginate($perPage, ['id', 'name', 'username', 'points', 'xp', 'current_streak', 'longest_streak', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id'])
             ->withQueryString();
 
         $paginator->setCollection(
@@ -91,7 +93,7 @@ class LeaderboardService
     public function timeframeLeaders(string $timeframe, int $perPage): LengthAwarePaginator
     {
         $page = (int) request()->input('page', 1);
-        $cacheKey = "leaderboard_timeframe_{$timeframe}_perpage_{$perPage}";
+        $cacheKey = 'leaderboard_timeframe_'.self::AVATAR_CACHE_VERSION."_{$timeframe}_perpage_{$perPage}";
 
         $rows = $this->rememberArray(
             $cacheKey,
@@ -264,7 +266,7 @@ class LeaderboardService
     {
         return $this->traceSpan('leaderboard.get_top3', "Get top 3 ({$timeframe})", function () use ($timeframe) {
             return $this->rememberArray(
-                "leaderboard_top3_{$timeframe}",
+                'leaderboard_top3_'.self::AVATAR_CACHE_VERSION."_{$timeframe}",
                 CacheService::TTL_MEDIUM,
                 fn (): array => $this->fetchTop3Users($timeframe)
                     ->map(fn (User $user): array => $this->userToArray($user, $timeframe))
@@ -283,7 +285,7 @@ class LeaderboardService
                 ->orderByDesc('points')
                 ->orderBy('name')
                 ->limit(3)
-                ->get(['id', 'name', 'username', 'points', 'xp', 'current_streak', 'longest_streak', 'avatar_path', 'avatar_image', 'avatar_mime_type']);
+                ->get(['id', 'name', 'username', 'points', 'xp', 'current_streak', 'longest_streak', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id']);
         }
 
         $since = $this->resolveSinceDate($timeframe);

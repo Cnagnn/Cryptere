@@ -139,6 +139,7 @@ test('admin user management returns searchable paginated user contract', functio
         'username' => 'managed_member',
         'role' => 'member',
         'points' => 120,
+        'pixabot_avatar_id' => '4411',
     ]);
 
     $this->actingAs($admin)
@@ -153,7 +154,7 @@ test('admin user management returns searchable paginated user contract', functio
                 ->where('username', 'managed_member')
                 ->where('points', 120)
                 ->where('role', 'member')
-                ->has('avatar')
+                ->where('avatar', fn (?string $avatar): bool => str_contains($avatar ?? '', '/avatars/pixabots/webp/480/4411.webp'))
                 ->has('can_delete')
                 ->etc()
             )

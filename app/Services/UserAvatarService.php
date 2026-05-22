@@ -19,6 +19,7 @@ class UserAvatarService
             'avatar_path' => $path,
             'avatar_mime_type' => $avatar->getMimeType(),
             'avatar_image' => null,
+            'pixabot_avatar_id' => null,
         ])->save();
     }
 
@@ -32,6 +33,15 @@ class UserAvatarService
             'avatar_path' => null,
             'avatar_mime_type' => null,
             'avatar_image' => null,
+        ])->save();
+    }
+
+    public function selectPixabot(User $user, string $avatarId): void
+    {
+        $this->delete($user);
+
+        $user->forceFill([
+            'pixabot_avatar_id' => strtolower($avatarId),
         ])->save();
     }
 }

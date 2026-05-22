@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Services\PixabotAvatarService;
 use App\Services\ProfilePageData;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,10 @@ use Laravel\Fortify\Features;
 
 class ProfileController extends Controller
 {
-    public function __construct(private ProfilePageData $profilePageData) {}
+    public function __construct(
+        private ProfilePageData $profilePageData,
+        private PixabotAvatarService $pixabotAvatars,
+    ) {}
 
     /**
      * Show the user's profile settings page.
@@ -52,6 +56,7 @@ class ProfileController extends Controller
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             'profileUser' => $this->profilePageData->profileUser($user, true),
+            'avatarOptions' => $this->pixabotAvatars->options(),
             'profileUrl' => route('profile.show', $user->username),
             'badges' => $this->profilePageData->badges($user),
             'socialAccounts' => $socialAccounts,

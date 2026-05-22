@@ -22,6 +22,16 @@ test('profile user payload does not query badges', function (): void {
         ->and($queries)->not->toContain('user_badges');
 });
 
+test('profile user payload uses the selected pixabot avatar', function (): void {
+    $user = User::factory()->create(['pixabot_avatar_id' => '4411']);
+
+    $payload = app(ProfilePageData::class)->profileUser($user, true);
+
+    expect($payload['avatar'])->toContain('/avatars/pixabots/webp/480/4411.webp')
+        ->and($payload['pixabot_avatar_id'])->toBe('4411')
+        ->and($payload['has_custom_avatar'])->toBeFalse();
+});
+
 test('badges payload selects earned badges ordered by pivot date', function (): void {
     $user = User::factory()->create();
     $oldBadge = Badge::factory()->create(['name' => 'Old Badge']);
