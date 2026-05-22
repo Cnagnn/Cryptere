@@ -5,7 +5,7 @@ deployment:
     - export PUBLICPATH=/home/fkdzqxmc/public_html
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/mkdir -p $PUBLICPATH
-    - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php /usr/local/bin/composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+    - cd $DEPLOYPATH && /opt/cpanel/ea-php84/root/usr/bin/php /home/fkdzqxmc/composer.phar install --no-dev --prefer-dist --optimize-autoloader --no-interaction
     - /bin/rm -rf $PUBLICPATH/build
     - /bin/cp -a $DEPLOYPATH/public/. $PUBLICPATH/
     - /bin/sed -i "s#__DIR__.'/../storage/framework/maintenance.php'#__DIR__.'/../cryptere/storage/framework/maintenance.php'#" $PUBLICPATH/index.php
