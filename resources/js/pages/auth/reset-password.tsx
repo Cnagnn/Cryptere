@@ -166,7 +166,8 @@ export default function ResetPassword({ token, email }: Props) {
 
                     <CardContent>
                         <Form
-                            {...update.form()}
+                            action={update.url()}
+                            method="post"
                             transform={(data) => ({ ...data, token, email })}
                             resetOnSuccess={[
                                 'password',

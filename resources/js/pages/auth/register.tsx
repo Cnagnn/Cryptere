@@ -277,7 +277,8 @@ export default function Register({ status, socialUser }: Props) {
                         )}
 
                         <Form
-                            {...store.form()}
+                            action={store.url()}
+                            method="post"
                             resetOnSuccess={[
                                 'password',
                                 'password_confirmation',

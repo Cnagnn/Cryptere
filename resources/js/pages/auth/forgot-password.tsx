@@ -109,7 +109,11 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             </Alert>
                         )}
 
-                        <Form {...email.form()} className="flex flex-col gap-6">
+                        <Form
+                            action={email.url()}
+                            method="post"
+                            className="flex flex-col gap-6"
+                        >
                             {({ processing, errors, wasSuccessful }) => {
                                 const isSuccess = Boolean(
                                     status || wasSuccessful,
