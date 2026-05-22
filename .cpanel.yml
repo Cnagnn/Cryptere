@@ -6,7 +6,7 @@ deployment:
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/mkdir -p $PUBLICPATH
     - cd $DEPLOYPATH && /usr/local/bin/php /home/fkdzqxmc/composer.phar install --no-dev --prefer-dist --optimize-autoloader --no-interaction
-    - /bin/rm -rf $PUBLICPATH/build
+    - /bin/rm -rf $PUBLICPATH/build $PUBLICPATH/fonts $PUBLICPATH/storage
     - /bin/cp -a $DEPLOYPATH/public/. $PUBLICPATH/
     - /bin/sed -i "s#__DIR__.'/../storage/framework/maintenance.php'#__DIR__.'/../cryptere/storage/framework/maintenance.php'#" $PUBLICPATH/index.php
     - /bin/sed -i "s#__DIR__.'/../vendor/autoload.php'#__DIR__.'/../cryptere/vendor/autoload.php'#" $PUBLICPATH/index.php
