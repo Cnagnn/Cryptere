@@ -1,4 +1,4 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpenCheck,
     ChevronRight,
@@ -88,11 +88,38 @@ const managementNavItems: NavItem[] = [
     },
 ];
 
+function csrfToken(): string {
+    return (
+        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.content ?? ''
+    );
+}
+
+function submitPostForm(action: string): void {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = action;
+    form.hidden = true;
+
+    const token = csrfToken();
+
+    if (token !== '') {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = token;
+        form.appendChild(csrfInput);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
 export function UserMenuContent({ user }: { user: UserType }) {
     const urls = useAppUrls();
 
     const handleLogout = () => {
-        router.post(urls.logout);
+        submitPostForm(urls.logout);
     };
     const level = user.level;
     const levelProgress = level

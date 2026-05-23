@@ -6,6 +6,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PublicPageCacheHeaders;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -43,6 +44,16 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->respond(function (Response $response, Throwable $e, Request $request) {
+            if ($e instanceof AuthenticationException && $request->headers->has('X-Inertia')) {
+                $authUrl = rtrim((string) config('app.urls.auth'), '/');
+                $loginUrl = $authUrl !== '' ? $authUrl.'/login' : route('login');
+                $targetHost = parse_url($loginUrl, PHP_URL_HOST);
+
+                if (is_string($targetHost) && $targetHost !== $request->getHost()) {
+                    return Inertia::location($loginUrl);
+                }
+            }
+
             // Tampilkan error asli Laravel di local/development untuk debugging
             if (app()->environment('local', 'development')) {
                 return $response;

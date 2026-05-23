@@ -44,10 +44,10 @@ class HandleInertiaRequests extends Middleware
                 'public' => config('app.urls.public'),
                 'auth' => config('app.urls.auth'),
                 'app' => config('app.urls.app'),
-                'login' => route('login'),
-                'register' => route('register'),
-                'logout' => route('logout'),
-                'dashboard' => route('dashboard'),
+                'login' => $this->authUrl('login'),
+                'register' => $this->authUrl('register'),
+                'logout' => $this->authUrl('logout'),
+                'dashboard' => config('app.urls.app'),
             ],
             'auth' => [
                 'user' => $user ? [
@@ -85,5 +85,10 @@ class HandleInertiaRequests extends Middleware
                 'streakBonuses' => fn () => $streakResult['bonuses'],
             ],
         ];
+    }
+
+    private function authUrl(string $path): string
+    {
+        return rtrim((string) config('app.urls.auth'), '/').'/'.ltrim($path, '/');
     }
 }

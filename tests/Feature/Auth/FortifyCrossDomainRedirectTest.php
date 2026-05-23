@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
 beforeEach(function (): void {
@@ -52,4 +54,36 @@ test('inertia login uses location redirect across auth and app subdomains', func
         ->assertHeader('X-Inertia-Location', 'https://app.cryptere.com/dashboard');
 
     $this->assertAuthenticatedAs($user);
+});
+
+test('inertia guest app request uses location redirect to auth login across subdomains', function (): void {
+    $request = Request::create('https://app.cryptere.com/dashboard');
+    $inertiaVersion = app(HandleInertiaRequests::class)->version($request) ?? '';
+
+    $response = $this
+        ->withHeader('X-Inertia', 'true')
+        ->withHeader('X-Inertia-Version', $inertiaVersion)
+        ->get('https://app.cryptere.com/dashboard');
+
+    $response
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', 'https://auth.cryptere.com/login');
+});
+
+test('app shell exposes csrf token meta for full form posts across subdomains', function (): void {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->get('https://app.cryptere.com/dashboard');
+
+    $response
+        ->assertOk()
+        ->assertSee('name="csrf-token"', false)
+        ->assertInertia(fn ($page) => $page
+            ->where('urls.login', 'https://auth.cryptere.com/login')
+            ->where('urls.register', 'https://auth.cryptere.com/register')
+            ->where('urls.logout', 'https://auth.cryptere.com/logout')
+            ->where('urls.dashboard', 'https://app.cryptere.com/dashboard')
+        );
 });
