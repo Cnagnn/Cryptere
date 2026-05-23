@@ -33,17 +33,12 @@ class PixabotAvatarService
     {
         $id = $this->isValidId($user->pixabot_avatar_id)
             ? strtolower((string) $user->pixabot_avatar_id)
-            : $this->defaultId($user);
+            : $this->defaultIdForUser($user);
 
         return $id === null ? null : $this->url($id);
     }
 
-    public function url(string $id): string
-    {
-        return asset($this->relativePath(strtolower($id)));
-    }
-
-    private function defaultId(User $user): ?string
+    public function defaultIdForUser(User $user): ?string
     {
         $ids = $this->ids();
 
@@ -55,6 +50,11 @@ class PixabotAvatarService
         $index = crc32($seed) % count($ids);
 
         return $ids[$index];
+    }
+
+    public function url(string $id): string
+    {
+        return asset($this->relativePath(strtolower($id)));
     }
 
     /**

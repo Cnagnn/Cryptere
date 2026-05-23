@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
+use App\Services\PixabotAvatarService;
 use App\Services\SocialAvatarService;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -13,7 +14,10 @@ class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
 
-    public function __construct(private readonly SocialAvatarService $socialAvatarService) {}
+    public function __construct(
+        private readonly SocialAvatarService $socialAvatarService,
+        private readonly PixabotAvatarService $pixabotAvatarService,
+    ) {}
 
     /**
      * Validate and create a newly registered user.
@@ -46,6 +50,14 @@ class CreateNewUser implements CreatesNewUsers
             'status' => 'active',
             'profile_visibility' => $input['profile_visibility'],
         ]);
+
+        $defaultPixabotAvatarId = $this->pixabotAvatarService->defaultIdForUser($user);
+
+        if ($defaultPixabotAvatarId !== null) {
+            $user->forceFill([
+                'pixabot_avatar_id' => $defaultPixabotAvatarId,
+            ])->save();
+        }
 
         if ($hasSocialRegistrationContext) {
             $user->forceFill([

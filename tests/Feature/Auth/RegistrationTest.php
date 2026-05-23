@@ -32,6 +32,26 @@ test('registration stores the display name separately from username', function (
         ->and($user->profile_visibility)->toBe('private');
 });
 
+test('registration assigns a webp pixabot avatar', function (): void {
+    $this->post('/register', [
+        'name' => 'Avatar Student',
+        'username' => 'avatar_student',
+        'email' => 'avatar-student@example.com',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'terms' => 'on',
+    ])->assertRedirect('/dashboard');
+
+    $user = User::query()->where('email', 'avatar-student@example.com')->firstOrFail();
+
+    expect($user->pixabot_avatar_id)->not->toBeNull()
+        ->and($user->avatar_path)->toBeNull()
+        ->and($user->avatar_mime_type)->toBeNull()
+        ->and($user->avatar)->toContain('/avatars/pixabots/webp/480/')
+        ->and($user->avatar)->toEndWith('.webp')
+        ->and($user->avatar)->not->toContain('.gif');
+});
+
 test('registration requires password confirmation', function (): void {
     $this->post('/register', [
         'name' => 'Student Example',
