@@ -32,7 +32,23 @@ $publicDomain = config('app.domains.public');
 $authDomain = config('app.domains.auth');
 $appDomain = config('app.domains.app');
 
-Route::domain($publicDomain)->group(function () {
+Route::domain($publicDomain)->group(function () use ($authDomain) {
+    if ($authDomain) {
+        $authUrl = rtrim((string) config('app.urls.auth'), '/');
+        $toAuthUrl = fn (string $path, ?string $query = null): string => $authUrl.'/'.$path.($query ? '?'.$query : '');
+
+        Route::get('login', fn () => redirect()->away($toAuthUrl('login')))->name('public.auth.login');
+        Route::get('register', fn () => redirect()->away($toAuthUrl('register')))->name('public.auth.register');
+        Route::get('forgot-password', fn () => redirect()->away($toAuthUrl('forgot-password')))->name('public.auth.forgot-password');
+        Route::get('reset-password/{token}', fn (Request $request, string $token) => redirect()->away($toAuthUrl('reset-password/'.$token, $request->getQueryString())))->name('public.auth.reset-password');
+
+        Route::post('login', fn () => abort(404));
+        Route::post('register', fn () => abort(404));
+        Route::post('forgot-password', fn () => abort(404));
+        Route::post('reset-password', fn () => abort(404));
+        Route::post('logout', fn () => abort(404));
+    }
+
     Route::inertia('/', 'welcome', [
         'canRegister' => Features::enabled(Features::registration()),
     ])->name('home');
