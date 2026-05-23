@@ -4,7 +4,11 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        @php $cspNonce = request()->attributes->get('csp-nonce', ''); @endphp
+        @php
+            $cspNonce = request()->attributes->get('csp-nonce', '');
+            $authUrl = rtrim((string) config('app.urls.auth'), '/');
+            $shouldPreconnectAuth = request()->getHost() === config('app.domains.public') && $authUrl !== '';
+        @endphp
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script nonce="{{ $cspNonce }}">
@@ -34,6 +38,10 @@
 
         <link rel="icon" href="/images/Logo/Logo.svg?v=3" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @if ($shouldPreconnectAuth)
+            <link rel="dns-prefetch" href="//{{ parse_url($authUrl, PHP_URL_HOST) }}">
+            <link rel="preconnect" href="{{ $authUrl }}">
+        @endif
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link
