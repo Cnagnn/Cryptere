@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 
 class SocialAuthController extends Controller
 {
@@ -32,7 +33,7 @@ class SocialAuthController extends Controller
     {
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
 
-        return Socialite::driver($provider)->stateless()->redirect();
+        return $this->socialiteDriver($provider)->redirect();
     }
 
     /**
@@ -43,7 +44,7 @@ class SocialAuthController extends Controller
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
 
         try {
-            $socialUser = Socialite::driver($provider)->stateless()->user();
+            $socialUser = $this->socialiteDriver($provider)->user();
         } catch (\Exception $e) {
             Log::error('Social auth failed for '.$provider.': '.$e->getMessage(), [
                 'exception' => $e,
@@ -117,5 +118,31 @@ class SocialAuthController extends Controller
         ]);
 
         return redirect()->route('register');
+    }
+
+    private function socialiteDriver(string $provider): AbstractProvider
+    {
+        /** @var AbstractProvider $driver */
+        $driver = Socialite::driver($provider)->stateless();
+
+        return $driver->redirectUrl($this->redirectUriFor($provider));
+    }
+
+    private function redirectUriFor(string $provider): string
+    {
+        $configuredRedirect = config("services.{$provider}.redirect");
+
+        if (is_string($configuredRedirect) && str_starts_with($configuredRedirect, 'http')) {
+            return $configuredRedirect;
+        }
+
+        $path = is_string($configuredRedirect) && $configuredRedirect !== ''
+            ? $configuredRedirect
+            : "/auth/{$provider}/callback";
+
+        $path = str_starts_with($path, '/') ? $path : '/'.$path;
+        $authUrl = rtrim((string) config('app.urls.auth', config('app.url')), '/');
+
+        return $authUrl.$path;
     }
 }
