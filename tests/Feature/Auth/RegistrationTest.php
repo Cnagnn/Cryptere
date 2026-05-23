@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\PixabotAvatarService;
 
 test('registration requires accepted terms', function (): void {
     $this->post('/register', [
@@ -33,6 +34,11 @@ test('registration stores the display name separately from username', function (
 });
 
 test('registration assigns a webp pixabot avatar', function (): void {
+    $pixabots = Mockery::mock(PixabotAvatarService::class);
+    $pixabots->shouldReceive('randomId')->once()->andReturn('4411');
+    $pixabots->shouldReceive('urlForUser')->andReturn(asset('avatars/pixabots/webp/480/4411.webp'));
+    $this->app->instance(PixabotAvatarService::class, $pixabots);
+
     $this->post('/register', [
         'name' => 'Avatar Student',
         'username' => 'avatar_student',
@@ -45,6 +51,7 @@ test('registration assigns a webp pixabot avatar', function (): void {
     $user = User::query()->where('email', 'avatar-student@example.com')->firstOrFail();
 
     expect($user->pixabot_avatar_id)->not->toBeNull()
+        ->and($user->pixabot_avatar_id)->toBe('4411')
         ->and($user->avatar_path)->toBeNull()
         ->and($user->avatar_mime_type)->toBeNull()
         ->and($user->avatar)->toContain('/avatars/pixabots/webp/480/')

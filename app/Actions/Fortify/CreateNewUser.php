@@ -51,7 +51,7 @@ class CreateNewUser implements CreatesNewUsers
             'profile_visibility' => $input['profile_visibility'],
         ]);
 
-        $defaultPixabotAvatarId = $this->pixabotAvatarService->defaultIdForUser($user);
+        $defaultPixabotAvatarId = $this->pixabotAvatarService->randomId();
 
         if ($defaultPixabotAvatarId !== null) {
             $user->forceFill([

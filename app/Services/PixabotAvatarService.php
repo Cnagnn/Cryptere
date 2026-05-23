@@ -52,6 +52,17 @@ class PixabotAvatarService
         return $ids[$index];
     }
 
+    public function randomId(): ?string
+    {
+        $ids = $this->ids();
+
+        if ($ids === []) {
+            return null;
+        }
+
+        return $ids[array_rand($ids)];
+    }
+
     public function url(string $id): string
     {
         return asset($this->relativePath(strtolower($id)));
