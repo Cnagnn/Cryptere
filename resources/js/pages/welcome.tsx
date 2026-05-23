@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppUrls } from '@/hooks/use-app-urls';
@@ -61,12 +61,12 @@ function Hero115({
                                 asChild
                                 className="w-full sm:w-auto"
                             >
-                                <Link href={button.url} prefetch>
+                                <a href={button.url}>
                                     {button.text}
                                     {button.icon ?? (
                                         <ArrowRight data-icon="inline-end" />
                                     )}
-                                </Link>
+                                </a>
                             </Button>
                             {byline && (
                                 <div className="text-center text-sm text-muted-foreground">
@@ -121,7 +121,7 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
 
                 <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 md:px-8">
                     <header className="flex items-center justify-between gap-4">
-                        <Link href={auth.user ? urls.dashboard : urls.login} prefetch>
+                        <a href={auth.user ? urls.dashboard : urls.login}>
                             <div
                                 className="flex items-center select-none"
                                 aria-label="Cryptere"
@@ -157,27 +157,27 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                                     />
                                 </svg>
                             </div>
-                        </Link>
+                        </a>
 
                         <div className="flex items-center gap-2">
                             {auth.user ? (
                                 <Button asChild>
-                                    <Link href={urls.dashboard} prefetch>
+                                    <a href={urls.dashboard}>
                                         Dasbor
-                                    </Link>
+                                    </a>
                                 </Button>
                             ) : (
                                 <>
                                     <Button variant="ghost" asChild>
-                                        <Link href={urls.login} prefetch>
+                                        <a href={urls.login}>
                                             Masuk
-                                        </Link>
+                                        </a>
                                     </Button>
                                     {canRegister && (
                                         <Button asChild>
-                                            <Link href={urls.register} prefetch>
+                                            <a href={urls.register}>
                                                 Daftar
-                                            </Link>
+                                            </a>
                                         </Button>
                                     )}
                                 </>

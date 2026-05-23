@@ -1,4 +1,3 @@
-import { Link } from '@inertiajs/react';
 import { SkipToContent } from '@/components/accessibility';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { useAppUrls } from '@/hooks/use-app-urls';
@@ -17,7 +16,7 @@ export default function AuthSimpleLayout({
             <div className="w-full max-w-sm">
                 <div className="flex flex-col gap-8">
                     <div className="flex flex-col items-center gap-4">
-                        <Link
+                        <a
                             href={urls.public}
                             className="flex flex-col items-center gap-2 font-medium"
                             aria-label="Go to homepage"
@@ -26,7 +25,7 @@ export default function AuthSimpleLayout({
                                 <AppLogoIcon className="size-9 fill-current text-foreground dark:text-white" />
                             </div>
                             <span className="sr-only">{title}</span>
-                        </Link>
+                        </a>
 
                         <div className="flex flex-col gap-2 text-center">
                             <h1 className="text-xl font-semibold">{title}</h1>
