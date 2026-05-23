@@ -40,3 +40,14 @@ test('public domain logout post is blocked while auth domain logout exists', fun
         ->toContain('auth.cryptere.com/logout')
         ->toContain('logout');
 });
+
+test('public htaccess optimizes auth canonicalization before Laravel bootstrap', function (): void {
+    $htaccess = file_get_contents(public_path('.htaccess'));
+
+    expect($htaccess)->toContain('RewriteCond %{REQUEST_METHOD} !^(GET|HEAD)$ [NC]')
+        ->toContain('RewriteRule ^(login|register|forgot-password|logout|reset-password(/.*)?)/?$ - [R=404,L]')
+        ->toContain('RewriteRule ^(login|register|forgot-password)/?$ https://auth.cryptere.com/$1 [R=301,L,NE]')
+        ->toContain('RewriteRule ^reset-password/(.*)$ https://auth.cryptere.com/reset-password/$1 [R=302,L,NE]')
+        ->toContain('SetEnvIf Request_URI "^/build/assets/.+\.(css|js)$" vite_asset=1')
+        ->toContain('Header set Cache-Control "public, max-age=31536000, immutable" env=vite_asset');
+});
