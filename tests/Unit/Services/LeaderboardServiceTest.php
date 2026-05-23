@@ -24,6 +24,6 @@ test('leaderboard payload uses selected pixabot avatars', function (): void {
     $top3 = $service->getTop3('all');
 
     expect($leaders->items()[0]['id'])->toBe($leader->id)
-        ->and($leaders->items()[0]['avatar'])->toContain('/avatars/pixabots/webp/480/4411.webp')
-        ->and($top3[0]['avatar'])->toContain('/avatars/pixabots/webp/480/4411.webp');
+        ->and($leaders->items()[0]['avatar'])->toContain('/avatars/pixabots/png/480/4411.png')
+        ->and($top3[0]['avatar'])->toContain('/avatars/pixabots/png/480/4411.png');
 });

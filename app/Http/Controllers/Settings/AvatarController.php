@@ -39,7 +39,7 @@ class AvatarController extends Controller
 
         $avatarId = strtolower($validated['pixabot_avatar_id']);
 
-        if (! $pixabots->isValidId($avatarId)) {
+        if (! $pixabots->isValidId($avatarId, $request->user())) {
             throw ValidationException::withMessages([
                 'pixabot_avatar_id' => __('Please choose a valid Pixabots avatar.'),
             ]);

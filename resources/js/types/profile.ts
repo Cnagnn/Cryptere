@@ -32,6 +32,7 @@ export type ProfileUser = {
 
 export type AvatarOption = {
     baseUrl: string;
+    extension: 'png' | 'webp';
     ids: string[];
 };
 

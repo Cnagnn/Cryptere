@@ -154,7 +154,7 @@ test('admin user management returns searchable paginated user contract', functio
                 ->where('username', 'managed_member')
                 ->where('points', 120)
                 ->where('role', 'member')
-                ->where('avatar', fn (?string $avatar): bool => str_contains($avatar ?? '', '/avatars/pixabots/webp/480/4411.webp'))
+                ->where('avatar', fn (?string $avatar): bool => str_contains($avatar ?? '', '/avatars/pixabots/png/480/4411.png'))
                 ->has('can_delete')
                 ->etc()
             )

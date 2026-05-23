@@ -21,5 +21,5 @@ test('social avatar sync does not replace the local pixabot profile avatar', fun
 
     expect($user->avatar_path)->toBeNull()
         ->and($user->pixabot_avatar_id)->toBe('4411')
-        ->and($user->avatar)->toContain('/avatars/pixabots/webp/480/4411.webp');
+        ->and($user->avatar)->toContain('/avatars/pixabots/png/480/4411.png');
 });

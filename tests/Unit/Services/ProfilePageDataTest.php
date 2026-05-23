@@ -27,7 +27,7 @@ test('profile user payload uses the selected pixabot avatar', function (): void 
 
     $payload = app(ProfilePageData::class)->profileUser($user, true);
 
-    expect($payload['avatar'])->toContain('/avatars/pixabots/webp/480/4411.webp')
+    expect($payload['avatar'])->toContain('/avatars/pixabots/png/480/4411.png')
         ->and($payload['pixabot_avatar_id'])->toBe('4411')
         ->and($payload['has_custom_avatar'])->toBeFalse();
 });

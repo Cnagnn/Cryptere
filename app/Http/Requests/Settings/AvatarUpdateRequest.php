@@ -16,8 +16,12 @@ class AvatarUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $mimes = $this->user()?->isAdmin() === true
+            ? 'jpg,jpeg,png,webp'
+            : 'jpg,jpeg,png';
+
         return [
-            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'avatar' => ['required', 'image', 'mimes:'.$mimes, 'max:2048'],
         ];
     }
 }

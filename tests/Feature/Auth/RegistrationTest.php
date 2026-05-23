@@ -33,10 +33,10 @@ test('registration stores the display name separately from username', function (
         ->and($user->profile_visibility)->toBe('private');
 });
 
-test('registration assigns a webp pixabot avatar', function (): void {
+test('registration assigns a static png pixabot avatar', function (): void {
     $pixabots = Mockery::mock(PixabotAvatarService::class);
     $pixabots->shouldReceive('randomId')->once()->andReturn('4411');
-    $pixabots->shouldReceive('urlForUser')->andReturn(asset('avatars/pixabots/webp/480/4411.webp'));
+    $pixabots->shouldReceive('urlForUser')->andReturn(asset('avatars/pixabots/png/480/4411.png'));
     $this->app->instance(PixabotAvatarService::class, $pixabots);
 
     $this->post('/register', [
@@ -54,8 +54,9 @@ test('registration assigns a webp pixabot avatar', function (): void {
         ->and($user->pixabot_avatar_id)->toBe('4411')
         ->and($user->avatar_path)->toBeNull()
         ->and($user->avatar_mime_type)->toBeNull()
-        ->and($user->avatar)->toContain('/avatars/pixabots/webp/480/')
-        ->and($user->avatar)->toEndWith('.webp')
+        ->and($user->avatar)->toContain('/avatars/pixabots/png/480/')
+        ->and($user->avatar)->toEndWith('.png')
+        ->and($user->avatar)->not->toContain('.webp')
         ->and($user->avatar)->not->toContain('.gif');
 });
 

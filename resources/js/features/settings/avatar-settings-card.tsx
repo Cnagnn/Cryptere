@@ -45,7 +45,7 @@ export function AvatarSettingsCard({
     );
 
     const avatarUrl = (avatarId: string) =>
-        `${avatarOptions.baseUrl.replace(/\/$/, '')}/${avatarId}.webp`;
+        `${avatarOptions.baseUrl.replace(/\/$/, '')}/${avatarId}.${avatarOptions.extension}`;
 
     return (
         <Card>
@@ -164,7 +164,11 @@ export function AvatarSettingsCard({
                                     id="avatar"
                                     name="avatar"
                                     type="file"
-                                    accept="image/jpeg,image/png,image/webp"
+                                    accept={
+                                        avatarOptions.extension === 'webp'
+                                            ? 'image/jpeg,image/png,image/webp'
+                                            : 'image/jpeg,image/png'
+                                    }
                                 />
                                 {errors.avatar && (
                                     <p className="text-sm text-destructive">

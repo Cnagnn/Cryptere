@@ -16,7 +16,7 @@ return new class extends Migration
             return;
         }
 
-        $ids = collect(File::glob(public_path('avatars/pixabots/webp/480/*.webp')) ?: [])
+        $ids = collect(File::glob(public_path('avatars/pixabots/png/480/*.png')) ?: [])
             ->map(fn (string $path): string => pathinfo($path, PATHINFO_FILENAME))
             ->filter(fn (string $id): bool => preg_match('/^[a-f0-9]{4}$/i', $id) === 1)
             ->map(fn (string $id): string => strtolower($id))
