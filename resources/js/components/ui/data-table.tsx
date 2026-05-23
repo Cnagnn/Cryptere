@@ -59,6 +59,7 @@ type DataTableProps<TData, TValue> = {
     enableDefaultIdSort?: boolean;
     getRowDataId?: (row: TData) => string;
     dragHandleActiveRowId?: string | null;
+    onRowDragStart?: (sourceRowId: string) => void;
     onRowDrop?: (sourceRowId: string, targetRowId: string) => void;
     onRowDragEnd?: () => void;
     getRowClassName?: (row: TData) => string | undefined;
@@ -99,6 +100,7 @@ export function DataTable<TData, TValue>({
     enableDefaultIdSort = true,
     getRowDataId,
     dragHandleActiveRowId,
+    onRowDragStart,
     onRowDrop,
     onRowDragEnd,
     getRowClassName,
@@ -330,6 +332,7 @@ export function DataTable<TData, TValue>({
         setDraggingSourceId(rowId);
         setDraggingOverId(rowId);
         setDragRowHeight(rowRect.height);
+        onRowDragStart?.(rowId);
 
         document.body.style.userSelect = 'none';
 

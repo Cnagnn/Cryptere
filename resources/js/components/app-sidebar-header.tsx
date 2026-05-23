@@ -47,13 +47,13 @@ import {
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex, show as labsShow } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
-import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
-import type { Auth } from '@/types/auth';
 import { own as profileOwn } from '@/routes/profile/show';
 import { edit as appearanceEdit } from '@/routes/settings/appearance';
 import { edit as profileEdit } from '@/routes/settings/profile';
 import { edit as securityEdit } from '@/routes/settings/security';
 import { edit as socialAccountsEdit } from '@/routes/settings/social-accounts';
+import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
+import type { Auth } from '@/types/auth';
 
 type Props = {
     breadcrumbs?: BreadcrumbItemType[];

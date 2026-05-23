@@ -17,10 +17,21 @@ type FlashToast = {
     message: string;
 };
 
+type AppUrls = {
+    public: string;
+    auth: string;
+    app: string;
+    login: string;
+    register: string;
+    logout: string;
+    dashboard: string;
+};
+
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            urls: AppUrls;
             auth: Auth;
             sidebarOpen: boolean;
             flash?: {

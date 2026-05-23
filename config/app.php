@@ -54,6 +54,18 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'domains' => [
+        'public' => env('PUBLIC_DOMAIN'),
+        'auth' => env('AUTH_DOMAIN'),
+        'app' => env('APP_DOMAIN'),
+    ],
+
+    'urls' => [
+        'public' => env('PUBLIC_URL', env('APP_URL', 'http://localhost')),
+        'auth' => env('AUTH_URL', env('APP_URL', 'http://localhost')),
+        'app' => env('APP_HOME_URL', env('APP_URL', 'http://localhost').'/dashboard'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { SkipToContent } from '@/components/accessibility';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { home } from '@/routes';
+import { useAppUrls } from '@/hooks/use-app-urls';
 import type { AuthLayoutProps } from '@/types';
 
 export default function AuthSimpleLayout({
@@ -9,6 +9,8 @@ export default function AuthSimpleLayout({
     title,
     description,
 }: AuthLayoutProps) {
+    const urls = useAppUrls();
+
     return (
         <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
             <SkipToContent targetId="auth-content" />
@@ -16,7 +18,7 @@ export default function AuthSimpleLayout({
                 <div className="flex flex-col gap-8">
                     <div className="flex flex-col items-center gap-4">
                         <Link
-                            href={home()}
+                            href={urls.public}
                             className="flex flex-col items-center gap-2 font-medium"
                             aria-label="Go to homepage"
                         >

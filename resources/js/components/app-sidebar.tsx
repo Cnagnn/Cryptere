@@ -43,18 +43,19 @@ import {
     SidebarMenuSubItem,
     useSidebar,
 } from '@/components/ui/sidebar';
+import { useAppUrls } from '@/hooks/use-app-urls';
 import { useCurrentUrl } from '@/hooks/use-current-url';
-import { dashboard, logout } from '@/routes';
+import { dashboard } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { index as adminQuestionBankIndex } from '@/routes/admin/question-bank';
 import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
-import type { NavItem } from '@/types';
-import type { Auth, User as UserType } from '@/types/auth';
 import { show as profileShow } from '@/routes/profile';
 import { edit as settingsProfileEdit } from '@/routes/settings/profile';
+import type { NavItem } from '@/types';
+import type { Auth, User as UserType } from '@/types/auth';
 
 const mainNavItems: NavItem[] = [
     {
@@ -88,8 +89,10 @@ const managementNavItems: NavItem[] = [
 ];
 
 export function UserMenuContent({ user }: { user: UserType }) {
+    const urls = useAppUrls();
+
     const handleLogout = () => {
-        router.post(logout.url());
+        router.post(urls.logout);
     };
     const level = user.level;
     const levelProgress = level

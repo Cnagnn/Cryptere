@@ -303,6 +303,8 @@ export type QuestionBank = {
     correct_answer: string | null;
     explanation: string | null;
     rubric: RubricDefinition | null;
+    min_words: number | null;
+    max_words: number | null;
     points: number;
     is_active: boolean;
     // Analytics

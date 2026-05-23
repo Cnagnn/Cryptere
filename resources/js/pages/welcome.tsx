@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { dashboard, login, register } from '@/routes';
+import { useAppUrls } from '@/hooks/use-app-urls';
 import type { Auth } from '@/types/auth';
 
 type WelcomeProps = {
@@ -103,7 +103,8 @@ function Hero115({
 
 export default function Welcome({ canRegister = true }: WelcomeProps) {
     const { auth } = usePage<{ auth: Auth }>().props;
-    const ctaHref = auth.user ? dashboard().url : login().url;
+    const urls = useAppUrls();
+    const ctaHref = auth.user ? urls.dashboard : urls.login;
     const ctaLabel = auth.user ? 'Buka dasbor' : 'Mulai belajar';
     const ctaByline = auth.user
         ? 'Lanjutkan progres Anda dari dasbor.'
@@ -120,7 +121,7 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
 
                 <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 md:px-8">
                     <header className="flex items-center justify-between gap-4">
-                        <Link href={auth.user ? dashboard() : login()} prefetch>
+                        <Link href={auth.user ? urls.dashboard : urls.login} prefetch>
                             <div
                                 className="flex items-center select-none"
                                 aria-label="Cryptere"
@@ -161,20 +162,20 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                         <div className="flex items-center gap-2">
                             {auth.user ? (
                                 <Button asChild>
-                                    <Link href={dashboard()} prefetch>
+                                    <Link href={urls.dashboard} prefetch>
                                         Dasbor
                                     </Link>
                                 </Button>
                             ) : (
                                 <>
                                     <Button variant="ghost" asChild>
-                                        <Link href={login()} prefetch>
+                                        <Link href={urls.login} prefetch>
                                             Masuk
                                         </Link>
                                     </Button>
                                     {canRegister && (
                                         <Button asChild>
-                                            <Link href={register()} prefetch>
+                                            <Link href={urls.register} prefetch>
                                                 Daftar
                                             </Link>
                                         </Button>

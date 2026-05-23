@@ -28,27 +28,47 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+$publicDomain = config('app.domains.public');
+$authDomain = config('app.domains.auth');
+$appDomain = config('app.domains.app');
 
-Route::post('locale', function (Request $request) {
-    $locale = $request->validate(['locale' => 'required|in:en,id'])['locale'];
+Route::domain($publicDomain)->group(function () {
+    Route::inertia('/', 'welcome', [
+        'canRegister' => Features::enabled(Features::registration()),
+    ])->name('home');
 
-    return back()->withCookie(cookie('locale', $locale, 60 * 24 * 365));
-})->name('locale.switch');
+    Route::post('locale', function (Request $request) {
+        $locale = $request->validate(['locale' => 'required|in:en,id'])['locale'];
 
-Route::get('/health', HealthCheckController::class)->name('health');
+        return back()->withCookie(cookie('locale', $locale, 60 * 24 * 365));
+    })->name('locale.switch');
 
-Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
-Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
+    Route::get('/health', HealthCheckController::class)->name('health');
+});
 
-// Username availability check — rate limited to prevent enumeration attacks
-Route::middleware('throttle:10,1')
-    ->get('/api/users/check-username', UsernameAvailabilityController::class)
-    ->name('users.check-username');
+Route::domain($authDomain)->group(function () use ($authDomain) {
+    if ($authDomain) {
+        Route::redirect('/', '/login')->name('auth.home');
+    }
 
-Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
+    Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
+
+    // Username availability check — rate limited to prevent enumeration attacks
+    Route::middleware('throttle:10,1')
+        ->get('/api/users/check-username', UsernameAvailabilityController::class)
+        ->name('users.check-username');
+});
+
+if ($appDomain) {
+    Route::domain($appDomain)
+        ->middleware(['auth', 'verified'])
+        ->group(function () {
+            Route::redirect('/', '/dashboard')->name('app.home');
+        });
+}
+
+Route::domain($appDomain)->middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('courses', [CourseController::class, 'index'])->name('courses.index');
@@ -110,7 +130,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Story and CTF removed
 });
 
-Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function () {
+Route::domain($appDomain)->middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
     Route::patch('users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
@@ -174,10 +194,10 @@ Route::middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin
 
 });
 
-require __DIR__.'/settings.php';
+Route::domain($appDomain)->group(base_path('routes/settings.php'));
 
 // Profile pages — defined after settings.php so /profile/admin is matched first
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::domain($appDomain)->middleware(['auth', 'verified'])->group(function () {
     Route::get('profile', [ProfileController::class, 'showOwn'])->name('profile.show.own');
     Route::get('profile/{user:username}', [ProfileController::class, 'show'])->name('profile.show');
 });

@@ -73,7 +73,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    'home' => env('APP_HOME_URL', '/dashboard'),
 
     /*
     |--------------------------------------------------------------------------
@@ -88,7 +88,14 @@ return [
 
     'prefix' => '',
 
-    'domain' => null,
+    'domain' => env('AUTH_DOMAIN'),
+
+    'redirects' => [
+        'login' => env('APP_HOME_URL', '/dashboard'),
+        'register' => env('APP_HOME_URL', '/dashboard'),
+        'logout' => env('PUBLIC_URL', '/'),
+        'password-reset' => env('PASSWORD_RESET_REDIRECT_URL', '/login'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

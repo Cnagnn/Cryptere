@@ -33,7 +33,7 @@ class PointDecayWarning extends Notification
             ->greeting("Hey {$notifiable->name}!")
             ->line("You've been inactive and your **{$this->currentPoints} points** will start decaying in **{$this->daysUntilDecay} day(s)**.")
             ->line("You'll lose approximately **{$pointsAtRisk} points per day** ({$this->decayPercent}% daily) until you return.")
-            ->action('Get Back to Learning', url('/dashboard'))
+            ->action('Get Back to Learning', route('dashboard'))
             ->line('Complete a lesson to reset the decay timer.');
     }
 

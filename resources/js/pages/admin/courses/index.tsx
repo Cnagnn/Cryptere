@@ -1042,10 +1042,6 @@ type TopicProps = {
     search?: string;
 };
 
-function formatTopicCode(order: number): string {
-    return `TPC-${String(order).padStart(4, '0')}`;
-}
-
 function AdminCoursesTopic({
     lessons,
     courseOptions,
@@ -1063,14 +1059,6 @@ function AdminCoursesTopic({
         setPrevLessonsData(lessons.data);
         setRows(lessons.data);
     }
-
-    const handleSearch = useCallback((value: string) => {
-        router.get(
-            adminCoursesIndex.url(),
-            { search: value, page: 1, section: 'topics' },
-            { preserveState: true, preserveScroll: true }
-        );
-    }, []);
 
     const [dragHandleActiveRowId, setDragHandleActiveRowId] = useState<
         string | null
@@ -2077,10 +2065,6 @@ type TaskProps = {
     isLoading?: boolean;
     search?: string;
 };
-
-function formatTaskCode(order: number): string {
-    return `TSK-${String(order).padStart(4, '0')}`;
-}
 
 type QuizQuestion = {
     question: string;
@@ -4216,8 +4200,12 @@ type IndexProps = {
     };
 };
 
+type CourseManagementSection = Exclude<IndexProps['section'], 'assessment'>;
+
 export default function AdminCoursesIndex(props: IndexProps) {
-    const [activeTab, setActiveTab] = useState(props.section);
+    const initialTab: CourseManagementSection =
+        props.section === 'assessment' ? 'catalog' : props.section;
+    const [activeTab, setActiveTab] = useState<CourseManagementSection>(initialTab);
     const [isLoading, setIsLoading] = useState(false);
     const [cachedData, setCachedData] = useState({
         courses: props.courses,
@@ -4227,32 +4215,38 @@ export default function AdminCoursesIndex(props: IndexProps) {
     });
 
     const handleTabChange = useCallback((value: string) => {
+        if (!['catalog', 'lesson', 'task'].includes(value)) {
+            return;
+        }
+
+        const section = value as CourseManagementSection;
+
         // Instant client-side tab switch
-        setActiveTab(value);
+        setActiveTab(section);
 
         // Update URL without server request
         window.history.replaceState(
             null,
             '',
-            adminCoursesIndex.url({ query: { section: value } })
+            adminCoursesIndex.url({ query: { section } })
         );
 
-        console.log(`✨ Tab switch: ${value} | Latency: 0ms (instant)`);
+        console.log(`✨ Tab switch: ${section} | Latency: 0ms (instant)`);
         console.log('🚀 Excellent performance!');
 
         // Lazy load data if not cached or empty
         const needsData =
-            (value === 'catalog' && (!cachedData.courses || !cachedData.courses.data || cachedData.courses.data.length === 0)) ||
-            (value === 'lesson' && (!cachedData.lessons || !cachedData.lessons.data || cachedData.lessons.data.length === 0)) ||
-            (value === 'task' && (!cachedData.tasks || !cachedData.tasks.data || cachedData.tasks.data.length === 0));
+            (section === 'catalog' && (!cachedData.courses || !cachedData.courses.data || cachedData.courses.data.length === 0)) ||
+            (section === 'lesson' && (!cachedData.lessons || !cachedData.lessons.data || cachedData.lessons.data.length === 0)) ||
+            (section === 'task' && (!cachedData.tasks || !cachedData.tasks.data || cachedData.tasks.data.length === 0));
 
         if (needsData) {
-            console.log(`📡 Fetching data for ${value} tab...`);
+            console.log(`📡 Fetching data for ${section} tab...`);
             setIsLoading(true);
             router.reload({
                 only: ['courses', 'lessons', 'tasks', 'allLessons', 'selectedCourseId', 'selectedLessonId'],
                 onSuccess: (page: any) => {
-                    console.log(`✅ Data loaded for ${value} tab`);
+                    console.log(`✅ Data loaded for ${section} tab`);
                     setCachedData({
                         courses: page.props.courses || cachedData.courses,
                         lessons: page.props.lessons || cachedData.lessons,
@@ -4262,7 +4256,7 @@ export default function AdminCoursesIndex(props: IndexProps) {
                     setIsLoading(false);
                 },
                 onError: () => {
-                    console.error(`❌ Failed to load data for ${value} tab`);
+                    console.error(`❌ Failed to load data for ${section} tab`);
                     setIsLoading(false);
                 },
             });

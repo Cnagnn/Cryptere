@@ -7,8 +7,8 @@ import { Separator } from '@/components/ui/separator';
 import { ProfileBadges } from '@/features/profile/profile-badges';
 import { ProfileOverviewCard } from '@/features/profile/profile-overview-card';
 import { useInitials } from '@/hooks/use-initials';
-import type { ProfileBadge, ProfileUser } from '@/types/profile';
 import { edit as settingsProfileEdit } from '@/routes/settings/profile';
+import type { ProfileBadge, ProfileUser } from '@/types/profile';
 
 type Props = {
     profileUser: ProfileUser;
