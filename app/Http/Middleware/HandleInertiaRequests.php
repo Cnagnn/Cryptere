@@ -28,7 +28,8 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $user = $request->user();
+        $isPublicLandingPage = $request->getHost() === config('app.domains.public') && $request->path() === '/';
+        $user = $isPublicLandingPage ? null : $request->user();
 
         $streakResult = ['xp' => 0, 'bonuses' => []];
         if ($user !== null && ! $request->header('X-Inertia-Partial-Data')) {
@@ -67,7 +68,7 @@ class HandleInertiaRequests extends Middleware
                     'daily_goal_target' => (int) config('rewards.daily_goal_target_xp', 100),
                 ] : null,
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'sidebarOpen' => $isPublicLandingPage || ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => app()->getLocale(),
             'availableLocales' => ['en', 'id'],
             'features' => [
@@ -78,9 +79,9 @@ class HandleInertiaRequests extends Middleware
                 'gamificationReward' => Feature::for($user)->value(GamificationRewardVariant::class),
             ] : [],
             'flash' => [
-                'toast' => fn () => $request->session()->get('toast'),
-                'newBadges' => fn () => $request->session()->get('newBadges'),
-                'levelUp' => fn () => $request->session()->get('levelUp'),
+                'toast' => fn () => $isPublicLandingPage ? null : $request->session()->get('toast'),
+                'newBadges' => fn () => $isPublicLandingPage ? null : $request->session()->get('newBadges'),
+                'levelUp' => fn () => $isPublicLandingPage ? null : $request->session()->get('levelUp'),
                 'streakBonuses' => fn () => $streakResult['bonuses'],
             ],
         ];

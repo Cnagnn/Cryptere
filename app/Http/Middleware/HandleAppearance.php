@@ -16,7 +16,11 @@ class HandleAppearance
      */
     public function handle(Request $request, Closure $next): Response
     {
-        View::share('appearance', $request->cookie('appearance') ?? 'system');
+        $appearance = $request->getHost() === config('app.domains.public') && $request->path() === '/'
+            ? 'system'
+            : $request->cookie('appearance') ?? 'system';
+
+        View::share('appearance', $appearance);
 
         return $next($request);
     }
