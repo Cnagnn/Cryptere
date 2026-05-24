@@ -248,16 +248,16 @@ test('member can select a static png pixabot avatar from settings', function ():
         ->and($user->avatar)->toContain('/avatars/pixabots/png/480/4411.png');
 });
 
-test('admin pixabot avatar choices use webp', function (): void {
+test('admin pixabot avatar choices use png', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true, 'pixabot_avatar_id' => '4411']);
 
     $this->actingAs($admin)
         ->get(route('settings.profile.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('avatarOptions.baseUrl', asset('avatars/pixabots/webp/480'))
-            ->where('avatarOptions.extension', 'webp')
-            ->where('profileUser.avatar', fn (?string $avatar): bool => str_contains($avatar ?? '', '/avatars/pixabots/webp/480/4411.webp'))
+            ->where('avatarOptions.baseUrl', asset('avatars/pixabots/png/480'))
+            ->where('avatarOptions.extension', 'png')
+            ->where('profileUser.avatar', fn (?string $avatar): bool => str_contains($avatar ?? '', '/avatars/pixabots/png/480/4411.png'))
         );
 });
 

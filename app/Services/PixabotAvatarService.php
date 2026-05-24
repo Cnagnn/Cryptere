@@ -9,8 +9,6 @@ class PixabotAvatarService
 {
     public const STATIC_PUBLIC_DIRECTORY = 'avatars/pixabots/png/480';
 
-    public const ADMIN_PUBLIC_DIRECTORY = 'avatars/pixabots/webp/480';
-
     /**
      * @return array{baseUrl:string, extension:string, ids:array<int, string>}
      */
@@ -105,13 +103,11 @@ class PixabotAvatarService
 
     private function formatForUser(?User $user): string
     {
-        return $user?->isAdmin() === true ? 'webp' : 'png';
+        return 'png';
     }
 
     private function directoryForFormat(string $format): string
     {
-        return $format === 'webp'
-            ? self::ADMIN_PUBLIC_DIRECTORY
-            : self::STATIC_PUBLIC_DIRECTORY;
+        return self::STATIC_PUBLIC_DIRECTORY;
     }
 }

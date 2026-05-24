@@ -25,7 +25,7 @@ test('pixabot service validates ids and resolves selected member avatar as png',
         ->and($service->urlForUser($user))->toBe(asset('avatars/pixabots/png/480/4411.png'));
 });
 
-test('pixabot service resolves admin avatars as webp', function (): void {
+test('pixabot service resolves admin avatars as png', function (): void {
     $service = app(PixabotAvatarService::class);
     $admin = new User([
         'email' => 'admin@example.com',
@@ -35,9 +35,9 @@ test('pixabot service resolves admin avatars as webp', function (): void {
 
     $options = $service->options($admin);
 
-    expect($options['baseUrl'])->toBe(asset('avatars/pixabots/webp/480'))
-        ->and($options['extension'])->toBe('webp')
-        ->and($service->urlForUser($admin))->toBe(asset('avatars/pixabots/webp/480/4411.webp'));
+    expect($options['baseUrl'])->toBe(asset('avatars/pixabots/png/480'))
+        ->and($options['extension'])->toBe('png')
+        ->and($service->urlForUser($admin))->toBe(asset('avatars/pixabots/png/480/4411.png'));
 });
 
 test('user avatar ignores legacy pixabot gif path for members', function (): void {
@@ -53,7 +53,7 @@ test('user avatar ignores legacy pixabot gif path for members', function (): voi
         ->and($user->hasCustomAvatar())->toBeFalse();
 });
 
-test('admin avatar ignores legacy pixabot gif path and resolves to webp', function (): void {
+test('admin avatar ignores legacy pixabot gif path and resolves to png', function (): void {
     $admin = new User([
         'email' => 'legacy-admin-avatar@example.com',
         'role' => 'admin',
@@ -62,7 +62,7 @@ test('admin avatar ignores legacy pixabot gif path and resolves to webp', functi
         'pixabot_avatar_id' => '4411',
     ]);
 
-    expect($admin->avatar)->toBe(asset('avatars/pixabots/webp/480/4411.webp'))
+    expect($admin->avatar)->toBe(asset('avatars/pixabots/png/480/4411.png'))
         ->and($admin->hasCustomAvatar())->toBeFalse();
 });
 
