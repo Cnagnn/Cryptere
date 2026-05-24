@@ -25,7 +25,7 @@ class UserAvatarService
 
     public function delete(User $user): void
     {
-        if (is_string($user->avatar_path) && $user->avatar_path !== '') {
+        if ($user->hasCustomAvatar() && is_string($user->avatar_path) && $user->avatar_path !== '') {
             Storage::disk('public')->delete($user->avatar_path);
         }
 

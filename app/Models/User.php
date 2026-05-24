@@ -123,7 +123,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAvatarAttribute(): ?string
     {
-        if (is_string($this->avatar_path) && $this->avatar_path !== '') {
+        if ($this->hasCustomAvatar()) {
             return Storage::disk('public')->url($this->avatar_path);
         }
 
@@ -136,6 +136,18 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return app(PixabotAvatarService::class)->urlForUser($this);
+    }
+
+    /**
+     * Determine whether the user has an uploaded custom avatar.
+     */
+    public function hasCustomAvatar(): bool
+    {
+        if (is_string($this->avatar_path) && $this->avatar_path !== '') {
+            return ! str_starts_with($this->avatar_path, 'avatars/pixabots/');
+        }
+
+        return $this->resolveAvatarBinary() !== null;
     }
 
     /**

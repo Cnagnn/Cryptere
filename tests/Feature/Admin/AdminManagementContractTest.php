@@ -139,6 +139,8 @@ test('admin user management returns searchable paginated user contract', functio
         'username' => 'managed_member',
         'role' => 'member',
         'points' => 120,
+        'avatar_path' => 'avatars/pixabots/gif/480/4411.gif',
+        'avatar_mime_type' => 'image/gif',
         'pixabot_avatar_id' => '4411',
     ]);
 

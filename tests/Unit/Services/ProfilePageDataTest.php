@@ -32,6 +32,20 @@ test('profile user payload uses the selected pixabot avatar', function (): void 
         ->and($payload['has_custom_avatar'])->toBeFalse();
 });
 
+test('profile user payload normalizes legacy pixabot gif path to png', function (): void {
+    $user = User::factory()->create([
+        'avatar_path' => 'avatars/pixabots/gif/480/4411.gif',
+        'avatar_mime_type' => 'image/gif',
+        'pixabot_avatar_id' => '4411',
+    ]);
+
+    $payload = app(ProfilePageData::class)->profileUser($user, true);
+
+    expect($payload['avatar'])->toContain('/avatars/pixabots/png/480/4411.png')
+        ->and($payload['avatar'])->not->toContain('.gif')
+        ->and($payload['has_custom_avatar'])->toBeFalse();
+});
+
 test('badges payload selects earned badges ordered by pivot date', function (): void {
     $user = User::factory()->create();
     $oldBadge = Badge::factory()->create(['name' => 'Old Badge']);
