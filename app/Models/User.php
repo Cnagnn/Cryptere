@@ -129,7 +129,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
         $avatarBinary = $this->resolveAvatarBinary();
 
-        if (is_string($avatarBinary) && $avatarBinary !== '') {
+        if (is_string($avatarBinary) && $avatarBinary !== '' && ! $this->hasGifAvatar()) {
             $mime = $this->avatar_mime_type ?? 'image/png';
 
             return 'data:'.$mime.';base64,'.base64_encode($avatarBinary);
@@ -144,10 +144,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasCustomAvatar(): bool
     {
         if (is_string($this->avatar_path) && $this->avatar_path !== '') {
-            return ! str_starts_with($this->avatar_path, 'avatars/pixabots/');
+            return ! str_starts_with($this->avatar_path, 'avatars/pixabots/')
+                && ! $this->hasGifAvatar();
         }
 
-        return $this->resolveAvatarBinary() !== null;
+        return $this->resolveAvatarBinary() !== null && ! $this->hasGifAvatar();
     }
 
     /**
@@ -227,5 +228,11 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return null;
+    }
+
+    private function hasGifAvatar(): bool
+    {
+        return $this->avatar_mime_type === 'image/gif'
+            || (is_string($this->avatar_path) && str_ends_with(strtolower($this->avatar_path), '.gif'));
     }
 }

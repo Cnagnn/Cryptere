@@ -65,3 +65,29 @@ test('admin avatar ignores legacy pixabot gif path and resolves to webp', functi
     expect($admin->avatar)->toBe(asset('avatars/pixabots/webp/480/4411.webp'))
         ->and($admin->hasCustomAvatar())->toBeFalse();
 });
+
+test('user avatar ignores uploaded gif path and resolves to pixabot fallback', function (): void {
+    $user = new User([
+        'email' => 'uploaded-gif-avatar@example.com',
+        'role' => 'member',
+        'avatar_path' => 'avatars/1/avatar.gif',
+        'avatar_mime_type' => 'image/gif',
+        'pixabot_avatar_id' => '4411',
+    ]);
+
+    expect($user->avatar)->toBe(asset('avatars/pixabots/png/480/4411.png'))
+        ->and($user->hasCustomAvatar())->toBeFalse();
+});
+
+test('user avatar ignores gif blob and resolves to pixabot fallback', function (): void {
+    $user = new User([
+        'email' => 'gif-blob-avatar@example.com',
+        'role' => 'member',
+        'avatar_image' => 'gif-bytes',
+        'avatar_mime_type' => 'image/gif',
+        'pixabot_avatar_id' => '4411',
+    ]);
+
+    expect($user->avatar)->toBe(asset('avatars/pixabots/png/480/4411.png'))
+        ->and($user->hasCustomAvatar())->toBeFalse();
+});
