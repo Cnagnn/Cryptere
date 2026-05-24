@@ -444,13 +444,13 @@ export default function LabsShow({ lab }: LabShowProps) {
             <Head title={`${lab.title} Lab`} />
 
             <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-4">
-                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between relative">
-    <div className="flex min-w-0 flex-col gap-1">
-        <TypographyH1>{lab.title}</TypographyH1>
-        <TypographyMuted>{pageSummary}</TypographyMuted>
-    </div>
-    <div className="flex shrink-0 items-center justify-end gap-2">
-        <Tabs
+                <header className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <TypographyH1>{lab.title}</TypographyH1>
+                        <TypographyMuted>{pageSummary}</TypographyMuted>
+                    </div>
+                    <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+                        <Tabs
                             value={mode}
                             onValueChange={(value) =>
                                 setMode(value as SimulationMode)
@@ -466,8 +466,9 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 </TabsTrigger>
                             </TabsList>
                         </Tabs>
-    </div>
-</header>                <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                    </div>
+                </header>{' '}
+                <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
                     <Card className="lg:col-span-4">
                         <CardHeader className="gap-1 pb-4">
                             <CardTitle className="flex items-center gap-2">
@@ -686,7 +687,6 @@ export default function LabsShow({ lab }: LabShowProps) {
                         </CardContent>
                     </Card>
                 </section>
-
                 <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
                     <Card className="flex min-h-[30rem] flex-col lg:col-span-8">
                         <CardHeader className="gap-1 pb-4">

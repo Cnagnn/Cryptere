@@ -900,13 +900,13 @@ function LearnerDashboard({
                             : greeting.subtitle}
                     </TypographyMuted>
                 </div>
-                <div className="flex shrink-0 items-center justify-end gap-2">
+                <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                     {adminTabs}
                 </div>
             </header>
 
             <section
-                className="animate-fade-in-up grid grid-cols-2 gap-3 md:grid-cols-6 lg:grid-cols-12"
+                className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12"
                 style={{ animationDelay: '100ms' }}
             >
                 <StatsCard
@@ -1337,14 +1337,14 @@ function AdminDashboard({
                         platform
                     </TypographyMuted>
                 </div>
-                <div className="flex shrink-0 items-center justify-end gap-2">
+                <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                     {adminTabs}
                 </div>
             </header>
 
             {/* Stats Cards - 4 columns */}
             <section
-                className="animate-fade-in-up grid grid-cols-2 gap-3 md:grid-cols-4"
+                className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4"
                 style={{ animationDelay: '100ms' }}
             >
                 <StatsCard

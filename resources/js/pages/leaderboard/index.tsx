@@ -1,6 +1,15 @@
 import { Head, Link, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, CalendarDays, CalendarRange, Crown, Flame, Infinity as InfinityIcon, Medal, Trophy } from 'lucide-react';
+import {
+    ArrowUpDown,
+    CalendarDays,
+    CalendarRange,
+    Crown,
+    Flame,
+    Infinity as InfinityIcon,
+    Medal,
+    Trophy,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -308,13 +317,16 @@ export default function LeaderboardIndex({
             <Head title="Leaderboard" />
 
             <div className="flex flex-col gap-6 px-4 pt-3 pb-4">
-                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-fade-in-up">
-    <div className="flex min-w-0 flex-col gap-1">
-        <TypographyH1>Leaderboard</TypographyH1>
-        <TypographyMuted>Live ranking based on points earned from lessons and course completions.</TypographyMuted>
-    </div>
-    <div className="flex shrink-0 items-center justify-end gap-2">
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <header className="animate-fade-in-up flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <TypographyH1>Leaderboard</TypographyH1>
+                        <TypographyMuted>
+                            Live ranking based on points earned from lessons and
+                            course completions.
+                        </TypographyMuted>
+                    </div>
+                    <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <Input
                                 value={usernameInput}
                                 onChange={(event) =>
@@ -347,8 +359,9 @@ export default function LeaderboardIndex({
                                 </TabsList>
                             </Tabs>
                         </div>
-    </div>
-</header>                {/* Podium Top 3 */}
+                    </div>
+                </header>
+                {/* Podium Top 3 */}
                 {top3.length > 0 && !isNavigating ? (
                     <div
                         className="animate-fade-in-up"
@@ -361,7 +374,7 @@ export default function LeaderboardIndex({
                     </div>
                 ) : isNavigating ? (
                     <div
-                        className="animate-fade-in-up grid grid-cols-3 items-end gap-3"
+                        className="animate-fade-in-up grid grid-cols-1 items-end gap-3 sm:grid-cols-3"
                         style={{ animationDelay: '100ms' }}
                     >
                         {[2, 1, 3].map((rank) => (
@@ -384,7 +397,6 @@ export default function LeaderboardIndex({
                         ))}
                     </div>
                 ) : null}
-
                 <section
                     className="animate-fade-in-up grid gap-4"
                     style={{ animationDelay: '200ms' }}
@@ -409,9 +421,8 @@ export default function LeaderboardIndex({
                                         Leaderboard is Empty
                                     </EmptyTitle>
                                     <EmptyDescription>
-                                        No participant points have been
-                                        recorded yet. Complete lessons to
-                                        appear here.
+                                        No participant points have been recorded
+                                        yet. Complete lessons to appear here.
                                     </EmptyDescription>
                                 </EmptyHeader>
                                 <EmptyContent>

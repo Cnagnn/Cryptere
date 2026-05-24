@@ -79,10 +79,7 @@ import {
     store,
     update,
 } from '@/routes/admin/question-bank';
-import type {
-    QuestionBank,
-    QuestionType,
-} from '@/types/assessments';
+import type { QuestionBank, QuestionType } from '@/types/assessments';
 
 type QuestionRow = QuestionBank;
 
@@ -168,8 +165,8 @@ function questionTypeLabel(value: QuestionType): string {
 
 function parseMultiSelectAnswer(value: string): string[] {
     if (!value) {
-return [];
-}
+        return [];
+    }
 
     try {
         const parsed = JSON.parse(value);
@@ -194,9 +191,16 @@ function parseMatchingPairs(
         try {
             const parsed = JSON.parse(correctAnswer);
 
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (
+                parsed &&
+                typeof parsed === 'object' &&
+                !Array.isArray(parsed)
+            ) {
                 map = Object.fromEntries(
-                    Object.entries(parsed).map(([key, value]) => [String(key), String(value ?? '')]),
+                    Object.entries(parsed).map(([key, value]) => [
+                        String(key),
+                        String(value ?? ''),
+                    ]),
                 );
             }
         } catch {
@@ -211,7 +215,10 @@ function parseMatchingPairs(
     });
     const merged: MatchingPair[] = fromOptions.map((pair) => ({
         left: pair.left,
-        right: pair.left && map[pair.left] !== undefined ? map[pair.left] : pair.right,
+        right:
+            pair.left && map[pair.left] !== undefined
+                ? map[pair.left]
+                : pair.right,
     }));
 
     while (merged.length < 4) {
@@ -256,10 +263,15 @@ function QuestionTypeFields({
                 <div className="grid gap-2">
                     {options.map((option, index) => {
                         const isCorrect =
-                            option.trim() !== '' && correctAnswer.trim() !== '' && correctAnswer === option;
+                            option.trim() !== '' &&
+                            correctAnswer.trim() !== '' &&
+                            correctAnswer === option;
 
                         return (
-                            <div key={index} className="flex items-center gap-2">
+                            <div
+                                key={index}
+                                className="flex items-center gap-2"
+                            >
                                 <Input
                                     id={`${idPrefix}-option-${index}`}
                                     value={option}
@@ -270,8 +282,13 @@ function QuestionTypeFields({
                                         next[index] = event.target.value;
                                         onOptionsChange(next);
 
-                                        if (correctAnswer === oldValue && oldValue !== '') {
-                                            onCorrectAnswerChange(event.target.value);
+                                        if (
+                                            correctAnswer === oldValue &&
+                                            oldValue !== ''
+                                        ) {
+                                            onCorrectAnswerChange(
+                                                event.target.value,
+                                            );
                                         }
                                     }}
                                 />
@@ -279,11 +296,23 @@ function QuestionTypeFields({
                                     type="button"
                                     variant={isCorrect ? 'default' : 'outline'}
                                     size="icon"
-                                    aria-label={isCorrect ? 'Jawaban benar' : 'Tandai sebagai benar'}
+                                    aria-label={
+                                        isCorrect
+                                            ? 'Jawaban benar'
+                                            : 'Tandai sebagai benar'
+                                    }
                                     aria-pressed={isCorrect}
                                     disabled={option.trim() === ''}
-                                    onClick={() => onCorrectAnswerChange(isCorrect ? '' : option)}
-                                    className={cn('shrink-0', isCorrect && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                                    onClick={() =>
+                                        onCorrectAnswerChange(
+                                            isCorrect ? '' : option,
+                                        )
+                                    }
+                                    className={cn(
+                                        'shrink-0',
+                                        isCorrect &&
+                                            'bg-emerald-500 text-white hover:bg-emerald-600',
+                                    )}
                                 >
                                     <Check />
                                 </Button>
@@ -299,8 +328,8 @@ function QuestionTypeFields({
         const selected = parseMultiSelectAnswer(correctAnswer);
         const toggleOption = (option: string) => {
             if (option.trim() === '') {
-return;
-}
+                return;
+            }
 
             const next = selected.includes(option)
                 ? selected.filter((value) => value !== option)
@@ -314,14 +343,19 @@ return;
                     Pilihan Jawaban <span className="text-destructive">*</span>
                 </FieldLabel>
                 <FieldDescription>
-                    Tandai semua pilihan yang benar dengan tombol di sebelah kanan.
+                    Tandai semua pilihan yang benar dengan tombol di sebelah
+                    kanan.
                 </FieldDescription>
                 <div className="grid gap-2">
                     {options.map((option, index) => {
-                        const isCorrect = option.trim() !== '' && selected.includes(option);
+                        const isCorrect =
+                            option.trim() !== '' && selected.includes(option);
 
                         return (
-                            <div key={index} className="flex items-center gap-2">
+                            <div
+                                key={index}
+                                className="flex items-center gap-2"
+                            >
                                 <Input
                                     id={`${idPrefix}-option-${index}`}
                                     value={option}
@@ -332,11 +366,19 @@ return;
                                         next[index] = event.target.value;
                                         onOptionsChange(next);
 
-                                        if (oldValue !== '' && selected.includes(oldValue)) {
-                                            const newSelected = selected.map((s) =>
-                                                s === oldValue ? event.target.value : s,
+                                        if (
+                                            oldValue !== '' &&
+                                            selected.includes(oldValue)
+                                        ) {
+                                            const newSelected = selected.map(
+                                                (s) =>
+                                                    s === oldValue
+                                                        ? event.target.value
+                                                        : s,
                                             );
-                                            onCorrectAnswerChange(JSON.stringify(newSelected));
+                                            onCorrectAnswerChange(
+                                                JSON.stringify(newSelected),
+                                            );
                                         }
                                     }}
                                 />
@@ -344,11 +386,19 @@ return;
                                     type="button"
                                     variant={isCorrect ? 'default' : 'outline'}
                                     size="icon"
-                                    aria-label={isCorrect ? 'Jawaban benar' : 'Tandai sebagai benar'}
+                                    aria-label={
+                                        isCorrect
+                                            ? 'Jawaban benar'
+                                            : 'Tandai sebagai benar'
+                                    }
                                     aria-pressed={isCorrect}
                                     disabled={option.trim() === ''}
                                     onClick={() => toggleOption(option)}
-                                    className={cn('shrink-0', isCorrect && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                                    className={cn(
+                                        'shrink-0',
+                                        isCorrect &&
+                                            'bg-emerald-500 text-white hover:bg-emerald-600',
+                                    )}
                                 >
                                     <Check />
                                 </Button>
@@ -370,13 +420,16 @@ return;
                     Jawaban Benar <span className="text-destructive">*</span>
                 </FieldLabel>
                 <FieldDescription>Tandai jawaban yang benar.</FieldDescription>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                     <Button
                         type="button"
                         variant={isTrue ? 'default' : 'outline'}
                         aria-pressed={isTrue}
                         onClick={() => onCorrectAnswerChange('true')}
-                        className={cn(isTrue && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                        className={cn(
+                            isTrue &&
+                                'bg-emerald-500 text-white hover:bg-emerald-600',
+                        )}
                     >
                         <Check />
                         Benar
@@ -386,7 +439,10 @@ return;
                         variant={isFalse ? 'default' : 'outline'}
                         aria-pressed={isFalse}
                         onClick={() => onCorrectAnswerChange('false')}
-                        className={cn(isFalse && 'bg-rose-500 text-white hover:bg-rose-600')}
+                        className={cn(
+                            isFalse &&
+                                'bg-rose-500 text-white hover:bg-rose-600',
+                        )}
                     >
                         <X />
                         Salah
@@ -398,16 +454,27 @@ return;
 
     if (questionType === 'matching') {
         const pairs = parseMatchingPairs(options, correctAnswer);
-        const updatePair = (index: number, key: 'left' | 'right', value: string) => {
-            const next = pairs.map((pair, i) => (i === index ? { ...pair, [key]: value } : pair));
-            const nextOptions = next.map((pair) => `${pair.left}::${pair.right}`);
-            const nextAnswer = next.reduce<Record<string, string>>((acc, pair) => {
-                if (pair.left.trim() !== '') {
-acc[pair.left] = pair.right;
-}
+        const updatePair = (
+            index: number,
+            key: 'left' | 'right',
+            value: string,
+        ) => {
+            const next = pairs.map((pair, i) =>
+                i === index ? { ...pair, [key]: value } : pair,
+            );
+            const nextOptions = next.map(
+                (pair) => `${pair.left}::${pair.right}`,
+            );
+            const nextAnswer = next.reduce<Record<string, string>>(
+                (acc, pair) => {
+                    if (pair.left.trim() !== '') {
+                        acc[pair.left] = pair.right;
+                    }
 
-                return acc;
-            }, {});
+                    return acc;
+                },
+                {},
+            );
             onOptionsChange(nextOptions);
             onCorrectAnswerChange(JSON.stringify(nextAnswer));
         };
@@ -422,18 +489,30 @@ acc[pair.left] = pair.right;
                 </FieldDescription>
                 <div className="grid gap-2">
                     {pairs.map((pair, index) => (
-                        <div key={index} className="grid grid-cols-2 gap-2">
+                        <div key={index} className="grid gap-2 sm:grid-cols-2">
                             <Input
                                 id={`${idPrefix}-pair-${index}-left`}
                                 value={pair.left}
                                 placeholder={`Premis ${index + 1}`}
-                                onChange={(event) => updatePair(index, 'left', event.target.value)}
+                                onChange={(event) =>
+                                    updatePair(
+                                        index,
+                                        'left',
+                                        event.target.value,
+                                    )
+                                }
                             />
                             <Input
                                 id={`${idPrefix}-pair-${index}-right`}
                                 value={pair.right}
                                 placeholder={`Target ${index + 1}`}
-                                onChange={(event) => updatePair(index, 'right', event.target.value)}
+                                onChange={(event) =>
+                                    updatePair(
+                                        index,
+                                        'right',
+                                        event.target.value,
+                                    )
+                                }
                             />
                         </div>
                     ))}
@@ -451,7 +530,9 @@ acc[pair.left] = pair.right;
                 <Input
                     id={`${idPrefix}-correct-answer`}
                     value={correctAnswer}
-                    onChange={(event) => onCorrectAnswerChange(event.target.value)}
+                    onChange={(event) =>
+                        onCorrectAnswerChange(event.target.value)
+                    }
                     placeholder="Jawaban yang diharapkan"
                 />
             </Field>
@@ -460,9 +541,11 @@ acc[pair.left] = pair.right;
 
     // essay
     return (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
             <Field>
-                <FieldLabel htmlFor={`${idPrefix}-min-words`}>Min. Kata</FieldLabel>
+                <FieldLabel htmlFor={`${idPrefix}-min-words`}>
+                    Min. Kata
+                </FieldLabel>
                 <Input
                     id={`${idPrefix}-min-words`}
                     type="number"
@@ -473,7 +556,9 @@ acc[pair.left] = pair.right;
                 />
             </Field>
             <Field>
-                <FieldLabel htmlFor={`${idPrefix}-max-words`}>Maks. Kata</FieldLabel>
+                <FieldLabel htmlFor={`${idPrefix}-max-words`}>
+                    Maks. Kata
+                </FieldLabel>
                 <Input
                     id={`${idPrefix}-max-words`}
                     type="number"
@@ -565,9 +650,13 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
         setFormErrors({});
         // Reconstruct editable options from stored options array or matching pairs
         const rawOptions = (question.options as string[] | null) ?? [];
-        const optionsList = rawOptions.length > 0
-            ? [...rawOptions, ...Array(Math.max(0, 4 - rawOptions.length)).fill('')]
-            : ['', '', '', ''];
+        const optionsList =
+            rawOptions.length > 0
+                ? [
+                      ...rawOptions,
+                      ...Array(Math.max(0, 4 - rawOptions.length)).fill(''),
+                  ]
+                : ['', '', '', ''];
 
         setFormState({
             title: question.title,
@@ -597,7 +686,9 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
 
     const submitForm = (): void => {
         const isEditing = Boolean(editingQuestion);
-        const filteredOptions = formState.options.filter((o) => o.trim() !== '');
+        const filteredOptions = formState.options.filter(
+            (o) => o.trim() !== '',
+        );
         const payload = {
             title: formState.title.trim(),
             category: formState.category.trim() || null,
@@ -605,8 +696,12 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
             question_text: formState.question_text.trim(),
             options: filteredOptions.length > 0 ? filteredOptions : null,
             correct_answer: formState.correct_answer.trim() || null,
-            min_words: formState.min_words ? parseInt(formState.min_words, 10) : null,
-            max_words: formState.max_words ? parseInt(formState.max_words, 10) : null,
+            min_words: formState.min_words
+                ? parseInt(formState.min_words, 10)
+                : null,
+            max_words: formState.max_words
+                ? parseInt(formState.max_words, 10)
+                : null,
             explanation: formState.explanation.trim() || null,
             points: Number.parseInt(formState.points, 10) || 1,
             is_active: formState.is_active,
@@ -664,14 +759,14 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
 
                     return (
                         <div className="flex max-w-md flex-col gap-1">
-                            <span className="font-medium leading-tight">
+                            <span className="leading-tight font-medium">
                                 {q.title}
                             </span>
-                            <span className="text-muted-foreground line-clamp-2 text-xs">
+                            <span className="line-clamp-2 text-xs text-muted-foreground">
                                 {q.question_text}
                             </span>
                             {q.category ? (
-                                <span className="text-muted-foreground text-[11px] uppercase tracking-wide">
+                                <span className="text-[11px] tracking-wide text-muted-foreground uppercase">
                                     {q.category}
                                 </span>
                             ) : null}
@@ -774,10 +869,11 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
                     <div className="flex min-w-0 flex-col gap-4">
                         <TypographyH1>Question Bank</TypographyH1>
                         <TypographyMuted className="-mt-3 text-base md:text-sm">
-                            Manage reusable questions for quizzes and assessments.
+                            Manage reusable questions for quizzes and
+                            assessments.
                         </TypographyMuted>
                     </div>
-                    <div className="flex shrink-0 items-center justify-end gap-2">
+                    <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <div className="w-full sm:w-80">
                                 <Input
@@ -841,9 +937,7 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
                                     <EmptyMedia variant="icon">
                                         <Search />
                                     </EmptyMedia>
-                                    <EmptyTitle>
-                                        No questions found
-                                    </EmptyTitle>
+                                    <EmptyTitle>No questions found</EmptyTitle>
                                     <EmptyDescription>
                                         Try a different keyword or question
                                         type.
@@ -896,7 +990,9 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
                         <DialogTitle>
-                            {isEditing ? 'Edit Question' : 'Create New Question'}
+                            {isEditing
+                                ? 'Edit Question'
+                                : 'Create New Question'}
                         </DialogTitle>
                         <DialogDescription>
                             {isEditing
@@ -915,9 +1011,7 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
                             <Field>
                                 <FieldLabel htmlFor="qb-question-type">
                                     Question Type{' '}
-                                    <span className="text-destructive">
-                                        *
-                                    </span>
+                                    <span className="text-destructive">*</span>
                                 </FieldLabel>
                                 <Select
                                     value={formState.question_type}
@@ -969,7 +1063,9 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
                                         }))
                                     }
                                     placeholder="Enter question..."
-                                    aria-invalid={Boolean(formErrors.question_text)}
+                                    aria-invalid={Boolean(
+                                        formErrors.question_text,
+                                    )}
                                 />
                                 {formErrors.question_text ? (
                                     <FieldDescription className="text-destructive">
@@ -1040,10 +1136,7 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
                                     Cancel
                                 </Button>
                             </DialogClose>
-                            <Button
-                                type="submit"
-                                disabled={isSubmittingForm}
-                            >
+                            <Button type="submit" disabled={isSubmittingForm}>
                                 {isSubmittingForm ? (
                                     <Spinner data-icon="inline-start" />
                                 ) : null}
@@ -1070,7 +1163,8 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
                             <span className="font-semibold">
                                 {deletingQuestion?.title}
                             </span>{' '}
-                            will be permanently deleted. This action cannot be undone.
+                            will be permanently deleted. This action cannot be
+                            undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

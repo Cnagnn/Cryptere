@@ -351,7 +351,7 @@ export function DataTable<TData, TValue>({
     const shouldShowPagination = isServerPagination || totalPages > 1;
 
     return (
-        <div className="flex flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
             {showFilterInput ? (
                 <Input
                     value={filterValue}
@@ -361,7 +361,7 @@ export function DataTable<TData, TValue>({
                 />
             ) : null}
 
-            <div className="overflow-hidden rounded-md border">
+            <div className="min-w-0 overflow-hidden rounded-md border">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -458,13 +458,13 @@ export function DataTable<TData, TValue>({
                 </Table>
             </div>
 
-            {showFooter && <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-sm text-muted-foreground">
+            {showFooter && <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div className="min-w-0 text-sm text-muted-foreground">
                     {footerInfo ?? `Showing ${rows.length} row(s).`}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                    <Field orientation="horizontal" className="w-fit items-center gap-2">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                    <Field orientation="horizontal" className="w-full items-center justify-between gap-2 sm:w-fit sm:justify-start">
                         <FieldLabel htmlFor="data-table-rows-per-page" className="text-sm text-muted-foreground">
                             Rows per page
                         </FieldLabel>
@@ -503,8 +503,8 @@ export function DataTable<TData, TValue>({
                     ) : null}
 
                     {shouldShowPagination ? (
-                        <Pagination className="mx-0 w-auto justify-end">
-                            <PaginationContent>
+                        <Pagination className="mx-0 w-full justify-start overflow-x-auto sm:w-auto sm:justify-end">
+                            <PaginationContent className="min-w-max">
                                 <PaginationItem>
                                     <PaginationPrevious
                                         href="#"
@@ -529,7 +529,15 @@ export function DataTable<TData, TValue>({
                                 </PaginationItem>
 
                                 {buildPaginationItems(activePage, totalPages).map((item, index) => (
-                                    <PaginationItem key={item === 'ellipsis' ? `ellipsis-${index}` : `page-${item}`}>
+                                    <PaginationItem
+                                        key={item === 'ellipsis' ? `ellipsis-${index}` : `page-${item}`}
+                                        className={cn(
+                                            item !== activePage &&
+                                                item !== 'ellipsis' &&
+                                                'hidden sm:block',
+                                            item === 'ellipsis' && 'hidden md:block',
+                                        )}
+                                    >
                                         {item === 'ellipsis' ? (
                                             <PaginationEllipsis />
                                         ) : (

@@ -562,7 +562,7 @@ function CourseCardGrid({
                             isLabsCatalog
                                 ? 'mt-auto'
                                 : course.isEnrolled
-                                  ? 'mt-auto grid grid-cols-2 gap-2'
+                                  ? 'mt-auto grid gap-2 sm:grid-cols-2'
                                   : 'mt-auto'
                         }
                     >
@@ -852,7 +852,7 @@ export default function CoursesIndex({
                         <TypographyH1>{pageTitle}</TypographyH1>
                         <TypographyMuted>{pageDescription}</TypographyMuted>
                     </div>
-                    <div className="flex shrink-0 items-center justify-end gap-2">
+                    <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                         <div className="lg:hidden">
                             {sidebarMode === 'filters' ? (
                                 <>

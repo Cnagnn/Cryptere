@@ -371,10 +371,11 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                     <div className="flex min-w-0 flex-col gap-4">
                         <TypographyH1>User Management</TypographyH1>
                         <TypographyMuted className="-mt-3 text-base md:text-sm">
-                            Manage user roles and point balances from one workspace.
+                            Manage user roles and point balances from one
+                            workspace.
                         </TypographyMuted>
                     </div>
-                    <div className="flex shrink-0 items-center justify-end gap-2">
+                    <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                             <div className="w-full sm:w-80">
                                 <Input
@@ -437,9 +438,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     <EmptyMedia variant="icon">
                                         <UserRound />
                                     </EmptyMedia>
-                                    <EmptyTitle>
-                                        No users found
-                                    </EmptyTitle>
+                                    <EmptyTitle>No users found</EmptyTitle>
                                     <EmptyDescription>
                                         Try different filters or keywords.
                                     </EmptyDescription>
@@ -602,8 +601,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 This action cannot be undone.{' '}
                                 {deletingUser?.username
                                     ? `@${deletingUser.username}`
-                                    : (deletingUser?.name ??
-                                      'This user')}{' '}
+                                    : (deletingUser?.name ?? 'This user')}{' '}
                                 will permanently lose access.
                             </AlertDialogDescription>
                         </AlertDialogHeader>

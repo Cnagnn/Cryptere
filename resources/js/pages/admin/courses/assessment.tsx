@@ -99,12 +99,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
@@ -165,7 +160,12 @@ function formatVersionDate(value: string | null): string {
 
 type Props = {
     assessments: Paginated<AdminAssessment>;
-    allAssessments: { id: number; title: string; course_id: number; course_title: string }[];
+    allAssessments: {
+        id: number;
+        title: string;
+        course_id: number;
+        course_title: string;
+    }[];
     questions: AdminAssessmentQuestion[];
     selectedAssessmentId: number;
     courseOptions: { id: number; title: string }[];
@@ -181,11 +181,18 @@ type Props = {
     };
 };
 
-const BLOOM_CONFIG: Record<BloomLevel, { label: string; icon: typeof BookOpen; iconClass: string }> = {
+const BLOOM_CONFIG: Record<
+    BloomLevel,
+    { label: string; icon: typeof BookOpen; iconClass: string }
+> = {
     C1: { label: 'C1-Remember', icon: BookOpen, iconClass: 'text-emerald-500' },
     C2: { label: 'C2-Understand', icon: Lightbulb, iconClass: 'text-blue-500' },
     C3: { label: 'C3-Apply', icon: Cog, iconClass: 'text-amber-500' },
-    C4: { label: 'C4-Analyze', icon: SearchCheck, iconClass: 'text-purple-500' },
+    C4: {
+        label: 'C4-Analyze',
+        icon: SearchCheck,
+        iconClass: 'text-purple-500',
+    },
     C5: { label: 'C5-Evaluate', icon: Brain, iconClass: 'text-rose-500' },
     C6: { label: 'C6-Create', icon: Sparkles, iconClass: 'text-indigo-500' },
 };
@@ -217,7 +224,6 @@ function parseMultiSelectAnswer(value: string): string[] {
     }
 }
 
-
 type MatchingPair = { left: string; right: string };
 
 function parseMatchingPairs(
@@ -230,9 +236,16 @@ function parseMatchingPairs(
         try {
             const parsed = JSON.parse(correctAnswer);
 
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (
+                parsed &&
+                typeof parsed === 'object' &&
+                !Array.isArray(parsed)
+            ) {
                 map = Object.fromEntries(
-                    Object.entries(parsed).map(([key, value]) => [String(key), String(value ?? '')]),
+                    Object.entries(parsed).map(([key, value]) => [
+                        String(key),
+                        String(value ?? ''),
+                    ]),
                 );
             }
         } catch {
@@ -248,7 +261,10 @@ function parseMatchingPairs(
 
     const merged: MatchingPair[] = fromOptions.map((pair) => ({
         left: pair.left,
-        right: pair.left && map[pair.left] !== undefined ? map[pair.left] : pair.right,
+        right:
+            pair.left && map[pair.left] !== undefined
+                ? map[pair.left]
+                : pair.right,
     }));
 
     while (merged.length < 4) {
@@ -293,10 +309,15 @@ function QuestionTypeFields({
                 <div className="grid gap-2">
                     {options.map((option, index) => {
                         const isCorrect =
-                            option.trim() !== '' && correctAnswer.trim() !== '' && correctAnswer === option;
+                            option.trim() !== '' &&
+                            correctAnswer.trim() !== '' &&
+                            correctAnswer === option;
 
                         return (
-                            <div key={index} className="flex items-center gap-2">
+                            <div
+                                key={index}
+                                className="flex items-center gap-2"
+                            >
                                 <Input
                                     id={`${idPrefix}-option-${index}`}
                                     value={option}
@@ -307,8 +328,13 @@ function QuestionTypeFields({
                                         next[index] = event.target.value;
                                         onOptionsChange(next);
 
-                                        if (correctAnswer === oldValue && oldValue !== '') {
-                                            onCorrectAnswerChange(event.target.value);
+                                        if (
+                                            correctAnswer === oldValue &&
+                                            oldValue !== ''
+                                        ) {
+                                            onCorrectAnswerChange(
+                                                event.target.value,
+                                            );
                                         }
                                     }}
                                 />
@@ -316,11 +342,23 @@ function QuestionTypeFields({
                                     type="button"
                                     variant={isCorrect ? 'default' : 'outline'}
                                     size="icon"
-                                    aria-label={isCorrect ? 'Jawaban benar' : 'Tandai sebagai benar'}
+                                    aria-label={
+                                        isCorrect
+                                            ? 'Jawaban benar'
+                                            : 'Tandai sebagai benar'
+                                    }
                                     aria-pressed={isCorrect}
                                     disabled={option.trim() === ''}
-                                    onClick={() => onCorrectAnswerChange(isCorrect ? '' : option)}
-                                    className={cn('shrink-0', isCorrect && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                                    onClick={() =>
+                                        onCorrectAnswerChange(
+                                            isCorrect ? '' : option,
+                                        )
+                                    }
+                                    className={cn(
+                                        'shrink-0',
+                                        isCorrect &&
+                                            'bg-emerald-500 text-white hover:bg-emerald-600',
+                                    )}
                                 >
                                     <Check />
                                 </Button>
@@ -352,14 +390,19 @@ function QuestionTypeFields({
                     Pilihan Jawaban <span className="text-destructive">*</span>
                 </FieldLabel>
                 <FieldDescription>
-                    Tandai semua pilihan yang benar dengan tombol di sebelah kanan.
+                    Tandai semua pilihan yang benar dengan tombol di sebelah
+                    kanan.
                 </FieldDescription>
                 <div className="grid gap-2">
                     {options.map((option, index) => {
-                        const isCorrect = option.trim() !== '' && selected.includes(option);
+                        const isCorrect =
+                            option.trim() !== '' && selected.includes(option);
 
                         return (
-                            <div key={index} className="flex items-center gap-2">
+                            <div
+                                key={index}
+                                className="flex items-center gap-2"
+                            >
                                 <Input
                                     id={`${idPrefix}-option-${index}`}
                                     value={option}
@@ -370,11 +413,19 @@ function QuestionTypeFields({
                                         next[index] = event.target.value;
                                         onOptionsChange(next);
 
-                                        if (oldValue !== '' && selected.includes(oldValue)) {
-                                            const newSelected = selected.map((s) =>
-                                                s === oldValue ? event.target.value : s,
+                                        if (
+                                            oldValue !== '' &&
+                                            selected.includes(oldValue)
+                                        ) {
+                                            const newSelected = selected.map(
+                                                (s) =>
+                                                    s === oldValue
+                                                        ? event.target.value
+                                                        : s,
                                             );
-                                            onCorrectAnswerChange(JSON.stringify(newSelected));
+                                            onCorrectAnswerChange(
+                                                JSON.stringify(newSelected),
+                                            );
                                         }
                                     }}
                                 />
@@ -382,11 +433,19 @@ function QuestionTypeFields({
                                     type="button"
                                     variant={isCorrect ? 'default' : 'outline'}
                                     size="icon"
-                                    aria-label={isCorrect ? 'Jawaban benar' : 'Tandai sebagai benar'}
+                                    aria-label={
+                                        isCorrect
+                                            ? 'Jawaban benar'
+                                            : 'Tandai sebagai benar'
+                                    }
                                     aria-pressed={isCorrect}
                                     disabled={option.trim() === ''}
                                     onClick={() => toggleOption(option)}
-                                    className={cn('shrink-0', isCorrect && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                                    className={cn(
+                                        'shrink-0',
+                                        isCorrect &&
+                                            'bg-emerald-500 text-white hover:bg-emerald-600',
+                                    )}
                                 >
                                     <Check />
                                 </Button>
@@ -408,13 +467,16 @@ function QuestionTypeFields({
                     Jawaban Benar <span className="text-destructive">*</span>
                 </FieldLabel>
                 <FieldDescription>Tandai jawaban yang benar.</FieldDescription>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                     <Button
                         type="button"
                         variant={isTrue ? 'default' : 'outline'}
                         aria-pressed={isTrue}
                         onClick={() => onCorrectAnswerChange('true')}
-                        className={cn(isTrue && 'bg-emerald-500 text-white hover:bg-emerald-600')}
+                        className={cn(
+                            isTrue &&
+                                'bg-emerald-500 text-white hover:bg-emerald-600',
+                        )}
                     >
                         <Check />
                         Benar
@@ -424,7 +486,10 @@ function QuestionTypeFields({
                         variant={isFalse ? 'default' : 'outline'}
                         aria-pressed={isFalse}
                         onClick={() => onCorrectAnswerChange('false')}
-                        className={cn(isFalse && 'bg-rose-500 text-white hover:bg-rose-600')}
+                        className={cn(
+                            isFalse &&
+                                'bg-rose-500 text-white hover:bg-rose-600',
+                        )}
                     >
                         <X />
                         Salah
@@ -437,16 +502,27 @@ function QuestionTypeFields({
     if (questionType === 'matching') {
         const pairs = parseMatchingPairs(options, correctAnswer);
 
-        const updatePair = (index: number, key: 'left' | 'right', value: string) => {
-            const next = pairs.map((pair, i) => (i === index ? { ...pair, [key]: value } : pair));
-            const nextOptions = next.map((pair) => `${pair.left}::${pair.right}`);
-            const nextAnswer = next.reduce<Record<string, string>>((acc, pair) => {
-                if (pair.left.trim() !== '') {
-                    acc[pair.left] = pair.right;
-                }
+        const updatePair = (
+            index: number,
+            key: 'left' | 'right',
+            value: string,
+        ) => {
+            const next = pairs.map((pair, i) =>
+                i === index ? { ...pair, [key]: value } : pair,
+            );
+            const nextOptions = next.map(
+                (pair) => `${pair.left}::${pair.right}`,
+            );
+            const nextAnswer = next.reduce<Record<string, string>>(
+                (acc, pair) => {
+                    if (pair.left.trim() !== '') {
+                        acc[pair.left] = pair.right;
+                    }
 
-                return acc;
-            }, {});
+                    return acc;
+                },
+                {},
+            );
             onOptionsChange(nextOptions);
             onCorrectAnswerChange(JSON.stringify(nextAnswer));
         };
@@ -461,18 +537,30 @@ function QuestionTypeFields({
                 </FieldDescription>
                 <div className="grid gap-2">
                     {pairs.map((pair, index) => (
-                        <div key={index} className="grid grid-cols-2 gap-2">
+                        <div key={index} className="grid gap-2 sm:grid-cols-2">
                             <Input
                                 id={`${idPrefix}-pair-${index}-left`}
                                 value={pair.left}
                                 placeholder={`Premis ${index + 1}`}
-                                onChange={(event) => updatePair(index, 'left', event.target.value)}
+                                onChange={(event) =>
+                                    updatePair(
+                                        index,
+                                        'left',
+                                        event.target.value,
+                                    )
+                                }
                             />
                             <Input
                                 id={`${idPrefix}-pair-${index}-right`}
                                 value={pair.right}
                                 placeholder={`Target ${index + 1}`}
-                                onChange={(event) => updatePair(index, 'right', event.target.value)}
+                                onChange={(event) =>
+                                    updatePair(
+                                        index,
+                                        'right',
+                                        event.target.value,
+                                    )
+                                }
                             />
                         </div>
                     ))}
@@ -490,7 +578,9 @@ function QuestionTypeFields({
                 <Input
                     id={`${idPrefix}-correct-answer`}
                     value={correctAnswer}
-                    onChange={(event) => onCorrectAnswerChange(event.target.value)}
+                    onChange={(event) =>
+                        onCorrectAnswerChange(event.target.value)
+                    }
                     placeholder="Jawaban yang diharapkan"
                 />
             </Field>
@@ -499,9 +589,11 @@ function QuestionTypeFields({
 
     // essay
     return (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
             <Field>
-                <FieldLabel htmlFor={`${idPrefix}-min-words`}>Min. Kata</FieldLabel>
+                <FieldLabel htmlFor={`${idPrefix}-min-words`}>
+                    Min. Kata
+                </FieldLabel>
                 <Input
                     id={`${idPrefix}-min-words`}
                     type="number"
@@ -512,7 +604,9 @@ function QuestionTypeFields({
                 />
             </Field>
             <Field>
-                <FieldLabel htmlFor={`${idPrefix}-max-words`}>Maks. Kata</FieldLabel>
+                <FieldLabel htmlFor={`${idPrefix}-max-words`}>
+                    Maks. Kata
+                </FieldLabel>
                 <Input
                     id={`${idPrefix}-max-words`}
                     type="number"
@@ -614,14 +708,17 @@ export default function AdminCoursesAssessment({
     const [restoreTarget, setRestoreTarget] =
         useState<VersionHistoryItem | null>(null);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
-    const [createQuestionDialogOpen, setCreateQuestionDialogOpen] = useState(false);
+    const [createQuestionDialogOpen, setCreateQuestionDialogOpen] =
+        useState(false);
     const [editingAssessment, setEditingAssessment] =
         useState<AdminAssessment | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const isEditMode = editingAssessment !== null;
 
     // Tab state
-    const [activeTab, setActiveTab] = useState<'assessment' | 'question'>('assessment');
+    const [activeTab, setActiveTab] = useState<'assessment' | 'question'>(
+        'assessment',
+    );
     const [isLoading, setIsLoading] = useState(false);
     const [cachedData, setCachedData] = useState({
         assessments: assessments,
@@ -664,46 +761,62 @@ export default function AdminCoursesAssessment({
 
     const sectionUrl = useCallback(
         (query: Record<string, unknown>) =>
-            adminCoursesIndex.url({ query: { section: 'assessment', ...query } }),
+            adminCoursesIndex.url({
+                query: { section: 'assessment', ...query },
+            }),
         [],
     );
 
     // Instant tab switching with lazy loading
-    const handleTabChange = useCallback((value: string) => {
-        setActiveTab(value as 'assessment' | 'question');
-        window.history.replaceState(
-            null,
-            '',
-            sectionUrl({
-                course_id: selectedCourseId || undefined,
-                page: value === 'assessment' ? assessments.current_page : 1,
-                per_page: assessments.per_page,
-            }),
-        );
+    const handleTabChange = useCallback(
+        (value: string) => {
+            setActiveTab(value as 'assessment' | 'question');
+            window.history.replaceState(
+                null,
+                '',
+                sectionUrl({
+                    course_id: selectedCourseId || undefined,
+                    page: value === 'assessment' ? assessments.current_page : 1,
+                    per_page: assessments.per_page,
+                }),
+            );
 
-        const needsData =
-            (value === 'assessment' &&
-                (!cachedData.assessments ||
-                    !cachedData.assessments.data ||
-                    cachedData.assessments.data.length === 0)) ||
-            (value === 'question' &&
-                selectedAssessmentId > 0 &&
-                (!cachedData.questions || cachedData.questions.length === 0));
+            const needsData =
+                (value === 'assessment' &&
+                    (!cachedData.assessments ||
+                        !cachedData.assessments.data ||
+                        cachedData.assessments.data.length === 0)) ||
+                (value === 'question' &&
+                    selectedAssessmentId > 0 &&
+                    (!cachedData.questions ||
+                        cachedData.questions.length === 0));
 
-        if (needsData) {
-            setIsLoading(true);
-            router.reload({
-                only: ['assessments', 'questions'],
-                onSuccess: (page: any) => {
-                    setCachedData({
-                        assessments: page.props.assessments || cachedData.assessments,
-                        questions: page.props.questions || cachedData.questions,
-                    });
-                    setIsLoading(false);
-                },
-            });
-        }
-    }, [cachedData, selectedCourseId, selectedAssessmentId, assessments.current_page, assessments.per_page, sectionUrl]);
+            if (needsData) {
+                setIsLoading(true);
+                router.reload({
+                    only: ['assessments', 'questions'],
+                    onSuccess: (page: any) => {
+                        setCachedData({
+                            assessments:
+                                page.props.assessments ||
+                                cachedData.assessments,
+                            questions:
+                                page.props.questions || cachedData.questions,
+                        });
+                        setIsLoading(false);
+                    },
+                });
+            }
+        },
+        [
+            cachedData,
+            selectedCourseId,
+            selectedAssessmentId,
+            assessments.current_page,
+            assessments.per_page,
+            sectionUrl,
+        ],
+    );
 
     const resetFormState = () => {
         setEditingAssessment(null);
@@ -863,13 +976,10 @@ export default function AdminCoursesAssessment({
         const initialOptions = optionEditableTypes.includes(
             question.question_type,
         )
-            ? [
-                  ...((question.options ?? []) as string[]),
-                  '',
-                  '',
-                  '',
-                  '',
-              ].slice(0, Math.max(4, question.options?.length ?? 0))
+            ? [...((question.options ?? []) as string[]), '', '', '', ''].slice(
+                  0,
+                  Math.max(4, question.options?.length ?? 0),
+              )
             : ['', '', '', ''];
 
         setAssessmentQuestionForm({
@@ -1020,8 +1130,7 @@ export default function AdminCoursesAssessment({
             }
 
             const incomplete = pairs.some(
-                (pair) =>
-                    pair.left.trim() === '' || pair.right.trim() === '',
+                (pair) => pair.left.trim() === '' || pair.right.trim() === '',
             );
 
             if (incomplete) {
@@ -1323,7 +1432,11 @@ export default function AdminCoursesAssessment({
                 header: 'Bloom Level',
                 cell: ({ row }) => {
                     const level = row.original.bloom_level;
-                    const { label, icon: Icon, iconClass } = BLOOM_CONFIG[level];
+                    const {
+                        label,
+                        icon: Icon,
+                        iconClass,
+                    } = BLOOM_CONFIG[level];
 
                     return (
                         <div className="flex justify-center">
@@ -1525,8 +1638,8 @@ export default function AdminCoursesAssessment({
                                                 ] ?? []
                                             ).length === 0 ? (
                                                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                                                    No version history for
-                                                    this item yet.
+                                                    No version history for this
+                                                    item yet.
                                                 </div>
                                             ) : (
                                                 (
@@ -1636,7 +1749,12 @@ export default function AdminCoursesAssessment({
                 ),
             },
         ],
-        [assessments.current_page, assessments.per_page, versionHistories, sectionUrl],
+        [
+            assessments.current_page,
+            assessments.per_page,
+            versionHistories,
+            sectionUrl,
+        ],
     );
 
     const questionColumns: ColumnDef<AdminAssessmentQuestion>[] = [
@@ -1779,10 +1897,7 @@ export default function AdminCoursesAssessment({
 
     return (
         <>
-            <Tabs
-                value={activeTab}
-                onValueChange={handleTabChange}
-            >
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center justify-between">
@@ -1794,9 +1909,12 @@ export default function AdminCoursesAssessment({
                                         if (selectedAssessmentId > 0) {
                                             router.get(
                                                 sectionUrl({
-                                                    course_id: selectedCourseId || undefined,
+                                                    course_id:
+                                                        selectedCourseId ||
+                                                        undefined,
                                                     page: assessments.current_page,
-                                                    per_page: assessments.per_page,
+                                                    per_page:
+                                                        assessments.per_page,
                                                 }),
                                                 {},
                                                 {
@@ -1816,278 +1934,337 @@ export default function AdminCoursesAssessment({
                                 </TabsTrigger>
                             </TabsList>
                         </div>
-                        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between -mt-3">
+                        <div className="-mt-3 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <TypographyMuted className="text-base md:text-sm">
                                 Manage assessments for each course.
                             </TypographyMuted>
                             <div className="flex shrink-0 items-center gap-2">
-                            {activeTab === 'assessment' ? (
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        className="w-full justify-between sm:w-72"
-                                    >
-                                        <span className="truncate">
-                                            {(() => {
-                                                if (!courseFilterSelected || selectedCourseId === 0) {
-                                                    return 'Select Course...';
-                                                }
+                                {activeTab === 'assessment' ? (
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full justify-between sm:w-72"
+                                            >
+                                                <span className="truncate">
+                                                    {(() => {
+                                                        if (
+                                                            !courseFilterSelected ||
+                                                            selectedCourseId ===
+                                                                0
+                                                        ) {
+                                                            return 'Select Course...';
+                                                        }
 
-                                                const course =
-                                                    courseOptions.find(
-                                                        (c) =>
-                                                            c.id ===
-                                                            selectedCourseId,
-                                                    );
-
-                                                return course ? course.title : 'Select Course...';
-                                            })()}
-                                        </span>
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                    className="w-72 p-0"
-                                    align="start"
-                                >
-                                    <Command>
-                                        <CommandInput placeholder="Search course..." />
-                                        <CommandList
-                                            style={{
-                                                maxHeight: '16rem',
-                                                overflowY: 'auto',
-                                            }}
-                                        >
-                                            <CommandEmpty>
-                                                No results found.
-                                            </CommandEmpty>
-                                            <CommandGroup>
-                                                {courseOptions.map((course) => (
-                                                    <CommandItem
-                                                        key={course.id}
-                                                        value={course.title}
-                                                        onSelect={() => {
-                                                            router.get(
-                                                                sectionUrl({
-                                                                    course_id:
-                                                                        course.id,
-                                                                    page: 1,
-                                                                    per_page:
-                                                                        assessments.per_page,
-                                                                }),
-                                                                {},
-                                                                {
-                                                                    preserveState: true,
-                                                                    preserveScroll: true,
-                                                                },
+                                                        const course =
+                                                            courseOptions.find(
+                                                                (c) =>
+                                                                    c.id ===
+                                                                    selectedCourseId,
                                                             );
-                                                        }}
-                                                    >
-                                                        <span className="flex-1 truncate">{course.title}</span>
-                                                        <Check
-                                                            className={`ml-auto h-4 w-4 shrink-0 ${
-                                                                selectedCourseId ===
-                                                                course.id
-                                                                    ? 'opacity-100'
-                                                                    : 'opacity-0'
-                                                            }`}
-                                                        />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            ) : (
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        className="w-full justify-between sm:w-72"
-                                    >
-                                        <span className="truncate">
-                                            {selectedAssessmentId > 0
-                                                ? (() => {
-                                                    const assessment = allAssessments.find(a => a.id === selectedAssessmentId);
 
-                                                    return assessment ? assessment.title : 'Select Assessment...';
-                                                })()
-                                                : 'Select Assessment...'}
-                                        </span>
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                    className="w-72 p-0"
-                                    align="start"
-                                >
-                                    <Command>
-                                        <CommandInput placeholder="Search course or assessment..." />
-                                        <CommandList className="max-h-none overflow-y-hidden">
-                                            <CommandEmpty>
-                                                No results found.
-                                            </CommandEmpty>
-                                            <ScrollArea className="h-64">
-                                            {courseOptions.map((course) => {
-                                                const courseAssessments = allAssessments.filter(
-                                                    (a) => a.course_id === course.id,
-                                                );
-
-                                                if (courseAssessments.length === 0) {
-                                                    return null;
-                                                }
-
-                                                return (
-                                                    <CommandGroup
-                                                        key={course.id}
-                                                        heading={course.title}
-                                                    >
-                                                        {courseAssessments.map((assessment) => (
-                                                            <CommandItem
-                                                                key={assessment.id}
-                                                                value={`${course.title} ${assessment.title}`}
-                                                                onSelect={() => {
-                                                                    router.get(
-                                                                        sectionUrl({
-                                                                            assessment_id: assessment.id,
-                                                                            page: 1,
-                                                                        }),
-                                                                        {},
+                                                        return course
+                                                            ? course.title
+                                                            : 'Select Course...';
+                                                    })()}
+                                                </span>
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            className="w-72 p-0"
+                                            align="start"
+                                        >
+                                            <Command>
+                                                <CommandInput placeholder="Search course..." />
+                                                <CommandList
+                                                    style={{
+                                                        maxHeight: '16rem',
+                                                        overflowY: 'auto',
+                                                    }}
+                                                >
+                                                    <CommandEmpty>
+                                                        No results found.
+                                                    </CommandEmpty>
+                                                    <CommandGroup>
+                                                        {courseOptions.map(
+                                                            (course) => (
+                                                                <CommandItem
+                                                                    key={
+                                                                        course.id
+                                                                    }
+                                                                    value={
+                                                                        course.title
+                                                                    }
+                                                                    onSelect={() => {
+                                                                        router.get(
+                                                                            sectionUrl(
+                                                                                {
+                                                                                    course_id:
+                                                                                        course.id,
+                                                                                    page: 1,
+                                                                                    per_page:
+                                                                                        assessments.per_page,
+                                                                                },
+                                                                            ),
+                                                                            {},
+                                                                            {
+                                                                                preserveState: true,
+                                                                                preserveScroll: true,
+                                                                            },
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    <span className="flex-1 truncate">
                                                                         {
-                                                                            preserveState: true,
-                                                                            preserveScroll: true,
-                                                                        },
-                                                                    );
-                                                                }}
-                                                            >
-                                                                <span className="flex-1 truncate">{assessment.title}</span>
-                                                                <Check
-                                                                    className={`ml-auto h-4 w-4 shrink-0 ${
-                                                                        selectedAssessmentId === assessment.id
-                                                                            ? 'opacity-100'
-                                                                            : 'opacity-0'
-                                                                    }`}
-                                                                />
-                                                            </CommandItem>
-                                                        ))}
+                                                                            course.title
+                                                                        }
+                                                                    </span>
+                                                                    <Check
+                                                                        className={`ml-auto h-4 w-4 shrink-0 ${
+                                                                            selectedCourseId ===
+                                                                            course.id
+                                                                                ? 'opacity-100'
+                                                                                : 'opacity-0'
+                                                                        }`}
+                                                                    />
+                                                                </CommandItem>
+                                                            ),
+                                                        )}
                                                     </CommandGroup>
-                                                );
-                                            })}
-                                            </ScrollArea>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            )}
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                ) : (
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full justify-between sm:w-72"
+                                            >
+                                                <span className="truncate">
+                                                    {selectedAssessmentId > 0
+                                                        ? (() => {
+                                                              const assessment =
+                                                                  allAssessments.find(
+                                                                      (a) =>
+                                                                          a.id ===
+                                                                          selectedAssessmentId,
+                                                                  );
 
-                            {/* Create Button - Tab Aware */}
-                            <Button
-                                type="button"
-                                onClick={activeTab === 'assessment' ? openCreateDialog : openCreateQuestionDialog}
-                            >
-                                <Plus data-icon="inline-start" />
-                                Create
-                            </Button>
+                                                              return assessment
+                                                                  ? assessment.title
+                                                                  : 'Select Assessment...';
+                                                          })()
+                                                        : 'Select Assessment...'}
+                                                </span>
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            className="w-72 p-0"
+                                            align="start"
+                                        >
+                                            <Command>
+                                                <CommandInput placeholder="Search course or assessment..." />
+                                                <CommandList className="max-h-none overflow-y-hidden">
+                                                    <CommandEmpty>
+                                                        No results found.
+                                                    </CommandEmpty>
+                                                    <ScrollArea className="h-64">
+                                                        {courseOptions.map(
+                                                            (course) => {
+                                                                const courseAssessments =
+                                                                    allAssessments.filter(
+                                                                        (a) =>
+                                                                            a.course_id ===
+                                                                            course.id,
+                                                                    );
+
+                                                                if (
+                                                                    courseAssessments.length ===
+                                                                    0
+                                                                ) {
+                                                                    return null;
+                                                                }
+
+                                                                return (
+                                                                    <CommandGroup
+                                                                        key={
+                                                                            course.id
+                                                                        }
+                                                                        heading={
+                                                                            course.title
+                                                                        }
+                                                                    >
+                                                                        {courseAssessments.map(
+                                                                            (
+                                                                                assessment,
+                                                                            ) => (
+                                                                                <CommandItem
+                                                                                    key={
+                                                                                        assessment.id
+                                                                                    }
+                                                                                    value={`${course.title} ${assessment.title}`}
+                                                                                    onSelect={() => {
+                                                                                        router.get(
+                                                                                            sectionUrl(
+                                                                                                {
+                                                                                                    assessment_id:
+                                                                                                        assessment.id,
+                                                                                                    page: 1,
+                                                                                                },
+                                                                                            ),
+                                                                                            {},
+                                                                                            {
+                                                                                                preserveState: true,
+                                                                                                preserveScroll: true,
+                                                                                            },
+                                                                                        );
+                                                                                    }}
+                                                                                >
+                                                                                    <span className="flex-1 truncate">
+                                                                                        {
+                                                                                            assessment.title
+                                                                                        }
+                                                                                    </span>
+                                                                                    <Check
+                                                                                        className={`ml-auto h-4 w-4 shrink-0 ${
+                                                                                            selectedAssessmentId ===
+                                                                                            assessment.id
+                                                                                                ? 'opacity-100'
+                                                                                                : 'opacity-0'
+                                                                                        }`}
+                                                                                    />
+                                                                                </CommandItem>
+                                                                            ),
+                                                                        )}
+                                                                    </CommandGroup>
+                                                                );
+                                                            },
+                                                        )}
+                                                    </ScrollArea>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                )}
+
+                                {/* Create Button - Tab Aware */}
+                                <Button
+                                    type="button"
+                                    onClick={
+                                        activeTab === 'assessment'
+                                            ? openCreateDialog
+                                            : openCreateQuestionDialog
+                                    }
+                                >
+                                    <Plus data-icon="inline-start" />
+                                    Create
+                                </Button>
                             </div>
                         </div>
                     </div>
 
-                {/* TabsContent */}
-                <TabsContent value="assessment">
-                    <section className="grid gap-4">
-                        <div className="flex flex-col gap-4">
-                            {isLoading ? (
-                                <Skeleton className="h-150 w-full rounded-lg" />
-                            ) : filteredAssessments.length === 0 ? (
-                                <Empty>
-                                    <EmptyHeader>
-                                        <EmptyMedia variant="icon">
-                                            <Search />
-                                        </EmptyMedia>
-                                        <EmptyTitle>
-                                            No assessments found
-                                        </EmptyTitle>
-                                        <EmptyDescription>
-                                            Try another course or different keywords.
-                                        </EmptyDescription>
-                                    </EmptyHeader>
-                                </Empty>
-                            ) : (
-                                <DataTable
-                                    columns={columns}
-                                    data={filteredAssessments}
-                                    centered
-                                    showFilterInput={false}
-                                    showColumnToggle={false}
-                                    showPageInfo={false}
-                                    enableDefaultIdSort={false}
-                                    getRowDataId={(row) => String(row.id)}
-                                    dragHandleActiveRowId={
-                                        dragHandleActiveRowId
-                                    }
-                                    onRowDrop={reorderRows}
-                                    onRowDragEnd={() =>
-                                        setDragHandleActiveRowId(null)
-                                    }
-                                    page={assessments.current_page}
-                                    pageCount={assessments.last_page}
-                                    pageSize={assessments.per_page}
-                                    onPageChange={handlePageChange}
-                                    onPageSizeChange={handlePageSizeChange}
-                                    footerInfo={`Showing ${assessments.from ?? 0} - ${assessments.to ?? 0} of ${assessments.total} Assessments`}
-                                />
-                            )}
-                        </div>
-                    </section>
-                </TabsContent>
+                    {/* TabsContent */}
+                    <TabsContent value="assessment">
+                        <section className="grid gap-4">
+                            <div className="flex flex-col gap-4">
+                                {isLoading ? (
+                                    <Skeleton className="h-150 w-full rounded-lg" />
+                                ) : filteredAssessments.length === 0 ? (
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <Search />
+                                            </EmptyMedia>
+                                            <EmptyTitle>
+                                                No assessments found
+                                            </EmptyTitle>
+                                            <EmptyDescription>
+                                                Try another course or different
+                                                keywords.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                ) : (
+                                    <DataTable
+                                        columns={columns}
+                                        data={filteredAssessments}
+                                        centered
+                                        showFilterInput={false}
+                                        showColumnToggle={false}
+                                        showPageInfo={false}
+                                        enableDefaultIdSort={false}
+                                        getRowDataId={(row) => String(row.id)}
+                                        dragHandleActiveRowId={
+                                            dragHandleActiveRowId
+                                        }
+                                        onRowDrop={reorderRows}
+                                        onRowDragEnd={() =>
+                                            setDragHandleActiveRowId(null)
+                                        }
+                                        page={assessments.current_page}
+                                        pageCount={assessments.last_page}
+                                        pageSize={assessments.per_page}
+                                        onPageChange={handlePageChange}
+                                        onPageSizeChange={handlePageSizeChange}
+                                        footerInfo={`Showing ${assessments.from ?? 0} - ${assessments.to ?? 0} of ${assessments.total} Assessments`}
+                                    />
+                                )}
+                            </div>
+                        </section>
+                    </TabsContent>
 
-                <TabsContent value="question">
-                    <section className="grid gap-4">
-                        <div className="flex flex-col gap-4">
-                            {isLoading ? (
-                                <Skeleton className="h-150 w-full rounded-lg" />
-                            ) : questionRows.length === 0 ? (
-                                <Empty>
-                                    <EmptyHeader>
-                                        <EmptyMedia variant="icon">
-                                            <Search />
-                                        </EmptyMedia>
-                                        <EmptyTitle>
-                                            No questions found
-                                        </EmptyTitle>
-                                        <EmptyDescription>
-                                            Create a question from the Assessment tab.
-                                        </EmptyDescription>
-                                    </EmptyHeader>
-                                </Empty>
-                            ) : (
-                                <DataTable
-                                    columns={questionColumns}
-                                    data={questionRows}
-                                    centered
-                                    showFilterInput={false}
-                                    showColumnToggle={false}
-                                    showPageInfo={false}
-                                    enableDefaultIdSort={false}
-                                    getRowDataId={(row) => String(row.id)}
-                                    dragHandleActiveRowId={
-                                        questionDragHandleActiveRowId
-                                    }
-                                    onRowDrop={reorderQuestionRows}
-                                    onRowDragEnd={() =>
-                                        setQuestionDragHandleActiveRowId(null)
-                                    }
-                                    footerInfo={`Showing ${questionRows.length} of ${questionRows.length} Questions`}
-                                />
-                            )}
-                        </div>
-                    </section>
-                </TabsContent>
-            </div>
+                    <TabsContent value="question">
+                        <section className="grid gap-4">
+                            <div className="flex flex-col gap-4">
+                                {isLoading ? (
+                                    <Skeleton className="h-150 w-full rounded-lg" />
+                                ) : questionRows.length === 0 ? (
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <Search />
+                                            </EmptyMedia>
+                                            <EmptyTitle>
+                                                No questions found
+                                            </EmptyTitle>
+                                            <EmptyDescription>
+                                                Create a question from the
+                                                Assessment tab.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                ) : (
+                                    <DataTable
+                                        columns={questionColumns}
+                                        data={questionRows}
+                                        centered
+                                        showFilterInput={false}
+                                        showColumnToggle={false}
+                                        showPageInfo={false}
+                                        enableDefaultIdSort={false}
+                                        getRowDataId={(row) => String(row.id)}
+                                        dragHandleActiveRowId={
+                                            questionDragHandleActiveRowId
+                                        }
+                                        onRowDrop={reorderQuestionRows}
+                                        onRowDragEnd={() =>
+                                            setQuestionDragHandleActiveRowId(
+                                                null,
+                                            )
+                                        }
+                                        footerInfo={`Showing ${questionRows.length} of ${questionRows.length} Questions`}
+                                    />
+                                )}
+                            </div>
+                        </section>
+                    </TabsContent>
+                </div>
             </Tabs>
 
             {/* Create Assessment Dialog */}
@@ -2107,17 +2284,14 @@ export default function AdminCoursesAssessment({
                             event.preventDefault();
                             const payload = {
                                 title: assessmentForm.title,
-                                description:
-                                    assessmentForm.description,
+                                description: assessmentForm.description,
                                 course_id:
                                     assessmentForm.course_id > 0
                                         ? assessmentForm.course_id
                                         : null,
                                 topic_id: null,
-                                bloom_level:
-                                    assessmentForm.bloom_level,
-                                grading_type:
-                                    assessmentForm.grading_type,
+                                bloom_level: assessmentForm.bloom_level,
+                                grading_type: assessmentForm.grading_type,
                                 passing_score: Number(
                                     assessmentForm.passing_score,
                                 ),
@@ -2134,50 +2308,36 @@ export default function AdminCoursesAssessment({
 
                             const requestUrl = isEditMode
                                 ? updateAssessment.url({
-                                      assessment:
-                                          editingAssessment.id,
+                                      assessment: editingAssessment.id,
                                   })
                                 : storeAssessment.url();
 
-                            const method = isEditMode
-                                ? 'patch'
-                                : 'post';
+                            const method = isEditMode ? 'patch' : 'post';
 
-                            router[method](
-                                requestUrl,
-                                payload,
-                                {
-                                    preserveScroll: true,
-                                    preserveState: true,
-                                    onStart: () =>
-                                        setIsSaving(true),
-                                    onSuccess: () => {
-                                        toast.success(
-                                            isEditMode
-                                                ? 'Assessment updated successfully.'
-                                                : 'Assessment created successfully.',
-                                        );
-                                        resetFormState();
-                                        setCreateDialogOpen(
-                                            false,
-                                        );
-                                    },
-                                    onError: (formErrors) => {
-                                        const messages =
-                                            Object.values(
-                                                formErrors,
-                                            )
-                                                .flat()
-                                                .join(', ');
-                                        toast.error(
-                                            messages ||
-                                                'Failed to save assessment.',
-                                        );
-                                    },
-                                    onFinish: () =>
-                                        setIsSaving(false),
+                            router[method](requestUrl, payload, {
+                                preserveScroll: true,
+                                preserveState: true,
+                                onStart: () => setIsSaving(true),
+                                onSuccess: () => {
+                                    toast.success(
+                                        isEditMode
+                                            ? 'Assessment updated successfully.'
+                                            : 'Assessment created successfully.',
+                                    );
+                                    resetFormState();
+                                    setCreateDialogOpen(false);
                                 },
-                            );
+                                onError: (formErrors) => {
+                                    const messages = Object.values(formErrors)
+                                        .flat()
+                                        .join(', ');
+                                    toast.error(
+                                        messages ||
+                                            'Failed to save assessment.',
+                                    );
+                                },
+                                onFinish: () => setIsSaving(false),
+                            });
                         }}
                     >
                         <DialogHeader>
@@ -2197,15 +2357,11 @@ export default function AdminCoursesAssessment({
                             <Field>
                                 <FieldLabel htmlFor="assessment-course">
                                     Course{' '}
-                                    <span className="text-destructive">
-                                        *
-                                    </span>
+                                    <span className="text-destructive">*</span>
                                 </FieldLabel>
                                 <Popover
                                     open={courseComboboxOpen}
-                                    onOpenChange={
-                                        setCourseComboboxOpen
-                                    }
+                                    onOpenChange={setCourseComboboxOpen}
                                 >
                                     <PopoverTrigger asChild>
                                         <Button
@@ -2218,16 +2374,12 @@ export default function AdminCoursesAssessment({
                                                 {(() => {
                                                     const course =
                                                         courseOptions.find(
-                                                            (
-                                                                c,
-                                                            ) =>
+                                                            (c) =>
                                                                 c.id ===
                                                                 assessmentForm.course_id,
                                                         );
 
-                                                    if (
-                                                        course
-                                                    ) {
+                                                    if (course) {
                                                         return course.title;
                                                     }
 
@@ -2248,25 +2400,18 @@ export default function AdminCoursesAssessment({
                                             <CommandInput placeholder="Search course..." />
                                             <CommandList
                                                 style={{
-                                                    maxHeight:
-                                                        '16rem',
-                                                    overflowY:
-                                                        'auto',
+                                                    maxHeight: '16rem',
+                                                    overflowY: 'auto',
                                                 }}
                                             >
                                                 <CommandEmpty>
-                                                    No results
-                                                    found.
+                                                    No results found.
                                                 </CommandEmpty>
                                                 <CommandGroup>
                                                     {courseOptions.map(
-                                                        (
-                                                            course,
-                                                        ) => (
+                                                        (course) => (
                                                             <CommandItem
-                                                                key={
-                                                                    course.id
-                                                                }
+                                                                key={course.id}
                                                                 value={
                                                                     course.title
                                                                 }
@@ -2285,9 +2430,7 @@ export default function AdminCoursesAssessment({
                                                                     );
                                                                 }}
                                                             >
-                                                                {
-                                                                    course.title
-                                                                }
+                                                                {course.title}
                                                                 <Check
                                                                     className={`ml-auto h-4 w-4 ${
                                                                         assessmentForm.course_id ===
@@ -2308,15 +2451,11 @@ export default function AdminCoursesAssessment({
 
                             <Field
                                 className="gap-2"
-                                data-invalid={
-                                    !!errors.title || undefined
-                                }
+                                data-invalid={!!errors.title || undefined}
                             >
                                 <FieldLabel htmlFor="assessment-title">
                                     Title{' '}
-                                    <span className="text-destructive">
-                                        *
-                                    </span>
+                                    <span className="text-destructive">*</span>
                                 </FieldLabel>
                                 <Input
                                     id="assessment-title"
@@ -2324,17 +2463,12 @@ export default function AdminCoursesAssessment({
                                     placeholder="e.g., AES — Recall & Recognition"
                                     value={assessmentForm.title}
                                     onChange={(e) =>
-                                        setAssessmentForm(
-                                            (c) => ({
-                                                ...c,
-                                                title: e.target
-                                                    .value,
-                                            }),
-                                        )
+                                        setAssessmentForm((c) => ({
+                                            ...c,
+                                            title: e.target.value,
+                                        }))
                                     }
-                                    aria-invalid={
-                                        !!errors.title
-                                    }
+                                    aria-invalid={!!errors.title}
                                     required
                                 />
                                 {errors.title && (
@@ -2346,10 +2480,7 @@ export default function AdminCoursesAssessment({
 
                             <Field
                                 className="gap-2"
-                                data-invalid={
-                                    !!errors.description ||
-                                    undefined
-                                }
+                                data-invalid={!!errors.description || undefined}
                             >
                                 <FieldLabel htmlFor="assessment-description">
                                     Description
@@ -2358,18 +2489,12 @@ export default function AdminCoursesAssessment({
                                     id="assessment-description"
                                     name="description"
                                     placeholder="Enter assessment description"
-                                    value={
-                                        assessmentForm.description
-                                    }
+                                    value={assessmentForm.description}
                                     onChange={(e) =>
-                                        setAssessmentForm(
-                                            (c) => ({
-                                                ...c,
-                                                description:
-                                                    e.target
-                                                        .value,
-                                            }),
-                                        )
+                                        setAssessmentForm((c) => ({
+                                            ...c,
+                                            description: e.target.value,
+                                        }))
                                     }
                                     rows={3}
                                 />
@@ -2383,22 +2508,15 @@ export default function AdminCoursesAssessment({
                             <Field>
                                 <FieldLabel>
                                     Bloom Level{' '}
-                                    <span className="text-destructive">
-                                        *
-                                    </span>
+                                    <span className="text-destructive">*</span>
                                 </FieldLabel>
                                 <Select
-                                    value={
-                                        assessmentForm.bloom_level
-                                    }
+                                    value={assessmentForm.bloom_level}
                                     onValueChange={(v) =>
-                                        setAssessmentForm(
-                                            (c) => ({
-                                                ...c,
-                                                bloom_level:
-                                                    v as BloomLevel,
-                                            }),
-                                        )
+                                        setAssessmentForm((c) => ({
+                                            ...c,
+                                            bloom_level: v as BloomLevel,
+                                        }))
                                     }
                                 >
                                     <SelectTrigger>
@@ -2407,12 +2525,10 @@ export default function AdminCoursesAssessment({
                                     <SelectContent>
                                         <SelectGroup>
                                             <SelectItem value="C1">
-                                                C1 —
-                                                Remember
+                                                C1 — Remember
                                             </SelectItem>
                                             <SelectItem value="C2">
-                                                C2 —
-                                                Understand
+                                                C2 — Understand
                                             </SelectItem>
                                             <SelectItem value="C3">
                                                 C3 — Apply
@@ -2421,8 +2537,7 @@ export default function AdminCoursesAssessment({
                                                 C4 — Analyze
                                             </SelectItem>
                                             <SelectItem value="C5">
-                                                C5 —
-                                                Evaluate
+                                                C5 — Evaluate
                                             </SelectItem>
                                             <SelectItem value="C6">
                                                 C6 — Create
@@ -2432,57 +2547,39 @@ export default function AdminCoursesAssessment({
                                 </Select>
                             </Field>
 
-                            <div className="grid grid-cols-3 items-end gap-3">
+                            <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
                                 <Field>
-                                    <FieldLabel>
-                                        Pass Score (%)
-                                    </FieldLabel>
+                                    <FieldLabel>Pass Score (%)</FieldLabel>
                                     <Input
                                         type="number"
                                         min={1}
                                         max={100}
-                                        value={
-                                            assessmentForm.passing_score
-                                        }
+                                        value={assessmentForm.passing_score}
                                         onChange={(e) =>
-                                            setAssessmentForm(
-                                                (c) => ({
-                                                    ...c,
-                                                    passing_score:
-                                                        e.target
-                                                            .value,
-                                                }),
-                                            )
+                                            setAssessmentForm((c) => ({
+                                                ...c,
+                                                passing_score: e.target.value,
+                                            }))
                                         }
                                     />
                                 </Field>
                                 <Field>
-                                    <FieldLabel>
-                                        Max Attempts
-                                    </FieldLabel>
+                                    <FieldLabel>Max Attempts</FieldLabel>
                                     <Input
                                         type="number"
                                         min={1}
                                         max={10}
-                                        value={
-                                            assessmentForm.max_attempts
-                                        }
+                                        value={assessmentForm.max_attempts}
                                         onChange={(e) =>
-                                            setAssessmentForm(
-                                                (c) => ({
-                                                    ...c,
-                                                    max_attempts:
-                                                        e.target
-                                                            .value,
-                                                }),
-                                            )
+                                            setAssessmentForm((c) => ({
+                                                ...c,
+                                                max_attempts: e.target.value,
+                                            }))
                                         }
                                     />
                                 </Field>
                                 <Field>
-                                    <FieldLabel>
-                                        Time (minutes)
-                                    </FieldLabel>
+                                    <FieldLabel>Time (minutes)</FieldLabel>
                                     <Input
                                         type="number"
                                         min={1}
@@ -2491,14 +2588,11 @@ export default function AdminCoursesAssessment({
                                             assessmentForm.time_limit_minutes
                                         }
                                         onChange={(e) =>
-                                            setAssessmentForm(
-                                                (c) => ({
-                                                    ...c,
-                                                    time_limit_minutes:
-                                                        e.target
-                                                            .value,
-                                                }),
-                                            )
+                                            setAssessmentForm((c) => ({
+                                                ...c,
+                                                time_limit_minutes:
+                                                    e.target.value,
+                                            }))
                                         }
                                         placeholder="∞"
                                     />
@@ -2516,10 +2610,7 @@ export default function AdminCoursesAssessment({
                                     Cancel
                                 </Button>
                             </DialogClose>
-                            <Button
-                                type="submit"
-                                disabled={isSaving}
-                            >
+                            <Button type="submit" disabled={isSaving}>
                                 {isSaving && (
                                     <Spinner data-icon="inline-start" />
                                 )}
@@ -2573,26 +2664,17 @@ export default function AdminCoursesAssessment({
                                     <span className="text-destructive">*</span>
                                 </FieldLabel>
                                 <Select
-                                    value={
-                                        assessmentQuestionForm.question_type
-                                    }
+                                    value={assessmentQuestionForm.question_type}
                                     onValueChange={(value) =>
-                                        setAssessmentQuestionForm(
-                                            (prev) => ({
-                                                ...prev,
-                                                question_type:
-                                                    value as QuestionType,
-                                                options: [
-                                                    '',
-                                                    '',
-                                                    '',
-                                                    '',
-                                                ],
-                                                correct_answer: '',
-                                                min_words: '',
-                                                max_words: '',
-                                            }),
-                                        )
+                                        setAssessmentQuestionForm((prev) => ({
+                                            ...prev,
+                                            question_type:
+                                                value as QuestionType,
+                                            options: ['', '', '', ''],
+                                            correct_answer: '',
+                                            min_words: '',
+                                            max_words: '',
+                                        }))
                                     }
                                 >
                                     <SelectTrigger id="new-question-type">
@@ -2603,16 +2685,10 @@ export default function AdminCoursesAssessment({
                                             {QUESTION_TYPE_OPTIONS.map(
                                                 (option) => (
                                                     <SelectItem
-                                                        key={
-                                                            option.value
-                                                        }
-                                                        value={
-                                                            option.value
-                                                        }
+                                                        key={option.value}
+                                                        value={option.value}
                                                     >
-                                                        {
-                                                            option.label
-                                                        }
+                                                        {option.label}
                                                     </SelectItem>
                                                 ),
                                             )}
@@ -2645,49 +2721,35 @@ export default function AdminCoursesAssessment({
                                 questionType={
                                     assessmentQuestionForm.question_type
                                 }
-                                options={
-                                    assessmentQuestionForm.options
-                                }
+                                options={assessmentQuestionForm.options}
                                 correctAnswer={
                                     assessmentQuestionForm.correct_answer
                                 }
-                                minWords={
-                                    assessmentQuestionForm.min_words
-                                }
-                                maxWords={
-                                    assessmentQuestionForm.max_words
-                                }
+                                minWords={assessmentQuestionForm.min_words}
+                                maxWords={assessmentQuestionForm.max_words}
                                 onOptionsChange={(next) =>
-                                    setAssessmentQuestionForm(
-                                        (prev) => ({
-                                            ...prev,
-                                            options: next,
-                                        }),
-                                    )
+                                    setAssessmentQuestionForm((prev) => ({
+                                        ...prev,
+                                        options: next,
+                                    }))
                                 }
                                 onCorrectAnswerChange={(value) =>
-                                    setAssessmentQuestionForm(
-                                        (prev) => ({
-                                            ...prev,
-                                            correct_answer: value,
-                                        }),
-                                    )
+                                    setAssessmentQuestionForm((prev) => ({
+                                        ...prev,
+                                        correct_answer: value,
+                                    }))
                                 }
                                 onMinWordsChange={(value) =>
-                                    setAssessmentQuestionForm(
-                                        (prev) => ({
-                                            ...prev,
-                                            min_words: value,
-                                        }),
-                                    )
+                                    setAssessmentQuestionForm((prev) => ({
+                                        ...prev,
+                                        min_words: value,
+                                    }))
                                 }
                                 onMaxWordsChange={(value) =>
-                                    setAssessmentQuestionForm(
-                                        (prev) => ({
-                                            ...prev,
-                                            max_words: value,
-                                        }),
-                                    )
+                                    setAssessmentQuestionForm((prev) => ({
+                                        ...prev,
+                                        max_words: value,
+                                    }))
                                 }
                             />
 
@@ -2711,12 +2773,16 @@ export default function AdminCoursesAssessment({
                         </FieldGroup>
 
                         <DialogFooter className="mt-6">
-                            <Button type="button" variant="outline" onClick={() => setCreateQuestionDialogOpen(false)}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() =>
+                                    setCreateQuestionDialogOpen(false)
+                                }
+                            >
                                 Cancel
                             </Button>
-                            <Button type="submit">
-                                Add Question
-                            </Button>
+                            <Button type="submit">Add Question</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -2744,114 +2810,118 @@ export default function AdminCoursesAssessment({
                             saveAssessmentQuestionUpdate();
                         }}
                     >
-                    <FieldGroup className="mt-4">
-                        <Field>
-                            <FieldLabel htmlFor="edit-question-type">
-                                Question Type
-                            </FieldLabel>
-                            <Select
-                                value={assessmentQuestionForm.question_type}
-                                disabled
-                            >
-                                <SelectTrigger id="edit-question-type">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        {QUESTION_TYPE_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </Field>
+                        <FieldGroup className="mt-4">
+                            <Field>
+                                <FieldLabel htmlFor="edit-question-type">
+                                    Question Type
+                                </FieldLabel>
+                                <Select
+                                    value={assessmentQuestionForm.question_type}
+                                    disabled
+                                >
+                                    <SelectTrigger id="edit-question-type">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {QUESTION_TYPE_OPTIONS.map(
+                                                (option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
 
-                        <Field>
-                            <FieldLabel htmlFor="assessment-question-text">
-                                Question{' '}
-                                <span className="text-destructive">*</span>
-                            </FieldLabel>
-                            <Textarea
-                                id="assessment-question-text"
-                                value={assessmentQuestionForm.question_text}
-                                onChange={(event) =>
+                            <Field>
+                                <FieldLabel htmlFor="assessment-question-text">
+                                    Question{' '}
+                                    <span className="text-destructive">*</span>
+                                </FieldLabel>
+                                <Textarea
+                                    id="assessment-question-text"
+                                    value={assessmentQuestionForm.question_text}
+                                    onChange={(event) =>
+                                        setAssessmentQuestionForm((prev) => ({
+                                            ...prev,
+                                            question_text: event.target.value,
+                                        }))
+                                    }
+                                    rows={4}
+                                    placeholder="Enter question..."
+                                />
+                            </Field>
+
+                            <QuestionTypeFields
+                                idPrefix="edit-question"
+                                questionType={
+                                    assessmentQuestionForm.question_type
+                                }
+                                options={assessmentQuestionForm.options}
+                                correctAnswer={
+                                    assessmentQuestionForm.correct_answer
+                                }
+                                minWords={assessmentQuestionForm.min_words}
+                                maxWords={assessmentQuestionForm.max_words}
+                                onOptionsChange={(next) =>
                                     setAssessmentQuestionForm((prev) => ({
                                         ...prev,
-                                        question_text: event.target.value,
+                                        options: next,
                                     }))
                                 }
-                                rows={4}
-                                placeholder="Enter question..."
-                            />
-                        </Field>
-
-                        <QuestionTypeFields
-                            idPrefix="edit-question"
-                            questionType={assessmentQuestionForm.question_type}
-                            options={assessmentQuestionForm.options}
-                            correctAnswer={assessmentQuestionForm.correct_answer}
-                            minWords={assessmentQuestionForm.min_words}
-                            maxWords={assessmentQuestionForm.max_words}
-                            onOptionsChange={(next) =>
-                                setAssessmentQuestionForm((prev) => ({
-                                    ...prev,
-                                    options: next,
-                                }))
-                            }
-                            onCorrectAnswerChange={(value) =>
-                                setAssessmentQuestionForm((prev) => ({
-                                    ...prev,
-                                    correct_answer: value,
-                                }))
-                            }
-                            onMinWordsChange={(value) =>
-                                setAssessmentQuestionForm((prev) => ({
-                                    ...prev,
-                                    min_words: value,
-                                }))
-                            }
-                            onMaxWordsChange={(value) =>
-                                setAssessmentQuestionForm((prev) => ({
-                                    ...prev,
-                                    max_words: value,
-                                }))
-                            }
-                        />
-
-                        <Field>
-                            <FieldLabel htmlFor="assessment-question-explanation">
-                                Explanation
-                            </FieldLabel>
-                            <Textarea
-                                id="assessment-question-explanation"
-                                value={assessmentQuestionForm.explanation}
-                                onChange={(event) =>
+                                onCorrectAnswerChange={(value) =>
                                     setAssessmentQuestionForm((prev) => ({
                                         ...prev,
-                                        explanation: event.target.value,
+                                        correct_answer: value,
                                     }))
                                 }
-                                rows={3}
-                                placeholder="Answer explanation (optional)"
+                                onMinWordsChange={(value) =>
+                                    setAssessmentQuestionForm((prev) => ({
+                                        ...prev,
+                                        min_words: value,
+                                    }))
+                                }
+                                onMaxWordsChange={(value) =>
+                                    setAssessmentQuestionForm((prev) => ({
+                                        ...prev,
+                                        max_words: value,
+                                    }))
+                                }
                             />
-                        </Field>
-                    </FieldGroup>
 
-                    <DialogFooter className="mt-6">
-                        <DialogClose asChild>
-                            <Button type="button" variant="outline">
-                                Cancel
-                            </Button>
-                        </DialogClose>
-                        <Button type="submit">
-                            Save changes
-                        </Button>
-                    </DialogFooter>
+                            <Field>
+                                <FieldLabel htmlFor="assessment-question-explanation">
+                                    Explanation
+                                </FieldLabel>
+                                <Textarea
+                                    id="assessment-question-explanation"
+                                    value={assessmentQuestionForm.explanation}
+                                    onChange={(event) =>
+                                        setAssessmentQuestionForm((prev) => ({
+                                            ...prev,
+                                            explanation: event.target.value,
+                                        }))
+                                    }
+                                    rows={3}
+                                    placeholder="Answer explanation (optional)"
+                                />
+                            </Field>
+                        </FieldGroup>
+
+                        <DialogFooter className="mt-6">
+                            <DialogClose asChild>
+                                <Button type="button" variant="outline">
+                                    Cancel
+                                </Button>
+                            </DialogClose>
+                            <Button type="submit">Save changes</Button>
+                        </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
@@ -2932,7 +3002,9 @@ export default function AdminCoursesAssessment({
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => submitRestoreVersion()}>
+                        <AlertDialogAction
+                            onClick={() => submitRestoreVersion()}
+                        >
                             Restore
                         </AlertDialogAction>
                     </AlertDialogFooter>

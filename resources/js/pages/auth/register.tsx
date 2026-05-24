@@ -290,7 +290,7 @@ export default function Register({ status, socialUser }: Props) {
                                 <>
                                     {!isSocialRegistration && (
                                         <>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid gap-3 sm:grid-cols-2">
                                                 <Button
                                                     variant="outline"
                                                     className="w-full"
