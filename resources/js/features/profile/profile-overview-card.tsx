@@ -60,7 +60,7 @@ export function ProfileOverviewCard({
         <Card className="sticky top-24">
             <CardHeader className="space-y-4">
                 <div className="flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
-                    <Avatar className="size-28 rounded-full ring-4 ring-card sm:size-32">
+                    <Avatar className="size-28 rounded-full sm:size-32">
                         <AvatarImage
                             src={profileUser.avatar ?? undefined}
                             alt={profileUser.name}
