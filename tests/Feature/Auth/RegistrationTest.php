@@ -33,6 +33,21 @@ test('registration stores the display name separately from username', function (
         ->and($user->profile_visibility)->toBe('private');
 });
 
+test('registration stores username in lowercase', function (): void {
+    $this->post('/register', [
+        'name' => 'Mixed Case User',
+        'username' => 'Mixed.Case_User',
+        'email' => 'mixed-case@example.com',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'terms' => 'on',
+    ])->assertRedirect('/dashboard');
+
+    $user = User::query()->where('email', 'mixed-case@example.com')->firstOrFail();
+
+    expect($user->username)->toBe('mixed.case_user');
+});
+
 test('registration assigns a static png pixabot avatar', function (): void {
     $pixabots = Mockery::mock(PixabotAvatarService::class);
     $pixabots->shouldReceive('randomId')->once()->andReturn('4411');

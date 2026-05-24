@@ -30,6 +30,7 @@ export function ProfileSettingsForm({
     const [visibility, setVisibility] = useState<ProfileVisibility>(
         profileUser.profile_visibility ?? 'private',
     );
+    const [username, setUsername] = useState(profileUser.username ?? '');
 
     return (
         <Card id="edit-profile">
@@ -68,7 +69,14 @@ export function ProfileSettingsForm({
                                 <Input
                                     id="username"
                                     name="username"
-                                    defaultValue={profileUser.username ?? ''}
+                                    value={username}
+                                    onChange={(event) =>
+                                        setUsername(
+                                            event.currentTarget.value
+                                                .replace(/[^a-zA-Z0-9._]/g, '')
+                                                .toLowerCase(),
+                                        )
+                                    }
                                     autoComplete="username"
                                 />
                                 {errors.username && (

@@ -27,10 +27,11 @@ class CreateNewUser implements CreatesNewUsers
     public function create(array $input): User
     {
         $input['profile_visibility'] ??= 'private';
+        $input['username'] = strtolower(trim((string) ($input['username'] ?? '')));
 
         Validator::make($input, [
             ...$this->profileRules(),
-            'username' => ['required', 'string', 'min:4', 'max:255', 'unique:users,username', 'regex:/^[a-zA-Z0-9._]+$/'],
+            'username' => ['required', 'string', 'min:4', 'max:255', 'unique:users,username', 'regex:/^[a-z0-9._]+$/'],
             'password' => $this->passwordRules(),
             'terms' => ['accepted'],
         ], [

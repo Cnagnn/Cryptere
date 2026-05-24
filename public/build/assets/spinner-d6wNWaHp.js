@@ -1,1 +1,0 @@
-import{aE as r,aD as n,b4 as o,a1 as p}from"./app-qZLUDh4O.js";function m(l){const e=r.c(8);let s,a;e[0]!==l?({className:s,...a}=l,e[0]=l,e[1]=s,e[2]=a):(s=e[1],a=e[2]);let t;e[3]!==s?(t=n("size-4 animate-spin",s),e[3]=s,e[4]=t):t=e[4];let i;return e[5]!==a||e[6]!==t?(i=o.jsx(p,{role:"status","aria-label":"Loading",className:t,...a}),e[5]=a,e[6]=t,e[7]=i):i=e[7],i}export{m as S};

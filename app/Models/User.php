@@ -83,6 +83,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Store public usernames in lowercase for every write path.
+     */
+    public function setUsernameAttribute(?string $value): void
+    {
+        $this->attributes['username'] = is_string($value)
+            ? strtolower(trim($value))
+            : null;
+    }
+
+    /**
      * Scope user listing by management search keyword.
      */
     public function scopeSearchManagement(Builder $query, string $search): Builder

@@ -14,9 +14,9 @@ class UsernameAvailabilityController extends Controller
      */
     public function __invoke(Request $request): JsonResponse
     {
-        $username = $request->string('username')->trim()->toString();
+        $username = strtolower($request->string('username')->trim()->toString());
 
-        if (! preg_match('/^[a-zA-Z0-9._]{4,255}$/', $username)) {
+        if (! preg_match('/^[a-z0-9._]{4,255}$/', $username)) {
             return response()->json(['available' => false]);
         }
 

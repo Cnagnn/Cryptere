@@ -47,7 +47,7 @@ trait ProfileValidationRules
             'string',
             'min:4',
             'max:255',
-            'regex:/^[a-zA-Z0-9._]+$/',
+            'regex:/^[a-z0-9._]+$/',
             $userId === null
                 ? Rule::unique(User::class, 'username')
                 : Rule::unique(User::class, 'username')->ignore($userId),

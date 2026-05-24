@@ -468,10 +468,12 @@ export default function Register({ status, socialUser }: Props) {
                                                     }
                                                     onChange={(e) => {
                                                         const val =
-                                                            e.currentTarget.value.replace(
-                                                                /[^a-zA-Z0-9._]/g,
-                                                                '',
-                                                            );
+                                                            e.currentTarget.value
+                                                                .replace(
+                                                                    /[^a-zA-Z0-9._]/g,
+                                                                    '',
+                                                                )
+                                                                .toLowerCase();
                                                         setUsernameAvailability(
                                                             null,
                                                         );

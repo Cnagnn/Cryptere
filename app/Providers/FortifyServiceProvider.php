@@ -44,10 +44,11 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::createUsersUsing(CreateNewUser::class);
 
         Fortify::authenticateUsing(function (Request $request): ?User {
-            $login = (string) $request->input(Fortify::username());
+            $login = trim((string) $request->input(Fortify::username()));
+            $lookup = Str::contains($login, '@') ? $login : Str::lower($login);
 
             $user = User::query()
-                ->where(Str::contains($login, '@') ? 'email' : 'username', $login)
+                ->where(Str::contains($login, '@') ? 'email' : 'username', $lookup)
                 ->first();
 
             if ($user && Hash::check((string) $request->password, $user->password)) {

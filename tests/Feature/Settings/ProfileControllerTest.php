@@ -142,6 +142,24 @@ test('user can update profile username and public fields', function (): void {
         ->and($user->profile_visibility)->toBe('public');
 });
 
+test('profile update stores username in lowercase', function (): void {
+    $user = User::factory()->create([
+        'username' => 'old-name',
+        'profile_visibility' => 'private',
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('settings.profile.update'), [
+            'name' => 'Updated Name',
+            'username' => 'Updated.Name',
+            'email' => $user->email,
+            'profile_visibility' => 'private',
+        ])
+        ->assertRedirect(route('settings.profile.edit'));
+
+    expect($user->fresh()->username)->toBe('updated.name');
+});
+
 test('profile username must be unique and match the public profile format', function (): void {
     User::factory()->create(['username' => 'existing.user']);
     $user = User::factory()->create(['username' => 'current.user']);
