@@ -27,7 +27,7 @@ class SecurityHeaders
 
         $scriptSrc = "script-src 'self' 'nonce-{$nonce}' https://*.sentry.io";
         $styleSrc = "style-src 'self' 'nonce-{$nonce}'";
-        $styleSrcElem = "style-src-elem 'self' 'nonce-{$nonce}' https://fonts.googleapis.com";
+        $styleSrcElem = "style-src-elem 'self' 'nonce-{$nonce}' 'unsafe-inline' https://fonts.googleapis.com";
         $styleSrcAttr = "style-src-attr 'unsafe-inline'";
         $imgSrc = "img-src 'self' data: blob:";
         $fontSrc = "font-src 'self' data: https://fonts.gstatic.com";

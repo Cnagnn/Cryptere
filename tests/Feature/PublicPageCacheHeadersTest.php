@@ -54,6 +54,7 @@ test('security policy allows production font styles without relaxing scripts', f
         ->toContain("script-src 'self' 'nonce-")
         ->not->toContain("script-src 'self' 'unsafe-inline'")
         ->toContain("style-src-elem 'self' 'nonce-")
+        ->toContain("'unsafe-inline' https://fonts.googleapis.com")
         ->toContain('https://fonts.googleapis.com')
         ->toContain("style-src-attr 'unsafe-inline'")
         ->toContain('https://fonts.gstatic.com');
