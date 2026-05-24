@@ -74,7 +74,7 @@ function ProfilePrivate({ user }: { user: ProfileUser }) {
     return (
         <Card className="overflow-hidden">
             <CardHeader className="gap-4 text-center">
-                <Avatar className="mx-auto size-20 rounded-full">
+                <Avatar className="mx-auto size-20 rounded-none">
                     <AvatarImage
                         src={user.avatar ?? undefined}
                         alt={user.name}

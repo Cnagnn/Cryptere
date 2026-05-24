@@ -180,7 +180,7 @@ export default function LeaderboardIndex({
                 cell: ({ row }) => (
                     <div className="flex justify-center">
                         <div className="grid w-64 grid-cols-[2rem_1fr] items-center gap-3 text-left">
-                            <Avatar className="size-8 rounded-full">
+                            <Avatar className="size-8 rounded-none">
                                 <AvatarImage
                                     src={row.original.avatar ?? undefined}
                                     alt={
@@ -654,7 +654,7 @@ function MobileLeaderboardCards({
                             </div>
 
                             {/* Avatar */}
-                            <Avatar className="size-10 shrink-0 rounded-full">
+                            <Avatar className="size-10 shrink-0 rounded-none">
                                 <AvatarImage
                                     src={entry.avatar ?? undefined}
                                     alt={
