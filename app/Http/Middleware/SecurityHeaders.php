@@ -11,7 +11,7 @@ class SecurityHeaders
     /**
      * Security headers applied to every web response.
      *
-     * Uses nonce-based CSP to avoid unsafe-inline for scripts and style blocks.
+     * Uses nonce-based CSP to avoid unsafe-inline for scripts.
      * The nonce is generated per-request and shared via request attributes
      * so Blade templates and Vite can use it.
      *
@@ -27,9 +27,9 @@ class SecurityHeaders
 
         $scriptSrc = "script-src 'self' 'nonce-{$nonce}' https://*.sentry.io";
         $styleSrc = "style-src 'self' 'nonce-{$nonce}'";
-        $styleSrcElem = "style-src-elem 'self' 'nonce-{$nonce}' 'unsafe-inline' https://fonts.googleapis.com";
+        $styleSrcElem = "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com";
         $styleSrcAttr = "style-src-attr 'unsafe-inline'";
-        $imgSrc = "img-src 'self' data: blob:";
+        $imgSrc = "img-src 'self' data: blob: https://deifkwefumgah.cloudfront.net";
         $fontSrc = "font-src 'self' data: https://fonts.gstatic.com";
         $connectSrc = "connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io";
 
