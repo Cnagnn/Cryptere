@@ -517,11 +517,6 @@ const PODIUM_COLORS = [
     'from-slate-300/20 to-slate-300/5 border-slate-300/30', // Silver (#2)
     'from-amber-600/20 to-amber-600/5 border-amber-600/30', // Bronze (#3)
 ];
-const PODIUM_RING_COLORS = [
-    'ring-amber-400/50', // Gold
-    'ring-slate-300/50', // Silver
-    'ring-amber-600/50', // Bronze
-];
 const PODIUM_HEIGHTS = ['h-28', 'h-20', 'h-16'];
 
 function PodiumSection({
@@ -563,11 +558,7 @@ function PodiumSection({
                                 <Crown className="absolute -top-3 left-1/2 size-5 -translate-x-1/2 text-amber-400" />
                             ) : null}
                             <Avatar
-                                className={cn(
-                                    'ring-2',
-                                    isFirst ? 'size-20' : 'size-14',
-                                    PODIUM_RING_COLORS[rankIndex],
-                                )}
+                                className={cn(isFirst ? 'size-20' : 'size-14')}
                             >
                                 <AvatarImage
                                     src={entry.avatar || undefined}
