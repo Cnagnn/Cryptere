@@ -11,7 +11,7 @@ class SecurityHeaders
     /**
      * Security headers applied to every web response.
      *
-     * Uses nonce-based CSP to avoid unsafe-inline for both scripts and styles.
+     * Uses nonce-based CSP to avoid unsafe-inline for scripts and style blocks.
      * The nonce is generated per-request and shared via request attributes
      * so Blade templates and Vite can use it.
      *
@@ -27,14 +27,16 @@ class SecurityHeaders
 
         $scriptSrc = "script-src 'self' 'nonce-{$nonce}' https://*.sentry.io";
         $styleSrc = "style-src 'self' 'nonce-{$nonce}'";
+        $styleSrcElem = "style-src-elem 'self' 'nonce-{$nonce}' https://fonts.googleapis.com";
+        $styleSrcAttr = "style-src-attr 'unsafe-inline'";
         $imgSrc = "img-src 'self' data: blob:";
-        $fontSrc = "font-src 'self' data:";
+        $fontSrc = "font-src 'self' data: https://fonts.gstatic.com";
         $connectSrc = "connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io";
 
         if (app()->environment('local', 'testing', 'development')) {
             $scriptSrc .= " 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173";
-            $styleSrc .= " 'unsafe-inline' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173 https://fonts.googleapis.com";
-            $fontSrc .= ' https://fonts.gstatic.com';
+            $styleSrc .= " 'unsafe-inline' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173";
+            $styleSrcElem .= ' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
             $connectSrc .= ' ws://localhost:5173 ws://127.0.0.1:5173 ws://[::1]:5173 http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
             $imgSrc .= ' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
         }
@@ -43,6 +45,8 @@ class SecurityHeaders
             "default-src 'self'",
             $scriptSrc,
             $styleSrc,
+            $styleSrcElem,
+            $styleSrcAttr,
             $imgSrc,
             $fontSrc,
             $connectSrc,

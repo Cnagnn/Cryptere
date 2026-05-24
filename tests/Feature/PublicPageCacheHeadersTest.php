@@ -42,3 +42,19 @@ test('auth pages remain private and dynamic', function (): void {
 
     expect($response->headers->all('Set-Cookie'))->not->toBeEmpty();
 });
+
+test('security policy allows production font styles without relaxing scripts', function (): void {
+    $response = $this->get('https://auth.cryptere.com/reset-password/test-token?email=test@example.com');
+
+    $response->assertOk();
+
+    $policy = (string) $response->headers->get('Content-Security-Policy');
+
+    expect($policy)
+        ->toContain("script-src 'self' 'nonce-")
+        ->not->toContain("script-src 'self' 'unsafe-inline'")
+        ->toContain("style-src-elem 'self' 'nonce-")
+        ->toContain('https://fonts.googleapis.com')
+        ->toContain("style-src-attr 'unsafe-inline'")
+        ->toContain('https://fonts.gstatic.com');
+});
