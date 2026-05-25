@@ -62,14 +62,3 @@ Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->
 
     Route::get('appearance', AppearanceController::class)->name('appearance.edit');
 });
-
-/*
-|--------------------------------------------------------------------------
-| Legacy Redirects
-|--------------------------------------------------------------------------
-| Maintain backward compatibility with deprecated routes
-*/
-Route::middleware(['auth', 'verified'])->group(function () {
-    // Old admin profile path redirects to new settings location
-    Route::redirect('profile/admin', 'settings/profile/', 301);
-});

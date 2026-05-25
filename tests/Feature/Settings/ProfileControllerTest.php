@@ -218,6 +218,24 @@ test('private profile hides owner only fields from other users', function (): vo
         );
 });
 
+test('admin username resolves to the public profile page', function (): void {
+    $admin = User::factory()->create([
+        'name' => 'Site Admin',
+        'username' => 'admin',
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->actingAs($admin)
+        ->get('/profile/admin')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('profile/show')
+            ->where('isPrivate', false)
+            ->where('profileUser.username', 'admin')
+            ->where('profileUser.name', 'Site Admin')
+        );
+});
+
 test('user can upload an avatar from settings', function (): void {
     Storage::fake('public');
     $user = User::factory()->create();
