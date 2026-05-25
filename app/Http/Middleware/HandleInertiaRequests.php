@@ -37,6 +37,8 @@ class HandleInertiaRequests extends Middleware
             $user->refresh();
         }
 
+        $user?->loadMissing('roles:id,name');
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -60,8 +62,8 @@ class HandleInertiaRequests extends Middleware
                     'xp' => $user->xp,
                     'current_streak' => $user->current_streak,
                     'longest_streak' => $user->longest_streak,
-                    'is_admin' => $user->is_admin,
-                    'role' => $user->role,
+                    'is_admin' => $user->canAccessAdmin(),
+                    'role' => $user->primaryRoleName(),
                     'level' => $this->levelService->getUserLevel($user),
                     'badge_count' => Cache::remember("user:{$user->id}:badge_count", 300, fn () => $user->badges()->count()),
                     'daily_xp_earned' => $user->daily_xp_earned ?? 0,

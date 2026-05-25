@@ -21,7 +21,7 @@ class AssessmentPolicy
      */
     public function view(User $user, Assessment $assessment): bool
     {
-        return $assessment->status === 'published' || $user->isAdmin();
+        return $assessment->status === 'published' || $user->can(User::PERMISSION_VIEW_UNPUBLISHED_ASSESSMENTS);
     }
 
     /**
@@ -54,7 +54,7 @@ class AssessmentPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->can(User::PERMISSION_MANAGE_ASSESSMENTS);
     }
 
     /**
@@ -62,7 +62,7 @@ class AssessmentPolicy
      */
     public function update(User $user, Assessment $assessment): bool
     {
-        return $user->isAdmin();
+        return $user->can(User::PERMISSION_MANAGE_ASSESSMENTS);
     }
 
     /**
@@ -70,7 +70,7 @@ class AssessmentPolicy
      */
     public function delete(User $user, Assessment $assessment): bool
     {
-        return $user->isAdmin();
+        return $user->can(User::PERMISSION_MANAGE_ASSESSMENTS);
     }
 
     /**
@@ -78,6 +78,6 @@ class AssessmentPolicy
      */
     public function grade(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->can(User::PERMISSION_GRADE_SUBMISSIONS);
     }
 }

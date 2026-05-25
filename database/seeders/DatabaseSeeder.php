@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         // Uncomment to seed Caesar Cipher course
         $this->call([
+            AuthorizationSeeder::class,
             CaesarCipherCourseSeeder::class,
         ]);
     }

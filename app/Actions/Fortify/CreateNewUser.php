@@ -7,6 +7,7 @@ use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use App\Services\PixabotAvatarService;
 use App\Services\SocialAvatarService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
@@ -38,19 +39,25 @@ class CreateNewUser implements CreatesNewUsers
             'username.regex' => 'The username may only contain letters, numbers, dots (.), and underscores (_).',
         ])->validate();
 
-        $isFirstUser = ! User::query()->exists();
         $hasSocialRegistrationContext = session()->has('social_user');
 
-        $user = User::create([
-            'name' => $input['name'],
-            'email' => $input['email'],
-            'username' => $input['username'],
-            'password' => $input['password'],
-            'is_admin' => $isFirstUser,
-            'role' => $isFirstUser ? 'admin' : 'member',
-            'status' => 'active',
-            'profile_visibility' => $input['profile_visibility'],
-        ]);
+        $user = DB::transaction(function () use ($input): User {
+            $isFirstUser = ! User::query()->lockForUpdate()->exists();
+            $role = $isFirstUser ? User::ROLE_SUPER_ADMIN : User::ROLE_USER;
+
+            $user = User::create([
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'username' => $input['username'],
+                'password' => $input['password'],
+                'status' => 'active',
+                'profile_visibility' => $input['profile_visibility'],
+            ]);
+
+            $user->assignRole($role);
+
+            return $user;
+        });
 
         $defaultPixabotAvatarId = $this->pixabotAvatarService->randomId();
 

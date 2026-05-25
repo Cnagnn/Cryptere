@@ -9,6 +9,7 @@ use App\Http\Requests\Assessment\SubmitAssessmentAttemptRequest;
 use App\Models\Assessment;
 use App\Models\AssessmentAnswer;
 use App\Models\AssessmentSubmission;
+use App\Models\User;
 use App\Services\AssessmentAttemptService;
 use App\Services\AssessmentGradingService;
 use Illuminate\Http\JsonResponse;
@@ -92,7 +93,7 @@ class AssessmentSubmissionController extends Controller
     public function results(Request $request, Assessment $assessment, AssessmentSubmission $submission): Response
     {
         // Ensure the submission belongs to the user (or admin)
-        if ($submission->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
+        if ($submission->user_id !== $request->user()->id && ! $request->user()->can(User::PERMISSION_GRADE_SUBMISSIONS)) {
             abort(403);
         }
 

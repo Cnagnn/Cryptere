@@ -137,7 +137,7 @@ test('admin user management returns searchable paginated user contract', functio
     $member = User::factory()->create([
         'name' => 'Managed Member',
         'username' => 'managed_member',
-        'role' => 'member',
+        'role' => User::ROLE_USER,
         'points' => 120,
         'avatar_path' => 'avatars/pixabots/gif/480/4411.gif',
         'avatar_mime_type' => 'image/gif',
@@ -145,17 +145,17 @@ test('admin user management returns searchable paginated user contract', functio
     ]);
 
     $this->actingAs($admin)
-        ->get(route('admin.users.index', ['search' => 'Managed', 'role' => 'member']))
+        ->get(route('admin.users.index', ['search' => 'Managed', 'role' => User::ROLE_USER]))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/users/index')
             ->where('filters.search', 'Managed')
-            ->where('filters.role', 'member')
+            ->where('filters.role', User::ROLE_USER)
             ->has('users.data.0', fn (Assert $row) => $row
                 ->where('id', $member->id)
                 ->where('username', 'managed_member')
                 ->where('points', 120)
-                ->where('role', 'member')
+                ->where('role', User::ROLE_USER)
                 ->where('avatar', fn (?string $avatar): bool => str_contains($avatar ?? '', '/avatars/pixabots/png/480/4411.png'))
                 ->has('can_delete')
                 ->etc()

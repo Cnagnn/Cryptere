@@ -16,7 +16,7 @@ class AvatarUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        $mimes = $this->user()?->isAdmin() === true
+        $mimes = $this->user()?->canAccessAdmin() === true
             ? 'jpg,jpeg,png,webp'
             : 'jpg,jpeg,png';
 

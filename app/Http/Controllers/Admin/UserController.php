@@ -20,19 +20,21 @@ class UserController extends Controller
     public function index(Request $request): Response
     {
         $search = trim((string) $request->input('search', ''));
-        $role = (string) $request->input('role', 'all');
+        $role = User::normalizeManagementRole((string) $request->input('role', 'all'));
         $perPage = (int) $request->integer('per_page', 10);
         $perPage = max(10, min($perPage, 100));
         $authenticatedUserId = (int) $request->user()?->getKey();
-        $adminCount = User::query()->where('role', 'admin')->count();
+        $superAdminCount = User::countUsersWithRole(User::ROLE_SUPER_ADMIN);
 
         $users = User::query()
+            ->with('roles:id,name')
             ->searchManagement($search)
             ->filterManagementRole($role)
             ->orderBy('name')
-            ->paginate($perPage, ['id', 'name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id', 'username', 'points', 'role', 'created_at'])
-            ->through(function (User $user) use ($adminCount, $authenticatedUserId): array {
-                $cannotDeleteLastAdmin = $user->role === 'admin' && $adminCount <= 1;
+            ->paginate($perPage, ['id', 'name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id', 'username', 'points', 'created_at'])
+            ->through(function (User $user) use ($superAdminCount, $authenticatedUserId): array {
+                $primaryRole = $user->primaryRoleName();
+                $cannotDeleteLastSuperAdmin = $primaryRole === User::ROLE_SUPER_ADMIN && $superAdminCount <= 1;
                 $cannotDeleteSelf = (int) $user->getKey() === $authenticatedUserId;
 
                 return [
@@ -42,9 +44,9 @@ class UserController extends Controller
                     'avatar' => $user->avatar,
                     'username' => $user->username,
                     'points' => $user->points,
-                    'role' => $user->role,
+                    'role' => $primaryRole,
                     'created_at' => $user->created_at,
-                    'can_delete' => ! $cannotDeleteLastAdmin && ! $cannotDeleteSelf,
+                    'can_delete' => ! $cannotDeleteLastSuperAdmin && ! $cannotDeleteSelf,
                 ];
             })
             ->withQueryString();
@@ -64,13 +66,17 @@ class UserController extends Controller
     public function update(UpdateAdminUserRequest $request, User $user): RedirectResponse
     {
         $validated = $request->validated();
+        $role = (string) $validated['role'];
 
-        $user->forceFill([
-            ...$validated,
-            'is_admin' => $validated['role'] === 'admin',
-        ])->save();
+        DB::transaction(function () use ($user, $validated, $role): void {
+            $user->forceFill([
+                'points' => $validated['points'],
+            ])->save();
 
-        app(AuditService::class)->log($request->user(), 'updated_role', $user, ['role' => $validated['role']]);
+            $user->syncRoles($role);
+        });
+
+        app(AuditService::class)->log($request->user(), 'updated_role', $user, ['role' => $role]);
 
         return back()->with('success', 'User access has been updated.');
     }
@@ -80,10 +86,14 @@ class UserController extends Controller
      */
     public function destroy(Request $request, User $user): RedirectResponse
     {
-        $isLastAdmin = $user->role === 'admin' && User::query()->where('role', 'admin')->count() <= 1;
+        $isLastSuperAdmin = $user->isSuperAdmin() && User::countUsersWithRole(User::ROLE_SUPER_ADMIN) <= 1;
 
-        if ($isLastAdmin) {
-            return back()->withErrors(['user' => 'The last admin account cannot be deleted.']);
+        if ($user->isSuperAdmin() && ! $request->user()?->isSuperAdmin()) {
+            return back()->withErrors(['user' => 'Only a Super Admin can delete another Super Admin.']);
+        }
+
+        if ($isLastSuperAdmin) {
+            return back()->withErrors(['user' => 'The last Super Admin account cannot be deleted.']);
         }
 
         if ((int) $request->user()?->getKey() === (int) $user->getKey()) {

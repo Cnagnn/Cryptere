@@ -3,6 +3,8 @@
 use App\Models\Course;
 use App\Models\User;
 use App\Policies\CoursePolicy;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
     $this->policy = new CoursePolicy;
@@ -35,6 +37,16 @@ test('only admin can create courses', function () {
 
     expect($this->policy->create($admin))->toBeTrue();
     expect($this->policy->create($user))->toBeFalse();
+});
+
+test('course management requires the manage courses permission', function () {
+    $admin = User::factory()->admin()->create();
+
+    Permission::findOrCreate('manage courses');
+    $admin->roles()->firstOrFail()->revokePermissionTo('manage courses');
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    expect($this->policy->create($admin->refresh()))->toBeFalse();
 });
 
 test('only admin can update courses', function () {

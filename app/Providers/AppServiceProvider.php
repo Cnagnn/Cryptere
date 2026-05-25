@@ -21,6 +21,7 @@ use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -57,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureAuthorization();
         $this->configureRateLimiting();
         $this->configureFeatureFlags();
         $this->configureApiDocumentation();
@@ -65,6 +67,14 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(XpAwarded::class, LogXpAward::class);
         Event::listen(XpAwarded::class, BroadcastLeaderboardUpdate::class);
+    }
+
+    /**
+     * Configure global authorization rules.
+     */
+    protected function configureAuthorization(): void
+    {
+        Gate::before(fn (User $user, string $ability): ?bool => $user->hasRole(User::ROLE_SUPER_ADMIN) ? true : null);
     }
 
     /**

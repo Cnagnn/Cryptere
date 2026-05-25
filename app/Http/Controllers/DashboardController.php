@@ -26,9 +26,9 @@ class DashboardController extends Controller
     public function __invoke(Request $request): Response
     {
         $user = $request->user();
-        \Log::info('DashboardController invoked', ['user_id' => $user?->id, 'is_admin' => $user?->isAdmin()]);
+        \Log::info('DashboardController invoked', ['user_id' => $user?->id, 'can_access_admin' => $user?->canAccessAdmin()]);
         try {
-            if ($user->isAdmin()) {
+            if ($user->canAccessAdmin()) {
                 \Log::info('Rendering admin dashboard', ['user_id' => $user->id]);
                 $result = $this->traceSpan('dashboard.admin', 'Admin dashboard render', fn () => Inertia::render('dashboard', array_merge(
                     $this->adminBuilder->build(),
@@ -46,7 +46,7 @@ class DashboardController extends Controller
         } catch (\Throwable $e) {
             \Log::error('Dashboard error', [
                 'user_id' => $user?->id,
-                'is_admin' => $user?->isAdmin(),
+                'can_access_admin' => $user?->canAccessAdmin(),
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

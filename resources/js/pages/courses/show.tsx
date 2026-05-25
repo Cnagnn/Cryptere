@@ -2885,7 +2885,7 @@ export default function CourseShow({
     assessments = [],
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
-    const isAdmin = auth.user.is_admin || auth.user.role === 'admin';
+    const isAdmin = auth.user.is_admin;
     const isEnrolled = enrollment !== null;
     const lessons = useMemo(() => mapLessons(serverLessons), [serverLessons]);
     const [notice, setNotice] = useState<string | null>(null);

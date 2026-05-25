@@ -20,7 +20,7 @@ class CoursePolicy
      */
     public function view(User $user, Course $course): bool
     {
-        return $course->status === 'published' || $user->isAdmin();
+        return $course->status === 'published' || $user->can(User::PERMISSION_VIEW_UNPUBLISHED_COURSES);
     }
 
     /**
@@ -28,7 +28,7 @@ class CoursePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->can(User::PERMISSION_MANAGE_COURSES);
     }
 
     /**
@@ -36,7 +36,7 @@ class CoursePolicy
      */
     public function update(User $user, Course $course): bool
     {
-        return $user->isAdmin();
+        return $user->can(User::PERMISSION_MANAGE_COURSES);
     }
 
     /**
@@ -44,7 +44,7 @@ class CoursePolicy
      */
     public function delete(User $user, Course $course): bool
     {
-        return $user->isAdmin();
+        return $user->can(User::PERMISSION_MANAGE_COURSES);
     }
 
     /**

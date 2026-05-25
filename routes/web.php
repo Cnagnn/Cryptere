@@ -146,7 +146,7 @@ Route::domain($appDomain)->middleware(['auth', 'verified'])->group(function () {
     // Story and CTF removed
 });
 
-Route::domain($appDomain)->middleware(['auth', 'verified', 'admin', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function () {
+Route::domain($appDomain)->middleware(['auth', 'verified', 'permission:access admin', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
     Route::patch('users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');

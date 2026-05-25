@@ -6,6 +6,8 @@ export type UserLevel = {
     bonus_percent: number;
 };
 
+export type RoleName = 'Super Admin' | 'Admin' | 'User';
+
 export type User = {
     id: number;
     name: string;
@@ -17,7 +19,7 @@ export type User = {
     current_streak: number;
     longest_streak: number;
     is_admin: boolean;
-    role: 'admin' | 'member';
+    role: RoleName;
     status: 'active' | 'inactive';
     bio?: string | null;
     pronoun?: string | null;

@@ -63,6 +63,15 @@ import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import { destroy, index as usersIndex, update } from '@/routes/admin/users';
 import { show as showProfile } from '@/routes/profile';
+import type { RoleName } from '@/types/auth';
+
+const ROLE_OPTIONS = ['Super Admin', 'Admin', 'User'] as const;
+
+type RoleFilter = 'all' | RoleName;
+
+function isRoleName(value: string): value is RoleName {
+    return ROLE_OPTIONS.some((role) => role === value);
+}
 
 type UserRow = {
     id: number;
@@ -71,7 +80,7 @@ type UserRow = {
     avatar: string | null;
     username: string | null;
     points: number;
-    role: 'admin' | 'member';
+    role: RoleName;
     created_at: string;
     can_delete: boolean;
 };
@@ -107,17 +116,13 @@ export default function AdminUsersIndex({ users, filters }: Props) {
     const getInitials = useInitials();
     const pointsFormatter = useMemo(() => new Intl.NumberFormat('id-ID'), []);
     const [searchInput, setSearchInput] = useState(filters.search);
-    const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'member'>(
-        filters.role === 'admin' || filters.role === 'member'
-            ? filters.role
-            : 'all',
+    const [roleFilter, setRoleFilter] = useState<RoleFilter>(
+        isRoleName(filters.role) ? filters.role : 'all',
     );
 
     const [editingUser, setEditingUser] = useState<UserRow | null>(null);
     const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
-    const [editingRole, setEditingRole] = useState<'admin' | 'member'>(
-        'member',
-    );
+    const [editingRole, setEditingRole] = useState<RoleName>('User');
     const [editingPoints, setEditingPoints] = useState('0');
     const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
     const [isSubmittingDelete, setIsSubmittingDelete] = useState(false);
@@ -127,7 +132,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
     const syncFilters = useCallback(
         (
             searchValue: string,
-            roleValue: 'all' | 'admin' | 'member',
+            roleValue: RoleFilter,
             page = 1,
             perPage = users.per_page,
         ): void => {
@@ -279,7 +284,8 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                 cell: ({ row }) => (
                     <div className="flex justify-center">
                         <Badge variant="outline" className="capitalize">
-                            {row.original.role === 'admin' ? (
+                            {row.original.role === 'Super Admin' ||
+                            row.original.role === 'Admin' ? (
                                 <Shield />
                             ) : (
                                 <UserRound />
@@ -401,9 +407,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                             <Select
                                 value={roleFilter}
                                 onValueChange={(value) =>
-                                    setRoleFilter(
-                                        value as 'all' | 'admin' | 'member',
-                                    )
+                                    setRoleFilter(value as RoleFilter)
                                 }
                             >
                                 <SelectTrigger
@@ -417,12 +421,11 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         <SelectItem value="all">
                                             All roles
                                         </SelectItem>
-                                        <SelectItem value="admin">
-                                            Admin
-                                        </SelectItem>
-                                        <SelectItem value="member">
-                                            Member
-                                        </SelectItem>
+                                        {ROLE_OPTIONS.map((role) => (
+                                            <SelectItem key={role} value={role}>
+                                                {role}
+                                            </SelectItem>
+                                        ))}
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
@@ -527,21 +530,23 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     </FieldLabel>
                                     <Select
                                         value={editingRole}
-                                        onValueChange={(
-                                            value: 'admin' | 'member',
-                                        ) => setEditingRole(value)}
+                                        onValueChange={(value) =>
+                                            setEditingRole(value as RoleName)
+                                        }
                                     >
                                         <SelectTrigger id="edit-user-role">
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectGroup>
-                                                <SelectItem value="admin">
-                                                    Admin
-                                                </SelectItem>
-                                                <SelectItem value="member">
-                                                    Member
-                                                </SelectItem>
+                                                {ROLE_OPTIONS.map((role) => (
+                                                    <SelectItem
+                                                        key={role}
+                                                        value={role}
+                                                    >
+                                                        {role}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>

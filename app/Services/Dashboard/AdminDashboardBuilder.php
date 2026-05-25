@@ -125,15 +125,16 @@ class AdminDashboardBuilder
     private function buildRecentUsers(): array
     {
         return User::query()
+            ->with('roles:id,name')
             ->latest()
             ->take(5)
-            ->get(['id', 'name', 'username', 'email', 'role', 'created_at'])
+            ->get(['id', 'name', 'username', 'email', 'created_at'])
             ->map(fn (User $u): array => [
                 'id' => $u->id,
                 'name' => $u->name,
                 'username' => $u->username,
                 'email' => $u->email,
-                'role' => $u->role,
+                'role' => $u->primaryRoleName(),
                 'createdAt' => $u->created_at?->diffForHumans(),
             ])->values()->all();
     }

@@ -1254,7 +1254,10 @@ const userColumns: ColumnDef<AdminRecentUser>[] = [
         cell: ({ row }) => (
             <Badge
                 variant={
-                    row.original.role === 'admin' ? 'default' : 'secondary'
+                    row.original.role === 'Super Admin' ||
+                    row.original.role === 'Admin'
+                        ? 'default'
+                        : 'secondary'
                 }
             >
                 {row.original.role}

@@ -17,6 +17,15 @@ class UserFactory extends Factory
      */
     protected static ?string $password;
 
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            $role = User::normalizeRoleName($user->role);
+
+            $user->syncRoles($role);
+        });
+    }
+
     /**
      * Define the model's default state.
      *
@@ -35,7 +44,7 @@ class UserFactory extends Factory
             'daily_xp_earned' => 0,
             'daily_goal_met_at' => null,
             'is_admin' => false,
-            'role' => 'member',
+            'role' => User::ROLE_USER,
             'status' => 'active',
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
@@ -51,6 +60,22 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'role' => User::ROLE_ADMIN,
+        ]);
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'role' => User::ROLE_SUPER_ADMIN,
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Course;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Course\CourseCatalogRequest;
 use App\Models\Course;
+use App\Models\User;
 use App\Services\CourseCatalogBuilder;
 use App\Services\CourseDetailBuilder;
 use Illuminate\Http\Request;
@@ -55,12 +56,12 @@ class CourseController extends Controller
         $this->authorize('view', $course);
 
         $user = $request->user();
-        $isAdmin = (bool) $user->isAdmin();
+        $canViewUnpublishedCourseContent = (bool) $user->can(User::PERMISSION_VIEW_UNPUBLISHED_COURSES);
 
         $course->load([
             'lessons' => fn ($query) => $query
                 ->with(['tasks.quizQuestions'])
-                ->when(! $isAdmin, fn ($query) => $query->published())
+                ->when(! $canViewUnpublishedCourseContent, fn ($query) => $query->published())
                 ->orderBy('position'),
         ])->loadCount('enrollments');
 
@@ -68,7 +69,7 @@ class CourseController extends Controller
             ->whereBelongsTo($course)
             ->first();
 
-        $lessons = $this->detailBuilder->buildLessons($course, $user, $isAdmin);
+        $lessons = $this->detailBuilder->buildLessons($course, $user, $canViewUnpublishedCourseContent);
         $assessmentsData = $this->detailBuilder->buildAssessments($course, $user);
 
         return Inertia::render('courses/show', [

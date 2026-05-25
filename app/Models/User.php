@@ -17,15 +17,75 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id', 'username', 'password', 'points', 'xp', 'current_streak', 'longest_streak', 'last_active_date', 'daily_xp_earned', 'daily_goal_met_at', 'ability_estimate', 'is_admin', 'role', 'status', 'bio', 'pronoun', 'location', 'profile_visibility'])]
 #[Hidden(['password', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
-    private const MANAGEMENT_FILTERABLE_ROLES = ['admin', 'member'];
+    public const ROLE_SUPER_ADMIN = 'Super Admin';
+
+    public const ROLE_ADMIN = 'Admin';
+
+    public const ROLE_USER = 'User';
+
+    public const ROLES = [
+        self::ROLE_SUPER_ADMIN,
+        self::ROLE_ADMIN,
+        self::ROLE_USER,
+    ];
+
+    public const ADMIN_ROLES = [
+        self::ROLE_SUPER_ADMIN,
+        self::ROLE_ADMIN,
+    ];
+
+    public const PERMISSION_ACCESS_ADMIN = 'access admin';
+
+    public const PERMISSION_MANAGE_USERS = 'manage users';
+
+    public const PERMISSION_VIEW_UNPUBLISHED_COURSES = 'view unpublished courses';
+
+    public const PERMISSION_MANAGE_COURSES = 'manage courses';
+
+    public const PERMISSION_PUBLISH_COURSES = 'publish courses';
+
+    public const PERMISSION_MANAGE_LESSONS = 'manage lessons';
+
+    public const PERMISSION_MANAGE_TASKS = 'manage tasks';
+
+    public const PERMISSION_VIEW_UNPUBLISHED_ASSESSMENTS = 'view unpublished assessments';
+
+    public const PERMISSION_MANAGE_ASSESSMENTS = 'manage assessments';
+
+    public const PERMISSION_MANAGE_ASSESSMENT_QUESTIONS = 'manage assessment questions';
+
+    public const PERMISSION_GRADE_SUBMISSIONS = 'grade submissions';
+
+    public const PERMISSION_MANAGE_ENROLLMENTS = 'manage enrollments';
+
+    public const PERMISSION_MANAGE_QUESTION_BANK = 'manage question bank';
+
+    public const PERMISSIONS = [
+        self::PERMISSION_ACCESS_ADMIN,
+        self::PERMISSION_MANAGE_USERS,
+        self::PERMISSION_VIEW_UNPUBLISHED_COURSES,
+        self::PERMISSION_MANAGE_COURSES,
+        self::PERMISSION_PUBLISH_COURSES,
+        self::PERMISSION_MANAGE_LESSONS,
+        self::PERMISSION_MANAGE_TASKS,
+        self::PERMISSION_VIEW_UNPUBLISHED_ASSESSMENTS,
+        self::PERMISSION_MANAGE_ASSESSMENTS,
+        self::PERMISSION_MANAGE_ASSESSMENT_QUESTIONS,
+        self::PERMISSION_GRADE_SUBMISSIONS,
+        self::PERMISSION_MANAGE_ENROLLMENTS,
+        self::PERMISSION_MANAGE_QUESTION_BANK,
+    ];
+
+    public const ADMIN_PERMISSIONS = self::PERMISSIONS;
 
     /**
      * The accessors to append to the model's array form.
@@ -71,7 +131,79 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasAnyRole(self::ADMIN_ROLES);
+    }
+
+    /**
+     * Determine whether the user can access the admin area.
+     */
+    public function canAccessAdmin(): bool
+    {
+        if (! $this->exists) {
+            return $this->isAdmin();
+        }
+
+        return $this->can(self::PERMISSION_ACCESS_ADMIN);
+    }
+
+    /**
+     * Determine whether the user has super admin access.
+     */
+    public function isSuperAdmin(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasRole(self::ROLE_SUPER_ADMIN);
+    }
+
+    /**
+     * Get the user's primary role name for display and filtering.
+     */
+    public function primaryRoleName(): string
+    {
+        if (! $this->exists) {
+            return self::ROLE_USER;
+        }
+
+        $role = $this->relationLoaded('roles')
+            ? $this->roles->first()
+            : $this->roles()->first(['name']);
+
+        return is_string($role?->name)
+            ? $role->name
+            : self::ROLE_USER;
+    }
+
+    public static function normalizeRoleName(?string $role): string
+    {
+        return match (strtolower(trim((string) $role))) {
+            'super admin', 'super-admin', 'super_admin' => self::ROLE_SUPER_ADMIN,
+            'admin' => self::ROLE_ADMIN,
+            'member', 'student', 'user' => self::ROLE_USER,
+            default => self::ROLE_USER,
+        };
+    }
+
+    public static function normalizeManagementRole(string $role): string
+    {
+        if ($role === 'all') {
+            return 'all';
+        }
+
+        return self::normalizeRoleName($role);
+    }
+
+    public static function countUsersWithRole(string $role): int
+    {
+        return self::query()
+            ->whereHas('roles', fn (Builder $query): Builder => $query->where('name', $role))
+            ->count();
     }
 
     /**
@@ -116,11 +248,11 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function scopeFilterManagementRole(Builder $query, string $role): Builder
     {
-        if (! in_array($role, self::MANAGEMENT_FILTERABLE_ROLES, true)) {
+        if (! in_array($role, self::ROLES, true)) {
             return $query;
         }
 
-        return $query->where('role', $role);
+        return $query->whereHas('roles', fn (Builder $builder): Builder => $builder->where('name', $role));
     }
 
     /**

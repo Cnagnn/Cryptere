@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ReorderAdminAssessmentQuestionsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isAdmin() === true;
+        return (bool) $this->user()?->can(User::PERMISSION_MANAGE_ASSESSMENT_QUESTIONS);
     }
 
     /**

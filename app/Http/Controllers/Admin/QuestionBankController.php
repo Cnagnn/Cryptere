@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\QuestionBank;
+use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ class QuestionBankController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorizeQuestionBank($request);
+
         $search = trim((string) $request->input('search', ''));
         $typeFilter = $request->input('question_type');
         $categoryFilter = $request->input('category');
@@ -55,6 +58,8 @@ class QuestionBankController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $this->authorizeQuestionBank($request);
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:100'],
@@ -86,6 +91,8 @@ class QuestionBankController extends Controller
      */
     public function update(Request $request, QuestionBank $questionBank): RedirectResponse
     {
+        $this->authorizeQuestionBank($request);
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:100'],
@@ -112,6 +119,8 @@ class QuestionBankController extends Controller
      */
     public function destroy(Request $request, QuestionBank $questionBank): RedirectResponse
     {
+        $this->authorizeQuestionBank($request);
+
         // Check if question is used in any assessments
         if ($questionBank->assessmentQuestions()->exists()) {
             return back()->withErrors(['error' => 'Cannot delete question that is used in assessments. Deactivate instead.']);
@@ -129,6 +138,8 @@ class QuestionBankController extends Controller
      */
     public function duplicate(Request $request, QuestionBank $questionBank): RedirectResponse
     {
+        $this->authorizeQuestionBank($request);
+
         $newQuestion = $questionBank->replicate();
         $newQuestion->title = $questionBank->title.' (Copy)';
         $newQuestion->created_by = $request->user()->id;
@@ -145,6 +156,8 @@ class QuestionBankController extends Controller
      */
     public function bulkImport(Request $request): RedirectResponse
     {
+        $this->authorizeQuestionBank($request);
+
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,json', 'max:10240'],
             'format' => ['required', 'in:csv,json'],
@@ -204,8 +217,10 @@ class QuestionBankController extends Controller
     /**
      * Show usage statistics for a question.
      */
-    public function usageStats(QuestionBank $questionBank): Response
+    public function usageStats(Request $request, QuestionBank $questionBank): Response
     {
+        $this->authorizeQuestionBank($request);
+
         $usages = $questionBank->assessmentQuestions()
             ->with('assessment:id,title,slug')
             ->get()
@@ -224,5 +239,10 @@ class QuestionBankController extends Controller
             'question' => $questionBank,
             'usages' => $usages,
         ]);
+    }
+
+    private function authorizeQuestionBank(Request $request): void
+    {
+        abort_unless((bool) $request->user()?->can(User::PERMISSION_MANAGE_QUESTION_BANK), 403);
     }
 }

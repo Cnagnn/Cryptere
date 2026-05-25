@@ -12,7 +12,7 @@ class EnrollmentPolicy
      */
     public function view(User $user, Enrollment $enrollment): bool
     {
-        return $user->id === $enrollment->user_id || $user->isAdmin();
+        return $user->id === $enrollment->user_id || $user->can(User::PERMISSION_MANAGE_ENROLLMENTS);
     }
 
     /**
@@ -28,6 +28,6 @@ class EnrollmentPolicy
      */
     public function delete(User $user, Enrollment $enrollment): bool
     {
-        return $user->isAdmin();
+        return $user->can(User::PERMISSION_MANAGE_ENROLLMENTS);
     }
 }
