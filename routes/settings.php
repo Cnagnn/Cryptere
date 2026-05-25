@@ -32,7 +32,6 @@ Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->
     });
 
     Route::controller(AvatarController::class)->prefix('avatar')->name('avatar.')->group(function () {
-        Route::patch('/', 'update')->name('update');
         Route::patch('pixabot', 'pixabot')->name('pixabot');
         Route::delete('/', 'destroy')->name('destroy');
     });

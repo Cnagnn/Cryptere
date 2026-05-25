@@ -3,26 +3,10 @@
 namespace App\Services;
 
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 class UserAvatarService
 {
-    public function store(User $user, UploadedFile $avatar): void
-    {
-        $this->delete($user);
-
-        $extension = $avatar->extension() ?: 'png';
-        $path = $avatar->storeAs("avatars/{$user->id}", "avatar.{$extension}", 'public');
-
-        $user->forceFill([
-            'avatar_path' => $path,
-            'avatar_mime_type' => $avatar->getMimeType(),
-            'avatar_image' => null,
-            'pixabot_avatar_id' => null,
-        ])->save();
-    }
-
     public function delete(User $user): void
     {
         if ($user->hasCustomAvatar() && is_string($user->avatar_path) && $user->avatar_path !== '') {

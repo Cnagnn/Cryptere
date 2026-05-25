@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 test('guest cannot access profile settings', function () {
@@ -236,23 +236,36 @@ test('admin username resolves to the public profile page', function (): void {
         );
 });
 
-test('user can upload an avatar from settings', function (): void {
-    Storage::fake('public');
+test('public profile pages are accessible to guests', function (): void {
+    $user = User::factory()->create([
+        'name' => 'Public User',
+        'username' => 'public.user',
+        'email' => 'public@example.com',
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->get(route('profile.show', $user->username))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('profile/show')
+            ->where('isOwner', false)
+            ->where('isPrivate', false)
+            ->where('profileUser.username', 'public.user')
+            ->where('profileUser.name', 'Public User')
+            ->where('profileUser.email', null)
+        );
+});
+
+test('nested profile settings url redirects to the canonical settings page', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->post(route('settings.avatar.update'), [
-            '_method' => 'PATCH',
-            'avatar' => UploadedFile::fake()->image('avatar.png', 256, 256),
-        ])
+        ->get('/profile/settings/profile')
         ->assertRedirect(route('settings.profile.edit'));
+});
 
-    $user->refresh();
-
-    expect($user->avatar_path)->not->toBeNull()
-        ->and($user->avatar_mime_type)->toBe('image/png');
-
-    Storage::disk('public')->assertExists($user->avatar_path);
+test('avatar file upload route is not registered', function (): void {
+    expect(Route::has('settings.avatar.update'))->toBeFalse();
 });
 
 test('profile settings exposes pixabot avatar choices', function (): void {

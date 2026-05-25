@@ -24,6 +24,7 @@ use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Models\Assessment;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -214,6 +215,8 @@ Route::domain($appDomain)->group(base_path('routes/settings.php'));
 
 // Profile pages — defined after settings.php so /profile/admin is matched first
 Route::domain($appDomain)->middleware(['auth', 'verified'])->group(function () {
+    Route::get('profile/settings/profile', fn (): RedirectResponse => redirect()->route('settings.profile.edit'));
     Route::get('profile', [ProfileController::class, 'showOwn'])->name('profile.show.own');
-    Route::get('profile/{user:username}', [ProfileController::class, 'show'])->name('profile.show');
 });
+
+Route::domain($appDomain)->get('profile/{user:username}', [ProfileController::class, 'show'])->name('profile.show');

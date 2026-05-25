@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import {
     destroy,
     pixabot,
-    update,
 } from '@/actions/App/Http/Controllers/Settings/AvatarController';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -52,8 +51,7 @@ export function AvatarSettingsCard({
             <CardHeader>
                 <CardTitle>Avatar</CardTitle>
                 <CardDescription>
-                    Choose a Pixabots character for your profile. Custom
-                    uploads are still available when you need one.
+                    Choose a Pixabots character for your profile.
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -148,47 +146,6 @@ export function AvatarSettingsCard({
                         </Button>
                     )}
                 </div>
-
-                <Form
-                    action={update.url()}
-                    method="patch"
-                    encType="multipart/form-data"
-                    resetOnSuccess={['avatar']}
-                    className="grid gap-3"
-                >
-                    {({ errors, processing, recentlySuccessful }) => (
-                        <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="avatar">Avatar image</Label>
-                                <Input
-                                    id="avatar"
-                                    name="avatar"
-                                    type="file"
-                                    accept={
-                                        avatarOptions.extension === 'webp'
-                                            ? 'image/jpeg,image/png,image/webp'
-                                            : 'image/jpeg,image/png'
-                                    }
-                                />
-                                {errors.avatar && (
-                                    <p className="text-sm text-destructive">
-                                        {errors.avatar}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="flex items-center justify-end gap-3">
-                                {recentlySuccessful && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Uploaded.
-                                    </p>
-                                )}
-                                <Button type="submit" disabled={processing}>
-                                    Upload avatar
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </Form>
 
                 {profileUser.has_custom_avatar && (
                     <Form action={destroy.url()} method="delete">
