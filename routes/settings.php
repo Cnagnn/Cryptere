@@ -1,11 +1,10 @@
 <?php
 
-use App\Http\Controllers\Settings\AppearanceController;
 use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Settings\SocialAccountController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,17 +18,17 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->group(function () {
+    $redirectToProfileSettings = fn (Request $request) => redirect()->route('profile.settings', $request->user()->username);
+
     /*
     |----------------------------------------------------------------------
     | Profile Settings
     |----------------------------------------------------------------------
     | Routes for viewing and managing user profile information
     */
-    Route::controller(ProfileController::class)->prefix('profile')->name('profile.')->group(function () {
-        Route::get('/', 'edit')->name('edit');
-        Route::patch('/', 'update')->name('update');
-        Route::delete('/', 'destroy')->name('destroy');
-    });
+    Route::get('profile', $redirectToProfileSettings)->name('profile.edit');
+    Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::controller(AvatarController::class)->prefix('avatar')->name('avatar.')->group(function () {
         Route::patch('pixabot', 'pixabot')->name('pixabot');
@@ -42,9 +41,7 @@ Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->
     |----------------------------------------------------------------------
     | Routes for password management and two-factor authentication
     */
-    Route::controller(SecurityController::class)->prefix('security')->name('security.')->group(function () {
-        Route::get('/', 'edit')->name('edit');
-    });
+    Route::get('security', $redirectToProfileSettings)->name('security.edit');
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
@@ -54,10 +51,8 @@ Route::middleware(['auth', 'verified'])->prefix('settings')->name('settings.')->
     |----------------------------------------------------------------------
     | Routes for managing connected social authentication accounts
     */
-    Route::controller(SocialAccountController::class)->prefix('social-accounts')->name('social-accounts.')->group(function () {
-        Route::get('/', 'edit')->name('edit');
-        Route::delete('{socialAccount}', 'destroy')->name('destroy');
-    });
+    Route::get('social-accounts', $redirectToProfileSettings)->name('social-accounts.edit');
+    Route::delete('social-accounts/{socialAccount}', [SocialAccountController::class, 'destroy'])->name('social-accounts.destroy');
 
-    Route::get('appearance', AppearanceController::class)->name('appearance.edit');
+    Route::get('appearance', $redirectToProfileSettings)->name('appearance.edit');
 });

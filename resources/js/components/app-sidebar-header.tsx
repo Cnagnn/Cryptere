@@ -48,10 +48,6 @@ import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex, show as labsShow } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 import { own as profileOwn } from '@/routes/profile/show';
-import { edit as appearanceEdit } from '@/routes/settings/appearance';
-import { edit as profileEdit } from '@/routes/settings/profile';
-import { edit as securityEdit } from '@/routes/settings/security';
-import { edit as socialAccountsEdit } from '@/routes/settings/social-accounts';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import type { Auth } from '@/types/auth';
 
@@ -167,25 +163,25 @@ const accountItems: CommandMenuItem[] = [
     {
         title: 'Profile Settings',
         description: 'Update your account profile and avatar.',
-        url: profileEdit.url(),
+        url: profileOwn.url({ query: { tab: 'settings' } }),
         icon: Settings,
     },
     {
         title: 'Security Settings',
         description: 'Manage password and two-factor authentication.',
-        url: securityEdit.url(),
+        url: profileOwn.url({ query: { tab: 'settings' } }),
         icon: ShieldCheck,
     },
     {
         title: 'Connected Accounts',
         description: 'Manage Google, GitHub, and other social links.',
-        url: socialAccountsEdit.url(),
+        url: profileOwn.url({ query: { tab: 'settings' } }),
         icon: KeyRound,
     },
     {
         title: 'Appearance Settings',
         description: 'Change theme and display preferences.',
-        url: appearanceEdit.url(),
+        url: profileOwn.url({ query: { tab: 'settings' } }),
         icon: Palette,
     },
 ];

@@ -52,8 +52,10 @@ import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
-import { show as profileShow } from '@/routes/profile';
-import { edit as settingsProfileEdit } from '@/routes/settings/profile';
+import {
+    settings as profileSettings,
+    show as profileShow,
+} from '@/routes/profile';
 import type { NavItem } from '@/types';
 import type { Auth, User as UserType } from '@/types/auth';
 
@@ -184,7 +186,11 @@ export function UserMenuContent({ user }: { user: UserType }) {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <Link href={settingsProfileEdit.url()}>
+                    <Link
+                        href={profileSettings.url({
+                            user: user.username ?? String(user.id),
+                        })}
+                    >
                         <Settings className="mr-2 size-4" />
                         <span>Settings</span>
                     </Link>
@@ -207,18 +213,18 @@ export function AppSidebar() {
     const { state } = useSidebar();
     const isCollapsed = state === 'collapsed';
 
-    const isCourseManagementPage = isCurrentUrl(
-        adminCoursesIndex(),
-        undefined,
-        true,
-    ) || isCurrentUrl(adminQuestionBankIndex());
+    const isCourseManagementPage =
+        isCurrentUrl(adminCoursesIndex(), undefined, true) ||
+        isCurrentUrl(adminQuestionBankIndex());
 
     const isOnCoursesPath = isCurrentUrl(adminCoursesIndex(), undefined, true);
     const currentSection = isOnCoursesPath
-        ? (new URLSearchParams(page.url.split('?')[1] ?? '').get('section') ?? 'catalog')
+        ? (new URLSearchParams(page.url.split('?')[1] ?? '').get('section') ??
+          'catalog')
         : null;
     const isCoursesActive = isOnCoursesPath && currentSection !== 'assessment';
-    const isAssessmentActive = isOnCoursesPath && currentSection === 'assessment';
+    const isAssessmentActive =
+        isOnCoursesPath && currentSection === 'assessment';
     const isQuestionBankActive = isCurrentUrl(adminQuestionBankIndex());
 
     return (
@@ -342,7 +348,9 @@ export function AppSidebar() {
                                     <SidebarMenuItem>
                                         <CollapsibleTrigger asChild>
                                             <SidebarMenuButton
-                                                isActive={isCourseManagementPage}
+                                                isActive={
+                                                    isCourseManagementPage
+                                                }
                                                 tooltip={{
                                                     children: 'Courses',
                                                 }}
@@ -358,12 +366,19 @@ export function AppSidebar() {
                                                 <SidebarMenuSubItem>
                                                     <SidebarMenuSubButton
                                                         asChild
-                                                        isActive={isCoursesActive}
+                                                        isActive={
+                                                            isCoursesActive
+                                                        }
                                                     >
                                                         <Link
-                                                            href={adminCoursesIndex.url({
-                                                                query: { section: 'catalog' },
-                                                            })}
+                                                            href={adminCoursesIndex.url(
+                                                                {
+                                                                    query: {
+                                                                        section:
+                                                                            'catalog',
+                                                                    },
+                                                                },
+                                                            )}
                                                             prefetch
                                                         >
                                                             <span>Courses</span>
@@ -373,28 +388,41 @@ export function AppSidebar() {
                                                 <SidebarMenuSubItem>
                                                     <SidebarMenuSubButton
                                                         asChild
-                                                        isActive={isAssessmentActive}
+                                                        isActive={
+                                                            isAssessmentActive
+                                                        }
                                                     >
                                                         <Link
-                                                            href={adminCoursesIndex.url({
-                                                                query: { section: 'assessment' },
-                                                            })}
+                                                            href={adminCoursesIndex.url(
+                                                                {
+                                                                    query: {
+                                                                        section:
+                                                                            'assessment',
+                                                                    },
+                                                                },
+                                                            )}
                                                             prefetch
                                                         >
-                                                            <span>Assessment</span>
+                                                            <span>
+                                                                Assessment
+                                                            </span>
                                                         </Link>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>
                                                 <SidebarMenuSubItem>
                                                     <SidebarMenuSubButton
                                                         asChild
-                                                        isActive={isQuestionBankActive}
+                                                        isActive={
+                                                            isQuestionBankActive
+                                                        }
                                                     >
                                                         <Link
                                                             href={adminQuestionBankIndex.url()}
                                                             prefetch
                                                         >
-                                                            <span>Question Bank</span>
+                                                            <span>
+                                                                Question Bank
+                                                            </span>
                                                         </Link>
                                                     </SidebarMenuSubButton>
                                                 </SidebarMenuSubItem>

@@ -7,13 +7,10 @@ test('guest cannot access appearance settings', function (): void {
         ->assertRedirect(route('login'));
 });
 
-test('authenticated user can view appearance settings', function (): void {
+test('authenticated user is redirected from old appearance settings page to profile settings tab', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('settings.appearance.edit'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/appearance')
-        );
+        ->assertRedirect(route('profile.settings', $user->username));
 });

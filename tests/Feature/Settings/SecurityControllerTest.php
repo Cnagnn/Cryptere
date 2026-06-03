@@ -8,14 +8,12 @@ test('guest cannot access security settings', function () {
         ->assertRedirect(route('login'));
 });
 
-test('authenticated user can access security settings', function () {
+test('authenticated user is redirected from old security settings page to profile settings tab', function () {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)
-        ->get(route('settings.security.edit'));
-
-    // Route may require password confirmation — either 200 or redirect to confirm
-    expect($response->status())->toBeIn([200, 302]);
+    $this->actingAs($user)
+        ->get(route('settings.security.edit'))
+        ->assertRedirect(route('profile.settings', $user->username));
 });
 
 test('user can update password from security settings', function (): void {
@@ -27,7 +25,7 @@ test('user can update password from security settings', function (): void {
             'password' => 'NewPassword123!',
             'password_confirmation' => 'NewPassword123!',
         ])
-        ->assertRedirect(route('settings.security.edit'));
+        ->assertRedirect(route('profile.settings', $user->username));
 
     expect(Hash::check('NewPassword123!', $user->fresh()->password))->toBeTrue();
 });

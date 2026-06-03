@@ -1,0 +1,2 @@
+#!/bin/zsh
+export PATH="/home/cnagn/.config/FlyEnv/app/static-php-8.4.21:/home/cnagn/.config/FlyEnv/app/static-php-8.4.21/bin:/home/cnagn/.config/FlyEnv/app/static-php-8.4.21/sbin:$PATH" #FlyEnv-ID-hIMKbyPtlrOshO9BpNV5jQzT2oU5zjvY

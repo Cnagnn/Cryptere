@@ -20,6 +20,6 @@ class PasswordController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 
-        return to_route('settings.security.edit');
+        return to_route('profile.settings', $request->user()->username);
     }
 }

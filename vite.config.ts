@@ -14,6 +14,12 @@ export default defineConfig({
     build: {
         sourcemap: enableSourceMap ? 'hidden' : false,
     },
+    server: {
+        host: '127.0.0.1',
+        hmr: {
+            host: '127.0.0.1',
+        },
+    },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],

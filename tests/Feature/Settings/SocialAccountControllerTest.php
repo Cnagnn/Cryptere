@@ -9,17 +9,12 @@ test('guest cannot access social accounts settings', function () {
         ->assertRedirect(route('login'));
 });
 
-test('authenticated user can view social accounts', function () {
+test('authenticated user is redirected from old social accounts settings page to profile settings tab', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('settings.social-accounts.edit'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/social-accounts')
-            ->has('socialAccounts')
-            ->has('hasPassword')
-        );
+        ->assertRedirect(route('profile.settings', $user->username));
 });
 
 test('user can disconnect social account when they have password', function () {
@@ -28,7 +23,7 @@ test('user can disconnect social account when they have password', function () {
 
     $this->actingAs($user)
         ->delete(route('settings.social-accounts.destroy', $social))
-        ->assertRedirect(route('settings.social-accounts.edit'));
+        ->assertRedirect(route('profile.settings', $user->username));
 
     expect(SocialAccount::find($social->id))->toBeNull();
 });

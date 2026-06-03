@@ -215,8 +215,9 @@ Route::domain($appDomain)->group(base_path('routes/settings.php'));
 
 // Profile pages — defined after settings.php so /profile/admin is matched first
 Route::domain($appDomain)->middleware(['auth', 'verified'])->group(function () {
-    Route::get('profile/settings/profile', fn (): RedirectResponse => redirect()->route('settings.profile.edit'));
+    Route::get('profile/settings/profile', fn (Request $request): RedirectResponse => redirect()->route('profile.settings', $request->user()->username));
     Route::get('profile', [ProfileController::class, 'showOwn'])->name('profile.show.own');
+    Route::get('profile/{user:username}/settings', [ProfileController::class, 'settings'])->name('profile.settings');
 });
 
 Route::domain($appDomain)->get('profile/{user:username}', [ProfileController::class, 'show'])->name('profile.show');

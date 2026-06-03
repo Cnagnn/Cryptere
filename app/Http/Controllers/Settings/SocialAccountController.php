@@ -7,24 +7,9 @@ use App\Models\SocialAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class SocialAccountController extends Controller
 {
-    /**
-     * Show the user's connected social accounts.
-     */
-    public function edit(Request $request): Response
-    {
-        return Inertia::render('settings/social-accounts', [
-            'socialAccounts' => $request->user()
-                ->socialAccounts()
-                ->select('id', 'provider', 'provider_email', 'provider_name', 'created_at')
-                ->get(),
-            'hasPassword' => $this->userHasUsablePassword($request->user()),
-        ]);
-    }
-
     /**
      * Disconnect a social account from the user's profile.
      */
@@ -47,7 +32,7 @@ class SocialAccountController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$providerName} account disconnected."]);
 
-        return to_route('settings.social-accounts.edit');
+        return to_route('profile.settings', $user->username);
     }
 
     /**

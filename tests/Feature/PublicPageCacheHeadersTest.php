@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 
 beforeEach(function (): void {
     Config::set('app.domains.public', 'cryptere.com');
@@ -58,4 +59,33 @@ test('security policy allows production font styles without relaxing scripts', f
         ->toContain("style-src-attr 'unsafe-inline'")
         ->toContain('https://fonts.gstatic.com')
         ->toContain('https://deifkwefumgah.cloudfront.net');
+});
+
+test('vite hot reload tags receive the active csp nonce', function (): void {
+    File::put(public_path('hot'), 'http://127.0.0.1:5173');
+
+    try {
+        $response = $this->get('https://cryptere.com/');
+    } finally {
+        File::delete(public_path('hot'));
+    }
+
+    $response->assertOk();
+
+    $policy = (string) $response->headers->get('Content-Security-Policy');
+
+    preg_match("/script-src 'self' 'nonce-([^']+)'/", $policy, $matches);
+
+    expect($matches[1] ?? null)->not->toBeNull();
+
+    $nonce = $matches[1];
+
+    expect($policy)
+        ->toContain("style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com")
+        ->toContain('http://127.0.0.1:5173')
+        ->and($response->content())
+        ->toContain('<script type="module" nonce="'.$nonce.'">')
+        ->toContain('src="http://127.0.0.1:5173/@vite/client" nonce="'.$nonce.'"')
+        ->toContain('href="http://127.0.0.1:5173/resources/css/app.css" nonce="'.$nonce.'"')
+        ->toContain('src="http://127.0.0.1:5173/resources/js/app.tsx" nonce="'.$nonce.'"');
 });

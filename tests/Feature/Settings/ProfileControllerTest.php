@@ -9,20 +9,12 @@ test('guest cannot access profile settings', function () {
         ->assertRedirect(route('login'));
 });
 
-test('authenticated user can view profile settings', function () {
+test('authenticated user is redirected from old profile settings page to profile settings tab', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('settings.profile.edit'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/profile')
-            ->has('mustVerifyEmail')
-            ->has('profileUser')
-            ->has('badges')
-            ->has('socialAccounts')
-            ->has('hasPassword')
-        );
+        ->assertRedirect(route('profile.settings', $user->username));
 });
 
 test('user can update profile information', function () {
@@ -35,7 +27,7 @@ test('user can update profile information', function () {
             'email' => 'newemail@example.com',
             'profile_visibility' => $user->profile_visibility ?? 'private',
         ])
-        ->assertRedirect(route('settings.profile.edit'));
+        ->assertRedirect(route('profile.settings', $user->username));
 
     $user->refresh();
     expect($user->name)->toBe('Updated Name')
@@ -83,7 +75,7 @@ test('profile update requires valid data', function () {
         ->assertSessionHasErrors(['name', 'email', 'username', 'profile_visibility']);
 });
 
-test('profile settings exposes complete account settings contract', function (): void {
+test('own profile settings page exposes complete account settings contract', function (): void {
     $user = User::factory()->create([
         'name' => 'Ada Lovelace',
         'username' => 'ada.crypto',
@@ -94,10 +86,11 @@ test('profile settings exposes complete account settings contract', function ():
     ]);
 
     $this->actingAs($user)
-        ->get(route('settings.profile.edit'))
+        ->get(route('profile.settings', $user->username))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('settings/profile')
+            ->component('profile/settings')
+            ->where('isOwner', true)
             ->where('profileUser.name', 'Ada Lovelace')
             ->where('profileUser.username', 'ada.crypto')
             ->where('profileUser.bio', 'Learning cryptography.')
@@ -130,7 +123,7 @@ test('user can update profile username and public fields', function (): void {
             'location' => 'Jakarta',
             'profile_visibility' => 'public',
         ])
-        ->assertRedirect(route('settings.profile.edit'));
+        ->assertRedirect(route('profile.settings', 'updated.name'));
 
     $user->refresh();
 
@@ -155,7 +148,7 @@ test('profile update stores username in lowercase', function (): void {
             'email' => $user->email,
             'profile_visibility' => 'private',
         ])
-        ->assertRedirect(route('settings.profile.edit'));
+        ->assertRedirect(route('profile.settings', 'updated.name'));
 
     expect($user->fresh()->username)->toBe('updated.name');
 });
@@ -218,6 +211,48 @@ test('private profile hides owner only fields from other users', function (): vo
         );
 });
 
+test('private profile is visible to its owner', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'private.owner',
+        'email' => 'owner@example.com',
+        'bio' => 'Owner only bio',
+        'profile_visibility' => 'private',
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('profile.show', $owner->username))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('profile/show')
+            ->where('isOwner', true)
+            ->where('isPrivate', false)
+            ->where('profileUser.email', 'owner@example.com')
+            ->where('profileUser.bio', 'Owner only bio')
+        );
+});
+
+test('profile settings page is only visible to its owner', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'settings.owner',
+        'profile_visibility' => 'public',
+    ]);
+    $viewer = User::factory()->create();
+
+    $this->actingAs($viewer)
+        ->get(route('profile.settings', $owner->username))
+        ->assertForbidden();
+});
+
+test('guests are redirected from profile settings page', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'settings.guest',
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->get(route('profile.settings', $owner->username))
+        ->assertRedirect(route('login'));
+});
+
 test('admin username resolves to the public profile page', function (): void {
     $admin = User::factory()->create([
         'name' => 'Site Admin',
@@ -256,12 +291,12 @@ test('public profile pages are accessible to guests', function (): void {
         );
 });
 
-test('nested profile settings url redirects to the canonical settings page', function (): void {
+test('nested profile settings url redirects to the profile settings tab', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get('/profile/settings/profile')
-        ->assertRedirect(route('settings.profile.edit'));
+        ->assertRedirect(route('profile.settings', $user->username));
 });
 
 test('avatar file upload route is not registered', function (): void {
@@ -272,9 +307,10 @@ test('profile settings exposes pixabot avatar choices', function (): void {
     $user = User::factory()->create(['role' => 'member']);
 
     $this->actingAs($user)
-        ->get(route('settings.profile.edit'))
+        ->get(route('profile.settings', $user->username))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
+            ->component('profile/settings')
             ->has('avatarOptions.ids')
             ->where('avatarOptions.baseUrl', asset('avatars/pixabots/png/480'))
             ->where('avatarOptions.extension', 'png')
@@ -289,7 +325,7 @@ test('member can select a static png pixabot avatar from settings', function ():
         ->patch(route('settings.avatar.pixabot'), [
             'pixabot_avatar_id' => '4411',
         ])
-        ->assertRedirect(route('settings.profile.edit'));
+        ->assertRedirect(route('profile.settings', $user->username));
 
     $user->refresh();
 
@@ -301,9 +337,10 @@ test('admin pixabot avatar choices use png', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true, 'pixabot_avatar_id' => '4411']);
 
     $this->actingAs($admin)
-        ->get(route('settings.profile.edit'))
+        ->get(route('profile.settings', $admin->username))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
+            ->component('profile/settings')
             ->where('avatarOptions.baseUrl', asset('avatars/pixabots/png/480'))
             ->where('avatarOptions.extension', 'png')
             ->where('profileUser.avatar', fn (?string $avatar): bool => str_contains($avatar ?? '', '/avatars/pixabots/png/480/4411.png'))
@@ -320,7 +357,7 @@ test('user can remove their avatar from settings', function (): void {
 
     $this->actingAs($user)
         ->delete(route('settings.avatar.destroy'))
-        ->assertRedirect(route('settings.profile.edit'));
+        ->assertRedirect(route('profile.settings', $user->username));
 
     $user->refresh();
 

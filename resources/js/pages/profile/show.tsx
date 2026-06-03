@@ -1,13 +1,22 @@
 import { Head } from '@inertiajs/react';
-import { Lock } from 'lucide-react';
+import { Lock, Plus, Sparkles } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ProfileBadges } from '@/features/profile/profile-badges';
 import { ProfileOverviewCard } from '@/features/profile/profile-overview-card';
+import { ProfileShell } from '@/features/profile/profile-shell';
 import { useInitials } from '@/hooks/use-initials';
-import { edit as settingsProfileEdit } from '@/routes/settings/profile';
+import { settings as profileSettings } from '@/routes/profile';
 import type { ProfileBadge, ProfileUser } from '@/types/profile';
 
 type Props = {
@@ -17,6 +26,7 @@ type Props = {
     badges: ProfileBadge[];
     mustVerifyEmail?: boolean;
     status?: string;
+    profileUrl?: string;
 };
 
 export default function ProfileShow({
@@ -24,8 +34,12 @@ export default function ProfileShow({
     isOwner,
     isPrivate,
     badges,
+    profileUrl,
 }: Props) {
     const pageTitle = isOwner ? 'Profil Saya' : `Profil ${profileUser.name}`;
+    const settingsHref = profileUser.username
+        ? profileSettings.url(profileUser.username)
+        : undefined;
 
     if (isPrivate) {
         return (
@@ -42,29 +56,99 @@ export default function ProfileShow({
         <>
             <Head title={pageTitle} />
 
-            <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-4 sm:px-6 lg:px-8">
+            <ProfileShell
+                profileUser={profileUser}
+                isOwner={isOwner}
+                active="profile"
+            >
                 <div className="grid gap-6 lg:grid-cols-10">
                     <div className="lg:col-span-3">
                         <ProfileOverviewCard
                             profileUser={profileUser}
                             isOwner={isOwner}
-                            editHref={settingsProfileEdit.url()}
+                            editHref={settingsHref}
+                            profileUrl={profileUrl}
                         />
                     </div>
 
-                    <div className="lg:col-span-7">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Lencana</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ProfileBadges badges={badges} />
-                            </CardContent>
-                        </Card>
+                    <div className="flex flex-col gap-6 lg:col-span-7">
+                        <ProfileContent badges={badges} />
+                        <ProfileInterests badges={badges} />
                     </div>
                 </div>
-            </div>
+            </ProfileShell>
         </>
+    );
+}
+
+function ProfileContent({ badges }: { badges: ProfileBadge[] }) {
+    return (
+        <Card className="border-0 bg-background/95 shadow-sm">
+            <CardHeader className="flex-row items-center justify-between gap-4">
+                <div>
+                    <CardTitle>Badges</CardTitle>
+                    <CardDescription>
+                        Earned milestones and learning achievements.
+                    </CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <ProfileBadges badges={badges} />
+            </CardContent>
+        </Card>
+    );
+}
+
+function ProfileInterests({ badges }: { badges: ProfileBadge[] }) {
+    const categories = Array.from(
+        new Set(badges.map((badge) => badge.category)),
+    )
+        .filter(Boolean)
+        .slice(0, 5);
+
+    return (
+        <Card className="border-0 bg-foreground text-background shadow-xl">
+            <CardContent className="flex flex-col gap-5 p-7 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-background text-foreground">
+                        <Sparkles />
+                    </div>
+                    <div className="grid gap-2">
+                        <h2 className="text-2xl font-semibold">
+                            Your crypto interests
+                        </h2>
+                        <div className="flex flex-wrap gap-2">
+                            {categories.length > 0 ? (
+                                categories.map((category) => (
+                                    <Badge
+                                        key={category}
+                                        className="bg-background text-foreground"
+                                    >
+                                        {category}
+                                    </Badge>
+                                ))
+                            ) : (
+                                <p className="text-sm text-background/70">
+                                    Complete courses and labs to shape this
+                                    profile.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-full"
+                    disabled
+                >
+                    <Plus data-icon="inline-start" />
+                    Add interests
+                </Button>
+            </CardContent>
+        </Card>
     );
 }
 

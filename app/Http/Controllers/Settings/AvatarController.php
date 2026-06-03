@@ -18,7 +18,7 @@ class AvatarController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Avatar removed.')]);
 
-        return to_route('settings.profile.edit');
+        return to_route('profile.settings', $request->user()->username);
     }
 
     public function pixabot(Request $request, UserAvatarService $avatars, PixabotAvatarService $pixabots): RedirectResponse
@@ -39,6 +39,6 @@ class AvatarController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Avatar updated.')]);
 
-        return to_route('settings.profile.edit');
+        return to_route('profile.settings', $request->user()->username);
     }
 }
