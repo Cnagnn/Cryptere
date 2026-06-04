@@ -1,4 +1,5 @@
 import { Form } from '@inertiajs/react';
+import { Globe2, Lock } from 'lucide-react';
 import { useState } from 'react';
 
 import { update } from '@/actions/App/Http/Controllers/Settings/ProfileController';
@@ -12,14 +13,8 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import type { ProfileUser, ProfileVisibility } from '@/types/profile';
 
 export function ProfileSettingsForm({
@@ -33,11 +28,12 @@ export function ProfileSettingsForm({
     const [username, setUsername] = useState(profileUser.username ?? '');
 
     return (
-        <Card id="edit-profile">
+        <Card>
             <CardHeader>
-                <CardTitle>Edit Profile</CardTitle>
+                <CardTitle>Profile details</CardTitle>
                 <CardDescription>
-                    Update the public information shown on your profile.
+                    Control who can view your profile and update the information
+                    shown there.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -49,41 +45,78 @@ export function ProfileSettingsForm({
                 >
                     {({ errors, processing, recentlySuccessful }) => (
                         <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Display name</Label>
-                                <Input
-                                    id="name"
-                                    name="name"
-                                    defaultValue={profileUser.name}
-                                    autoComplete="name"
+                            <fieldset className="grid gap-3">
+                                <legend className="text-sm font-medium">
+                                    Profile visibility
+                                </legend>
+                                <input
+                                    type="hidden"
+                                    name="profile_visibility"
+                                    value={visibility}
                                 />
-                                {errors.name && (
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <VisibilityChoice
+                                        title="Public profile"
+                                        description="Anyone can view your profile and find it in search."
+                                        icon={Globe2}
+                                        selected={visibility === 'public'}
+                                        onClick={() => setVisibility('public')}
+                                    />
+                                    <VisibilityChoice
+                                        title="Private profile"
+                                        description="Only you can view your complete profile."
+                                        icon={Lock}
+                                        selected={visibility === 'private'}
+                                        onClick={() => setVisibility('private')}
+                                    />
+                                </div>
+                                {errors.profile_visibility && (
                                     <p className="text-sm text-destructive">
-                                        {errors.name}
+                                        {errors.profile_visibility}
                                     </p>
                                 )}
-                            </div>
+                            </fieldset>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="username">Username</Label>
-                                <Input
-                                    id="username"
-                                    name="username"
-                                    value={username}
-                                    onChange={(event) =>
-                                        setUsername(
-                                            event.currentTarget.value
-                                                .replace(/[^a-zA-Z0-9._]/g, '')
-                                                .toLowerCase(),
-                                        )
-                                    }
-                                    autoComplete="username"
-                                />
-                                {errors.username && (
-                                    <p className="text-sm text-destructive">
-                                        {errors.username}
-                                    </p>
-                                )}
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="name">Display name</Label>
+                                    <Input
+                                        id="name"
+                                        name="name"
+                                        defaultValue={profileUser.name}
+                                        autoComplete="name"
+                                    />
+                                    {errors.name && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.name}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="username">Username</Label>
+                                    <Input
+                                        id="username"
+                                        name="username"
+                                        value={username}
+                                        onChange={(event) =>
+                                            setUsername(
+                                                event.currentTarget.value
+                                                    .replace(
+                                                        /[^a-zA-Z0-9._]/g,
+                                                        '',
+                                                    )
+                                                    .toLowerCase(),
+                                            )
+                                        }
+                                        autoComplete="username"
+                                    />
+                                    {errors.username && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.username}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="grid gap-2">
@@ -151,45 +184,6 @@ export function ProfileSettingsForm({
                                 </div>
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="profile_visibility">
-                                    Profile visibility
-                                </Label>
-                                <input
-                                    type="hidden"
-                                    name="profile_visibility"
-                                    value={visibility}
-                                />
-                                <Select
-                                    value={visibility}
-                                    onValueChange={(value) => {
-                                        if (
-                                            value === 'public' ||
-                                            value === 'private'
-                                        ) {
-                                            setVisibility(value);
-                                        }
-                                    }}
-                                >
-                                    <SelectTrigger id="profile_visibility">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="public">
-                                            Public
-                                        </SelectItem>
-                                        <SelectItem value="private">
-                                            Private
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {errors.profile_visibility && (
-                                    <p className="text-sm text-destructive">
-                                        {errors.profile_visibility}
-                                    </p>
-                                )}
-                            </div>
-
                             <div className="flex items-center justify-end gap-3">
                                 {recentlySuccessful && (
                                     <p className="text-sm text-muted-foreground">
@@ -205,5 +199,48 @@ export function ProfileSettingsForm({
                 </Form>
             </CardContent>
         </Card>
+    );
+}
+
+function VisibilityChoice({
+    title,
+    description,
+    icon: Icon,
+    selected,
+    onClick,
+}: {
+    title: string;
+    description: string;
+    icon: typeof Globe2;
+    selected: boolean;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            aria-pressed={selected}
+            onClick={onClick}
+            className={cn(
+                'flex min-h-28 items-start gap-3 rounded-lg border p-4 text-left transition-colors',
+                selected
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'border-border hover:bg-muted/50',
+            )}
+        >
+            <span
+                className={cn(
+                    'flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted',
+                    selected && 'bg-primary text-primary-foreground',
+                )}
+            >
+                <Icon className="size-4" />
+            </span>
+            <span className="grid gap-1">
+                <span className="font-medium">{title}</span>
+                <span className="text-xs leading-relaxed text-muted-foreground">
+                    {description}
+                </span>
+            </span>
+        </button>
     );
 }

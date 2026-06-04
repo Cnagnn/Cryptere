@@ -25,47 +25,41 @@ export function ProfileShell({
     const username = profileUser.username ?? '';
 
     return (
-        <div className="mx-auto w-full max-w-7xl px-4 pt-6 pb-8 sm:px-6 lg:px-8">
-            <section className="min-h-[calc(100vh-8rem)] rounded-[2rem] bg-muted px-4 py-8 sm:px-6 lg:px-10">
-                <div className="flex flex-col gap-8">
-                    <div className="flex justify-center">
-                        <nav
-                            aria-label="Profile sections"
-                            className="inline-flex rounded-full bg-foreground p-2 text-background shadow-lg"
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mb-6 flex items-center justify-between gap-4 border-b">
+                <nav
+                    aria-label="Profile sections"
+                    className="flex min-w-0 items-center gap-1"
+                >
+                    <Button
+                        asChild
+                        variant="ghost"
+                        className="h-11 rounded-none border-b-2 border-transparent px-3 data-[active=true]:border-primary data-[active=true]:text-foreground"
+                        data-active={active === 'profile'}
+                    >
+                        <Link href={profileShow.url(username)}>
+                            <User data-icon="inline-start" />
+                            Profile
+                        </Link>
+                    </Button>
+
+                    {isOwner && (
+                        <Button
+                            asChild
+                            variant="ghost"
+                            className="h-11 rounded-none border-b-2 border-transparent px-3 data-[active=true]:border-primary data-[active=true]:text-foreground"
+                            data-active={active === 'settings'}
                         >
-                            <Button
-                                asChild
-                                variant="ghost"
-                                size="sm"
-                                className="rounded-full px-4 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
-                                data-active={active === 'profile'}
-                            >
-                                <Link href={profileShow.url(username)}>
-                                    <User data-icon="inline-start" />
-                                    Profile
-                                </Link>
-                            </Button>
+                            <Link href={profileSettings.url(username)}>
+                                <Settings data-icon="inline-start" />
+                                Settings
+                            </Link>
+                        </Button>
+                    )}
+                </nav>
+            </div>
 
-                            {isOwner && (
-                                <Button
-                                    asChild
-                                    variant="ghost"
-                                    size="sm"
-                                    className="rounded-full px-4 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
-                                    data-active={active === 'settings'}
-                                >
-                                    <Link href={profileSettings.url(username)}>
-                                        <Settings data-icon="inline-start" />
-                                        Settings
-                                    </Link>
-                                </Button>
-                            )}
-                        </nav>
-                    </div>
-
-                    {children}
-                </div>
-            </section>
+            <main>{children}</main>
         </div>
     );
 }

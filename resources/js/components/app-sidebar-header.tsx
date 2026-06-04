@@ -6,7 +6,6 @@ import {
     FlaskConical,
     KeyRound,
     LayoutGrid,
-    Palette,
     Search,
     Settings,
     ShieldCheck,
@@ -47,9 +46,12 @@ import {
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex, show as labsShow } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
-import { own as profileOwn } from '@/routes/profile/show';
+import {
+    settings as profileSettings,
+    show as profileShow,
+} from '@/routes/profile';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
-import type { Auth } from '@/types/auth';
+import type { Auth, User as UserType } from '@/types/auth';
 
 type Props = {
     breadcrumbs?: BreadcrumbItemType[];
@@ -153,38 +155,28 @@ const managementItems: CommandMenuItem[] = [
     },
 ];
 
-const accountItems: CommandMenuItem[] = [
-    {
-        title: 'Profile',
-        description: 'Open your public profile page.',
-        url: profileOwn.url(),
-        icon: User,
-    },
-    {
-        title: 'Profile Settings',
-        description: 'Update your account profile and avatar.',
-        url: profileOwn.url({ query: { tab: 'settings' } }),
-        icon: Settings,
-    },
-    {
-        title: 'Security Settings',
-        description: 'Manage password and two-factor authentication.',
-        url: profileOwn.url({ query: { tab: 'settings' } }),
-        icon: ShieldCheck,
-    },
-    {
-        title: 'Connected Accounts',
-        description: 'Manage Google, GitHub, and other social links.',
-        url: profileOwn.url({ query: { tab: 'settings' } }),
-        icon: KeyRound,
-    },
-    {
-        title: 'Appearance Settings',
-        description: 'Change theme and display preferences.',
-        url: profileOwn.url({ query: { tab: 'settings' } }),
-        icon: Palette,
-    },
-];
+function accountItems(user?: UserType): CommandMenuItem[] {
+    if (!user) {
+        return [];
+    }
+
+    const profileRouteParameter = user.username ?? String(user.id);
+
+    return [
+        {
+            title: 'Profile',
+            description: 'Open your profile page.',
+            url: profileShow.url({ user: profileRouteParameter }),
+            icon: User,
+        },
+        {
+            title: 'Settings',
+            description: 'Manage profile visibility, account, and appearance.',
+            url: profileSettings.url({ user: profileRouteParameter }),
+            icon: Settings,
+        },
+    ];
+}
 
 const labItems: CommandMenuItem[] = [
     {
@@ -248,6 +240,10 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const isAdmin = Boolean(props.auth?.user?.is_admin);
+    const visibleAccountItems = useMemo(
+        () => accountItems(props.auth?.user),
+        [props.auth?.user],
+    );
     const resolvedBreadcrumbs = withHomeBreadcrumb(
         breadcrumbs.length > 0 ? breadcrumbs : buildBreadcrumbsFromUrl(url),
     );
@@ -425,24 +421,28 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
                                 ))}
                             </CommandGroup>
 
-                            <CommandSeparator />
-                            <CommandGroup heading="Account">
-                                {accountItems.map((item) => (
-                                    <CommandItem
-                                        key={item.url}
-                                        value={`${item.title} ${item.description}`}
-                                        onSelect={() => visit(item.url)}
-                                    >
-                                        <item.icon className="size-4 text-muted-foreground" />
-                                        <div className="flex min-w-0 flex-col">
-                                            <span>{item.title}</span>
-                                            <span className="truncate text-xs text-muted-foreground">
-                                                {item.description}
-                                            </span>
-                                        </div>
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
+                            {visibleAccountItems.length > 0 ? (
+                                <>
+                                    <CommandSeparator />
+                                    <CommandGroup heading="Account">
+                                        {visibleAccountItems.map((item) => (
+                                            <CommandItem
+                                                key={item.url}
+                                                value={`${item.title} ${item.description}`}
+                                                onSelect={() => visit(item.url)}
+                                            >
+                                                <item.icon className="size-4 text-muted-foreground" />
+                                                <div className="flex min-w-0 flex-col">
+                                                    <span>{item.title}</span>
+                                                    <span className="truncate text-xs text-muted-foreground">
+                                                        {item.description}
+                                                    </span>
+                                                </div>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </>
+                            ) : null}
 
                             {visibleManagementItems.length > 0 ? (
                                 <>

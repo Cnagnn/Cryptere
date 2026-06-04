@@ -192,7 +192,7 @@ export function UserMenuContent({ user }: { user: UserType }) {
                         })}
                     >
                         <Settings className="mr-2 size-4" />
-                        <span>Settings</span>
+                        <span>Account settings</span>
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>

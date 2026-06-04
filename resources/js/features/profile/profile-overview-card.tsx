@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { CalendarDays, Check, Eye, MapPin, Pencil, Share2 } from 'lucide-react';
+import { CalendarDays, Check, MapPin, Pencil, Share2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -155,18 +155,6 @@ export function ProfileOverviewCard({
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-
-                    {isOwner && (
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            size="icon-sm"
-                            className="rounded-full"
-                            disabled
-                        >
-                            <Eye />
-                        </Button>
-                    )}
                 </div>
             </CardContent>
         </Card>

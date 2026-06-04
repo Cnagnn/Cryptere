@@ -1,9 +1,7 @@
 import { Head } from '@inertiajs/react';
-import { Lock, Plus, Sparkles } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -73,7 +71,6 @@ export default function ProfileShow({
 
                     <div className="flex flex-col gap-6 lg:col-span-7">
                         <ProfileContent badges={badges} />
-                        <ProfileInterests badges={badges} />
                     </div>
                 </div>
             </ProfileShell>
@@ -94,59 +91,6 @@ function ProfileContent({ badges }: { badges: ProfileBadge[] }) {
             </CardHeader>
             <CardContent>
                 <ProfileBadges badges={badges} />
-            </CardContent>
-        </Card>
-    );
-}
-
-function ProfileInterests({ badges }: { badges: ProfileBadge[] }) {
-    const categories = Array.from(
-        new Set(badges.map((badge) => badge.category)),
-    )
-        .filter(Boolean)
-        .slice(0, 5);
-
-    return (
-        <Card className="border-0 bg-foreground text-background shadow-xl">
-            <CardContent className="flex flex-col gap-5 p-7 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-background text-foreground">
-                        <Sparkles />
-                    </div>
-                    <div className="grid gap-2">
-                        <h2 className="text-2xl font-semibold">
-                            Your crypto interests
-                        </h2>
-                        <div className="flex flex-wrap gap-2">
-                            {categories.length > 0 ? (
-                                categories.map((category) => (
-                                    <Badge
-                                        key={category}
-                                        className="bg-background text-foreground"
-                                    >
-                                        {category}
-                                    </Badge>
-                                ))
-                            ) : (
-                                <p className="text-sm text-background/70">
-                                    Complete courses and labs to shape this
-                                    profile.
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="rounded-full"
-                    disabled
-                >
-                    <Plus data-icon="inline-start" />
-                    Add interests
-                </Button>
             </CardContent>
         </Card>
     );
