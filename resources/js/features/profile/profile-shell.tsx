@@ -1,9 +1,9 @@
-import { Link } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { Settings, User } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     show as profileShow,
     settings as profileSettings,
@@ -23,40 +23,36 @@ export function ProfileShell({
     children,
 }: ProfileShellProps) {
     const username = profileUser.username ?? '';
+    const handleTabChange = (value: string): void => {
+        if (value === active) {
+            return;
+        }
+
+        router.visit(
+            value === 'settings'
+                ? profileSettings.url(username)
+                : profileShow.url(username),
+        );
+    };
 
     return (
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-            <div className="mb-6 flex items-center justify-between gap-4 border-b">
-                <nav
-                    aria-label="Profile sections"
-                    className="flex min-w-0 items-center gap-1"
-                >
-                    <Button
-                        asChild
-                        variant="ghost"
-                        className="h-11 rounded-none border-b-2 border-transparent px-3 data-[active=true]:border-primary data-[active=true]:text-foreground"
-                        data-active={active === 'profile'}
-                    >
-                        <Link href={profileShow.url(username)}>
-                            <User data-icon="inline-start" />
+            <div className="mb-6 flex justify-center">
+                <Tabs value={active} onValueChange={handleTabChange}>
+                    <TabsList aria-label="Profile sections">
+                        <TabsTrigger value="profile">
+                            <User className="size-4" />
                             Profile
-                        </Link>
-                    </Button>
+                        </TabsTrigger>
 
-                    {isOwner && (
-                        <Button
-                            asChild
-                            variant="ghost"
-                            className="h-11 rounded-none border-b-2 border-transparent px-3 data-[active=true]:border-primary data-[active=true]:text-foreground"
-                            data-active={active === 'settings'}
-                        >
-                            <Link href={profileSettings.url(username)}>
-                                <Settings data-icon="inline-start" />
+                        {isOwner && (
+                            <TabsTrigger value="settings">
+                                <Settings className="size-4" />
                                 Settings
-                            </Link>
-                        </Button>
-                    )}
-                </nav>
+                            </TabsTrigger>
+                        )}
+                    </TabsList>
+                </Tabs>
             </div>
 
             <main>{children}</main>

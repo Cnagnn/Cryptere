@@ -9,6 +9,13 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import { Separator } from '@/components/ui/separator';
 import { ProfileBadges } from '@/features/profile/profile-badges';
 import { ProfileOverviewCard } from '@/features/profile/profile-overview-card';
@@ -59,8 +66,8 @@ export default function ProfileShow({
                 isOwner={isOwner}
                 active="profile"
             >
-                <div className="grid gap-6 lg:grid-cols-10">
-                    <div className="lg:col-span-3">
+                <div className="grid gap-6 lg:grid-cols-12">
+                    <div className="lg:col-span-4">
                         <ProfileOverviewCard
                             profileUser={profileUser}
                             isOwner={isOwner}
@@ -69,7 +76,7 @@ export default function ProfileShow({
                         />
                     </div>
 
-                    <div className="flex flex-col gap-6 lg:col-span-7">
+                    <div className="lg:col-span-8">
                         <ProfileContent badges={badges} />
                     </div>
                 </div>
@@ -80,14 +87,12 @@ export default function ProfileShow({
 
 function ProfileContent({ badges }: { badges: ProfileBadge[] }) {
     return (
-        <Card className="border-0 bg-background/95 shadow-sm">
-            <CardHeader className="flex-row items-center justify-between gap-4">
-                <div>
-                    <CardTitle>Badges</CardTitle>
-                    <CardDescription>
-                        Earned milestones and learning achievements.
-                    </CardDescription>
-                </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Badges</CardTitle>
+                <CardDescription>
+                    Earned milestones and learning achievements.
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 <ProfileBadges badges={badges} />
@@ -100,9 +105,10 @@ function ProfilePrivate({ user }: { user: ProfileUser }) {
     const getInitials = useInitials();
 
     return (
-        <Card className="overflow-hidden">
-            <CardHeader className="gap-4 text-center">
-                <Avatar className="mx-auto size-20 rounded-none">
+        <Card>
+            <div aria-hidden="true" className="h-24 bg-muted" />
+            <CardHeader className="-mt-14 flex flex-col items-center gap-4 text-center">
+                <Avatar className="size-24 rounded-full ring-4 ring-card">
                     <AvatarImage
                         src={user.avatar ?? undefined}
                         alt={user.name}
@@ -120,22 +126,20 @@ function ProfilePrivate({ user }: { user: ProfileUser }) {
                     )}
                 </div>
             </CardHeader>
-            <Separator />
             <CardContent>
-                <div className="flex flex-col items-center gap-4 py-10 text-center">
-                    <div className="flex size-16 items-center justify-center rounded-lg bg-muted">
-                        <Lock className="size-7 text-muted-foreground" />
-                    </div>
-                    <div className="flex max-w-xs flex-col gap-1.5">
-                        <p className="text-base font-semibold">
-                            This profile is private
-                        </p>
-                        <p className="text-sm text-muted-foreground">
+                <Separator className="mb-4" />
+                <Empty className="border-0 py-8">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <Lock />
+                        </EmptyMedia>
+                        <EmptyTitle>This profile is private</EmptyTitle>
+                        <EmptyDescription>
                             This user has chosen to keep their profile private.
                             Only they can see their full profile details.
-                        </p>
-                    </div>
-                </div>
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
             </CardContent>
         </Card>
     );
