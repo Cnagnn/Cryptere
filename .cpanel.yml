@@ -1,10 +1,10 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/fkdzqxmc/cryptere
-    - /bin/cp -R * $DEPLOYPATH
-    - cd $DEPLOYPATH
-    - php artisan config:clear
-    - php artisan cache:clear
-    - php artisan route:clear
-    - php artisan view:clear
+    - export APPPATH=/home/fkdzqxmc/cryptere
+    - export PUBLICPATH=/home/fkdzqxmc/public_html
+    - cd $APPPATH
+    - php artisan optimize:clear
+    - /bin/rm -rf $PUBLICPATH/build
+    - /bin/mkdir -p $PUBLICPATH
+    - /bin/cp -R public/build $PUBLICPATH/build
