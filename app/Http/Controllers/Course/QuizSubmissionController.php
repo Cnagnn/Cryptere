@@ -147,7 +147,7 @@ class QuizSubmissionController extends Controller
             // Store answer index for database
             $answerArray[] = $givenAnswer;
 
-            // R2: Update adaptive question statistics
+            // Update adaptive question statistics
             $this->adaptiveService->updateQuestionStats($question, $isCorrect);
 
             return [
@@ -247,7 +247,7 @@ class QuizSubmissionController extends Controller
         // Recalculate is_best_attempt across all submissions for this user + task
         $this->recalculateBestAttempt($user->id, $task->id);
 
-        // R2: Update user ability estimate based on quiz accuracy
+        // Update user ability estimate based on quiz accuracy
         $quizAccuracy = $questions->count() > 0 ? $correctCount / $questions->count() : 0.0;
         $this->adaptiveService->updateUserAbility($user, $quizAccuracy);
 

@@ -170,7 +170,6 @@ Route::domain($appDomain)->middleware(['auth', 'verified', 'permission:access ad
     Route::post('courses/tasks/reorder', [AdminTaskController::class, 'reorder'])->name('courses.tasks.reorder');
     Route::patch('courses/tasks/{task}', [AdminTaskController::class, 'update'])->name('courses.tasks.update');
     Route::delete('courses/tasks/{task}', [AdminTaskController::class, 'destroy'])->name('courses.tasks.destroy');
-    Route::get('courses/tasks/{task}/video-status', [AdminTaskController::class, 'videoStatus'])->name('courses.tasks.video-status');
 
     // Assessments (Bloom's Taxonomy tiered) — listing now served via CourseController section=assessment
     Route::get('assessments', fn () => redirect()->route('admin.courses.index', ['section' => 'assessment']))->name('assessments.index');

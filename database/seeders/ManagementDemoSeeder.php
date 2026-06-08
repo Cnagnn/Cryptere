@@ -107,7 +107,6 @@ class ManagementDemoSeeder extends Seeder
                     'type' => 'video',
                     'description' => "Video penjelasan konsep dasar {$topicName}.",
                     'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                    'video_processing_status' => 'ready',
                     'sort_order' => 1,
                     'status' => 'published',
                 ]);

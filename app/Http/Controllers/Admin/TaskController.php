@@ -7,20 +7,22 @@ use App\Http\Requests\Admin\ReorderAdminTasksRequest;
 use App\Http\Requests\Admin\StoreAdminLessonTaskRequest;
 use App\Http\Requests\Admin\UpdateAdminLessonTaskRequest;
 use App\Jobs\ConvertLessonDocument;
-use App\Jobs\ConvertLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonTask;
 use App\Models\QuizQuestion;
 use App\Models\QuizSubmission;
 use App\Models\TaskProgress;
 use App\Services\AuditService;
-use Illuminate\Http\JsonResponse;
+use App\Support\CourseAssetStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class TaskController extends Controller
 {
+    public function __construct(
+        private readonly CourseAssetStorage $courseAssets,
+    ) {}
+
     public function store(StoreAdminLessonTaskRequest $request): RedirectResponse
     {
         $validated = $request->validated();
@@ -29,20 +31,7 @@ class TaskController extends Controller
         $conversionStatus = null;
         $pdfUrl = null;
         $pendingDocumentPath = null;
-        $videoProcessingStatus = null;
         $videoUrl = $validated['type'] === 'video' ? ($validated['video_url'] ?? null) : null;
-
-        // Handle video file upload
-        if ($validated['type'] === 'video' && $request->hasFile('video_file')) {
-            $path = $request->file('video_file')
-                ->store('lesson-videos/originals', 'public');
-
-            $videoUrl = Storage::disk('public')->url($path);
-            $videoProcessingStatus = 'pending';
-        } elseif ($validated['type'] === 'video' && ! empty($validated['video_url'])) {
-            // External URLs (YouTube/Vimeo) or direct video URLs don't need processing
-            $videoProcessingStatus = 'ready';
-        }
 
         if ($validated['type'] === 'read') {
             $document = $this->storeReadDocument($request);
@@ -54,15 +43,13 @@ class TaskController extends Controller
 
         $nextOrder = (int) LessonTask::query()->where('lesson_id', $lesson->id)->max('sort_order') + 1;
 
-        $createdTask = DB::transaction(function () use ($validated, $lesson, $documentName, $conversionStatus, $pdfUrl, $nextOrder, $videoProcessingStatus, $videoUrl): LessonTask {
+        $createdTask = DB::transaction(function () use ($validated, $lesson, $documentName, $conversionStatus, $pdfUrl, $nextOrder, $videoUrl): LessonTask {
             $task = LessonTask::query()->create([
                 'lesson_id' => $lesson->id,
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'type' => $validated['type'],
                 'video_url' => $videoUrl,
-                'video_processing_status' => $videoProcessingStatus,
-                'video_mp4_url' => null,
                 'document_name' => $documentName,
                 'conversion_status' => $conversionStatus,
                 'pdf_url' => $pdfUrl,
@@ -96,10 +83,6 @@ class TaskController extends Controller
             ConvertLessonDocument::dispatch($pendingDocumentPath, $createdTask->lesson_id);
         }
 
-        if ($createdTask->type === 'video' && $createdTask->video_processing_status === 'pending') {
-            ConvertLessonVideo::dispatch($createdTask->id);
-        }
-
         app(AuditService::class)->log($request->user(), 'created', $createdTask);
 
         return back();
@@ -112,8 +95,6 @@ class TaskController extends Controller
         $conversionStatus = $task->conversion_status;
         $pdfUrl = $task->pdf_url;
         $pendingDocumentPath = null;
-        $videoProcessingStatus = $task->video_processing_status;
-        $videoMp4Url = $task->video_mp4_url;
         $videoUrl = $validated['type'] === 'video' ? ($validated['video_url'] ?? $task->video_url) : null;
 
         if ($validated['type'] === 'read') {
@@ -131,36 +112,16 @@ class TaskController extends Controller
             $pdfUrl = null;
         }
 
-        if ($validated['type'] === 'video') {
-            // Handle video file upload
-            if ($request->hasFile('video_file')) {
-                $path = $request->file('video_file')
-                    ->store('lesson-videos/originals', 'public');
-
-                $videoUrl = Storage::disk('public')->url($path);
-                $videoProcessingStatus = 'pending';
-                $videoMp4Url = null;
-            } elseif (! empty($validated['video_url']) && $validated['video_url'] !== $task->video_url) {
-                // URL changed - external URLs don't need processing
-                $videoUrl = $validated['video_url'];
-                $videoProcessingStatus = 'ready';
-                $videoMp4Url = null;
-            }
-            // If neither file nor new URL, keep existing values
-        } else {
+        if ($validated['type'] !== 'video') {
             $videoUrl = null;
-            $videoProcessingStatus = null;
-            $videoMp4Url = null;
         }
 
-        DB::transaction(function () use ($task, $validated, $documentName, $conversionStatus, $pdfUrl, $videoProcessingStatus, $videoMp4Url, $videoUrl): void {
+        DB::transaction(function () use ($task, $validated, $documentName, $conversionStatus, $pdfUrl, $videoUrl): void {
             $updateData = [
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'type' => $validated['type'],
                 'video_url' => $videoUrl,
-                'video_processing_status' => $videoProcessingStatus,
-                'video_mp4_url' => $videoMp4Url,
                 'document_name' => $documentName,
                 'conversion_status' => $conversionStatus,
                 'pdf_url' => $pdfUrl,
@@ -205,22 +166,9 @@ class TaskController extends Controller
             ConvertLessonDocument::dispatch($pendingDocumentPath, $task->lesson_id);
         }
 
-        if ($task->type === 'video' && $task->video_processing_status === 'pending') {
-            ConvertLessonVideo::dispatch($task->id);
-        }
-
         app(AuditService::class)->log($request->user(), 'updated', $task);
 
         return back();
-    }
-
-    public function videoStatus(LessonTask $task): JsonResponse
-    {
-        return response()->json([
-            'status' => $task->video_processing_status,
-            'videoUrl' => $task->video_mp4_url ?? $task->video_url,
-            'isReady' => $task->video_processing_status === 'ready',
-        ]);
     }
 
     public function reorder(ReorderAdminTasksRequest $request): RedirectResponse
@@ -330,14 +278,14 @@ class TaskController extends Controller
             ];
         }
 
-        $storedPath = $uploadedDocument->store('lesson-documents', 'public');
+        $storedPath = $this->courseAssets->storeUploadedFile($uploadedDocument, 'lesson-documents');
         $extension = strtolower(pathinfo($storedPath, PATHINFO_EXTENSION));
 
         if ($extension === 'pdf') {
             return [
                 'document_name' => $uploadedDocument->getClientOriginalName(),
                 'conversion_status' => 'converted',
-                'pdf_url' => Storage::disk('public')->url($storedPath),
+                'pdf_url' => $this->courseAssets->url($storedPath),
                 'pending_document_path' => null,
             ];
         }

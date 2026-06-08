@@ -90,7 +90,6 @@ test('admin course management returns lesson task and assessment data contracts'
                 ->where('version', 4)
                 ->where('published_by_name', 'Publisher')
                 ->has('prerequisite_task_id')
-                ->has('video_processing_status')
                 ->has('conversion_status')
                 ->etc()
             )

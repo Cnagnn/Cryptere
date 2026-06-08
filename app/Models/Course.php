@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\CourseAssetStorage;
 use App\Traits\Versionable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 #[Fillable([
@@ -102,7 +102,7 @@ class Course extends Model
     public function getCoverAttribute(): ?string
     {
         if (is_string($this->cover_path) && $this->cover_path !== '') {
-            return Storage::disk('public')->url($this->cover_path);
+            return app(CourseAssetStorage::class)->url($this->cover_path);
         }
 
         return $this->buildDefaultCoverDataUri();

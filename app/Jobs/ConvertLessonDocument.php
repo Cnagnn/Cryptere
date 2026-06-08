@@ -4,13 +4,15 @@ namespace App\Jobs;
 
 use App\Models\LessonTask;
 use App\Services\DocumentConverterService;
+use App\Support\CourseAssetStorage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
 {
@@ -29,7 +31,7 @@ class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param  string  $storedPath  The path to the uploaded document in the 'public' disk
+     * @param  string  $storedPath  The path to the uploaded document in the configured asset disk
      * @param  int  $lessonId  The ID of the lesson this document belongs to
      */
     public function __construct(
@@ -62,7 +64,7 @@ class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
      * If the file is already a PDF, marks it as converted immediately.
      * Falls back to 'failed' status if LibreOffice is not available.
      */
-    public function handle(DocumentConverterService $converter): void
+    public function handle(DocumentConverterService $converter, CourseAssetStorage $courseAssets): void
     {
         // Find the lesson task that references this document
         $task = LessonTask::query()
@@ -79,7 +81,7 @@ class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
 
         // If the uploaded file is already a PDF, mark it as converted immediately
         if ($extension === 'pdf') {
-            $pdfUrl = Storage::disk('public')->url($this->storedPath);
+            $pdfUrl = $courseAssets->url($this->storedPath);
 
             $task->update([
                 'conversion_status' => 'converted',
@@ -96,22 +98,26 @@ class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $absoluteInput = Storage::disk('public')->path($this->storedPath);
-        $outputDir = dirname($absoluteInput);
+        $tempDirectory = storage_path('app/tmp/document-conversions/'.Str::uuid()->toString());
+        File::ensureDirectoryExists($tempDirectory);
 
-        $pdfPath = $converter->convertToPdf($absoluteInput, $outputDir);
+        $absoluteInput = $tempDirectory.DIRECTORY_SEPARATOR.basename($this->storedPath);
 
-        // Store the PDF path relative to the public disk
-        $relativePdf = str_replace(
-            Storage::disk('public')->path(''),
-            '',
-            $pdfPath,
-        );
+        try {
+            $courseAssets->copyToLocalFile($this->storedPath, $absoluteInput);
 
-        $task->update([
-            'conversion_status' => 'converted',
-            'pdf_url' => Storage::disk('public')->url($relativePdf),
-        ]);
+            $pdfPath = $converter->convertToPdf($absoluteInput, $tempDirectory);
+            $relativePdf = $this->pdfPathFor($this->storedPath);
+
+            $courseAssets->putLocalFile($relativePdf, $pdfPath);
+
+            $task->update([
+                'conversion_status' => 'converted',
+                'pdf_url' => $courseAssets->url($relativePdf),
+            ]);
+        } finally {
+            File::deleteDirectory($tempDirectory);
+        }
     }
 
     /**
@@ -126,5 +132,14 @@ class ConvertLessonDocument implements ShouldBeUnique, ShouldQueue
             ->first();
 
         $task?->update(['conversion_status' => 'failed']);
+    }
+
+    private function pdfPathFor(string $path): string
+    {
+        $pathInfo = pathinfo($path);
+        $directory = ($pathInfo['dirname'] ?? '.') === '.' ? '' : $pathInfo['dirname'].'/';
+        $filename = $pathInfo['filename'] ?? $pathInfo['basename'] ?? 'document';
+
+        return $directory.$filename.'.pdf';
     }
 }

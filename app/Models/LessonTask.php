@@ -15,8 +15,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'description',
     'type',
     'video_url',
-    'video_processing_status',
-    'video_mp4_url',
     'document_name',
     'conversion_status',
     'pdf_url',

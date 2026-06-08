@@ -23,11 +23,11 @@ use App\Models\TaskProgress;
 use App\Models\Topic;
 use App\Services\AuditService;
 use App\Services\CacheService;
+use App\Support\CourseAssetStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -50,6 +50,10 @@ class CourseController extends Controller
         self::SECTION_TASK,
         self::SECTION_ASSESSMENT,
     ];
+
+    public function __construct(
+        private readonly CourseAssetStorage $courseAssets,
+    ) {}
 
     // ── index ────────────────────────────────────────────────────────────────
 
@@ -202,11 +206,11 @@ class CourseController extends Controller
             if ($selectedLesson !== null) {
                 if ($selectedLesson->tasks()->exists()) {
                     $taskPaginator = LessonTask::query()
-                        ->select(['id', 'lesson_id', 'type', 'title', 'description', 'sort_order', 'minutes', 'status', 'version', 'published_by', 'prerequisite_task_id', 'video_url', 'video_processing_status', 'video_mp4_url', 'document_name', 'conversion_status', 'pdf_url', 'created_at', 'updated_at'])
+                        ->select(['id', 'lesson_id', 'type', 'title', 'description', 'sort_order', 'minutes', 'status', 'version', 'published_by', 'prerequisite_task_id', 'video_url', 'document_name', 'conversion_status', 'pdf_url', 'created_at', 'updated_at'])
                         ->where('lesson_id', $selectedLesson->id)
                         ->with([
-                            'quizQuestions' => fn($q) => $q->select(['id', 'lesson_task_id', 'question', 'options', 'correct_option', 'explanation', 'sort_order'])->orderBy('sort_order'),
-                            'publishedBy:id,name'
+                            'quizQuestions' => fn ($q) => $q->select(['id', 'lesson_task_id', 'question', 'options', 'correct_option', 'explanation', 'sort_order'])->orderBy('sort_order'),
+                            'publishedBy:id,name',
                         ])
                         ->orderBy('sort_order')
                         ->orderBy('id')
@@ -236,8 +240,6 @@ class CourseController extends Controller
                             'published_by_name' => $task->publishedBy?->name,
                             'prerequisite_task_id' => $task->prerequisite_task_id,
                             'video_url' => $task->video_url,
-                            'video_processing_status' => $task->video_processing_status,
-                            'video_mp4_url' => $task->video_mp4_url,
                             'document_name' => $task->document_name,
                             'conversion_status' => $task->conversion_status,
                             'pdf_url' => $task->pdf_url,
@@ -305,14 +307,14 @@ class CourseController extends Controller
             } else {
                 // No lesson selected — show all tasks across all lessons
                 $taskPaginator = LessonTask::query()
-                    ->select(['id', 'lesson_id', 'type', 'title', 'description', 'sort_order', 'status', 'version', 'published_by', 'prerequisite_task_id', 'video_url', 'video_processing_status', 'video_mp4_url', 'document_name', 'conversion_status', 'pdf_url', 'created_at', 'updated_at'])
+                    ->select(['id', 'lesson_id', 'type', 'title', 'description', 'sort_order', 'status', 'version', 'published_by', 'prerequisite_task_id', 'video_url', 'document_name', 'conversion_status', 'pdf_url', 'created_at', 'updated_at'])
                     ->with([
                         'lesson:id,title,course_id',
                         'lesson.course:id,slug,title',
-                        'quizQuestions' => fn($q) => $q->select(['id', 'lesson_task_id', 'question', 'options', 'correct_option', 'explanation', 'sort_order'])->orderBy('sort_order'),
-                        'publishedBy:id,name'
+                        'quizQuestions' => fn ($q) => $q->select(['id', 'lesson_task_id', 'question', 'options', 'correct_option', 'explanation', 'sort_order'])->orderBy('sort_order'),
+                        'publishedBy:id,name',
                     ])
-                    ->when($selectedCourseId > 0, fn ($q) => $q->whereIn('lesson_id', fn($sub) => $sub->select('id')->from('lessons')->where('course_id', $selectedCourseId)))
+                    ->when($selectedCourseId > 0, fn ($q) => $q->whereIn('lesson_id', fn ($sub) => $sub->select('id')->from('lessons')->where('course_id', $selectedCourseId)))
                     ->orderBy('lesson_id')
                     ->orderBy('sort_order')
                     ->orderBy('id')
@@ -341,8 +343,6 @@ class CourseController extends Controller
                         'published_by_name' => $task->publishedBy?->name,
                         'prerequisite_task_id' => $task->prerequisite_task_id,
                         'video_url' => $task->video_url,
-                        'video_processing_status' => $task->video_processing_status,
-                        'video_mp4_url' => $task->video_mp4_url,
                         'document_name' => $task->document_name,
                         'conversion_status' => $task->conversion_status,
                         'pdf_url' => $task->pdf_url,
@@ -664,7 +664,7 @@ class CourseController extends Controller
         $coverPath = null;
         if ($request->hasFile('cover_image') && $request->file('cover_image') !== null) {
             $coverFile = $request->file('cover_image');
-            $coverPath = $coverFile->store('course-covers', 'public');
+            $coverPath = $this->courseAssets->storeUploadedFile($coverFile, 'course-covers');
         }
 
         $course = Course::query()->create([
@@ -696,11 +696,11 @@ class CourseController extends Controller
             $coverFile = $request->file('cover_image');
 
             // Delete old file if it was stored on disk
-            if ($coverPath !== null && Storage::disk('public')->exists($coverPath)) {
-                Storage::disk('public')->delete($coverPath);
+            if ($coverPath !== null) {
+                $this->courseAssets->deleteExisting($coverPath);
             }
 
-            $coverPath = $coverFile->store('course-covers', 'public');
+            $coverPath = $this->courseAssets->storeUploadedFile($coverFile, 'course-covers');
         }
 
         $updateData = [
@@ -748,8 +748,8 @@ class CourseController extends Controller
         }
 
         // Clean up cover file from disk
-        if ($course->cover_path !== null && Storage::disk('public')->exists($course->cover_path)) {
-            Storage::disk('public')->delete($course->cover_path);
+        if ($course->cover_path !== null) {
+            $this->courseAssets->deleteExisting($course->cover_path);
         }
 
         app(AuditService::class)->log(request()->user(), 'deleted', $course);

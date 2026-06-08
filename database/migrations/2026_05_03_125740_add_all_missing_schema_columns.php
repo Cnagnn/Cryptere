@@ -23,12 +23,6 @@ return new class extends Migration
             if (! Schema::hasColumn('lesson_tasks', 'minutes')) {
                 $table->unsignedSmallInteger('minutes')->default(0)->after('type');
             }
-            if (! Schema::hasColumn('lesson_tasks', 'video_processing_status')) {
-                $table->string('video_processing_status')->nullable()->after('video_url');
-            }
-            if (! Schema::hasColumn('lesson_tasks', 'video_mp4_url')) {
-                $table->string('video_mp4_url')->nullable()->after('video_processing_status');
-            }
             if (! Schema::hasColumn('lesson_tasks', 'conversion_status')) {
                 $table->string('conversion_status')->nullable()->after('document_name');
             }

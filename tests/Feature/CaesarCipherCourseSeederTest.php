@@ -51,7 +51,6 @@ test('course has rich published lessons with video read and quiz tasks', functio
 
         $videoTask = $tasks->firstWhere('type', 'video');
         expect($videoTask->video_url)->toStartWith('https://www.youtube.com/watch?v=');
-        expect($videoTask->video_processing_status)->toBe('ready');
 
         $readTask = $tasks->firstWhere('type', 'read');
         expect($readTask->document_name)->toEndWith('.pdf');

@@ -19,6 +19,7 @@
         "laravel/socialite": "^5.26",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "league/flysystem-aws-s3-v3": "^3.0",
         "sentry/sentry-laravel": "^4.25",
         "spatie/laravel-backup": "^10.2",
         "spatie/laravel-permission": "^7.4"

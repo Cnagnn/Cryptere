@@ -130,8 +130,13 @@ class CacheService
     public static function invalidateAdminAnalytics(): void
     {
         Cache::forget('admin:cohort_retention');
+        Cache::forget('admin:cohort_retention:8');
+        Cache::forget('admin:cohort_retention:v2:8');
+        Cache::forget('admin:cohort_retention:v3:8');
         Cache::forget('admin:gamification_funnel');
         Cache::forget('admin:economy_health');
+        Cache::forget('admin:economy_health:v2');
+        Cache::forget('admin:economy_health:v3');
     }
 
     /**

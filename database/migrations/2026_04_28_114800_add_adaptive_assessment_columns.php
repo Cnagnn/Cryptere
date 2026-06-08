@@ -10,7 +10,7 @@ return new class extends Migration
      * Run the migrations.
      *
      * Add difficulty tracking columns to quiz_questions,
-     * and ability_estimate to users for the adaptive assessment system (R2).
+     * and ability_estimate to users for the adaptive assessment system.
      */
     public function up(): void
     {

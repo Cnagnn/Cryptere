@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Course Asset Disk
+    |--------------------------------------------------------------------------
+    |
+    | Course covers, lesson documents, and uploaded lesson videos may live on a
+    | separate disk from the application default. Keep this as "public" for
+    | local development.
+    |
+    */
+
+    'course_assets_disk' => env('COURSE_ASSET_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

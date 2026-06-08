@@ -35,13 +35,10 @@ class StoreAdminLessonTaskRequest extends FormRequest
                 'nullable',
                 'url',
                 'max:2048',
-                Rule::requiredIf(fn (): bool => $this->input('type') === 'video' && ! $this->hasFile('video_file')),
+                Rule::requiredIf(fn (): bool => $this->input('type') === 'video'),
             ],
             'video_file' => [
-                'nullable',
-                'file',
-                'mimetypes:video/mp4,video/webm,video/quicktime,video/x-msvideo',
-                'max:512000', // 500MB max
+                'prohibited',
             ],
             'document' => [
                 'nullable',

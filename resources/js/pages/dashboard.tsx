@@ -1,16 +1,29 @@
-import { Deferred, Head, Link, usePage, usePoll } from '@inertiajs/react';
+import {
+    Deferred,
+    Head,
+    Link,
+    router,
+    usePage,
+    usePoll,
+} from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
     Activity,
     AlertTriangle,
     ArrowUpDown,
     ArrowUpRight,
+    Award,
     BarChart3,
     BookOpen,
+    Download,
     Flame,
+    Gauge,
     GraduationCap,
     Home,
+    ListChecks,
+    Target,
     X,
+    Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
@@ -36,6 +49,13 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import { DataTable } from '@/components/ui/data-table';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -46,25 +66,42 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
+import { dashboard as dashboardRoute } from '@/routes';
 import { index as coursesIndex, show as courseShow } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 import type { Auth, UserLevel } from '@/types/auth';
 import type {
     AcademyData,
+    AdminCohortRetention,
     AdminCoursePerformance,
     AdminData,
+    AdminEconomyHealth,
+    AdminGamificationFunnelStage,
     AdminRecentUser,
     AnalyticsData,
+    BadgeGoal,
     DashboardProps,
     DecayWarning,
     LeaderboardEntry,
+    LearnerNextAction,
     LearnerStats,
+    RankProgress,
     RecentActivityItem,
     RecentCourse,
+    RecommendedCourse,
     StreakCalendarEntry,
+    WeeklyGoal,
 } from '@/types/dashboard';
 
 /* ── Utility Functions ── */
@@ -85,6 +122,20 @@ const formatPointsCompact = (points: number): string => {
     }).format(points);
 
     return compactValue.toUpperCase();
+};
+
+const formatPercent = (value: number): string => {
+    return `${new Intl.NumberFormat('id-ID', {
+        maximumFractionDigits: 1,
+    }).format(value)}%`;
+};
+
+const formatDelta = (value: number): string => {
+    if (value === 0) {
+        return '0%';
+    }
+
+    return `${value > 0 ? '+' : ''}${formatPercent(value)}`;
 };
 
 const getTimeGreeting = (name: string) => {
@@ -148,64 +199,63 @@ const DEFAULT_ACTIVITY_TAG = {
     color: 'text-muted-foreground',
 };
 
-const GradientBar = ({ prefix }: { prefix: string }) => (
-    <svg width="0" height="0">
-        <defs>
-            <linearGradient
-                id={`gradient-${prefix}`}
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-            >
-                <stop offset="0%" stopColor="hsl(var(--chart-1))" />
-                <stop offset="100%" stopColor="hsl(var(--chart-2))" />
-            </linearGradient>
-        </defs>
-    </svg>
-);
+const bentoCardClass =
+    'h-full overflow-hidden border-border/70 bg-card/95 shadow-sm';
+const bentoPanelClass =
+    'h-full overflow-hidden border-border/60 bg-muted/20 shadow-sm';
+const compactChartClass = 'aspect-auto h-52 w-full sm:h-56';
 
-/* ── Stats Card Component ── */
-
-interface StatsCardProps {
-    title: string;
-    description: string;
-    value: string | number;
-    unit?: string;
-    className?: string;
-    children?: React.ReactNode;
-}
-
-function StatsCard({
+function CompactEmptyState({
+    icon: Icon,
     title,
     description,
-    value,
-    unit,
-    className,
-    children,
-}: StatsCardProps) {
+    action,
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    description: string;
+    action?: React.ReactNode;
+}) {
     return (
-        <Card className={className}>
-            <CardHeader className="gap-1">
-                <CardTitle>{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {children ?? (
-                    <p className="text-2xl font-semibold tabular-nums">
-                        {typeof value === 'number'
-                            ? formatNumber(value)
-                            : value}
-                        {unit && (
-                            <span className="text-sm font-medium text-muted-foreground">
-                                {' '}
-                                {unit}
-                            </span>
-                        )}
-                    </p>
-                )}
-            </CardContent>
-        </Card>
+        <div className="flex min-h-24 items-center gap-3 rounded-lg border bg-muted/20 p-3 text-left">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <Icon className="size-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                    {description}
+                </p>
+                {action ? <div className="mt-3">{action}</div> : null}
+            </div>
+        </div>
+    );
+}
+
+function MetricTile({
+    label,
+    value,
+    description,
+    children,
+}: {
+    label: string;
+    value: React.ReactNode;
+    description?: string;
+    children?: React.ReactNode;
+}) {
+    return (
+        <div className="rounded-lg border bg-muted/20 p-3">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <div className="mt-1 text-lg font-semibold tabular-nums">
+                {value}
+            </div>
+            {description ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                    {description}
+                </p>
+            ) : null}
+            {children}
+        </div>
     );
 }
 
@@ -257,58 +307,222 @@ function DecayWarningBanner({
     );
 }
 
-function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
-    // Config for maintainability
-    const config = {
-        title: 'Lanjutkan Pembelajaran',
-        emptyState: {
-            icon: GraduationCap,
-            message:
-                'Belum ada kursus yang sedang diikuti. Mulai pembelajaran baru sekarang.',
-            actionLabel: 'Jelajahi Kursus',
-        },
-        maxVisibleItems: 3,
-        scrollHeight: 'h-54',
-        progressCircle: {
-            viewBox: '0 0 36 36',
-            radius: 15.5,
-            circumference: 97.4, // 2 * π * radius
-            strokeWidth: 2.5,
-        },
-    };
-
-    const inProgress = courses.filter(
-        (c) => c.progressPercentage > 0 && c.progressPercentage < 100,
-    );
-
-    if (inProgress.length === 0) {
-        return (
-            <Card className="col-span-2 md:col-span-3 lg:col-span-4">
-                <CardHeader>
-                    <CardTitle>{config.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
-                    <config.emptyState.icon className="size-10 text-muted-foreground/40" />
-                    <p className="text-sm text-muted-foreground">
-                        {config.emptyState.message}
-                    </p>
-                    <Button variant="outline" size="sm" asChild>
-                        <Link href={coursesIndex.url()}>
-                            {config.emptyState.actionLabel}
-                            <ArrowUpRight data-icon="inline-end" />
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        );
+function NextActionCard({ action }: { action?: LearnerNextAction | null }) {
+    if (!action) {
+        return null;
     }
 
     return (
-        <Card className="col-span-2 md:col-span-3 lg:col-span-4">
+        <Card
+            className={cn(
+                bentoPanelClass,
+                'col-span-2 md:col-span-4 lg:col-span-5',
+            )}
+        >
             <CardHeader className="gap-1">
-                <CardTitle>{config.title}</CardTitle>
+                <CardTitle>Aksi Berikutnya</CardTitle>
                 <CardDescription>
-                    {inProgress.length} kursus sedang diikuti
+                    Satu langkah paling berguna untuk sesi belajar ini
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+                <div className="flex items-start gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <Zap className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="font-medium">{action.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            {action.description}
+                        </p>
+                        {action.meta.lessonTitle ? (
+                            <Badge variant="secondary" className="mt-3">
+                                Materi berikutnya: {action.meta.lessonTitle}
+                            </Badge>
+                        ) : null}
+                    </div>
+                </div>
+                <Button className="w-fit" asChild>
+                    <Link href={action.url}>
+                        {action.actionLabel}
+                        <ArrowUpRight data-icon="inline-end" />
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
+
+function WeeklyGoalCard({ goal }: { goal?: WeeklyGoal | null }) {
+    if (!goal) {
+        return null;
+    }
+
+    return (
+        <Card
+            className={cn(
+                bentoCardClass,
+                'col-span-2 md:col-span-2 lg:col-span-3',
+            )}
+        >
+            <CardHeader className="gap-1">
+                <CardTitle>{goal.label}</CardTitle>
+                <CardDescription>Reset {goal.resetsAt}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+                <div className="flex items-end justify-between gap-3">
+                    <div>
+                        <p className="text-2xl font-semibold tabular-nums">
+                            {formatNumber(goal.completedLessons)}
+                            <span className="text-sm font-medium text-muted-foreground">
+                                /{formatNumber(goal.targetLessons)} lesson
+                            </span>
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            {goal.remainingLessons === 0
+                                ? 'Target minggu ini tercapai'
+                                : `${goal.remainingLessons} lesson lagi`}
+                        </p>
+                    </div>
+                    <Badge variant="outline">
+                        {formatNumber(goal.earnedXp)} XP
+                    </Badge>
+                </div>
+                <Progress value={goal.progressPercentage} />
+            </CardContent>
+        </Card>
+    );
+}
+
+function LearnerOverviewCard({
+    stats,
+    level,
+    rankProgress,
+}: {
+    stats: LearnerStats;
+    level?: UserLevel;
+    rankProgress?: RankProgress | null;
+}) {
+    const rankLabel = rankProgress
+        ? `#${formatNumber(rankProgress.currentRank)}`
+        : 'Belum ada';
+    const rankDescription = rankProgress?.nextRank
+        ? `${formatNumber(rankProgress.pointsToNextRank)} poin ke #${formatNumber(rankProgress.nextRank)}`
+        : 'Posisi teratas';
+
+    return (
+        <Card
+            className={cn(
+                bentoCardClass,
+                'col-span-2 md:col-span-3 lg:col-span-4',
+            )}
+        >
+            <CardHeader className="gap-1">
+                <CardTitle>Ringkasan Belajar</CardTitle>
+                <CardDescription>
+                    Poin, level, kursus, dan posisi
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+                <MetricTile
+                    label="Total poin"
+                    value={formatNumber(stats.points)}
+                    description="Akumulasi skor"
+                />
+                <MetricTile
+                    label="Level"
+                    value={`Level ${level?.level ?? 1}`}
+                    description={
+                        level?.next_level_xp
+                            ? `${formatNumber(level.current_xp)} / ${formatNumber(level.next_level_xp)} XP`
+                            : 'Mulai kumpulkan XP'
+                    }
+                >
+                    {level?.next_level_xp ? (
+                        <Progress
+                            value={level.progress}
+                            className="mt-2 h-1.5"
+                        />
+                    ) : null}
+                </MetricTile>
+                <MetricTile
+                    label="Kursus selesai"
+                    value={formatNumber(stats.completedCourses)}
+                    description={`${formatNumber(stats.completedLessons)} pelajaran`}
+                />
+                <MetricTile
+                    label="Peringkat"
+                    value={rankLabel}
+                    description={rankDescription}
+                />
+            </CardContent>
+        </Card>
+    );
+}
+
+function BadgeGoalCard({ badgeGoal }: { badgeGoal?: BadgeGoal | null }) {
+    if (!badgeGoal) {
+        return null;
+    }
+
+    return (
+        <Card
+            className={cn(
+                bentoPanelClass,
+                'col-span-2 md:col-span-3 lg:col-span-4',
+            )}
+        >
+            <CardHeader className="gap-1">
+                <CardTitle>Badge Berikutnya</CardTitle>
+                <CardDescription>{badgeGoal.title}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground">
+                    {badgeGoal.description ??
+                        'Lanjutkan aktivitas untuk membuka badge ini.'}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className="font-medium tabular-nums">
+                        {formatNumber(badgeGoal.currentValue)} /{' '}
+                        {formatNumber(badgeGoal.targetValue)}
+                    </span>
+                </div>
+                <Progress value={badgeGoal.progressPercentage} />
+                <Button variant="outline" size="sm" className="w-fit" asChild>
+                    <Link href={badgeGoal.url}>
+                        {badgeGoal.actionLabel}
+                        <ArrowUpRight data-icon="inline-end" />
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
+
+function LearningHubCard({
+    recentCourses,
+    recommendedCourses,
+}: {
+    recentCourses: RecentCourse[];
+    recommendedCourses: RecommendedCourse[];
+}) {
+    const inProgress = recentCourses
+        .filter((course) => course.progressPercentage > 0)
+        .slice(0, 3);
+    const recommendations = recommendedCourses.slice(0, 2);
+
+    return (
+        <Card
+            className={cn(
+                bentoCardClass,
+                'col-span-2 flex flex-col md:col-span-6 lg:col-span-8',
+            )}
+        >
+            <CardHeader className="gap-1">
+                <CardTitle>Pembelajaran</CardTitle>
+                <CardDescription>
+                    Kursus berjalan dan jalur berikutnya
                 </CardDescription>
                 <CardAction>
                     <Button variant="ghost" size="sm" asChild>
@@ -319,93 +533,101 @@ function ContinueLearningSection({ courses }: { courses: RecentCourse[] }) {
                     </Button>
                 </CardAction>
             </CardHeader>
-            <CardContent className="p-0">
-                <ScrollArea
-                    className={cn(
-                        inProgress.length > config.maxVisibleItems &&
-                            config.scrollHeight,
-                    )}
-                >
-                    <div className="flex flex-col gap-2 px-6 pb-6">
-                        {inProgress.map((course) => {
-                            const progressPercent = Math.round(
-                                course.progressPercentage,
-                            );
-                            const dashArray = `${(course.progressPercentage / 100) * config.progressCircle.circumference} ${config.progressCircle.circumference}`;
-
-                            return (
-                                <Link
-                                    key={course.id}
-                                    href={courseShow.url({
-                                        course: course.slug!,
-                                    })}
-                                    className="group relative overflow-hidden rounded-lg border bg-card transition-colors hover:bg-muted/50"
-                                >
-                                    <div
-                                        className="absolute inset-y-0 left-0 bg-primary/5 transition-all"
-                                        style={{
-                                            width: `${course.progressPercentage}%`,
-                                        }}
-                                    />
-                                    <div className="relative flex items-center gap-3 p-3">
-                                        <div className="relative flex size-10 shrink-0 items-center justify-center">
-                                            <svg
-                                                className="size-10 -rotate-90"
-                                                viewBox={
-                                                    config.progressCircle
-                                                        .viewBox
-                                                }
-                                            >
-                                                <circle
-                                                    cx="18"
-                                                    cy="18"
-                                                    r={
-                                                        config.progressCircle
-                                                            .radius
-                                                    }
-                                                    fill="none"
-                                                    className="stroke-muted"
-                                                    strokeWidth={
-                                                        config.progressCircle
-                                                            .strokeWidth
-                                                    }
-                                                />
-                                                <circle
-                                                    cx="18"
-                                                    cy="18"
-                                                    r={
-                                                        config.progressCircle
-                                                            .radius
-                                                    }
-                                                    fill="none"
-                                                    className="stroke-primary transition-all"
-                                                    strokeWidth={
-                                                        config.progressCircle
-                                                            .strokeWidth
-                                                    }
-                                                    strokeLinecap="round"
-                                                    strokeDasharray={dashArray}
-                                                />
-                                            </svg>
-                                            <span className="absolute text-[10px] font-bold tabular-nums">
-                                                {progressPercent}%
-                                            </span>
-                                        </div>
-                                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                                            <p className="truncate text-sm font-medium">
-                                                {course.title}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground tabular-nums">
-                                                {course.lessonCount} pelajaran
-                                            </p>
-                                        </div>
-                                        <ArrowUpRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                                    </div>
-                                </Link>
-                            );
-                        })}
+            <CardContent className="grid flex-1 gap-3 lg:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+                        <span>Sedang diikuti</span>
+                        <span>{formatNumber(inProgress.length)} aktif</span>
                     </div>
-                </ScrollArea>
+                    {inProgress.length === 0 ? (
+                        <CompactEmptyState
+                            icon={GraduationCap}
+                            title="Belum ada kursus berjalan"
+                            description="Mulai satu kursus agar progres utama muncul di sini."
+                            action={
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href={coursesIndex.url()}>
+                                        Jelajahi Kursus
+                                        <ArrowUpRight data-icon="inline-end" />
+                                    </Link>
+                                </Button>
+                            }
+                        />
+                    ) : (
+                        inProgress.map((course) => (
+                            <Link
+                                key={course.id}
+                                href={
+                                    course.slug
+                                        ? courseShow.url({
+                                              course: course.slug,
+                                          })
+                                        : coursesIndex.url()
+                                }
+                                className="group rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium">
+                                            {course.title}
+                                        </p>
+                                        <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                                            {course.lessonCount ?? 0} pelajaran
+                                        </p>
+                                    </div>
+                                    <span className="text-sm font-semibold tabular-nums">
+                                        {Math.round(course.progressPercentage)}%
+                                    </span>
+                                </div>
+                                <Progress
+                                    value={course.progressPercentage}
+                                    className="mt-3 h-1.5"
+                                />
+                            </Link>
+                        ))
+                    )}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+                        <span>Rekomendasi</span>
+                        <span>
+                            {formatNumber(recommendations.length)} jalur
+                        </span>
+                    </div>
+                    {recommendations.length === 0 ? (
+                        <CompactEmptyState
+                            icon={BookOpen}
+                            title="Belum ada rekomendasi"
+                            description="Kursus yang dipublikasikan akan muncul sebagai jalur berikutnya."
+                        />
+                    ) : (
+                        recommendations.map((course) => (
+                            <Link
+                                key={course.id}
+                                href={courseShow.url({ course: course.slug })}
+                                className="group rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium">
+                                            {course.title}
+                                        </p>
+                                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                            {course.summary ??
+                                                course.recommendationReason}
+                                        </p>
+                                    </div>
+                                    {course.difficulty ? (
+                                        <Badge variant="secondary">
+                                            {course.difficulty}
+                                        </Badge>
+                                    ) : null}
+                                </div>
+                            </Link>
+                        ))
+                    )}
+                </div>
             </CardContent>
         </Card>
     );
@@ -436,7 +658,12 @@ function ActivityFeedTimeline({
 
     if (activities.length === 0) {
         return (
-            <Card className="col-span-2 md:col-span-3 lg:col-span-4">
+            <Card
+                className={cn(
+                    bentoCardClass,
+                    'col-span-2 md:col-span-6 lg:col-span-8',
+                )}
+            >
                 <CardHeader>
                     <CardTitle>{config.title}</CardTitle>
                 </CardHeader>
@@ -451,7 +678,12 @@ function ActivityFeedTimeline({
     }
 
     return (
-        <Card className="col-span-2 flex flex-col md:col-span-3 lg:col-span-4">
+        <Card
+            className={cn(
+                bentoCardClass,
+                'col-span-2 flex flex-col md:col-span-6 lg:col-span-8',
+            )}
+        >
             <CardHeader className="gap-1">
                 <CardTitle>{config.title}</CardTitle>
                 <CardDescription>{config.description}</CardDescription>
@@ -728,7 +960,7 @@ function ChartAreaInteractive({
     const hasAnyData = data.some((d) => (d.points ?? 0) > 0 || (d.xp ?? 0) > 0);
 
     return (
-        <Card className="pt-0">
+        <Card className={cn(bentoPanelClass, 'pt-0')}>
             <CardHeader className="flex items-center gap-2 border-b py-5 sm:flex-row">
                 <div className="grid flex-1 gap-1">
                     <CardTitle>Riwayat Perolehan</CardTitle>
@@ -758,27 +990,24 @@ function ChartAreaInteractive({
 
             {!hasAnyData ? (
                 <CardContent className="px-6 pt-6">
-                    <div className="flex flex-col items-center justify-center py-8">
-                        <BarChart3 className="size-10 text-muted-foreground/40" />
-                        <p className="mt-3 text-center text-sm text-muted-foreground">
-                            Belum ada catatan perolehan. Selesaikan pelajaran
-                            atau tantangan untuk mulai mengumpulkan poin dan
-                            pengalaman.
-                        </p>
-                        <div className="mt-4">
+                    <CompactEmptyState
+                        icon={BarChart3}
+                        title="Belum ada catatan perolehan"
+                        description="Selesaikan pelajaran atau tantangan untuk mulai mengumpulkan poin dan XP."
+                        action={
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={coursesIndex.url()}>
                                     Jelajahi Kursus
                                 </Link>
                             </Button>
-                        </div>
-                    </div>
+                        }
+                    />
                 </CardContent>
             ) : (
                 <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                     <ChartContainer
                         config={earningsChartConfig}
-                        className="aspect-auto h-62.5 w-full"
+                        className={compactChartClass}
                     >
                         <AreaChart data={data} margin={{ left: 12, right: 12 }}>
                             <defs>
@@ -862,7 +1091,12 @@ function LearnerDashboard({
     academy,
     analytics,
     decayWarning,
+    nextAction,
+    weeklyGoal,
+    rankProgress,
+    badgeGoal,
     recentCourses,
+    recommendedCourses,
     adminTabs,
 }: {
     stats: LearnerStats;
@@ -870,7 +1104,12 @@ function LearnerDashboard({
     academy: AcademyData;
     analytics?: AnalyticsData;
     decayWarning?: DecayWarning | null;
+    nextAction?: LearnerNextAction;
+    weeklyGoal?: WeeklyGoal;
+    rankProgress?: RankProgress;
+    badgeGoal?: BadgeGoal;
     recentCourses?: RecentCourse[];
+    recommendedCourses?: RecommendedCourse[];
     adminTabs?: React.ReactNode;
 }) {
     const { auth } = usePage<{ auth: Auth }>().props;
@@ -909,54 +1148,12 @@ function LearnerDashboard({
                 className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12"
                 style={{ animationDelay: '100ms' }}
             >
-                <StatsCard
-                    title="Total Poin"
-                    description="Kumpulkan poin untuk meningkatkan peringkat"
-                    value={stats.points}
-                    unit="poin"
-                    className="md:col-span-3 lg:col-span-3"
-                />
-
-                <StatsCard
-                    title="Level dan Pengalaman"
-                    description="Pencapaian pembelajaran Anda"
-                    value=""
-                    className="md:col-span-3 lg:col-span-3"
-                >
-                    <div className="flex items-start gap-4">
-                        <p className="shrink-0 text-2xl font-semibold tabular-nums">
-                            Level {level?.level ?? 1}
-                        </p>
-                        {level && level.next_level_xp && (
-                            <div className="flex min-w-0 flex-1 flex-col gap-2">
-                                <Progress
-                                    value={level.progress}
-                                    className="h-1.5"
-                                />
-                                <div className="text-xs text-muted-foreground">
-                                    <span>
-                                        {formatNumber(level.current_xp)} /{' '}
-                                        {formatNumber(level.next_level_xp)} XP
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </StatsCard>
-
-                <StatsCard
-                    title="Kursus Diselesaikan"
-                    description="Progres pembelajaran berkelanjutan"
-                    value={stats.completedCourses}
-                    unit="kursus"
-                    className="md:col-span-3 lg:col-span-3"
-                />
-
-                <StatsCard
-                    title="Peringkat Anda"
-                    description="Posisi dalam papan peringkat"
-                    value={`Peringkat #${academy.learningPath?.currentRank ?? '-'}`}
-                    className="md:col-span-3 lg:col-span-3"
+                <NextActionCard action={nextAction} />
+                <WeeklyGoalCard goal={weeklyGoal} />
+                <LearnerOverviewCard
+                    stats={stats}
+                    level={level}
+                    rankProgress={rankProgress}
                 />
 
                 <div className="col-span-2 flex *:flex-1 md:col-span-4 lg:col-span-8">
@@ -981,7 +1178,12 @@ function LearnerDashboard({
                     };
 
                     return (
-                        <Card className="col-span-2 flex flex-col md:col-span-2 lg:col-span-4">
+                        <Card
+                            className={cn(
+                                bentoCardClass,
+                                'col-span-2 flex flex-col md:col-span-2 lg:col-span-4',
+                            )}
+                        >
                             <CardHeader>
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex flex-col gap-1">
@@ -1031,7 +1233,11 @@ function LearnerDashboard({
                     );
                 })()}
 
-                <ContinueLearningSection courses={recentCourses ?? []} />
+                <LearningHubCard
+                    recentCourses={recentCourses ?? []}
+                    recommendedCourses={recommendedCourses ?? []}
+                />
+                <BadgeGoalCard badgeGoal={badgeGoal} />
                 <ActivityFeedTimeline
                     activities={academy.recentActivity ?? []}
                 />
@@ -1075,7 +1281,12 @@ function LearnerDashboard({
                         : [...top, currentUser];
 
                     return (
-                        <Card className="col-span-2 flex flex-col md:col-span-6 lg:col-span-4">
+                        <Card
+                            className={cn(
+                                bentoCardClass,
+                                'col-span-2 flex flex-col md:col-span-6 lg:col-span-4',
+                            )}
+                        >
                             <CardHeader className="gap-1">
                                 <CardTitle>{leaderboardConfig.title}</CardTitle>
                                 <CardDescription>
@@ -1107,12 +1318,6 @@ function LearnerDashboard({
 
 /* ── Inline Component: AdminDashboard ── */
 
-const enrollmentTrendsConfig: ChartConfig = {
-    enrollments: { label: 'Pendaftaran', color: 'var(--chart-1)' },
-};
-const userGrowthConfig: ChartConfig = {
-    users: { label: 'Pengguna baru', color: 'var(--chart-2)' },
-};
 const adminOverviewConfig: ChartConfig = {
     enrollments: { label: 'Pendaftaran', color: 'var(--chart-1)' },
     users: { label: 'Pengguna baru', color: 'var(--chart-2)' },
@@ -1128,6 +1333,724 @@ function normalizeArray<T>(value: unknown): T[] {
     }
 
     return [];
+}
+
+function normalizeObject<T extends object>(value: unknown): T | null {
+    if (
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        Object.keys(value).length > 0
+    ) {
+        return value as T;
+    }
+
+    return null;
+}
+
+function AdminAnalyticsSkeleton() {
+    return (
+        <Card className={bentoCardClass}>
+            <CardHeader className="gap-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-64 max-w-full" />
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-3/4" />
+            </CardContent>
+        </Card>
+    );
+}
+
+function DeltaBadge({ value }: { value: number }) {
+    const isPositive = value > 0;
+    const isNegative = value < 0;
+
+    return (
+        <Badge
+            variant={isNegative ? 'secondary' : 'outline'}
+            className={cn(
+                'w-fit',
+                isPositive && 'text-primary',
+                isNegative && 'text-destructive',
+            )}
+        >
+            {formatDelta(value)}
+        </Badge>
+    );
+}
+
+function AdminPlatformSummaryCard({ admin }: { admin: AdminData }) {
+    const { summary } = admin.reportSnapshot;
+
+    return (
+        <Card className={cn(bentoPanelClass, 'sm:col-span-2 md:col-span-4')}>
+            <CardHeader className="gap-1">
+                <CardTitle>Ringkasan Platform</CardTitle>
+                <CardDescription>
+                    Sinyal utama periode {admin.reportSnapshot.periodLabel}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                <MetricTile
+                    label="Total pengguna"
+                    value={formatNumber(admin.stats.totalUsers)}
+                    description={`${formatNumber(admin.stats.newUsersThisMonth)} baru bulan ini`}
+                >
+                    <div className="mt-2">
+                        <DeltaBadge value={admin.stats.newUsersDelta} />
+                    </div>
+                </MetricTile>
+                <MetricTile
+                    label="Total kursus"
+                    value={formatNumber(admin.stats.totalCourses)}
+                    description="Konten tersedia"
+                />
+                <MetricTile
+                    label="Pendaftaran"
+                    value={formatNumber(admin.stats.totalEnrollments)}
+                    description={`${formatNumber(admin.stats.periodEnrollments)} dalam ${admin.stats.periodLabel}`}
+                >
+                    <div className="mt-2">
+                        <DeltaBadge value={admin.stats.enrollmentsDelta} />
+                    </div>
+                </MetricTile>
+                <MetricTile
+                    label="User aktif"
+                    value={formatNumber(summary.activeUsers)}
+                    description="Periode pilihan"
+                >
+                    <div className="mt-2">
+                        <DeltaBadge value={admin.stats.activeUsersDelta} />
+                    </div>
+                </MetricTile>
+                <MetricTile
+                    label="Aksi terbuka"
+                    value={formatNumber(summary.openActions)}
+                    description="Perlu ditindak"
+                />
+                <MetricTile
+                    label="Anomali"
+                    value={formatNumber(summary.anomalies)}
+                    description="Perlu dibaca"
+                />
+            </CardContent>
+        </Card>
+    );
+}
+
+function AdminDashboardControls({ admin }: { admin: AdminData }) {
+    const handlePeriodChange = (period: string) => {
+        router.get(
+            dashboardRoute.url({ query: { period } }),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    const handleExport = () => {
+        const payload = JSON.stringify(admin.reportSnapshot, null, 2);
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `cryptere-dashboard-${admin.filters.period}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            <Select
+                value={admin.filters.period}
+                onValueChange={handlePeriodChange}
+            >
+                <SelectTrigger size="sm" aria-label="Pilih periode analitik">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {admin.filters.availablePeriods.map((period) => (
+                        <SelectItem key={period.value} value={period.value}>
+                            {period.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select defaultValue={admin.filters.segment}>
+                <SelectTrigger size="sm" aria-label="Pilih segmen user">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {admin.filters.availableSegments.map((segment) => (
+                        <SelectItem key={segment.value} value={segment.value}>
+                            {segment.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download data-icon="button" />
+                Export
+            </Button>
+        </div>
+    );
+}
+
+function AdminActionQueueCard({
+    actions,
+}: {
+    actions: AdminData['actionQueue'];
+}) {
+    return (
+        <Card className={cn(bentoCardClass, 'lg:col-span-7')}>
+            <CardHeader className="gap-1">
+                <CardTitle>Action Queue</CardTitle>
+                <CardDescription>
+                    Prioritas operasional dari sinyal dashboard
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+                {actions.length === 0 ? (
+                    <Empty className="border-0 p-0">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <ListChecks />
+                            </EmptyMedia>
+                            <EmptyTitle>Tidak ada tindakan mendesak</EmptyTitle>
+                            <EmptyDescription>
+                                Semua sinyal utama berada dalam batas aman.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                ) : (
+                    actions.slice(0, 4).map((action) => (
+                        <div
+                            key={`${action.type}-${action.title}`}
+                            className="rounded-lg border p-3"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <Badge
+                                            variant={
+                                                action.severity === 'high'
+                                                    ? 'default'
+                                                    : 'secondary'
+                                            }
+                                        >
+                                            {action.severity}
+                                        </Badge>
+                                        <p className="text-sm font-medium">
+                                            {action.title}
+                                        </p>
+                                    </div>
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                        {action.description}
+                                    </p>
+                                </div>
+                                <Button variant="ghost" size="sm" asChild>
+                                    <Link href={action.actionUrl}>
+                                        {action.actionLabel}
+                                        <ArrowUpRight data-icon="inline-end" />
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function AdminAnomaliesCard({
+    anomalies,
+}: {
+    anomalies: AdminData['anomalies'];
+}) {
+    return (
+        <Card className={cn(bentoCardClass, 'lg:col-span-5')}>
+            <CardHeader className="gap-1">
+                <CardTitle>Anomali</CardTitle>
+                <CardDescription>
+                    Perubahan yang perlu dibaca sebelum mengambil keputusan
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+                {anomalies.length === 0 ? (
+                    <div className="flex items-center gap-3 rounded-lg border p-3">
+                        <Gauge className="size-4 text-primary" />
+                        <p className="text-sm text-muted-foreground">
+                            Tidak ada anomali utama pada periode ini.
+                        </p>
+                    </div>
+                ) : (
+                    anomalies.map((anomaly) => (
+                        <div
+                            key={`${anomaly.type}-${anomaly.title}`}
+                            className="rounded-lg border p-3"
+                        >
+                            <div className="flex items-start gap-2">
+                                <AlertTriangle
+                                    className={cn(
+                                        'mt-0.5 size-4',
+                                        anomaly.severity === 'high'
+                                            ? 'text-destructive'
+                                            : 'text-amber-500',
+                                    )}
+                                />
+                                <div>
+                                    <p className="text-sm font-medium">
+                                        {anomaly.title}
+                                    </p>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        {anomaly.description}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function AdminCourseAnalyticsCard({
+    courses,
+}: {
+    courses: AdminData['courseAnalytics'];
+}) {
+    return (
+        <Card className={bentoCardClass}>
+            <CardHeader className="gap-1">
+                <CardTitle>Course Analytics</CardTitle>
+                <CardDescription>
+                    Drilldown cepat untuk completion, lesson, kuis, dan user
+                    mandek
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {courses.length === 0 ? (
+                    <Empty className="border-0 p-0">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <GraduationCap />
+                            </EmptyMedia>
+                            <EmptyTitle>Belum ada course aktif</EmptyTitle>
+                            <EmptyDescription>
+                                Course analytics muncul setelah course
+                                dipublikasikan.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Course</TableHead>
+                                <TableHead className="text-right">
+                                    Enroll
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Complete
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Lesson
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Kuis
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Mandek
+                                </TableHead>
+                                <TableHead />
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {courses.map((course) => (
+                                <TableRow key={course.id}>
+                                    <TableCell className="max-w-60 truncate font-medium">
+                                        {course.title}
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                        {formatNumber(course.enrollments)}
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                        {formatPercent(course.completionRate)}
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                        {formatPercent(
+                                            course.lessonCompletionRate,
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                        {course.quizPassRate === null
+                                            ? 'N/A'
+                                            : formatPercent(
+                                                  course.quizPassRate,
+                                              )}
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                        {formatNumber(course.inactiveLearners)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            asChild
+                                        >
+                                            <Link href={course.actionUrl}>
+                                                {course.actionLabel}
+                                            </Link>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+const adminFunnelStageLabels: Record<string, string> = {
+    Registered: 'Terdaftar',
+    Enrolled: 'Mendaftar Kursus',
+    'Completed Lesson': 'Selesaikan Pelajaran',
+    'Completed Quiz': 'Selesaikan Kuis',
+};
+
+function AdminFunnelCard({
+    funnel,
+}: {
+    funnel: AdminGamificationFunnelStage[];
+}) {
+    return (
+        <Card className={cn(bentoCardClass, 'lg:col-span-5')}>
+            <CardHeader className="gap-1">
+                <CardTitle>Funnel Gamifikasi</CardTitle>
+                <CardDescription>
+                    Konversi pengguna dari daftar hingga menyelesaikan kuis
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+                {funnel.length === 0 ? (
+                    <Empty className="border-0 p-0">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <Target />
+                            </EmptyMedia>
+                            <EmptyTitle>Belum ada funnel</EmptyTitle>
+                            <EmptyDescription>
+                                Data aktivitas belajar akan muncul setelah ada
+                                pendaftaran kursus.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                ) : (
+                    funnel.map((stage) => (
+                        <div key={stage.stage} className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between gap-3 text-sm">
+                                <span className="font-medium">
+                                    {adminFunnelStageLabels[stage.stage] ??
+                                        stage.stage}
+                                </span>
+                                <div className="text-right">
+                                    <p className="tabular-nums">
+                                        {formatNumber(stage.count)} ·{' '}
+                                        {formatPercent(stage.percentage)}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground tabular-nums">
+                                        Drop-off{' '}
+                                        {formatNumber(stage.dropoff_count)} ·{' '}
+                                        {formatPercent(
+                                            stage.dropoff_percentage,
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+                            <Progress value={stage.percentage} />
+                            <p className="text-xs text-muted-foreground tabular-nums">
+                                Konversi dari tahap sebelumnya:{' '}
+                                {formatPercent(stage.conversion_from_previous)}
+                            </p>
+                        </div>
+                    ))
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function AdminEconomyHealthCard({
+    economy,
+}: {
+    economy: AdminEconomyHealth | null;
+}) {
+    const metrics = economy
+        ? [
+              {
+                  label: 'XP hari ini',
+                  value: formatNumber(economy.total_xp_awarded_today),
+              },
+              {
+                  label: 'Rata-rata XP/user',
+                  value: formatNumber(economy.avg_xp_per_user),
+              },
+              {
+                  label: 'Rata-rata poin/user',
+                  value: formatNumber(economy.avg_points_per_user),
+              },
+              {
+                  label: 'Rata-rata streak',
+                  value: `${formatNumber(economy.avg_streak)} hari`,
+              },
+              {
+                  label: 'User punya streak',
+                  value: formatNumber(economy.users_with_streak),
+              },
+              {
+                  label: 'Badge didapat',
+                  value: formatNumber(economy.total_badges_earned),
+              },
+          ]
+        : [];
+
+    return (
+        <Card className={cn(bentoCardClass, 'lg:col-span-7')}>
+            <CardHeader className="gap-1">
+                <div className="flex items-center justify-between gap-3">
+                    <CardTitle>Kesehatan Reward</CardTitle>
+                    {economy ? (
+                        <Badge
+                            variant={
+                                economy.status === 'healthy'
+                                    ? 'default'
+                                    : 'secondary'
+                            }
+                        >
+                            {economy.status_label}
+                        </Badge>
+                    ) : null}
+                </div>
+                <CardDescription>
+                    Sinyal ekonomi XP, poin, streak, dan badge
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {!economy ? (
+                    <Empty className="border-0 p-0">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <Award />
+                            </EmptyMedia>
+                            <EmptyTitle>Belum ada data reward</EmptyTitle>
+                            <EmptyDescription>
+                                Metrik reward akan muncul setelah user mulai
+                                belajar.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                        {metrics.map((metric) => (
+                            <div
+                                key={metric.label}
+                                className="rounded-lg border p-3"
+                            >
+                                <p className="text-xs text-muted-foreground">
+                                    {metric.label}
+                                </p>
+                                <p className="mt-1 text-lg font-semibold tabular-nums">
+                                    {metric.value}
+                                </p>
+                            </div>
+                        ))}
+                        <div className="col-span-2 grid gap-2">
+                            {economy.signals.map((signal) => (
+                                <div
+                                    key={signal.label}
+                                    className="flex items-center justify-between rounded-lg border p-3 text-sm"
+                                >
+                                    <span className="text-muted-foreground">
+                                        {signal.label}
+                                    </span>
+                                    <span className="inline-flex items-center gap-2 font-medium tabular-nums">
+                                        {formatNumber(signal.value)}{' '}
+                                        {signal.unit}
+                                        <Badge
+                                            variant={
+                                                signal.status === 'healthy'
+                                                    ? 'outline'
+                                                    : 'secondary'
+                                            }
+                                        >
+                                            {signal.status === 'healthy'
+                                                ? 'Aman'
+                                                : 'Pantau'}
+                                        </Badge>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="col-span-2 rounded-lg border p-3">
+                            <p className="text-xs text-muted-foreground">
+                                Badge paling sering
+                            </p>
+                            {economy.top_badge ? (
+                                <div className="mt-2 flex items-center justify-between gap-3">
+                                    <Badge variant="secondary">
+                                        {economy.top_badge.name}
+                                    </Badge>
+                                    <span className="text-sm text-muted-foreground tabular-nums">
+                                        {formatNumber(
+                                            Number(
+                                                economy.top_badge.earn_count,
+                                            ),
+                                        )}{' '}
+                                        kali
+                                    </span>
+                                </div>
+                            ) : (
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Belum ada badge yang didapat.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+function retentionCellClass(value: number | null): string {
+    if (value === null) {
+        return 'bg-muted/40 text-muted-foreground';
+    }
+
+    if (value >= 75) {
+        return 'bg-primary/15 text-primary';
+    }
+
+    if (value >= 40) {
+        return 'bg-muted text-foreground';
+    }
+
+    return 'bg-destructive/10 text-destructive';
+}
+
+function AdminCohortRetentionCard({
+    cohorts,
+}: {
+    cohorts: AdminCohortRetention[];
+}) {
+    const weekKeys = Array.from(
+        new Set(cohorts.flatMap((cohort) => Object.keys(cohort.retention))),
+    ).sort(
+        (a, b) =>
+            Number(a.replace('week_', '')) - Number(b.replace('week_', '')),
+    );
+
+    return (
+        <Card className={bentoCardClass}>
+            <CardHeader className="gap-1">
+                <CardTitle>Retensi Cohort</CardTitle>
+                <CardDescription>
+                    Persentase cohort yang masih aktif per minggu sejak daftar
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {cohorts.length === 0 ? (
+                    <Empty className="border-0 p-0">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <BarChart3 />
+                            </EmptyMedia>
+                            <EmptyTitle>Belum ada cohort</EmptyTitle>
+                            <EmptyDescription>
+                                Cohort akan muncul setelah pengguna baru
+                                bergabung.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Cohort</TableHead>
+                                <TableHead className="text-right">
+                                    User
+                                </TableHead>
+                                <TableHead>Sample</TableHead>
+                                {weekKeys.map((weekKey) => (
+                                    <TableHead
+                                        key={weekKey}
+                                        className="text-center"
+                                    >
+                                        W{weekKey.replace('week_', '')}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {cohorts.map((cohort) => (
+                                <TableRow key={cohort.cohort_week}>
+                                    <TableCell>{cohort.cohort_week}</TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                        {formatNumber(cohort.signup_count)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant={
+                                                cohort.confidence === 'high'
+                                                    ? 'default'
+                                                    : 'secondary'
+                                            }
+                                        >
+                                            {cohort.sample_label}
+                                        </Badge>
+                                    </TableCell>
+                                    {weekKeys.map((weekKey) => {
+                                        const value =
+                                            cohort.retention[weekKey] ?? null;
+
+                                        return (
+                                            <TableCell
+                                                key={weekKey}
+                                                className="text-center"
+                                            >
+                                                <span
+                                                    className={cn(
+                                                        'inline-flex min-w-12 justify-center rounded-md px-2 py-1 text-xs font-medium tabular-nums',
+                                                        retentionCellClass(
+                                                            value,
+                                                        ),
+                                                    )}
+                                                >
+                                                    {value === null
+                                                        ? 'N/A'
+                                                        : formatPercent(value)}
+                                                </span>
+                                            </TableCell>
+                                        );
+                                    })}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
+            </CardContent>
+        </Card>
+    );
 }
 
 const courseColumns: ColumnDef<AdminCoursePerformance>[] = [
@@ -1285,6 +2208,85 @@ const userColumns: ColumnDef<AdminRecentUser>[] = [
     },
 ];
 
+function AdminContentAndUsersCard({
+    courses,
+    users,
+}: {
+    courses: AdminCoursePerformance[];
+    users: AdminRecentUser[];
+}) {
+    return (
+        <Card className={bentoCardClass}>
+            <CardHeader className="gap-1">
+                <CardTitle>Konten dan Pendaftaran</CardTitle>
+                <CardDescription>
+                    Kursus teratas dan pengguna terbaru
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 lg:grid-cols-2">
+                <div className="min-w-0 rounded-lg border p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-medium">
+                                Kursus teratas
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Berdasarkan pendaftaran dan penyelesaian
+                            </p>
+                        </div>
+                        <BookOpen className="size-4 text-muted-foreground" />
+                    </div>
+                    {courses.length === 0 ? (
+                        <CompactEmptyState
+                            icon={BookOpen}
+                            title="Belum ada kursus"
+                            description="Kursus yang dipublikasikan akan muncul di sini."
+                        />
+                    ) : (
+                        <DataTable
+                            columns={courseColumns}
+                            data={courses}
+                            centered
+                            showFilterInput={false}
+                            showFooter={false}
+                            enableDefaultIdSort={false}
+                        />
+                    )}
+                </div>
+                <div className="min-w-0 rounded-lg border p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-medium">
+                                Pendaftaran terkini
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Pengguna yang baru bergabung
+                            </p>
+                        </div>
+                        <Activity className="size-4 text-muted-foreground" />
+                    </div>
+                    {users.length === 0 ? (
+                        <CompactEmptyState
+                            icon={Activity}
+                            title="Belum ada pengguna baru"
+                            description="Pendaftaran pengguna akan muncul setelah akun dibuat."
+                        />
+                    ) : (
+                        <DataTable
+                            columns={userColumns}
+                            data={users}
+                            centered
+                            showFilterInput={false}
+                            showFooter={false}
+                            enableDefaultIdSort={false}
+                        />
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 function AdminDashboard({
     admin,
     adminTabs,
@@ -1322,6 +2324,24 @@ function AdminDashboard({
     const recentUsers = normalizeArray<AdminData['recentUsers'][number]>(
         admin.recentUsers,
     );
+    const actionQueue = normalizeArray<AdminData['actionQueue'][number]>(
+        admin.actionQueue,
+    );
+    const courseAnalytics = normalizeArray<
+        AdminData['courseAnalytics'][number]
+    >(admin.courseAnalytics);
+    const anomalies = normalizeArray<AdminData['anomalies'][number]>(
+        admin.anomalies,
+    );
+    const cohortRetention = normalizeArray<AdminCohortRetention>(
+        admin.cohortRetention,
+    );
+    const gamificationFunnel = normalizeArray<AdminGamificationFunnelStage>(
+        admin.gamificationFunnel,
+    );
+    const economyHealth = normalizeObject<AdminEconomyHealth>(
+        admin.economyHealth,
+    );
 
     const overviewSeries = enrollmentTrends.map((entry, index) => ({
         month: entry.month,
@@ -1341,51 +2361,36 @@ function AdminDashboard({
                     </TypographyMuted>
                 </div>
                 <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+                    <AdminDashboardControls admin={admin} />
                     {adminTabs}
                 </div>
             </header>
 
-            {/* Stats Cards - 4 columns */}
             <section
                 className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4"
                 style={{ animationDelay: '100ms' }}
             >
-                <StatsCard
-                    title="Total Pengguna"
-                    description="Pertumbuhan pengguna platform"
-                    value={admin.stats.totalUsers}
-                    unit="pengguna"
-                />
-
-                <StatsCard
-                    title="Total Kursus"
-                    description="Konten pembelajaran yang tersedia"
-                    value={admin.stats.totalCourses}
-                    unit="kursus"
-                />
-
-                <StatsCard
-                    title="Total Pendaftaran"
-                    description="Keterlibatan pengguna"
-                    value={admin.stats.totalEnrollments}
-                    unit="pendaftaran"
-                />
-
-                <StatsCard
-                    title="Pengguna Aktif"
-                    description="Aktif dalam 30 hari terakhir"
-                    value={admin.stats.activeUsers}
-                    unit="aktif"
-                />
+                <AdminPlatformSummaryCard admin={admin} />
             </section>
 
-            {/* Main Content Grid */}
+            <section
+                className="animate-fade-in-up grid gap-3 lg:grid-cols-12"
+                style={{ animationDelay: '150ms' }}
+            >
+                <AdminActionQueueCard actions={actionQueue} />
+                <AdminAnomaliesCard anomalies={anomalies} />
+            </section>
+
             <section
                 className="animate-fade-in-up grid gap-3 lg:grid-cols-12"
                 style={{ animationDelay: '200ms' }}
             >
-                {/* Large Chart - 8 cols */}
-                <Card className="col-span-2 md:col-span-4 lg:col-span-8">
+                <Card
+                    className={cn(
+                        bentoPanelClass,
+                        'col-span-2 md:col-span-4 lg:col-span-12',
+                    )}
+                >
                     <CardHeader className="flex items-center gap-2 border-b py-5 sm:flex-row">
                         <div className="grid flex-1 gap-1">
                             <CardTitle>Pertumbuhan Platform</CardTitle>
@@ -1398,7 +2403,7 @@ function AdminDashboard({
                     <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                         <ChartContainer
                             config={adminOverviewConfig}
-                            className="aspect-auto h-62.5 w-full"
+                            className={compactChartClass}
                         >
                             <BarChart data={overviewSeries} accessibilityLayer>
                                 <CartesianGrid vertical={false} />
@@ -1428,170 +2433,46 @@ function AdminDashboard({
                 </Card>
             </section>
 
-            {/* Secondary Charts - 2 columns */}
             <section
-                className="animate-fade-in-up grid gap-3 lg:grid-cols-2"
+                className="animate-fade-in-up grid gap-3 lg:grid-cols-12"
                 style={{ animationDelay: '300ms' }}
             >
-                <Card>
-                    <CardHeader className="gap-1 pb-4">
-                        <CardTitle>Tren Pendaftaran</CardTitle>
-                        <CardDescription className="text-sm/6">
-                            Jumlah pendaftaran baru per bulan
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer
-                            config={enrollmentTrendsConfig}
-                            className="h-62.5 w-full"
-                        >
-                            <BarChart
-                                data={enrollmentTrends}
-                                accessibilityLayer
-                            >
-                                <XAxis
-                                    dataKey="month"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                    tickFormatter={(v: string) => v.slice(0, 3)}
-                                />
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent hideLabel />}
-                                />
-                                <Bar
-                                    dataKey="enrollments"
-                                    shape={<GradientBar prefix="enrollment" />}
-                                    fill="var(--color-enrollments)"
-                                />
-                            </BarChart>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="gap-1 pb-4">
-                        <CardTitle>Pertumbuhan Pengguna</CardTitle>
-                        <CardDescription className="text-sm/6">
-                            Jumlah pengguna baru per bulan
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer
-                            config={userGrowthConfig}
-                            className="h-62.5 w-full"
-                        >
-                            <AreaChart data={userGrowth} accessibilityLayer>
-                                <CartesianGrid
-                                    vertical={false}
-                                    strokeDasharray="3 3"
-                                />
-                                <XAxis
-                                    dataKey="month"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    tickFormatter={(v: string) => v.slice(0, 3)}
-                                />
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent />}
-                                />
-                                <defs>
-                                    <linearGradient
-                                        id="gradient-user-growth"
-                                        x1="0"
-                                        y1="0"
-                                        x2="0"
-                                        y2="1"
-                                    >
-                                        <stop
-                                            offset="5%"
-                                            stopColor="var(--color-users)"
-                                            stopOpacity={0.5}
-                                        />
-                                        <stop
-                                            offset="95%"
-                                            stopColor="var(--color-users)"
-                                            stopOpacity={0.1}
-                                        />
-                                    </linearGradient>
-                                </defs>
-                                <Area
-                                    dataKey="users"
-                                    type="monotone"
-                                    fill="url(#gradient-user-growth)"
-                                    fillOpacity={0.4}
-                                    stroke="var(--color-users)"
-                                    strokeWidth={0.8}
-                                    strokeDasharray="3 3"
-                                />
-                            </AreaChart>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
+                <Deferred
+                    data="admin.gamificationFunnel"
+                    fallback={<AdminAnalyticsSkeleton />}
+                >
+                    <AdminFunnelCard funnel={gamificationFunnel} />
+                </Deferred>
+
+                <Deferred
+                    data="admin.economyHealth"
+                    fallback={<AdminAnalyticsSkeleton />}
+                >
+                    <AdminEconomyHealthCard economy={economyHealth} />
+                </Deferred>
             </section>
 
-            {/* Data Tables - 2 columns */}
             <section
                 className="animate-fade-in-up grid gap-3 lg:grid-cols-2"
                 style={{ animationDelay: '400ms' }}
             >
-                <Card>
-                    <CardHeader className="gap-1 pb-4">
-                        <CardTitle>Kursus Teratas</CardTitle>
-                        <CardDescription className="text-sm/6">
-                            Berdasarkan pendaftaran dan tingkat penyelesaian
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {coursePerformance.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                Belum ada kursus yang telah dipublikasikan.
-                            </p>
-                        ) : (
-                            <DataTable
-                                columns={courseColumns}
-                                data={coursePerformance}
-                                centered
-                                showFilterInput={false}
-                                showFooter={false}
-                                enableDefaultIdSort={false}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
+                <Deferred
+                    data="admin.cohortRetention"
+                    fallback={<AdminAnalyticsSkeleton />}
+                >
+                    <AdminCohortRetentionCard cohorts={cohortRetention} />
+                </Deferred>
+                <AdminCourseAnalyticsCard courses={courseAnalytics} />
             </section>
 
-            {/* Recent Users Table */}
             <section
-                className="animate-fade-in-up"
+                className="animate-fade-in-up grid gap-3"
                 style={{ animationDelay: '500ms' }}
             >
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Pendaftaran Terkini</CardTitle>
-                        <CardDescription>
-                            Pengguna yang baru bergabung di platform
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {recentUsers.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                Belum ada pengguna yang telah terdaftar.
-                            </p>
-                        ) : (
-                            <DataTable
-                                columns={userColumns}
-                                data={recentUsers}
-                                centered
-                                showFilterInput={false}
-                                showFooter={false}
-                                enableDefaultIdSort={false}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
+                <AdminContentAndUsersCard
+                    courses={coursePerformance}
+                    users={recentUsers}
+                />
             </section>
         </div>
     );
@@ -1604,7 +2485,12 @@ export default function Dashboard({
     analytics,
     admin,
     decayWarning,
+    nextAction,
+    weeklyGoal,
+    rankProgress,
+    badgeGoal,
     recentCourses,
+    recommendedCourses,
 }: DashboardProps) {
     const { auth } = usePage<{ auth?: Auth }>().props;
     const user = auth?.user;
@@ -1628,7 +2514,12 @@ export default function Dashboard({
                         academy={academy}
                         analytics={analytics}
                         decayWarning={decayWarning}
+                        nextAction={nextAction}
+                        weeklyGoal={weeklyGoal}
+                        rankProgress={rankProgress}
+                        badgeGoal={badgeGoal}
                         recentCourses={recentCourses}
+                        recommendedCourses={recommendedCourses}
                         adminTabs={
                             <Tabs
                                 value={activeTab}
@@ -1684,7 +2575,12 @@ export default function Dashboard({
                     academy={academy}
                     analytics={analytics}
                     decayWarning={decayWarning}
+                    nextAction={nextAction}
+                    weeklyGoal={weeklyGoal}
+                    rankProgress={rankProgress}
+                    badgeGoal={badgeGoal}
                     recentCourses={recentCourses}
+                    recommendedCourses={recommendedCourses}
                 />
             ) : null}
         </>

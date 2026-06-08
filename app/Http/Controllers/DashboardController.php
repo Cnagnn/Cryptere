@@ -31,7 +31,7 @@ class DashboardController extends Controller
             if ($user->canAccessAdmin()) {
                 \Log::info('Rendering admin dashboard', ['user_id' => $user->id]);
                 $result = $this->traceSpan('dashboard.admin', 'Admin dashboard render', fn () => Inertia::render('dashboard', array_merge(
-                    $this->adminBuilder->build(),
+                    $this->adminBuilder->build($request->string('period')->toString()),
                     $this->learnerBuilder->build($user),
                 )));
                 \Log::info('Admin dashboard rendered successfully', ['user_id' => $user->id]);

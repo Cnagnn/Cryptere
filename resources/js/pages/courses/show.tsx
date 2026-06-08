@@ -12,7 +12,6 @@ import {
     Lock,
     Menu,
     MessageSquare,
-    RotateCcw,
     Sparkles,
     Target,
     Trophy,
@@ -85,13 +84,6 @@ type PlayerSource =
     | { kind: 'youtube' | 'vimeo'; embedId: string }
     | { kind: 'file'; src: string }
     | { kind: 'unsupported' };
-type VideoProcessingStatus =
-    | 'pending'
-    | 'processing'
-    | 'ready'
-    | 'converted'
-    | 'failed'
-    | null;
 type TaskType = 'video' | 'read' | 'reading' | 'quiz';
 
 type QuizSubmission = {
@@ -145,7 +137,6 @@ type LessonTask = {
     description: string;
     maxAttempts?: number | null;
     videoUrl: string | null;
-    videoProcessingStatus: string | null;
     videoPositionSeconds: number;
     pdfUrl: string | null;
     pdfName: string | null;
@@ -174,7 +165,6 @@ type ServerTask = {
     title: string;
     minutes: number;
     videoUrl: string | null;
-    videoProcessingStatus: string | null;
     videoPositionSeconds?: number;
     documentName: string | null;
     conversionStatus: string | null;
@@ -388,7 +378,6 @@ function mapLessons(serverLessons: ServerLesson[]): LessonData[] {
                 title: normalizeTaskTitle(task.title),
                 description: defaultTaskDescription(type),
                 videoUrl: task.videoUrl,
-                videoProcessingStatus: task.videoProcessingStatus ?? null,
                 videoPositionSeconds: task.videoPositionSeconds ?? 0,
                 pdfUrl: task.pdfUrl ? normalizePdfUrl(task.pdfUrl) : null,
                 pdfName: task.documentName,
@@ -600,8 +589,6 @@ function VideoTask({
         () => resolvePlayerSource(task.videoUrl ?? ''),
         [task.videoUrl],
     );
-    const status = task.videoProcessingStatus as VideoProcessingStatus;
-    const isWaiting = status === 'pending' || status === 'processing';
 
     // Online/offline detection
     useEffect(() => {
@@ -665,12 +652,7 @@ function VideoTask({
     useEffect(() => {
         const container = containerRef.current;
 
-        if (
-            !container ||
-            source.kind === 'unsupported' ||
-            isWaiting ||
-            status === 'failed'
-        ) {
+        if (!container || source.kind === 'unsupported') {
             return;
         }
 
@@ -797,57 +779,12 @@ function VideoTask({
         };
     }, [
         courseSlug,
-        isWaiting,
         lessonId,
         onComplete,
         source,
-        status,
         task.id,
         task.videoPositionSeconds,
     ]);
-
-    if (isWaiting) {
-        return (
-            <div className="space-y-4">
-                <div className="flex aspect-video flex-col items-center justify-center gap-4 rounded-2xl border bg-black p-6 text-center text-white">
-                    <Loader2 className="size-10 animate-spin text-white/70" />
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium">
-                            Video sedang diproses.
-                        </p>
-                        <p className="text-xs text-white/60">
-                            Refresh halaman setelah proses selesai.
-                        </p>
-                    </div>
-                    <Progress
-                        value={status === 'pending' ? 15 : 55}
-                        className="max-w-xs"
-                    />
-                </div>
-            </div>
-        );
-    }
-
-    if (status === 'failed') {
-        return (
-            <div className="space-y-4">
-                <Alert variant="destructive">
-                    <AlertCircle className="size-4" />
-                    <AlertDescription>
-                        Video gagal diproses. Coba refresh atau hubungi admin.
-                    </AlertDescription>
-                </Alert>
-                <Button
-                    variant="outline"
-                    onClick={() => window.location.reload()}
-                    className="w-fit"
-                >
-                    <RotateCcw className="mr-2 size-4" />
-                    Coba Lagi
-                </Button>
-            </div>
-        );
-    }
 
     if (!task.videoUrl || source.kind === 'unsupported') {
         return (

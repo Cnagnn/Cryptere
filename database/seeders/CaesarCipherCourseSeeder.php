@@ -85,7 +85,6 @@ class CaesarCipherCourseSeeder extends Seeder
                 'description' => $lessonData['video']['description'],
                 'type' => 'video',
                 'video_url' => $lessonData['video']['url'],
-                'video_processing_status' => 'ready',
                 'status' => LessonTask::STATUS_PUBLISHED,
                 'version' => 1,
                 'published_at' => now(),

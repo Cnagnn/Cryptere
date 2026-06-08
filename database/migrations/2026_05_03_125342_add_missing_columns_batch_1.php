@@ -19,8 +19,6 @@ return new class extends Migration
         // lesson_tasks: add missing columns
         Schema::table('lesson_tasks', function (Blueprint $table) {
             $table->unsignedSmallInteger('minutes')->default(0)->after('type');
-            $table->string('video_processing_status')->nullable()->after('video_url');
-            $table->string('video_mp4_url')->nullable()->after('video_processing_status');
             $table->string('conversion_status')->nullable()->after('document_name');
             $table->string('pdf_url')->nullable()->after('conversion_status');
             $table->timestamp('published_at')->nullable()->after('sort_order');
@@ -72,7 +70,7 @@ return new class extends Migration
         });
 
         Schema::table('lesson_tasks', function (Blueprint $table) {
-            $table->dropColumn(['minutes', 'video_processing_status', 'video_mp4_url', 'conversion_status', 'pdf_url', 'published_at', 'published_by']);
+            $table->dropColumn(['minutes', 'conversion_status', 'pdf_url', 'published_at', 'published_by']);
         });
 
         Schema::table('lessons', function (Blueprint $table) {
