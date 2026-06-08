@@ -1,11 +1,4 @@
-import {
-    Deferred,
-    Head,
-    Link,
-    router,
-    usePage,
-    usePoll,
-} from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
     Activity,
@@ -77,6 +70,9 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
+import { useConnectionMonitor } from '@/hooks/use-connection-monitor';
+import { useSmartPolling } from '@/hooks/use-smart-polling';
+import { useRealtime } from '@/hooks/use-realtime';
 import { dashboard as dashboardRoute } from '@/routes';
 import { index as coursesIndex, show as courseShow } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
@@ -1115,7 +1111,31 @@ function LearnerDashboard({
     const { auth } = usePage<{ auth: Auth }>().props;
     const [showDecayWarning, setShowDecayWarning] = useState(true);
 
-    usePoll(30_000, { only: ['academy'] });
+    // Connection monitoring
+    const { isConnected } = useConnectionMonitor();
+
+    // Real-time updates via WebSocket
+    useRealtime({
+        userId: auth.user.id,
+        onStatsUpdate: () => {
+            router.reload({ only: ['stats', 'level'] });
+        },
+        onBadgeUnlock: () => {
+            router.reload({ only: ['stats'] });
+        },
+        onLevelUp: () => {
+            router.reload({ only: ['level', 'stats'] });
+        },
+        onRankChanged: () => {
+            router.reload({ only: ['rankProgress'] });
+        },
+    });
+
+    // Fallback polling when WebSocket disconnected
+    useSmartPolling({
+        enabled: !isConnected,
+        only: ['academy', 'stats', 'level', 'rankProgress'],
+    });
 
     const greeting = getTimeGreeting(auth.user.name);
 

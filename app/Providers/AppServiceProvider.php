@@ -12,6 +12,7 @@ use App\Listeners\BroadcastLeaderboardUpdate;
 use App\Listeners\LogXpAward;
 use App\Models\User;
 use App\Observers\UserBalanceHistoryObserver;
+use App\Observers\UserObserver;
 use Carbon\CarbonImmutable;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -64,6 +65,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureApiDocumentation();
 
         User::observe(UserBalanceHistoryObserver::class);
+        User::observe(UserObserver::class);
 
         Event::listen(XpAwarded::class, LogXpAward::class);
         Event::listen(XpAwarded::class, BroadcastLeaderboardUpdate::class);

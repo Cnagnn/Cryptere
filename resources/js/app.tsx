@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
+import '@/lib/echo'; // Initialize Laravel Echo
 
 if (import.meta.env.VITE_SENTRY_DSN) {
     Sentry.init({
