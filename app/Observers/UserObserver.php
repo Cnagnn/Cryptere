@@ -16,14 +16,16 @@ class UserObserver
     public function updated(User $user): void
     {
         // Check if XP or points changed
-        if ($user->wasChanged(['xp', 'points', 'level'])) {
+        if ($user->wasChanged(['xp', 'points'])) {
             // Check for level up
             $oldXp = $user->getOriginal('xp') ?? 0;
             $newXp = $user->xp;
 
-            $oldLevel = $user->getOriginal('level') ?? 1;
-            $currentLevel = $this->levelService->getUserLevel($user);
-            $newLevel = $currentLevel['current'];
+            $oldLevelData = $this->levelService->getLevelForXp($oldXp);
+            $newLevelData = $this->levelService->getLevelForXp($newXp);
+
+            $oldLevel = $oldLevelData['level'];
+            $newLevel = $newLevelData['level'];
 
             // Dispatch level up event if level changed
             if ($newLevel > $oldLevel) {
