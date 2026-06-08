@@ -8,7 +8,6 @@ use App\Features\RealtimeLeaderboard;
 use App\Http\Responses\Auth\LoginResponse;
 use App\Http\Responses\Auth\NeutralPasswordResetLinkResponse;
 use App\Http\Responses\Auth\RegisterResponse;
-use App\Listeners\BroadcastLeaderboardUpdate;
 use App\Listeners\LogXpAward;
 use App\Models\User;
 use App\Observers\UserBalanceHistoryObserver;
@@ -68,7 +67,6 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UserObserver::class);
 
         Event::listen(XpAwarded::class, LogXpAward::class);
-        Event::listen(XpAwarded::class, BroadcastLeaderboardUpdate::class);
     }
 
     /**

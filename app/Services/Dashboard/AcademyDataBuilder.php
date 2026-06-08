@@ -9,6 +9,7 @@ use App\Models\LessonProgress;
 use App\Models\User;
 use App\Services\CacheService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -27,12 +28,16 @@ class AcademyDataBuilder
         $firstName = Str::of($user->name)->trim()->before(' ')->toString();
         $displayName = $firstName !== '' ? $firstName : 'Learner';
 
-        $topLearners = User::query()
-            ->select(['id', 'name', 'username', 'points', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id'])
-            ->orderByDesc('points')
-            ->orderBy('name')
-            ->take(5)
-            ->get();
+        $topLearners = Cache::remember(
+            'dashboard:academy:leaderboard-preview',
+            CacheService::TTL_LEADERBOARD,
+            fn () => User::query()
+                ->select(['id', 'name', 'username', 'points', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id'])
+                ->orderByDesc('points')
+                ->orderBy('name')
+                ->take(5)
+                ->get()
+        );
 
         $currentUserRank = User::query()
             ->where('points', '>', $user->points)

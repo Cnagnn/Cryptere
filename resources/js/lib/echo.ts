@@ -4,17 +4,32 @@ import Pusher from 'pusher-js';
 declare global {
     interface Window {
         Pusher: typeof Pusher;
-        Echo: Echo;
+        Echo: Echo<any>;
     }
 }
 
 window.Pusher = Pusher;
 
+const reverbHost = import.meta.env.VITE_REVERB_HOST;
+const reverbPort = Number(import.meta.env.VITE_REVERB_PORT || 8080);
+const reverbScheme = import.meta.env.VITE_REVERB_SCHEME || 'https';
+const pusherCluster = import.meta.env.VITE_PUSHER_APP_CLUSTER || 'ap1';
+const forceTls =
+    reverbScheme === 'https' ||
+    (import.meta.env.VITE_PUSHER_FORCE_TLS || 'true') === 'true';
+
 window.Echo = new Echo({
     broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY || 'local',
-    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'ap1',
-    forceTLS: (import.meta.env.VITE_PUSHER_FORCE_TLS || 'true') === 'true',
+    key:
+        import.meta.env.VITE_REVERB_APP_KEY ||
+        import.meta.env.VITE_PUSHER_APP_KEY ||
+        'local',
+    cluster: pusherCluster,
+    forceTLS: forceTls,
+    wsHost: reverbHost || undefined,
+    wsPort: reverbPort,
+    wssPort: reverbPort,
+    enabledTransports: ['ws', 'wss'],
     authEndpoint: '/broadcasting/auth',
     auth: {
         headers: {
@@ -29,7 +44,6 @@ window.Echo = new Echo({
 
 export const echo = window.Echo;
 
-// Connection state helpers
 export const getConnectionState = () => {
     return echo.connector?.pusher?.connection?.state || 'disconnected';
 };
@@ -43,23 +57,21 @@ export const onConnectionChange = (
 
     echo.connector?.pusher?.connection?.bind('state_change', handler);
 
-    // Return cleanup function
     return () => {
         echo.connector?.pusher?.connection?.unbind('state_change', handler);
     };
 };
 
-// Debug logging in development
 if (import.meta.env.DEV) {
     echo.connector?.pusher?.connection?.bind('connected', () => {
-        console.log('✅ Echo: Connected to WebSocket');
+        console.log('Echo: Connected to WebSocket');
     });
 
     echo.connector?.pusher?.connection?.bind('disconnected', () => {
-        console.log('❌ Echo: Disconnected from WebSocket');
+        console.log('Echo: Disconnected from WebSocket');
     });
 
-    echo.connector?.pusher?.connection?.bind('error', (error: any) => {
-        console.error('❌ Echo: Connection error', error);
+    echo.connector?.pusher?.connection?.bind('error', (error: unknown) => {
+        console.error('Echo: Connection error', error);
     });
 }

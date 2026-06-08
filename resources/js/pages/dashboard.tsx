@@ -69,10 +69,10 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import { cn } from '@/lib/utils';
 import { useConnectionMonitor } from '@/hooks/use-connection-monitor';
-import { useSmartPolling } from '@/hooks/use-smart-polling';
 import { useRealtime } from '@/hooks/use-realtime';
+import { useSmartPolling } from '@/hooks/use-smart-polling';
+import { cn } from '@/lib/utils';
 import { dashboard as dashboardRoute } from '@/routes';
 import { index as coursesIndex, show as courseShow } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';

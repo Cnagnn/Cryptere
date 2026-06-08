@@ -97,7 +97,7 @@ class LeaderboardService
 
         $rows = $this->rememberArray(
             $cacheKey,
-            CacheService::TTL_MEDIUM,
+            CacheService::TTL_LEADERBOARD,
             fn (): array => $this->periodPointsQuery($this->resolveSinceDate($timeframe))
                 ->whereRaw('COALESCE(lp.total, 0) > 0')
                 ->orderByDesc('period_points')
@@ -132,7 +132,7 @@ class LeaderboardService
 
         $since = $this->resolveSinceDate($timeframe);
 
-        return (int) Cache::remember("leaderboard_top_{$timeframe}", 300, function () use ($since): int {
+        return (int) Cache::remember("leaderboard_top_{$timeframe}", CacheService::TTL_LEADERBOARD, function () use ($since): int {
             $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
             $lessonMax = (int) DB::table('lesson_progress')
                 ->select(DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
@@ -267,7 +267,7 @@ class LeaderboardService
         return $this->traceSpan('leaderboard.get_top3', "Get top 3 ({$timeframe})", function () use ($timeframe) {
             return $this->rememberArray(
                 'leaderboard_top3_'.self::AVATAR_CACHE_VERSION."_{$timeframe}",
-                CacheService::TTL_MEDIUM,
+                CacheService::TTL_LEADERBOARD,
                 fn (): array => $this->fetchTop3Users($timeframe)
                     ->map(fn (User $user): array => $this->userToArray($user, $timeframe))
                     ->all(),

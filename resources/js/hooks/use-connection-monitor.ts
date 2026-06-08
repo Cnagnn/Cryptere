@@ -1,31 +1,63 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { onConnectionChange } from '@/lib/echo';
+import { getConnectionState, onConnectionChange } from '@/lib/echo';
 
 export function useConnectionMonitor() {
-    const [isConnected, setIsConnected] = useState(true);
-    const [toastId, setToastId] = useState<string | number | null>(null);
+    const [isConnected, setIsConnected] = useState(
+        () => getConnectionState() === 'connected',
+    );
+    const [isOffline, setIsOffline] = useState(
+        () => typeof navigator !== 'undefined' && !navigator.onLine,
+    );
+    const toastIdRef = useRef<string | number | null>(null);
 
     useEffect(() => {
-        const cleanup = onConnectionChange((state) => {
-            if (state === 'connected') {
-                setIsConnected(true);
-                if (toastId) {
-                    toast.dismiss(toastId);
-                    setToastId(null);
-                }
-            } else if (state === 'disconnected' || state === 'failed') {
-                setIsConnected(false);
-                const id = toast.warning('Koneksi real-time terputus', {
-                    description: 'Data diperbarui setiap beberapa detik.',
-                    duration: Infinity,
-                });
-                setToastId(id);
+        const dismissOfflineToast = () => {
+            if (toastIdRef.current !== null) {
+                toast.dismiss(toastIdRef.current);
+                toastIdRef.current = null;
             }
+        };
+
+        const syncInternetState = () => {
+            const offline = !navigator.onLine;
+
+            setIsOffline(offline);
+
+            if (offline) {
+                if (toastIdRef.current === null) {
+                    toastIdRef.current = toast.warning(
+                        'Koneksi internet terputus',
+                        {
+                            description:
+                                'Periksa jaringan Anda untuk melanjutkan sinkronisasi data.',
+                            duration: Infinity,
+                        },
+                    );
+                }
+
+                return;
+            }
+
+            dismissOfflineToast();
+        };
+
+        syncInternetState();
+
+        const cleanup = onConnectionChange((state) => {
+            setIsConnected(state === 'connected');
         });
 
-        return cleanup;
-    }, [toastId]);
+        window.addEventListener('online', syncInternetState);
+        window.addEventListener('offline', syncInternetState);
 
-    return { isConnected };
+        return () => {
+            cleanup();
+            window.removeEventListener('online', syncInternetState);
+            window.removeEventListener('offline', syncInternetState);
+            dismissOfflineToast();
+        };
+    }, []);
+
+    return { isConnected, isOffline };
 }

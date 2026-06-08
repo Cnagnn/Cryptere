@@ -16,6 +16,9 @@ class CacheService
     /** @var int 1 hour — rarely changing reference data */
     public const TTL_LONG = 3600;
 
+    /** @var int 12 hours — leaderboard snapshots and previews */
+    public const TTL_LEADERBOARD = 43_200;
+
     /**
      * Get total published course count, cached for 5 minutes.
      */

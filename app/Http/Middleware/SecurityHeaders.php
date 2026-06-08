@@ -33,7 +33,28 @@ class SecurityHeaders
         $styleSrcAttr = "style-src-attr 'unsafe-inline'";
         $imgSrc = "img-src 'self' data: blob: https://deifkwefumgah.cloudfront.net";
         $fontSrc = "font-src 'self' data: https://fonts.gstatic.com";
-        $connectSrc = "connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.pusher.com wss://*.pusher.com";
+        $connectSources = [
+            "'self'",
+            'https://*.sentry.io',
+            'https://*.ingest.sentry.io',
+            'https://*.pusher.com',
+            'wss://*.pusher.com',
+        ];
+
+        $reverbHost = (string) config('reverb.apps.apps.0.options.host', '');
+        $reverbPort = (int) config('reverb.apps.apps.0.options.port', 443);
+        $reverbScheme = (string) config('reverb.apps.apps.0.options.scheme', 'https');
+
+        if ($reverbHost !== '') {
+            $httpScheme = $reverbScheme === 'https' ? 'https' : 'http';
+            $wsScheme = $reverbScheme === 'https' ? 'wss' : 'ws';
+            $portSuffix = in_array($reverbPort, [80, 443], true) ? '' : ":{$reverbPort}";
+
+            $connectSources[] = "{$httpScheme}://{$reverbHost}{$portSuffix}";
+            $connectSources[] = "{$wsScheme}://{$reverbHost}{$portSuffix}";
+        }
+
+        $connectSrc = 'connect-src '.implode(' ', array_unique($connectSources));
 
         if (app()->environment('local', 'testing', 'development')) {
             $scriptSrc .= " 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173";
