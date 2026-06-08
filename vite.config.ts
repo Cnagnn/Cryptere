@@ -8,7 +8,7 @@ import { defineConfig } from 'vite';
 const enableSourceMap = process.env.VITE_BUILD_SOURCEMAP === 'true';
 const enableReactCompiler =
     process.env.NODE_ENV === 'production' &&
-    process.env.VITE_REACT_COMPILER !== 'false';
+    process.env.VITE_REACT_COMPILER === 'true';
 
 export default defineConfig({
     build: {
