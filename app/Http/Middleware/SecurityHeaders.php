@@ -33,13 +33,13 @@ class SecurityHeaders
         $styleSrcAttr = "style-src-attr 'unsafe-inline'";
         $imgSrc = "img-src 'self' data: blob: https://deifkwefumgah.cloudfront.net";
         $fontSrc = "font-src 'self' data: https://fonts.gstatic.com";
-        $connectSrc = "connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io";
+        $connectSrc = "connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.pusher.com wss://*.pusher.com";
 
         if (app()->environment('local', 'testing', 'development')) {
             $scriptSrc .= " 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173";
             $styleSrc .= " 'unsafe-inline' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173";
             $styleSrcElem .= ' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
-            $connectSrc .= ' ws://localhost:5173 ws://127.0.0.1:5173 ws://[::1]:5173 http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
+            $connectSrc .= ' ws://localhost:5173 ws://127.0.0.1:5173 ws://[::1]:5173 http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173 ws://localhost:8080 http://localhost:8080';
             $imgSrc .= ' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
         }
 
