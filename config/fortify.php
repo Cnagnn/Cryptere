@@ -73,7 +73,7 @@ return [
     |
     */
 
-    'home' => env('APP_HOME_URL', '/dashboard'),
+    'home' => config('app.urls.app', '/dashboard'),
 
     /*
     |--------------------------------------------------------------------------
@@ -88,13 +88,13 @@ return [
 
     'prefix' => '',
 
-    'domain' => env('AUTH_DOMAIN'),
+    'domain' => config('app.domains.auth'),
 
     'redirects' => [
-        'login' => env('APP_HOME_URL', '/dashboard'),
-        'register' => env('APP_HOME_URL', '/dashboard'),
-        'logout' => env('PUBLIC_URL', '/'),
-        'password-reset' => env('PASSWORD_RESET_REDIRECT_URL', '/login'),
+        'login' => config('app.urls.app', '/dashboard'),
+        'register' => config('app.urls.app', '/dashboard'),
+        'logout' => config('app.urls.public', '/'),
+        'password-reset' => rtrim((string) config('app.urls.auth', ''), '/').'/login',
     ],
 
     /*

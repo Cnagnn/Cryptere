@@ -8,7 +8,6 @@ function routeListForProductionDomains(string $path): string
         'PUBLIC_DOMAIN' => 'cryptere.com',
         'AUTH_DOMAIN' => 'auth.cryptere.com',
         'APP_DOMAIN' => 'app.cryptere.com',
-        'AUTH_URL' => 'https://auth.cryptere.com',
     ]);
 
     $process->mustRun();

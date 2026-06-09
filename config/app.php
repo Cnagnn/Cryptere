@@ -1,5 +1,34 @@
 <?php
 
+$normalizeHost = static function (string $domain): string {
+    return parse_url('http://'.ltrim($domain, '/'), PHP_URL_HOST) ?: $domain;
+};
+
+$isLocalHost = static function (string $host): bool {
+    return in_array($host, ['localhost', '127.0.0.1'], true);
+};
+
+$buildUrl = static function (string $domain) use ($normalizeHost, $isLocalHost): string {
+    $host = $normalizeHost($domain);
+    $scheme = $isLocalHost($host) ? 'http' : 'https';
+
+    return $scheme.'://'.trim($domain, '/');
+};
+
+$publicDomainValue = (string) (env('PUBLIC_DOMAIN') ?: '127.0.0.1:8000');
+$authDomainValue = (string) (env('AUTH_DOMAIN') ?: $publicDomainValue);
+$appDomainValue = (string) (env('APP_DOMAIN') ?: $publicDomainValue);
+
+$publicHost = $normalizeHost($publicDomainValue);
+$authHost = $normalizeHost($authDomainValue);
+$appHost = $normalizeHost($appDomainValue);
+
+$publicUrl = $buildUrl($publicDomainValue);
+$authUrl = $buildUrl($authDomainValue);
+$appUrl = $buildUrl($appDomainValue);
+
+$sessionDomain = $isLocalHost($publicHost) ? null : '.'.$publicHost;
+
 return [
 
     /*
@@ -52,19 +81,21 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => $publicUrl,
 
     'domains' => [
-        'public' => env('PUBLIC_DOMAIN'),
-        'auth' => env('AUTH_DOMAIN'),
-        'app' => env('APP_DOMAIN'),
+        'public' => $publicHost,
+        'auth' => $authHost,
+        'app' => $appHost,
     ],
 
     'urls' => [
-        'public' => env('PUBLIC_URL', env('APP_URL', 'http://localhost')),
-        'auth' => env('AUTH_URL', env('APP_URL', 'http://localhost')),
-        'app' => env('APP_HOME_URL', env('APP_URL', 'http://localhost').'/dashboard'),
+        'public' => $publicUrl,
+        'auth' => $authUrl,
+        'app' => rtrim($appUrl, '/').'/dashboard',
     ],
+
+    'session_domain' => $sessionDomain,
 
     /*
     |--------------------------------------------------------------------------
