@@ -28,16 +28,30 @@ class AcademyDataBuilder
         $firstName = Str::of($user->name)->trim()->before(' ')->toString();
         $displayName = $firstName !== '' ? $firstName : 'Learner';
 
-        $topLearners = Cache::remember(
+        $topLearners = collect($this->rememberArray(
             'dashboard:academy:leaderboard-preview',
             CacheService::TTL_LEADERBOARD,
-            fn () => User::query()
+            fn (): array => User::query()
                 ->select(['id', 'name', 'username', 'points', 'avatar_path', 'avatar_image', 'avatar_mime_type', 'pixabot_avatar_id'])
                 ->orderByDesc('points')
                 ->orderBy('name')
                 ->take(5)
                 ->get()
-        );
+                ->map(fn (User $learner): array => [
+                    'name' => $learner->name,
+                    'username' => $learner->username,
+                    'avatar' => $learner->avatar,
+                    'points' => (int) $learner->points,
+                ])
+                ->all(),
+            function (mixed $item): bool {
+                return is_array($item)
+                    && array_key_exists('name', $item)
+                    && array_key_exists('username', $item)
+                    && array_key_exists('avatar', $item)
+                    && array_key_exists('points', $item);
+            }
+        ));
 
         $currentUserRank = User::query()
             ->where('points', '>', $user->points)
@@ -92,13 +106,13 @@ class AcademyDataBuilder
                 'completedEnrollments' => $stats['completedCourses'],
                 'inProgressEnrollments' => $stats['inProgressCourses'],
             ],
-            'leaderboardPreview' => $topLearners->values()->map(fn (User $learner, int $index): array => [
+            'leaderboardPreview' => $topLearners->values()->map(fn (array $learner, int $index): array => [
                 'rank' => $index + 1,
-                'name' => $learner->name,
-                'username' => $learner->username,
-                'avatar' => $learner->avatar,
-                'points' => $learner->points,
-            ]),
+                'name' => $learner['name'] ?? 'Learner',
+                'username' => $learner['username'] ?? null,
+                'avatar' => $learner['avatar'] ?? null,
+                'points' => (int) ($learner['points'] ?? 0),
+            ])->values()->all(),
             'activityBreakdown' => $activityBreakdown,
             'monthlyProgress' => $monthlyProgress,
             'earningsHistory' => $earningsHistory,
@@ -226,5 +240,39 @@ class AcademyDataBuilder
         return DB::connection()->getDriverName() === 'sqlite'
             ? "strftime('%Y-%m', {$column})"
             : "DATE_FORMAT({$column}, '%Y-%m')";
+    }
+
+    /**
+     * Wrap Cache::remember with a self-healing guard against corrupted /
+     * incomplete-object payloads. Always returns an array.
+     *
+     * @template TValue of array<mixed, mixed>
+     *
+     * @param  callable(): TValue  $callback
+     * @return TValue
+     */
+    private function rememberArray(string $key, int $ttl, callable $callback, ?callable $validator = null): array
+    {
+        try {
+            $value = Cache::remember($key, $ttl, $callback);
+        } catch (\Throwable) {
+            Cache::forget($key);
+
+            return $callback();
+        }
+
+        if (! is_array($value)) {
+            Cache::forget($key);
+
+            return $callback();
+        }
+
+        if ($validator !== null && ! collect($value)->every($validator)) {
+            Cache::forget($key);
+
+            return $callback();
+        }
+
+        return $value;
     }
 }

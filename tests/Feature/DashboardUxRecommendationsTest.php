@@ -92,6 +92,32 @@ test('learner dashboard exposes action-oriented learning guidance', function () 
     );
 });
 
+test('learner dashboard recovers from stale leaderboard preview cache payloads', function () {
+    $learner = User::factory()->create([
+        'role' => 'member',
+        'points' => 120,
+        'xp' => 240,
+    ]);
+    User::factory()->create([
+        'points' => 175,
+        'name' => 'Top Learner',
+        'username' => 'toplearner',
+    ]);
+
+    Cache::put('dashboard:academy:leaderboard-preview', [
+        ['name' => 'stale payload'],
+    ], 300);
+
+    $response = $this->actingAs($learner)->get(route('dashboard'));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('dashboard')
+            ->has('academy.leaderboardPreview')
+            ->where('academy.leaderboardPreview.0.name', 'Top Learner')
+        );
+});
+
 test('admin dashboard exposes operating filters and action queues', function () {
     $admin = User::factory()->admin()->create();
     $activeUser = User::factory()->create([
