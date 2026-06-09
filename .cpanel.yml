@@ -1,7 +1,7 @@
 ---
 deployment:
   tasks:
-    - export APPPATH=/home/fkdzqxmc/cryptere
+    - export APPPATH=/home/fkdzqxmc/Cryptere
     - export PUBLICPATH=/home/fkdzqxmc/public_html
     - cd $APPPATH
     - php artisan optimize:clear
