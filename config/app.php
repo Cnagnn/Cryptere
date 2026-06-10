@@ -1,31 +1,35 @@
 <?php
 
-$normalizeHost = static function (string $domain): string {
-    return parse_url('http://'.ltrim($domain, '/'), PHP_URL_HOST) ?: $domain;
+$normalizeUrl = static function (string $url): string {
+    return rtrim($url, '/');
+};
+
+$extractHost = static function (string $url): string {
+    $host = parse_url($url, PHP_URL_HOST);
+
+    if (is_string($host) && $host !== '') {
+        return $host;
+    }
+
+    return parse_url('http://'.ltrim($url, '/'), PHP_URL_HOST) ?: $url;
 };
 
 $isLocalHost = static function (string $host): bool {
     return in_array($host, ['localhost', '127.0.0.1'], true);
 };
 
-$buildUrl = static function (string $domain) use ($normalizeHost, $isLocalHost): string {
-    $host = $normalizeHost($domain);
-    $scheme = $isLocalHost($host) ? 'http' : 'https';
+$publicUrl = $normalizeUrl((string) env('APP_URL', 'http://127.0.0.1:8000'));
+$authUrl = $normalizeUrl((string) env('AUTH_URL', $publicUrl));
+$appHomeUrl = $normalizeUrl((string) env('APP_HOME_URL', $publicUrl));
 
-    return $scheme.'://'.trim($domain, '/');
-};
+$dashboardPath = parse_url($appHomeUrl, PHP_URL_PATH);
+$appUrl = $dashboardPath === '/dashboard'
+    ? $appHomeUrl
+    : rtrim($appHomeUrl, '/').'/dashboard';
 
-$publicDomainValue = (string) (env('PUBLIC_DOMAIN') ?: '127.0.0.1:8000');
-$authDomainValue = (string) (env('AUTH_DOMAIN') ?: $publicDomainValue);
-$appDomainValue = (string) (env('APP_DOMAIN') ?: $publicDomainValue);
-
-$publicHost = $normalizeHost($publicDomainValue);
-$authHost = $normalizeHost($authDomainValue);
-$appHost = $normalizeHost($appDomainValue);
-
-$publicUrl = $buildUrl($publicDomainValue);
-$authUrl = $buildUrl($authDomainValue);
-$appUrl = $buildUrl($appDomainValue);
+$publicHost = $extractHost($publicUrl);
+$authHost = $extractHost($authUrl);
+$appHost = $extractHost($appHomeUrl);
 
 $sessionDomain = $isLocalHost($publicHost) ? null : '.'.$publicHost;
 
@@ -92,7 +96,7 @@ return [
     'urls' => [
         'public' => $publicUrl,
         'auth' => $authUrl,
-        'app' => rtrim($appUrl, '/').'/dashboard',
+        'app' => $appUrl,
     ],
 
     'session_domain' => $sessionDomain,
