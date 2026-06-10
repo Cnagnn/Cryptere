@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Force HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
     # Keep one canonical public hostname for cache efficiency and SEO.
     RewriteCond %{HTTP_HOST} ^www\.cryptere\.com$ [NC]
     RewriteRule ^ https://cryptere.com%{REQUEST_URI} [R=301,L,NE]
