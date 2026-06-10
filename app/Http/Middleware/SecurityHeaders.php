@@ -94,6 +94,10 @@ class SecurityHeaders
 
     private function shouldAllowDevelopmentOrigins(): bool
     {
+        if (app()->isProduction()) {
+            return false;
+        }
+
         return is_file(public_path('hot'));
     }
 }
