@@ -77,6 +77,9 @@ Route::domain($authDomain)->group(function () use ($authDomain) {
         ->name('users.check-username');
 });
 
+Route::inertia('/terms', 'legal/terms')->name('terms');
+Route::inertia('/privacy', 'legal/privacy')->name('privacy');
+
 if ($appDomain) {
     Route::domain($appDomain)
         ->middleware(['auth', 'verified'])

@@ -34,7 +34,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppearance } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
-import { login } from '@/routes';
+import { login, privacy, terms } from '@/routes';
 import { store } from '@/routes/register';
 import { redirect as socialRedirect } from '@/routes/social';
 import { checkUsername } from '@/routes/users';
@@ -687,14 +687,14 @@ export default function Register({ status, socialUser }: Props) {
                                             <span>
                                                 Saya setuju dengan{' '}
                                                 <Link
-                                                    href="#"
+                                                    href={terms()}
                                                     className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
                                                 >
                                                     Ketentuan Layanan
                                                 </Link>{' '}
                                                 dan{' '}
                                                 <Link
-                                                    href="#"
+                                                    href={privacy()}
                                                     className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
                                                 >
                                                     Kebijakan Privasi
