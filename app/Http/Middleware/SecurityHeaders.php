@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
 use Symfony\Component\HttpFoundation\Response;
 
+use function public_path;
+
 class SecurityHeaders
 {
     /**
@@ -56,7 +58,7 @@ class SecurityHeaders
 
         $connectSrc = 'connect-src '.implode(' ', array_unique($connectSources));
 
-        if (app()->environment('local', 'testing', 'development')) {
+        if ($this->shouldAllowDevelopmentOrigins()) {
             $scriptSrc .= " 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173";
             $styleSrc .= " 'unsafe-inline' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173";
             $styleSrcElem .= ' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173';
@@ -88,5 +90,10 @@ class SecurityHeaders
         }
 
         return $response;
+    }
+
+    private function shouldAllowDevelopmentOrigins(): bool
+    {
+        return is_file(public_path('hot'));
     }
 }
