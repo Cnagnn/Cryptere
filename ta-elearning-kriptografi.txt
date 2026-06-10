@@ -1,0 +1,3218 @@
+
+--- Page 1/81 ---
+
+i 
+ 
+LAPORAN KEMAJUAN TUGAS AKHIR 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+RANCANG BANGUN E-LEARNING KRIPTOGRAFI  
+BERBASIS WEB DENGAN GAMIFIKASI 
+ 
+Diajukan Oleh :  
+Yoga Pratama Putra Rizqulloh 
+NBI: 1462200119 
+ 
+ 
+ 
+Dosen Pembimbing :  
+Agyl Ardi Rahmadi, 
+S.Kom., M.A 
+NPP. 20460150666 
+ 
+ 
+ 
+ 
+PROGRAM STUDI TEKNIK 
+INFORMATIKA UNIVERSITAS 17 
+AGUSTUS 1945 SURABAYA 
+2025 
+ 
+
+
+--- Page 2/81 ---
+
+ii 
+ 
+ 
+ 
+ 
+LEMBAR PENGESAHAN PROPOSAL TUGAS AKHIR 
+ 
+  
+Judul Proposal TA  
+ 
+ 
+Oleh 
+NBI 
+Nama 
+: RANCANG BANGUN E-LEARNING KRIPTOGRAFI BERBASIS 
+WEB DENGAN GAMIFIKASI 
+ 
+ 
+: 1462200119 
+: Yoga Pratama Putra Rizqulloh 
+Telah diperiksa dengan seksama dan telah disetujui untuk disidangkan para Sidang 
+Proposal di lingkungan Program Studi Sarjana Teknik Informatika, Universitas 17 
+Agustus 1945 Surabaya. 
+Surabaya, 19 November 2025 
+Mengetahui, 
+Dosen Pembimbing 
+Agyl Ardi Rahmadi, S.Kom., M.A 
+
+
+--- Page 3/81 ---
+
+iii 
+ 
+KATA PENGANTAR 
+ 
+Puji syukur ke hadirat Tuhan Yang Maha Esa atas segala rahmat dan karunia-Nya, 
+sehingga penulis dapat menyelesaikan penyusunan Proposal Tugas Akhir ini dengan judul 
+"RANCANG BANGUN E-LEARNING KRIPTOGRAFI BERBASIS WEB DENGAN 
+GAMIFIKASI". Proposal ini disusun sebagai salah satu syarat untuk melanjutkan ke tahap 
+pengerjaan Tugas Akhir pada Program Studi Teknik Informatika, Universitas 17 Agustus 
+1945 Surabaya. 
+Penyusunan proposal ini dilatarbelakangi oleh kebutuhan akan media 
+pembelajaran interaktif yang mampu memvisualisasikan algoritma kriptografi secara 
+transparan (Glass Box) serta meningkatkan motivasi belajar mahasiswa melalui pendekatan 
+Structural Gamification. Penulis menyadari bahwa penyusunan proposal ini tidak lepas 
+dari bantuan, bimbingan, dan dukungan dari berbagai pihak. Oleh karena itu, pada 
+kesempatan ini penulis ingin menyampaikan ucapan terima kasih yang sebesar-besarnya 
+kepada: 
+1. Bapak Agyl Ardi Rahmadi, S.Kom., M.A, selaku Dosen Pembimbing yang telah 
+meluangkan waktu, tenaga, dan pikiran untuk memberikan bimbingan serta arahan 
+selama penyusunan proposal ini. 
+2. Segenap Dosen dan Staf Program Studi Teknik Informatika Universitas 17 Agustus 
+1945 Surabaya yang telah memberikan bekal ilmu pengetahuan selama masa 
+perkuliahan. 
+3. Kedua orang tua dan keluarga tercinta yang senantiasa memberikan doa, dukungan 
+moral, dan materi yang tiada henti. 
+4. Teman-teman seperjuangan di Teknik Informatika UNTAG Surabaya yang telah 
+memberikan semangat dan diskusi yang bermanfaat. 
+Penulis menyadari bahwa proposal ini masih jauh dari kesempurnaan, baik dari segi 
+penyusunan, bahasa, maupun materi. Oleh karena itu, penulis sangat mengharapkan kritik 
+dan saran yang membangun dari semua pihak guna penyempurnaan proposal dan penelitian 
+ini ke depannya. 
+Akhir kata, semoga proposal ini dapat diterima dan memberikan manfaat bagi 
+pengembangan ilmu pengetahuan, khususnya di bidang keamanan informasi dan teknologi 
+pendidikan. 
+ 
+ 
+
+
+--- Page 4/81 ---
+
+iv 
+ 
+Surabaya, 19 November 2025 
+Penulis, 
+ 
+ 
+ 
+ 
+Yoga Pratama Putra Rizqulloh 
+ 
+ 
+
+
+--- Page 5/81 ---
+
+v 
+ 
+DAFTAR ISI 
+LEMBAR PENGESAHAN PROPOSAL TUGAS AKHIR ............................................... ii 
+KATA PENGANTAR ....................................................................................................... iii 
+DAFTAR ISI ....................................................................................................................... v 
+DAFTAR GAMBAR ........................................................................................................ vii 
+DAFTAR TABEL ............................................................................................................ viii 
+BAB I PENDAHULUAN ................................................................................................... 1 
+1.1 
+Latar Belakang ................................................................................................... 1 
+1.2 
+Perumusan Masalah ........................................................................................... 4 
+1.3 
+Tujuan Penelitian ............................................................................................... 4 
+1.4 
+Batasan Masalah ................................................................................................ 5 
+1.5 
+Manfaat Penelitian ............................................................................................. 6 
+BAB II TINJAUAN PUSTAKA DAN KERANGKA PEMIKIRAN ................................ 8 
+2.1 
+Penelitian Terdahulu .......................................................................................... 8 
+2.2 
+Landasan Teori ................................................................................................ 10 
+2.2.1 
+Kriptografi ................................................................................................... 10 
+2.2.2 
+Gamifikasi Struktural dan Reward .............................................................. 13 
+2.2.2 
+Metode Waterfall ........................................................................................ 19 
+2.2.3 
+Pengujian Black Box ................................................................................... 20 
+2.2.4 
+User Acceptance Testing (UAT) ................................................................. 21 
+2.2.5 
+Stack Teknologi Web Modern .................................................................... 22 
+BAB III 
+METODOLOGI PENELITIAN .................................................................. 25 
+3.1 
+Model Pengembangan Sistem ......................................................................... 25 
+3.2 
+Tahapan Penelitian .......................................................................................... 25 
+3.2.1 
+Analisis Kebutuhan ..................................................................................... 25 
+3.2.2 
+Perancangan Sistem .................................................................................... 29 
+3.2.3 
+Implementasi Sistem ................................................................................... 45 
+3.2.4 
+Pengujian Fungsional (Black Box Testing) ................................................. 47 
+3.2.5 
+Pengujian User Acceptance Testing (UAT) ................................................ 48 
+3.3 
+Kebutuhan Sistem ............................................................................................ 49 
+3.3.1 
+Kebutuhan Perangkat Keras (Hardware) .................................................... 49 
+3.3.2 
+Kebutuhan Perangkat Lunak (Software) ..................................................... 50 
+3.4 
+Kebutuhan Sistem ............................................................................................ 52 
+BAB IV 
+HASIL YANG DICAPAI ........................................................................... 53 
+4.1 
+Implementasi Sistem........................................................................................ 53 
+4.2 
+Hasil Implementasi Antarmuka Sistem ........................................................... 53 
+4.2.1 
+Halaman Login Dan Registrasi ................................................................... 53 
+4.2.2 
+Halaman Dashboard Mahasiswa ................................................................. 54 
+
+
+--- Page 6/81 ---
+
+vi 
+ 
+4.2.3 
+Halaman Dashboard Admin ........................................................................ 55 
+4.2.4 
+Halaman Course dan Lesson ....................................................................... 56 
+4.2.5 
+Halaman Task Video, Dokumen, dan Quiz ................................................. 58 
+4.3 
+Hasil Implementasi Visualisasi Kriptografi Glass Box ................................... 58 
+4.3.1 
+Halaman Daftar Lab Kriptografi ................................................................. 58 
+4.3.2 
+Caesar Chiper Lab ....................................................................................... 60 
+4.3.3 
+Vignere Chiper Lab ..................................................................................... 61 
+4.3.4 
+AES Concept Lab ........................................................................................ 62 
+4.3.5 
+RSA Lab ...................................................................................................... 63 
+4.3.6 
+Digital Signature Lab .................................................................................. 64 
+4.4 
+Hasil Implementasi Gamifikasi ....................................................................... 65 
+4.4.1 
+Xp dan Points .............................................................................................. 65 
+4.4.2 
+Level System ............................................................................................... 66 
+4.4.3 
+Daily Streak ................................................................................................. 66 
+4.4.4 
+Leaderboard Real-Time............................................................................... 67 
+4.5 
+Hasil Implementasi Assessment dan Question Bank ....................................... 68 
+4.6 
+Hasil Implementasi Assessment dan Question Bank ....................................... 68 
+BAB V 
+RENCANA TAHAPAN BERIKUTNYA ....................................................... 70 
+DAFTAR PUSTAKA ....................................................................................................... 73 
+ 
+ 
+ 
+ 
+
+
+--- Page 7/81 ---
+
+vii 
+ 
+DAFTAR GAMBAR 
+ 
+Gambar 3. 1 Use Case Diagram ..................................................................................... 30 
+Gambar 3. 2 Activity Diagram....................................................................................... 31 
+Gambar 3. 3 Sequence Diagram .................................................................................... 33 
+Gambar 3. 7 Class Diagram ........................................................................................... 34 
+Gambar 3. 8 Entity Relationship Diagram ................................................................... 36 
+Gambar 3. 9 Flowchart ................................................................................................... 38 
+Gambar 3. 10  Low Fidelity Halaman Login ................................................................ 41 
+Gambar 3. 11 Low Fidelity Halaman Dashboard ........................................................ 42 
+Gambar 3. 12 Low Fidelity Halaman Visualisasi & Simulasi Glass Box ................... 42 
+Gambar 3. 13 Low Fidelity Halaman Materi ............................................................... 43 
+ 
+ 
+Gambar 4. 1 Halaman Login Sistem ............................................................................. 54 
+ 
+ 
+
+
+--- Page 8/81 ---
+
+viii 
+ 
+DAFTAR TABEL 
+Tabel 2. 1 Tabel Penelitian Terdahulu ............................................................................ 9 
+Tabel 3. 1 Kebutuhan Fungsional .................................................................................. 25 
+Tabel 3. 2 Kebutuhan Non-Fungsional ......................................................................... 28 
+Tabel 3. 3 Kebutuhan Perangkat Lunak ...................................................................... 50 
+
+
+--- Page 9/81 ---
+
+1 
+ 
+BAB I 
+PENDAHULUAN 
+1.1 
+Latar Belakang 
+Dalam ekosistem keamanan siber yang terus berkembang, kriptografi 
+memegang peranan fundamental sebagai garis pertahanan utama untuk menjamin 
+kerahasiaan (confidentiality), integritas (integrity), dan otentikasi data. Penguasaan 
+mendalam terhadap algoritma kriptografi modern, khususnya Advanced Encryption 
+Standard (AES) untuk enkripsi simetris dan Rivest-Shamir-Adleman (RSA) untuk 
+enkripsi asimetris, kini menjadi kompetensi teknis yang krusial bagi lulusan teknik 
+informatika. Penelitian terbaru menegaskan bahwa integrasi kedua jenis algoritma 
+ini mutlak diperlukan dalam pengembangan aplikasi pesan digital maupun sistem 
+keamanan jaringan untuk mencapai perlindungan data yang optimal terhadap 
+ancaman komputasi modern (Setiawan, 2025). 
+ 
+Meskipun urgensinya tinggi, proses pembelajaran kriptografi di perguruan 
+tinggi sering kali menghadapi hambatan pedagogis yang signifikan karena 
+karakteristik materinya yang sangat abstrak. Materi ini melibatkan operasi 
+matematika berjenjang, seperti manipulasi bit dan aritmatika modular, yang sulit 
+dipahami mahasiswa tanpa bantuan visual yang memadai. Kesulitan ini 
+dikonfirmasi melalui studi pendahuluan yang dilakukan penulis terhadap 40 
+mahasiswa Teknik Informatika. Data empiris menunjukkan bahwa mayoritas 
+responden, yaitu sebanyak 80%, menyatakan materi kriptografi secara umum 
+sangat sulit dipahami. Kesulitan ini berbanding lurus dengan ketidakefektifan 
+media pembelajaran konvensional berbasis teks atau slide presentasi, di mana 75% 
+responden merasa sangat sulit memahami alur logika algoritma melalui media 
+tersebut, dan 77,5% menilainya sangat tidak efektif. 
+ 
+Dampak dari abstraksi materi yang tidak tervisualisasikan ini terlihat nyata 
+pada tingginya tingkat kesalahan prosedural saat praktikum. Berdasarkan data 
+kuesioner, 70,0% responden mengaku sangat sering mengalami kesalahan manusia 
+(human error) saat melakukan simulasi perhitungan manual, terutama pada 
+algoritma yang memiliki banyak putaran (rounds) seperti AES. Temuan ini sejalan 
+
+
+--- Page 10/81 ---
+
+2 
+ 
+dengan penelitian (Ramadhani et al., 2025) yang menyoroti bahwa proses manual 
+pada pembelajaran algoritma kriptografi sangat rentan terhadap ketidaktelitian, 
+sehingga diperlukan alat bantu berbasis perangkat lunak untuk memvalidasi 
+kebenaran proses tersebut. Sebagai respon terhadap masalah ini, 67,5% responden 
+menyatakan sangat membutuhkan visualisasi langkah-demi-langkah (step-by-step), 
+dan 60,0% responden sangat setuju jika dikembangkan sebuah sistem E-Learning 
+berbasis web untuk mengatasi kesenjangan pemahaman tersebut. 
+ 
+Tantangan teknis utama dalam menjawab kebutuhan visualisasi ini adalah 
+sifat Black Box dari pustaka kriptografi standar di berbagai bahasa pemrograman. 
+Fungsi bawaan seperti openssl_encrypt di PHP, Web Crypto API di browser, atau 
+JCE di Java dirancang untuk efisiensi keamanan, sehingga menyembunyikan proses 
+matematis internal dari pengguna (Mary & Febriyani, 2025). Hal ini kontradiktif 
+dengan tujuan edukasi yang membutuhkan transparansi atau pendekatan Glass Box. 
+Oleh karena itu, penelitian ini akan mengembangkan mesin kriptografi kustom 
+(custom engine) berbasis TypeScript client-side yang mampu mengekspos variabel 
+status internal dan langkah-langkah komputasi pada setiap tahap enkripsi untuk 
+divisualisasikan kepada mahasiswa. Pendekatan visualisasi algoritma semacam ini 
+terbukti efektif dalam membantu mahasiswa memahami konsep abstrak dalam 
+pendidikan keamanan informasi (Zainudin & Kadir, 2024). 
+ 
+Guna menjaga motivasi mahasiswa dalam mempelajari materi yang rumit dan 
+teknis ini, penelitian ini mengusulkan integrasi pendekatan Gamifikasi Struktural 
+dan Reward. Berbeda dengan sekadar bermain gim, pendekatan ini menerapkan 
+elemen mekanika permainan pada struktur penyampaian materi tanpa mengubah 
+substansi ilmiahnya. Fokus utama gamifikasi dalam penelitian ini mencakup: 
+1. Structural Gamification — Unlockable Content (alur belajar terstruktur 
+dengan prerequisite) dan Process-Based Points (poin otomatis per soal 
+quiz/challenge yang benar). 
+2. Content & Reward Gamification — Sistem XP dan Level untuk melacak 
+progres keseluruhan, Daily Streak dengan multiplier bonus (1.0× → 2.0×), 
+Daily Goal dengan bonus XP, Badge/Achievement untuk milestone 
+
+
+--- Page 11/81 ---
+
+3 
+ 
+tertentu, Leaderboard real-time untuk kompetisi sehat, dan Certificates 
+auto-generated untuk validasi pencapaian. 
+Studi terbaru tahun 2025 terhadap mahasiswa jurusan teknik (engineering 
+major) membuktikan bahwa penerapan gamifikasi dalam model pembelajaran E-
+Learning mampu menciptakan lingkungan belajar yang positif, menurunkan 
+kecemasan akademik akibat materi sulit, serta secara signifikan meningkatkan 
+keterlibatan dan performa belajar mahasiswa (Fariza et al., 2025). 
+Sistem ini akan dibangun menggunakan Framework Laravel 13 dengan 
+frontend modern (Inertia.js v3 + React 19 + TypeScript) yang dipilih karena 
+ketangguhan arsitektur keamanannya, termasuk fitur proteksi bawaan terhadap 
+serangan siber dan manajemen akses pengguna yang handal (Mary & Febriyani, 
+2025). Untuk memastikan aplikasi yang dihasilkan benar-benar adaptif terhadap 
+kebutuhan pengguna dan bebas dari cacat desain antarmuka, serta memiliki struktur 
+data yang solid dan alur logika algoritma yang presisi, penelitian ini menggunakan 
+Metode Waterfall. Pemilihan metode ini didasarkan pada karakteristik sistem 
+pembelajaran kriptografi yang membutuhkan definisi kebutuhan teknis yang sangat 
+detail dan kaku di awal, terutama pada bagian perhitungan algoritma Glass Box. 
+Dengan pendekatan sekuensial Waterfall, setiap tahapan pengembangan—mulai 
+dari analisis kebutuhan hingga pengujian—dilakukan secara sistematis dan 
+terdokumentasi dengan baik, sehingga meminimalisir risiko kesalahan logika pada 
+modul enkripsi saat tahap implementasi kode. 
+Berdasarkan seluruh uraian di atas, penelitian ini disusun dalam sebuah alur 
+logika atau kerangka pemikiran yang komprehensif untuk memecahkan masalah 
+pembelajaran kriptografi. Alur pemikiran ini dimulai dari identifikasi masalah 
+utama berupa sulitnya visualisasi materi abstrak yang sering menyebabkan 
+kesalahan hitung (human error) pada mahasiswa. Mengingat metode pembelajaran 
+konvensional dinilai belum cukup efektif memberikan validasi langkah-demi-
+langkah, penulis mengusulkan pengembangan sistem E-Learning berbasis web 
+sebagai solusi karena fleksibilitas aksesnya dan kemampuannya menyajikan 
+simulasi interaktif. Pendekatan Gamifikasi Struktural dan Reward kemudian 
+diterapkan untuk merancang mekanisme penghargaan berupa poin, level, streak, 
+
+
+--- Page 12/81 ---
+
+4 
+ 
+badge, dan leaderboard guna menjamin alur belajar yang sistematis dan memotivasi 
+tanpa mengubah substansi materi. Dengan dukungan algoritma kriptografi utama 
+dan Framework Laravel modern, serta melalui tahapan pengembangan Waterfall 
+yang disiplin, penelitian ini diharapkan mampu mewujudkan aplikasi yang dapat 
+memvisualisasikan proses enkripsi secara transparan, meminimalisir kesalahan 
+hitung melalui validasi otomatis, serta meningkatkan kualitas struktur pembelajaran 
+mahasiswa. 
+1.2 
+Perumusan Masalah 
+Dari uraian latar belakang tersebut, maka dapat ditarik rumusan masalah 
+sebagai berikut: 
+1. Bagaimana merancang dan membangun sistem e-learning visualisasi 
+kriptografi berbasis web menggunakan Framework Laravel? 
+2. Bagaimana mengimplementasikan elemen gamifikasi struktural dan reward 
+(unlockable content, process-based points, XP, level, streak, badge, 
+leaderboard real-time) ke dalam sistem pembelajaran kriptografi? 
+3. Bagaimana tingkat penerimaan dan efektivitas sistem e-learning yang 
+dikembangkan berdasarkan pengujian pengguna (User Acceptance 
+Testing)? 
+1.3 
+Tujuan Penelitian 
+Adapun tujuan yang ingin dicapai dalam pengembangan sistem E-Learning 
+kriptografi dengan pendekatan Gamifikasi Struktural dan Reward berbasis web ini 
+adalah sebagai berikut: 
+1. Merancang 
+dan 
+membangun 
+platform 
+e-learning 
+yang 
+mampu 
+memvisualisasikan alur kerja algoritma kriptografi (Klasik: Caesar Cipher, 
+Vigenere Cipher; Simetris Modern: AES Concept; Asimetris: RSA; 
+Signature & Hash: Digital Signature; Post-Quantum: Lattice Cipher) secara 
+transparan dengan pendekatan Glass Box. 
+2. Menerapkan elemen gamifikasi struktural dan reward untuk meningkatkan 
+motivasi dan menjaga keteraturan alur belajar mahasiswa melalui 
+mekanisme: 
+ 
+
+
+--- Page 13/81 ---
+
+5 
+ 
+• Unlockable Content (prerequisite-based learning path) 
+• Process-Based Points (poin otomatis per soal quiz/challenge yang 
+benar) 
+• XP & Level (progres keseluruhan dengan level scaling) 
+• Daily Streak dengan multiplier bonus (1.0× → 2.0×) 
+• Daily Goal dengan bonus XP 
+• Badge/Achievement untuk milestone tertentu 
+• Leaderboard real-time untuk kompetisi sehat 
+• Certificates auto-generated untuk validasi pencapaian 
+3. Mengukur tingkat penerimaan pengguna (User Acceptance) terhadap 
+antarmuka, kejelasan visualisasi algoritma, dan mekanisme gamifikasi yang 
+diterapkan dalam sistem. 
+1.4 
+Batasan Masalah 
+Untuk menjawab permasalahan dalam penelitian tersebut, maka dalam 
+penelitian ini masalah akan dibatasi dalam ruang lingkup sebagai berikut: 
+1. Lingkup Visualisasi Algoritma (Glass Box): Semua algoritma yang 
+disimulasikan dalam sistem akan menggunakan pendekatan Glass Box 
+(transparan), meliputi: 
+• 
+Kriptografi Klasik: Visualisasi proses substitusi dan transposisi pada Caesar 
+Cipher dan Vigenere Cipher. 
+• 
+Kriptografi Simetris Modern: Visualisasi transformasi byte-level dan 
+mixing pada AES Concept Lab (pendekatan pedagogis dengan XOR byte 
+mixing sebagai learning approximation, bukan implementasi AES-128 
+penuh dengan state matrix). 
+• 
+Kriptografi Asimetris: Visualisasi pembangkitan kunci dan aritmatika 
+modular pada RSA. 
+• 
+Digital Signature & Hash: Visualisasi alur digital signature (signing dan 
+verification) dengan fungsi hash untuk message digest. 
+• 
+Post-Quantum Cryptography: Visualisasi konsep Learning With Errors 
+(LWE) pada Lattice Cipher Lab dengan parameter kecil (n=3, q=97) untuk 
+tujuan pedagogis. 
+
+
+--- Page 14/81 ---
+
+6 
+ 
+2. Lingkup Gamifikasi: Implementasi gamifikasi mencakup dua kategori: 
+• 
+Structural Gamification: 
+o Unlockable Content: Fitur untuk membuka materi tingkat lanjut 
+hanya jika materi prasyarat telah diselesaikan. 
+o Process-Based Points: Pemberian poin otomatis berdasarkan 
+ketepatan jawaban pada soal quiz dan challenge. 
+• 
+Content & Reward Gamification: 
+o XP & Level: Sistem pengalaman dan level untuk melacak progres 
+keseluruhan pengguna. 
+o Daily Streak: Bonus multiplier untuk konsistensi harian (1.0× → 
+2.0× pada 30+ hari). 
+o Daily Goal: Target XP harian dengan bonus XP saat tercapai. 
+o Badge/Achievement: Penghargaan untuk milestone tertentu (first 
+enrollment, courses completed, perfect quiz, speed demon, streak 
+days, labs visited, points earned, first discussion). 
+o Leaderboard Real-time: Papan peringkat real-time via WebSocket 
+(Laravel Reverb) untuk kompetisi sehat antar pengguna. 
+3. Lingkup Teknologi & Pengguna: 
+• 
+Sistem dibangun berbasis Web menggunakan Framework Laravel 13, 
+Inertia.js v3, React 19, TypeScript, Tailwind CSS v4, dan Database 
+MySQL. 
+• 
+Sistem dirancang sebagai media pembelajaran (edukasi), bukan untuk 
+pengamanan data pada sistem produksi nyata. 
+• 
+Target pengguna adalah mahasiswa Teknik Informatika yang menempuh 
+mata kuliah Kriptografi/Keamanan Informasi. 
+• 
+Real-time features (leaderboard updates) menggunakan Laravel Reverb 
+(WebSocket). 
+1.5 
+Manfaat Penelitian 
+Sedangkan manfaat yang ingin dicapai dalam pengembangan E-Learning 
+Kriptografi dengan pendekatan Gamifikasi Struktural dan Reward berbasis web ini 
+adalah sebagai berikut: 
+
+
+--- Page 15/81 ---
+
+7 
+ 
+1. Bagi Mahasiswa: Mempermudah pemahaman logika algoritma yang 
+abstrak melalui visualisasi nyata dan step-by-step breakdown, serta 
+membantu meminimalisir kesalahan perhitungan manual melalui validasi 
+sistem. Sistem gamifikasi (XP, level, streak, badge, leaderboard) juga 
+meningkatkan motivasi dan engagement dalam pembelajaran materi teknis 
+yang kompleks. 
+2. Bagi Dosen/Akademisi: Menyediakan alternatif media ajar interaktif yang 
+dapat membantu menjelaskan proses internal algoritma di kelas, serta 
+memantau progres belajar mahasiswa melalui dashboard analytics. Fitur 
+unlockable content memudahkan penyusunan learning path yang 
+terstruktur. 
+3. Bagi Pengembangan Ilmu: Menambah referensi ilmiah mengenai 
+efektivitas penggabungan metode visualisasi Glass Box, gamifikasi 
+struktural dan reward, serta teknologi web modern (Inertia.js + React) dalam 
+pengembangan perangkat lunak edukasi teknik informatika. Penelitian ini 
+juga berkontribusi pada literatur post-quantum cryptography education 
+melalui Lattice Cipher Lab. 
+
+
+--- Page 16/81 ---
+
+8 
+ 
+BAB II TINJAUAN PUSTAKA DAN KERANGKA PEMIKIRAN 
+2.1 
+Penelitian Terdahulu 
+Penelitian mengenai visualisasi algoritma kriptografi menunjukkan bahwa 
+pendekatan yang terstruktur sangat krusial untuk mengatasi tantangan pemahaman 
+konsep yang abstrak. (Zainudin & Kadir, n.d.) mengembangkan sistem CAES 
+(Cryptographic Algorithm Visualization System) yang menekankan pada visualisasi 
+prinsip algoritma AES guna mendukung pembelajaran aktif dan retensi 
+pengetahuan. Efektivitas media simulasi juga divalidasi oleh (Novayani & Alhuda, 
+2024), di mana penggunaan simulasi 3D pada algoritma Vigenere dan Affine 
+berhasil meningkatkan skor rata-rata mahasiswa secara signifikan dari 67,33% 
+menjadi 83,33%. Selain itu, pengembangan aplikasi berbasis web untuk algoritma 
+Playfair membuktikan bahwa validasi logika yang presisi dapat mencapai tingkat 
+akurasi 100% dan sangat efektif dalam meminimalkan kesalahan manusia (human 
+error). 
+Dalam konteks motivasi belajar, implementasi elemen gamifikasi telah 
+terbukti secara empiris meningkatkan keterlibatan mahasiswa teknik. Studi oleh 
+(Fariza et al., 2025) menunjukkan bahwa lebih dari 60% mahasiswa merasa lebih 
+terbantu dan termotivasi dalam memahami materi teknik yang sulit melalui model 
+e-learning berbasis gamifikasi. Pendekatan ini diperkuat oleh penggunaan narasi 
+digital yang dapat meningkatkan rasa kehadiran (presence) dan kompetensi diri 
+mahasiswa melalui mekanisme pengambilan keputusan yang terintegrasi (Jiménez-
+Valverde et al., 2025). Platform edukasi seperti Spaticrypt juga telah mulai 
+mengombinasikan konsep gamifikasi Capture-the-Flag (CTF) untuk menciptakan 
+lingkungan belajar yang kompetitif dan terukur bagi pengguna (Sugiyarto et al., 
+2025). 
+Aspek keamanan dan kehandalan sistem menjadi prioritas utama dalam 
+membangun platform edukasi kriptografi. Penggunaan framework Laravel modern 
+dengan fitur Rate Limiting dan Role-Based Access Control (RBAC) terbukti efektif 
+dalam memitigasi ancaman serangan siber dan mengelola hak akses pengguna 
+secara terstruktur (Mary & Febriyani, 2025). Hal ini sejalan dengan urgensi 
+penggunaan algoritma modern seperti AES dan RSA yang mutlak diperlukan dalam 
+
+
+--- Page 17/81 ---
+
+9 
+ 
+sistem keamanan digital untuk menjamin kerahasiaan dan integritas data (Setiawan, 
+2025). Implementasi teknologi ini dalam aplikasi pembelajaran online memastikan 
+tersedianya platform yang handal bagi institusi pendidikan (Syukron et al., 2025). 
+Pemilihan metodologi pengembangan sangat menentukan keberhasilan 
+sistem yang membutuhkan ketelitian algoritma yang tinggi. Meskipun metode 
+Agile menawarkan kecepatan pengembangan (Ghinafikar et al., 2025), metode 
+Waterfall dinilai lebih unggul untuk sistem dengan persyaratan yang stabil dan 
+membutuhkan dokumentasi teknis yang mendalam di setiap tahapannya (Maulana 
+& Dwi Wahyuni, 2025). Keberhasilan penggunaan model Waterfall dalam 
+pengembangan e-learning berbasis web telah dibuktikan dalam berbagai studi untuk 
+memastikan alur pengembangan yang linear dan sistematis (Andry & Stefanus, 
+2020; Septyanto et al., 2020). Pendekatan sekuensial ini sejalan dengan kebutuhan 
+sistem pembelajaran kriptografi yang memerlukan definisi kebutuhan teknis yang 
+kaku dan detail di awal proyek guna menghindari kesalahan logika pada modul 
+enkripsi. 
+Tabel 2. 1 Tabel Penelitian Terdahulu 
+No 
+Judul Penelitian 
+Hasil & Kontribusi Utama 
+1 
+Mini-AES Algorithm Visualization for 
+Cryptography Teaching and Learning 
+(Zainudin & Kadir, n.d.) 
+Meningkatkan 
+pemahaman 
+prinsip kriptografi AES melalui 
+visualisasi aktif. 
+2 
+Enhancing 
+Students’ 
+Learning 
+Outcomes in Classical Cryptography 
+Through Interactive 3D Simulations 
+(Novayani & Alhuda, 2024) 
+Simulasi 3D meningkatkan skor 
+belajar mahasiswa dari 67,33% 
+ke 83,33%. 
+3 
+A Web Application For Playfair Cipher 
+Cryptography: 
+Method 
+and 
+Implementation (Ramadhani et al., 
+2025) 
+Akurasi 100% dalam validasi 
+logika manual dan minimalisasi 
+human error. 
+4 
+Analisis Penerapan Gamifikasi Dalam 
+Model 
+Pembelajaran 
+E-Learning 
+Meningkatkan 
+motivasi 
+dan 
+keterlibatan 
+aktif 
+mahasiswa 
+teknik di atas 60%. 
+
+
+--- Page 18/81 ---
+
+10 
+ 
+Terhadap 
+Psikologi 
+Mahasiswa 
+Engineering Major (Fariza et al., 2025) 
+5 
+Peningkatan 
+Keamanan 
+Sistem 
+Informasi Berbasis Laravel 12 dengan 
+Rate Limiting dan RBAC (Mary & 
+Febriyani, 2025) 
+Solusi 
+pengamanan 
+sistem 
+berlapis terhadap serangan siber 
+menggunakan Laravel 12. 
+6 
+Pengembangan E-Learning Berbasis 
+Website 
+menggunakan 
+Metode 
+Waterfall (Septyanto et al., 2020) 
+Membuktikan efektivitas metode 
+Waterfall 
+dalam 
+membangun 
+sistem 
+pembelajaran 
+yang 
+terstruktur. 
+7 
+Pengembangan 
+Aplikasi 
+E-learning 
+Berbasis Web Menggunakan Model 
+Waterfall Pada SMK Strada 2 Jakarta 
+(Andry & Stefanus, 2020) 
+Implementasi sistem e-learning 
+yang sistematis dengan tahapan 
+pengembangan 
+yang 
+terdokumentasi. 
+8 
+Evaluasi Metodologi Waterfall dan 
+Agile: Studi Literatur pada Sistem 
+Perpustakaan 
+(Maulana 
+& 
+Dwi 
+Wahyuni, 2025) 
+Menegaskan bahwa Waterfall 
+sangat 
+cocok 
+untuk 
+sistem 
+dengan persyaratan yang stabil 
+dan terstruktur. 
+2.2 
+Landasan Teori 
+2.2.1 Kriptografi 
+Kriptografi merupakan disiplin ilmu yang mempelajari teknik pengamanan 
+informasi dengan memanfaatkan prinsip matematika dan algoritma komputasi. 
+Tujuan utama kriptografi adalah melindungi informasi dari akses tidak sah serta 
+menjamin keutuhan dan keaslian data. Dalam sistem informasi modern, kriptografi 
+menjadi fondasi utama dalam keamanan komunikasi digital, penyimpanan data, dan 
+sistem autentikasi (authentication system). 
+Tujuan utama kriptografi meliputi: 
+1. Confidentiality — Confidentiality / Kerahasiaan bertujuan memastikan 
+bahwa informasi hanya dapat diakses dan dibaca oleh pihak yang memiliki 
+hak atau kunci yang sah. Mekanisme ini dicapai melalui proses enkripsi 
+
+
+--- Page 19/81 ---
+
+11 
+ 
+yang mengubah plaintext menjadi ciphertext, sehingga data tidak dapat 
+dipahami oleh pihak yang tidak berwenang. 
+2. Integrity — Integrity / Keutuhan data menjamin bahwa data tidak 
+mengalami perubahan selama proses penyimpanan atau transmisi. Apabila 
+terjadi perubahan data, baik disengaja maupun tidak, sistem dapat 
+mendeteksinya melalui mekanisme verifikasi seperti cryptographic hash 
+function. 
+3. Authentication — Authentication / Otentikasi berfungsi untuk memastikan 
+identitas pihak yang terlibat dalam proses komunikasi data. Dengan adanya 
+mekanisme ini, sistem dapat membedakan antara pengguna yang sah dan 
+pihak yang tidak berwenang. 
+4. Non-repudiation — Non-repudiation menjamin bahwa pihak yang 
+melakukan suatu transaksi atau pengiriman data tidak dapat menyangkal 
+tindakannya, umumnya dicapai melalui tanda tangan digital (digital 
+signature). 
+Untuk menjamin tercapainya tujuan utama kriptografi, berbagai algoritma 
+dikembangkan dengan mekanisme kerja yang beragam. Secara konseptual, 
+kriptografi dapat diklasifikasikan berdasarkan mekanisme pengelolaan kunci yang 
+digunakan dalam proses enkripsi dan dekripsi. 
+Klasifikasi kriptografi berdasarkan mekanisme kunci: 
+• 
+Kriptografi Simetris — Menggunakan satu kunci yang sama (shared key) 
+untuk enkripsi dan dekripsi. Algoritma ini cepat dan efisien, namun 
+memiliki kelemahan pada distribusi kunci. 
+• 
+Kriptografi Asimetris — Menggunakan sepasang kunci, yaitu public key 
+dan private key. Pendekatan ini lebih aman dalam distribusi kunci, tetapi 
+membutuhkan sumber daya komputasi yang lebih besar. 
+Klasifikasi kriptografi berdasarkan tujuan penggunaan: 
+• 
+Enkripsi Data (Data Encryption) — Digunakan untuk menjaga 
+confidentiality data agar informasi tidak dapat dibaca oleh pihak yang tidak 
+berwenang. Algoritma yang termasuk dalam kategori ini umumnya adalah 
+kriptografi simetris dan asimetris. 
+
+
+--- Page 20/81 ---
+
+12 
+ 
+• 
+Fungsi Hash Kriptografis (Cryptographic Hash Function) — Digunakan 
+untuk menjaga integrity data dengan menghasilkan nilai hash unik dari 
+suatu pesan. Perubahan kecil pada data akan menghasilkan nilai hash yang 
+berbeda secara signifikan. 
+• 
+Tanda Tangan Digital (Digital Signature) — Digunakan untuk menjamin 
+authentication dan non-repudiation. Tanda tangan digital memastikan 
+bahwa pesan benar-benar berasal dari pengirim yang sah dan tidak dapat 
+disangkal. 
+• 
+Pertukaran Kunci (Key Exchange) — Digunakan untuk mendistribusikan 
+kunci kriptografi secara aman melalui jaringan yang tidak aman. 
+Mekanisme ini penting dalam membangun komunikasi terenkripsi. 
+Selain itu, berdasarkan perkembangan historis dan kompleksitas algoritmanya, 
+kriptografi dibedakan menjadi kriptografi klasik, kriptografi modern (simetris dan 
+asimetris), serta kriptografi post-quantum. 
+Jenis algoritma kriptografi yang diimplementasikan dalam sistem ini: 
+• 
+Kriptografi Klasik — Algoritma kriptografi klasik seperti Caesar Cipher 
+dan Vigenere Cipher bekerja dengan teknik substitusi dan pergeseran 
+karakter. Algoritma ini memiliki tingkat keamanan yang rendah, namun 
+sangat efektif digunakan sebagai media pembelajaran awal untuk 
+memahami konsep dasar enkripsi dan dekripsi. Caesar Cipher 
+menggunakan pergeseran konstan tunggal, sementara Vigenere Cipher 
+menggunakan 
+pergeseran 
+berbasis 
+kata 
+kunci 
+yang 
+berulang 
+(polyalphabetic substitution). 
+• 
+Kriptografi Simetris Modern — Algoritma simetris modern, seperti 
+Advanced Encryption Standard (AES), bekerja dengan ukuran blok data 
+tetap dan melibatkan serangkaian transformasi matematis dalam beberapa 
+putaran (rounds). Kompleksitas proses ini menjadikan algoritma modern 
+lebih aman, namun juga lebih sulit dipahami tanpa bantuan visualisasi. 
+Dalam sistem ini, AES diimplementasikan sebagai AES Concept Lab 
+dengan pendekatan pedagogis berupa byte-level XOR mixing sebagai 
+aproksimasi pembelajaran (learning approximation) yang menggambarkan 
+
+
+--- Page 21/81 ---
+
+13 
+ 
+prinsip key addition dan diffusion pada cipher simetris, bukan implementasi 
+penuh AES-128 dengan transformasi state matrix (SubBytes, ShiftRows, 
+MixColumns, AddRoundKey). 
+• 
+Kriptografi Asimetris — Algoritma Rivest-Shamir-Adleman (RSA) 
+merupakan contoh kriptografi asimetris yang memanfaatkan bilangan prima 
+dan operasi modular arithmetic. Proses pembangkitan kunci dan 
+perhitungan eksponensial modular sering menjadi tantangan dalam 
+pembelajaran karena sifatnya yang abstrak. Sistem ini menggunakan 
+parameter pedagogis kecil (p=61, q=53, e=17, d=2753) untuk menjaga 
+keterbacaan visualisasi langkah-langkah modular exponentiation. 
+• 
+Tanda Tangan Digital (Digital Signature) — Sistem ini juga menyediakan 
+Digital Signature Lab untuk memvisualisasikan alur tanda tangan digital 
+yang melibatkan signing dengan kunci privat dan verification dengan kunci 
+publik. Lab ini menggambarkan bagaimana fungsi hash digunakan untuk 
+membentuk message digest yang kemudian ditandatangani, serta bagaimana 
+penerima memverifikasi otentisitas dan integritas pesan. 
+• 
+Kriptografi Post-Quantum — Sistem ini juga memperkenalkan Lattice 
+Cipher Lab sebagai pengantar konsep kriptografi post-quantum, yaitu 
+kriptografi yang dirancang tahan terhadap serangan komputer kuantum. Lab 
+ini mendemonstrasikan masalah Learning With Errors (LWE) dengan 
+parameter kecil (n=3, q=97) untuk menjaga keterbacaan visualisasi matriks 
+publik A, vektor rahasia s, dan vektor error e yang menjadi inti keamanan 
+skema lattice-based. 
+Seluruh algoritma tersebut diimplementasikan menggunakan pendekatan Glass 
+Box, yaitu pendekatan yang memungkinkan proses internal algoritma ditampilkan 
+secara eksplisit langkah-demi-langkah sebagai media pembelajaran. Mesin 
+kriptografi kustom (custom engine) ini dibangun di sisi client menggunakan 
+TypeScript murni tanpa ketergantungan pada pustaka kriptografi standar (seperti 
+Web Crypto API atau OpenSSL) yang umumnya bersifat Black Box. 
+2.2.2 
+Gamifikasi Struktural dan Reward 
+
+
+--- Page 22/81 ---
+
+14 
+ 
+Gamifikasi Struktural dan Reward merupakan pendekatan gamifikasi yang 
+menerapkan elemen-elemen permainan pada struktur sistem pembelajaran 
+(structural) maupun pada lapisan penghargaan (reward) tanpa melakukan 
+perubahan terhadap konten atau materi ajar itu sendiri. Dalam pendekatan ini, 
+materi pembelajaran tetap disajikan dalam format akademik konvensional, seperti 
+teks, visualisasi, dan latihan soal, sementara elemen permainan digunakan sebagai 
+lapisan pendukung untuk meningkatkan motivasi dan keterlibatan peserta didik. 
+Dengan demikian, gamifikasi berperan sebagai instrumen pedagogis yang 
+memperkaya pengalaman belajar tanpa mengganggu kesesuaian kurikulum. 
+Dalam konteks pembelajaran kriptografi, gamifikasi struktural dan reward 
+memiliki relevansi yang tinggi karena karakteristik materi yang bersifat abstrak, 
+matematis, dan bertahap. Pemahaman konsep dasar menjadi prasyarat mutlak untuk 
+mempelajari algoritma lanjutan, sehingga diperlukan mekanisme pembelajaran 
+yang mampu mengarahkan mahasiswa mengikuti alur belajar secara sistematis 
+sekaligus memberikan penghargaan atas konsistensi dan pencapaian. Penerapan 
+struktur permainan membantu mahasiswa memahami progres belajarnya secara 
+bertahap serta memberikan dorongan untuk menyelesaikan setiap tahapan 
+pembelajaran. 
+2.2.2.1 Tujuan Penerapan Structural Gamification dalam Pembelajaran 
+Penerapan gamifikasi struktural dan reward dalam pembelajaran bertujuan 
+untuk meningkatkan efektivitas proses belajar melalui penguatan motivasi, 
+keterlibatan, konsistensi belajar, dan pencapaian mahasiswa. Tujuan tersebut antara 
+lain: 
+• 
+Meningkatkan motivasi belajar mahasiswa, khususnya pada materi yang 
+bersifat teknis dan kompleks, melalui pemberian penghargaan atas aktivitas 
+belajar. 
+• 
+Memberikan umpan balik instan, sehingga mahasiswa dapat segera 
+mengetahui hasil dari aktivitas pembelajaran yang dilakukan. 
+
+
+--- Page 23/81 ---
+
+15 
+ 
+• 
+Mengarahkan proses pembelajaran secara terstruktur, agar mahasiswa 
+mengikuti urutan materi sesuai dengan tingkat kesulitan dan prasyarat yang 
+ditetapkan. 
+• 
+Mendorong konsistensi belajar harian melalui mekanisme streak dan daily 
+goal, yang membentuk kebiasaan belajar berkelanjutan. 
+• 
+Memvalidasi pencapaian mahasiswa secara formal melalui sertifikat yang 
+dapat diverifikasi publik. 
+• 
+Menciptakan kompetisi sehat antar mahasiswa melalui leaderboard real-
+time yang transparan. 
+Tujuan-tujuan tersebut menjadikan gamifikasi bukan sekadar elemen tambahan 
+visual, melainkan bagian integral dari desain sistem pembelajaran. 
+2.2.2.2 Metode Gamifikasi yang Umum Digunakan 
+Dalam implementasinya, gamifikasi dapat dibagi menjadi dua kategori 
+besar: Structural Gamification (mempengaruhi struktur penyampaian materi) dan 
+Reward Gamification (mempengaruhi sistem penghargaan terhadap aktivitas 
+belajar). Metode-metode yang umum digunakan meliputi: 
+A. Metode Structural Gamification: 
+• 
+Process-Based Points — Pemberian poin berdasarkan aktivitas belajar yang 
+dilakukan pengguna, seperti menjawab soal quiz atau challenge dengan 
+benar. Metode ini menekankan pentingnya proses belajar, bukan hanya hasil 
+akhir. 
+• 
+Unlocking Mechanism / Unlockable Content — Pembatasan akses terhadap 
+materi lanjutan hingga pengguna menyelesaikan materi prasyarat. Metode 
+ini menjaga urutan logis pembelajaran dan mencegah loncatan materi yang 
+dapat menghambat pemahaman. 
+• 
+Progression System — Penyajian perkembangan belajar secara bertahap 
+melalui level atau status penyelesaian materi. Metode ini membantu 
+pengguna 
+memahami 
+posisi 
+mereka 
+dalam 
+keseluruhan 
+proses 
+pembelajaran. 
+
+
+--- Page 24/81 ---
+
+16 
+ 
+• 
+Goal Structuring — Pemecahan tujuan pembelajaran menjadi target-target 
+kecil yang jelas dan terukur, sehingga proses belajar terasa lebih ringan dan 
+terarah. 
+• 
+Visual Progress Indicators — Seperti progress bar atau penanda 
+penyelesaian, yang digunakan untuk menampilkan status kemajuan belajar 
+dan mendorong pengguna menyelesaikan aktivitas yang belum tuntas. 
+B. Metode Reward Gamification: 
+• 
+Experience Points (XP) & Level System — Sistem akumulasi pengalaman 
+yang membentuk level pengguna. Setiap level dapat memberikan bonus 
+multiplier untuk perolehan poin selanjutnya, menciptakan rasa pencapaian 
+jangka panjang. 
+• 
+Daily Streak — Mekanisme penghargaan untuk konsistensi harian 
+pengguna. Streak meningkat setiap hari pengguna aktif, dengan multiplier 
+progresif untuk perolehan XP. 
+• 
+Daily Goal — Target XP harian yang harus dicapai pengguna, disertai 
+bonus XP saat target tercapai. Metode ini mendorong sesi belajar yang 
+teratur dan terukur. 
+• 
+Badge / Achievement — Penghargaan visual yang diberikan saat pengguna 
+mencapai milestone tertentu (mis. menyelesaikan kursus pertama, mencapai 
+streak 7 hari, menjawab quiz dengan sempurna). Badge berfungsi sebagai 
+pengakuan formal atas pencapaian. 
+• 
+Leaderboard — Papan peringkat yang menampilkan pengguna dengan poin 
+tertinggi, menciptakan kompetisi sehat dan transparan. Leaderboard real-
+time memungkinkan pengguna melihat perubahan peringkat secara 
+langsung. 
+• 
+Certificates — Sertifikat resmi yang diberikan setelah pengguna 
+menyelesaikan kursus, dilengkapi dengan kode verifikasi yang dapat 
+diperiksa publik untuk menjamin keaslian. 
+• 
+Immediate Feedback Mechanism — Pemberian respons langsung terhadap 
+aktivitas pengguna dalam bentuk poin, notifikasi, atau indikator visual. 
+Metode ini membantu memperkuat pemahaman dan meningkatkan efikasi 
+diri mahasiswa. 
+
+
+--- Page 25/81 ---
+
+17 
+ 
+Metode-metode tersebut dapat dikombinasikan sesuai dengan kebutuhan sistem dan 
+karakteristik materi pembelajaran. 
+2.2.2.3 Penerapan Gamifikasi Struktural dan Reward dalam Penelitian Ini 
+Berdasarkan kebutuhan sistem dan karakteristik pembelajaran kriptografi, 
+penelitian ini menerapkan gamifikasi struktural dan reward secara komprehensif 
+melalui metode-metode berikut: 
+Metode Structural Gamification yang Diterapkan: 
+• 
+Process-Based Points — Pemberian poin otomatis pada setiap jawaban 
+benar di soal quiz dan challenge sebagai bentuk umpan balik instan dan 
+indikator kuantitatif atas aktivitas belajar mahasiswa. Challenge 
+mengadopsi pola penilaian Kahoot-style di mana skor menurun secara linear 
+seiring waktu (jawaban instan = poin maksimal, jawaban di 2× time limit = 
+0 poin), serta dilengkapi streak bonus untuk jawaban benar berurutan. 
+• 
+Unlockable Content — Pembatasan akses materi tingkat lanjut hingga 
+materi 
+prasyarat 
+diselesaikan, 
+diimplementasikan 
+melalui 
+kolom 
+prerequisite_lesson_id dan prerequisite_task_id pada model Lesson dan 
+LessonTask. 
+Metode Reward Gamification yang Diterapkan: 
+• 
+XP & Level System — Akumulasi XP dari aktivitas belajar (quiz, challenge, 
+daily streak) yang menentukan level pengguna. Setiap level memberikan 
+bonus multiplier untuk perolehan poin (mis. level 10 → 2% bonus, level 50 
+→ 10% bonus). 
+• 
+Daily Streak dengan Multiplier Progresif — Streak harian dengan multiplier 
+XP yang meningkat sesuai tier: 
+o 1–2 hari → 1.0× (no bonus) 
+o 3–6 hari → 1.25× 
+o 7–13 hari → 1.5× 
+o 14–29 hari → 1.75× 
+o 30+ hari → 2.0× 
+
+
+--- Page 26/81 ---
+
+18 
+ 
+Streak juga memberikan daily streak XP sebesar 2–12 XP per hari sesuai tier, serta 
+bonus khusus seperti First Login Bonus, Comeback Bonus (kembali setelah 7+ hari 
+absen), dan Weekly Active Bonus (saat mencapai streak 7 hari). 
+• 
+Daily Goal dengan Bonus XP — Target XP harian (default 100 XP) dengan 
+bonus 20 XP saat target pertama kali tercapai dalam satu hari. Mekanisme 
+ini mendorong sesi belajar harian yang konsisten. 
+• 
+Badge / Achievement System — 10+ kriteria badge yang mencerminkan 
+beragam pencapaian, antara lain: 
+o first_enrollment — Pendaftaran kursus pertama 
+o courses_completed — Penyelesaian sejumlah kursus tertentu 
+o lessons_completed — Penyelesaian sejumlah pelajaran tertentu 
+o challenges_solved — Penyelesaian sejumlah challenge tertentu 
+o perfect_quiz — Quiz session dengan semua jawaban benar (minimal 
+3 soal) 
+o speed_demon — Jawaban benar dalam waktu kurang dari 5 detik 
+o streak_days — Mencapai streak tertentu 
+o labs_visited — Mengunjungi sejumlah lab kriptografi tertentu 
+o points_earned — Mengumpulkan jumlah poin tertentu 
+o first_discussion — Membuat diskusi pertama di forum 
+• 
+Leaderboard Real-Time — Papan peringkat yang diupdate secara real-time 
+via WebSocket (Laravel Reverb) sehingga pengguna dapat melihat 
+perubahan peringkat secara langsung tanpa page refresh. 
+• 
+Certificates dengan Public Verification — Sertifikat penyelesaian kursus 
+yang dibangkitkan otomatis (auto-generated) dengan kode verifikasi unik 
+berbasis SHA-256 yang dapat diperiksa publik untuk menjamin keaslian dan 
+integritas sertifikat. 
+Penerapan metode-metode tersebut 
+dirancang untuk 
+meningkatkan 
+keterlibatan mahasiswa, menjaga konsistensi belajar, mendukung pemahaman 
+konsep kriptografi secara bertahap, serta memvalidasi pencapaian mahasiswa 
+secara formal. Dengan demikian, gamifikasi struktural dan reward dalam penelitian 
+ini berfungsi sebagai mekanisme pendukung pembelajaran yang sistematis, terukur, 
+memotivasi, dan sesuai dengan konteks pendidikan formal berbasis web. 
+
+
+--- Page 27/81 ---
+
+19 
+ 
+2.2.2 Metode Waterfall 
+Metode pengembangan perangkat lunak yang digunakan dalam penelitian ini 
+adalah metode Waterfall (sering disebut sebagai Linear Sequential Model). Berbeda 
+dengan model iteratif, Waterfall merupakan pendekatan pengembangan yang 
+sistematis dan sekuensial, di mana kemajuan dipandang sebagai aliran yang terus 
+mengalir ke bawah melewati fase-fase analisis, desain, implementasi, pengujian, 
+dan pemeliharaan. Setiap tahapan harus diselesaikan secara penuh dan divalidasi 
+sebelum beralih ke tahapan berikutnya untuk menjamin kualitas dan dokumentasi 
+yang mendalam. 
+Pemilihan metode Waterfall dalam rancang bangun E-Learning Kriptografi 
+ini dinilai sangat optimal berdasarkan beberapa alasan strategis yang selaras dengan 
+kebutuhan sistem: 
+1. Stabilitas Kebutuhan Teknis — Karakteristik sistem pembelajaran 
+kriptografi memerlukan definisi kebutuhan teknis yang sangat detail dan 
+kaku di awal, terutama pada bagian perhitungan algoritma Glass Box yang 
+harus mengikuti standar matematis yang sudah pasti. 
+2. Minimalisasi Kesalahan Logika — Dengan pendekatan sekuensial, setiap 
+modul kriptografi (Caesar Cipher, Vigenere Cipher, AES Concept, RSA, 
+Digital Signature, dan Lattice Cipher) dianalisis dan didesain secara matang 
+sebelum tahap pengkodean dimulai, sehingga meminimalisir risiko 
+kesalahan logika algoritma pada tahap implementasi. 
+3. Dokumentasi yang Terstruktur — Metode ini memastikan adanya 
+dokumentasi teknis yang mendalam di setiap tahapannya, yang sangat 
+krusial bagi sistem edukasi yang membutuhkan tingkat presisi tinggi. 
+4. Konsistensi Skema Database & API — Sistem ini melibatkan banyak entitas 
+(Course, Lesson, LessonTask, Quiz, Challenge, Assessment, Badge, 
+Certificate, dll) dengan relasi yang kompleks. Pendekatan Waterfall 
+memastikan skema database dan kontrak API ditentukan secara matang di 
+awal sebelum implementasi frontend React dan backend Laravel. 
+
+
+--- Page 28/81 ---
+
+20 
+ 
+Secara keseluruhan, penggunaan Waterfall memastikan bahwa platform E-
+Learning yang dihasilkan memiliki struktur data yang solid dan alur logika 
+algoritma yang presisi sebelum sistem diuji coba kepada pengguna akhir. 
+2.2.3 Pengujian Black Box 
+Pengujian perangkat lunak merupakan tahap krusial untuk menjamin kualitas 
+sistem sebelum digunakan oleh pengguna akhir. Metode Black Box Testing 
+berfokus pada pengujian fungsionalitas aplikasi tanpa melihat atau mengetahui 
+struktur kode internalnya. Pengujian ini dilakukan dengan cara memberikan 
+berbagai input pada sistem dan mengamati apakah output yang dihasilkan serta 
+perilaku sistem sudah sesuai dengan spesifikasi fungsional yang diharapkan. 
+Dalam konteks penelitian ini, Black Box Testing dilakukan secara mendalam 
+untuk memvalidasi beberapa komponen utama sistem: 
+1. Validasi Modul Simulasi Kriptografi — Menguji apakah custom engine 
+berbasis TypeScript dapat menghasilkan nilai ciphertext yang akurat 
+berdasarkan plaintext dan kunci yang dimasukkan, serta memastikan setiap 
+langkah visualisasi tampil dengan benar untuk seluruh lab (Caesar Cipher, 
+Vigenere Cipher, AES Concept, RSA, Digital Signature, dan Lattice 
+Cipher) baik pada mode encrypt maupun decrypt. 
+2. Pengujian Mekanisme Process-Based Points — Memastikan sistem 
+perhitungan poin otomatis memberikan nilai yang tepat hanya ketika 
+pengguna menjawab soal quiz atau challenge dengan benar, serta 
+memvalidasi Kahoot-style scoring (skor menurun linear sesuai waktu) dan 
+streak bonus untuk jawaban berurutan. 
+3. Verifikasi Unlockable Content — Menguji logika prerequisite-based 
+learning path untuk memastikan mahasiswa tidak dapat mengakses lesson 
+atau task tingkat lanjut sebelum menyelesaikan materi prasyarat 
+(prerequisite_lesson_id dan prerequisite_task_id). 
+4. Pengujian Sistem XP, Level, dan Streak — Memvalidasi akurasi 
+perhitungan XP (termasuk streak multiplier dan level bonus), perubahan 
+level otomatis saat XP melewati threshold, serta perubahan current_streak 
+dan longest_streak sesuai pola login harian. Pengujian juga mencakup 
+
+
+--- Page 29/81 ---
+
+21 
+ 
+bonus khusus seperti First Login Bonus, Comeback Bonus, dan Weekly 
+Active Bonus. 
+5. Pengujian Daily Goal & Bonus — Memastikan daily goal (target XP harian) 
+terlacak dengan benar dan bonus XP diberikan tepat sekali saat target 
+pertama kali tercapai dalam satu hari, dengan reset otomatis di hari 
+berikutnya. 
+6. Pengujian Badge / Achievement — Memastikan badge dianugerahkan 
+secara otomatis 
+ketika kriteria terpenuhi (mis. 
+first_enrollment, 
+perfect_quiz, speed_demon, streak_days, labs_visited) dan tidak terjadi 
+duplikasi pemberian. 
+7. Pengujian Leaderboard Real-Time — Memvalidasi bahwa pembaruan 
+leaderboard via WebSocket (Laravel Reverb) terjadi secara real-time 
+setelah perubahan poin, serta memastikan urutan peringkat sesuai dengan 
+total poin pengguna. 
+8. Pengujian Certificate Generation & Verification — Menguji bahwa 
+sertifikat dibangkitkan otomatis saat kursus selesai, kode verifikasi unik 
+(SHA-256) terbentuk dengan benar, dan halaman verifikasi publik dapat 
+menampilkan informasi sertifikat berdasarkan kode tersebut. 
+9. Autentikasi dan Manajemen Pengguna — Memvalidasi fitur registrasi, 
+login (termasuk social login via Socialite), pengelolaan profil, dan two-
+factor authentication (2FA) menggunakan Laravel Fortify, serta 
+memastikan Role-Based Access Control (Admin vs Mahasiswa) berfungsi 
+dengan benar pada setiap route dan policy. 
+2.2.4 User Acceptance Testing (UAT) 
+User Acceptance Testing (UAT) atau pengujian penerimaan pengguna adalah 
+tahap akhir dalam siklus pengembangan perangkat lunak di mana pengguna aktual 
+menguji sistem untuk memvalidasi apakah sistem tersebut dapat diterima dan 
+memenuhi kebutuhan bisnis atau pembelajaran yang diharapkan. Berbeda dengan 
+Black Box Testing yang berfokus pada kesalahan fungsional, UAT berfokus pada 
+aspek kegunaan (usability) dan kepuasan pengguna (user satisfaction). 
+
+
+--- Page 30/81 ---
+
+22 
+ 
+Dalam penelitian sistem e-learning, UAT krusial untuk mengukur efektivitas 
+media pembelajaran yang dibangun. Pengukuran UAT sering kali menggunakan 
+instrumen kuesioner dengan Skala Likert. Skala Likert adalah skala psikometrik 
+yang umum digunakan dalam kuesioner penelitian untuk mengukur sikap, 
+pendapat, dan persepsi seseorang atau sekelompok orang terhadap fenomena sosial. 
+Responden diminta menentukan tingkat persetujuan mereka terhadap suatu 
+pernyataan dengan gradasi mulai dari "Sangat Tidak Setuju" hingga "Sangat 
+Setuju". 
+2.2.5 Stack Teknologi Web Modern 
+Sistem E-Learning Kriptografi ini dibangun di atas stack teknologi web 
+modern yang dipilih berdasarkan pertimbangan produktivitas, keamanan, performa, 
+dan kemudahan pemeliharaan. Stack ini terdiri dari kombinasi teknologi backend 
+dan frontend yang terintegrasi melalui pendekatan Server-Driven Single Page 
+Application (SPA). 
+A. Backend 
+• 
+Laravel 13 — Framework PHP modern yang menyediakan struktur aplikasi 
+yang ekspresif dan elegan. Laravel menyediakan fitur out-of-the-box untuk 
+routing, Eloquent ORM, migration, queue, event broadcasting, dan artisan 
+CLI. Versi 13 menambahkan peningkatan performa dan fitur modern. 
+• 
+PHP 8.4 — Bahasa pemrograman backend dengan dukungan typed 
+properties, enums, readonly classes, dan constructor property promotion 
+yang meningkatkan keterbacaan dan keamanan tipe. 
+• 
+Laravel 
+Fortify 
+— 
+Backend 
+autentikasi 
+frontend-agnostic 
+yang 
+menyediakan fitur registrasi, login, password reset, email verification, dan 
+two-factor authentication (2FA) berbasis TOTP dengan QR code dan 
+recovery codes. 
+• 
+Laravel Pennant — Sistem feature flag untuk gradual rollout, A/B testing, 
+dan kontrol fitur per pengguna. 
+• 
+Laravel Reverb — Server WebSocket native yang menyediakan komunikasi 
+real-time untuk fitur seperti leaderboard updates dan notifikasi. 
+
+
+--- Page 31/81 ---
+
+23 
+ 
+• 
+Laravel Socialite — Integrasi OAuth untuk social login (Google, GitHub, 
+dll). 
+• 
+Laravel Wayfinder — Generator fungsi TypeScript otomatis dari Laravel 
+routes dan controllers untuk komunikasi frontend-backend yang type-safe. 
+B. Frontend 
+• 
+React 19 — Library UI deklaratif berbasis komponen, dengan dukungan 
+React Compiler untuk optimasi otomatis. 
+• 
+Inertia.js v3 — Library yang menjembatani backend Laravel dengan 
+frontend React tanpa perlu membangun REST API terpisah. Inertia 
+memungkinkan pendekatan Server-Driven SPA di mana routing dan 
+controller tetap di sisi backend, namun rendering halaman dilakukan di sisi 
+client sebagai SPA. 
+• 
+TypeScript — Superset JavaScript dengan static typing untuk meningkatkan 
+keamanan tipe dan keterbacaan kode frontend. 
+• 
+Tailwind CSS v4 — Framework CSS utility-first untuk styling yang 
+konsisten dan responsive. 
+• 
+shadcn/ui — Koleksi komponen UI berkualitas tinggi yang dapat 
+dikustomisasi penuh, dibangun di atas Radix UI dan Tailwind CSS. 
+C. Database & Infrastruktur 
+• 
+MySQL 8.0+ — Relational database management system (RDBMS) yang 
+digunakan untuk menyimpan seluruh data aplikasi. 
+• 
+Redis (opsional, direkomendasikan untuk produksi) — In-memory data 
+store untuk cache dan queue. 
+D. Tooling Pengembangan & Testing 
+• 
+Vite — Build tool modern dengan Hot Module Replacement (HMR) untuk 
+pengalaman pengembangan yang cepat. 
+• 
+Pest 4 — Framework testing PHP dengan sintaks ekspresif berbasis closure, 
+digunakan untuk unit test dan feature test. 
+• 
+Vitest — Framework testing JavaScript modern untuk unit test komponen 
+frontend. 
+
+
+--- Page 32/81 ---
+
+24 
+ 
+• 
+Playwright — Framework end-to-end testing untuk simulasi interaksi 
+pengguna pada browser. 
+• 
+Laravel Pint — Code formatter PHP berbasis PHP-CS-Fixer. 
+• 
+ESLint + Prettier — Linter dan formatter JavaScript/TypeScript untuk 
+konsistensi gaya kode frontend. 
+E. Arsitektur Komunikasi 
+Sistem ini menggunakan arsitektur Server-Driven SPA di mana: 
+1. Browser menjalankan React 19 + Inertia.js v3 sebagai frontend SPA. 
+2. Laravel 13 Server menangani routing, business logic, dan database queries 
+melalui Eloquent ORM. 
+3. Inertia mengirimkan respons berupa JSON props yang di-render oleh React 
+di sisi client. 
+4. Laravel Reverb menyediakan WebSocket untuk komunikasi real-time 
+(leaderboard updates, notifikasi). 
+5. Wayfinder menghasilkan fungsi TypeScript otomatis untuk memanggil 
+controller actions dari frontend dengan type-safety. 
+Pemilihan stack teknologi ini memberikan beberapa keunggulan: (1) type-safety 
+end-to-end dari backend PHP ke frontend TypeScript via Wayfinder, (2) 
+pengalaman pengembangan SPA tanpa kompleksitas REST API terpisah berkat 
+Inertia, (3) real-time features yang terintegrasi melalui Laravel Reverb, dan (4) 
+ekosistem security dan authentication yang matang melalui Fortify, Pennant, dan 
+Socialite. 
+ 
+ 
+ 
+ 
+
+
+--- Page 33/81 ---
+
+25 
+ 
+BAB III
+ 
+METODOLOGI PENELITIAN 
+3.1 
+Model Pengembangan Sistem 
+Penelitian ini menggunakan model pengembangan Waterfall sebagai 
+kerangka kerja pengembangan perangkat lunak. Pemilihan model ini didasarkan 
+pada karakteristik sistem E-Learning Kriptografi yang memerlukan definisi 
+kebutuhan teknis yang sangat detail dan kaku di awal proyek, terutama pada bagian 
+perhitungan algoritma Glass Box. Pendekatan sekuensial ini memastikan bahwa 
+setiap tahapan pengembangan dilakukan secara sistematis dan terdokumentasi 
+dengan baik guna meminimalisir risiko kesalahan logika pada modul enkripsi. 
+3.2 
+Tahapan Penelitian 
+Sesuai dengan alur model Waterfall, tahapan penelitian ini dilakukan secara 
+linear sebagai berikut: 
+3.2.1 Analisis Kebutuhan 
+Pada tahap ini merinci spesifikasi fungsional dan non-fungsional yang harus 
+dipenuhi oleh sistem. 
+Tabel 3. 1 Kebutuhan Fungsional 
+No 
+Fitur Utama 
+Deskripsi Kebutuhan 
+Aktor 
+KF-01 
+Autentikasi 
+& 
+RBAC 
+Sistem menyediakan fitur registrasi, login 
+(termasuk social login via OAuth), two-
+factor 
+authentication 
+(2FA), 
+serta 
+mengelola hak akses berbasis peran (Role-
+Based Access Control) untuk Admin dan 
+Mahasiswa. 
+Admin, 
+Mahasiswa 
+KF-02 
+Visualisasi 
+Glass Box 
+Klasik 
+Sistem 
+memvisualisasikan 
+proses 
+pergeseran (Caesar Cipher) dan substitusi 
+berbasis kata kunci (Vigenere Cipher) 
+secara transparan langkah-demi-langkah. 
+Mahasiswa 
+
+
+--- Page 34/81 ---
+
+26 
+ 
+KF-03 
+Visualisasi 
+Glass Box AES 
+Concept 
+Sistem 
+memvisualisasikan 
+konsep 
+symmetric block cipher melalui pendekatan 
+pedagogis byte-level XOR mixing yang 
+menggambarkan prinsip key addition dan 
+diffusion pada AES. 
+Mahasiswa 
+KF-04 
+Simulasi Glass 
+Box RSA 
+Sistem menyediakan antarmuka untuk 
+pembangkitan kunci dan perhitungan 
+eksponensial 
+modular 
+(modular 
+exponentiation) secara transparan dengan 
+parameter pedagogis kecil. 
+Mahasiswa 
+KF-05 
+Visualisasi 
+Glass Box 
+Digital 
+Signature 
+Sistem 
+memvisualisasikan alur tanda 
+tangan digital (signing dan verification) 
+dengan fungsi hash untuk pembentukan 
+message 
+digest, 
+memastikan 
+authentication, 
+integrity, 
+dan 
+non-
+repudiation. 
+Mahasiswa 
+KF-06 
+Visualisasi 
+Glass Box 
+Lattice Cipher 
+Sistem 
+memvisualisasikan 
+konsep 
+kriptografi 
+post-quantum 
+melalui 
+demonstrasi masalah Learning With Errors 
+(LWE) dengan parameter kecil (n=3, q=97) 
+untuk tujuan pedagogis. 
+Mahasiswa 
+KF-07 
+Manajemen 
+Course & 
+Lesson 
+Sistem menyediakan fitur CRUD kursus, 
+pelajaran (lesson), dan tugas (task) dengan 
+dukungan berbagai tipe konten (video, 
+dokumen 
+PDF, 
+quiz), 
+serta 
+fitur 
+publish/draft/archive 
+dan 
+content 
+versioning. 
+Admin 
+KF-08 
+Mekanisme 
+Unlockable 
+Content 
+Sistem membatasi akses ke lesson dan task 
+tingkat 
+lanjut 
+hingga 
+mahasiswa 
+menyelesaikan 
+materi 
+prasyarat Mahasiswa 
+
+
+--- Page 35/81 ---
+
+27 
+ 
+(prerequisite_lesson_id 
+dan 
+prerequisite_task_id). 
+KF-09 
+Logika Process-
+Based Points 
+Sistem secara otomatis menghitung dan 
+memberikan poin berdasarkan ketepatan 
+jawaban pada soal quiz dan challenge. 
+Challenge mengadopsi penilaian Kahoot-
+style dengan skor menurun linear sesuai 
+waktu serta streak bonus untuk jawaban 
+benar berurutan. 
+Mahasiswa 
+KF-10 
+Sistem XP & 
+Level 
+Sistem mengakumulasi XP dari aktivitas 
+belajar (quiz, challenge, daily streak) dan 
+menghitung level pengguna dengan bonus 
+multiplier poin per level. 
+Mahasiswa 
+KF-11 
+Daily Streak & 
+Daily Goal 
+Sistem melacak konsistensi login harian, 
+memberikan multiplier XP progresif (1.0× 
+→ 
+2.0×) 
+sesuai 
+tier 
+streak, 
+serta 
+menyediakan target XP harian (daily goal) 
+dengan bonus saat tercapai. 
+Mahasiswa 
+KF-12 
+Badge / 
+Achievement 
+Sistem memberikan badge secara otomatis 
+saat kriteria terpenuhi (first enrollment, 
+courses completed, perfect quiz, speed 
+demon, streak days, labs visited, points 
+earned, first discussion, dll). 
+Mahasiswa 
+KF-13 
+Leaderboard 
+Real-Time 
+Sistem menampilkan papan peringkat yang 
+diupdate secara real-time via WebSocket 
+(Laravel Reverb) tanpa page refresh. 
+Mahasiswa 
+KF-14 
+Assessment 
+(Bloom's 
+Taxonomy) 
+Sistem menyediakan asesmen bertingkat 
+berdasarkan taksonomi Bloom dengan 
+penilaian rubrik (otomatis + manual) dan 
+question bank untuk reuse soal. 
+Admin, 
+Mahasiswa 
+
+
+--- Page 36/81 ---
+
+28 
+ 
+KF-15 
+Manajemen 
+Progres Belajar 
+Sistem merekam dan menampilkan data 
+kemajuan belajar (lesson progress, task 
+progress, enrollment completion), riwayat 
+poin, 
+statistik 
+XP/level/streak, 
+dan 
+dashboard analytics untuk Admin dan 
+Mahasiswa. 
+Admin, 
+Mahasiswa 
+KF-16 
+Profil & 
+Onboarding 
+Sistem menyediakan halaman profil publik 
+(dengan statistik gamifikasi), halaman 
+onboarding untuk pengguna baru, serta 
+pengaturan profil, keamanan, dan social 
+accounts. 
+Mahasiswa 
+KF-17 
+Pencarian 
+Sistem menyediakan fitur pencarian full-
+text untuk menemukan kursus, pelajaran, 
+dan challenge dengan rate limiting. 
+Mahasiswa 
+ 
+Tabel 3. 2 Kebutuhan Non-Fungsional 
+No 
+Parameter 
+Deskripsi Kebutuhan 
+KNF-01 
+Keamanan Data 
+Sistem wajib menggunakan fitur keamanan bawaan 
+Laravel (CSRF protection, hashed passwords, rate 
+limiting), autentikasi multi-faktor (2FA via Fortify), 
+serta Role-Based Access Control melalui middleware 
+dan policy. 
+KNF-02 
+Aksesibilitas 
+Sistem harus berbasis web (web-based) sehingga 
+dapat diakses melalui berbagai perangkat seperti 
+Laptop, PC, maupun Smartphone. 
+KNF-03 Responsivitas UI 
+Antarmuka pengguna harus sepenuhnya responsif 
+menggunakan Tailwind CSS v4 dengan pendekatan 
+utility-first, mampu menyesuaikan tampilan secara 
+optimal pada berbagai resolusi layar. 
+
+
+--- Page 37/81 ---
+
+29 
+ 
+KNF-04 
+Performa 
+Proses perhitungan simulasi kriptografi dilakukan di 
+sisi client (TypeScript) secara real-time tanpa 
+membebani server. Komunikasi frontend-backend 
+menggunakan 
+pendekatan 
+Server-Driven 
+SPA 
+(Inertia.js) untuk meminimalkan payload. 
+KNF-05 Integritas Simulasi 
+Sistem harus memastikan bahwa custom engine 
+TypeScript menghasilkan nilai yang valid secara 
+matematis sesuai rumus algoritma, meskipun 
+menggunakan parameter input yang disederhanakan 
+untuk tujuan edukasi. 
+KNF-06 Real-Time Updates 
+Sistem harus mendukung pembaruan real-time 
+(leaderboard, notifikasi badge) melalui WebSocket 
+(Laravel Reverb) tanpa perlu page refresh. 
+KNF-07 
+Type-Safety 
+Komunikasi 
+frontend-backend 
+harus 
+type-safe 
+melalui Laravel Wayfinder yang menghasilkan 
+fungsi TypeScript otomatis dari Laravel routes dan 
+controllers. 
+KNF-08 
+Testabilitas 
+Sistem harus memiliki test suite yang mencakup unit 
+test PHP (Pest 4), unit test JavaScript (Vitest), dan 
+end-to-end test (Playwright) untuk menjamin 
+kualitas kode secara berkelanjutan. 
+3.2.2 Perancangan Sistem 
+Tahap perancangan sistem bertujuan untuk memberikan gambaran arsitektur 
+dan logika sistem secara menyeluruh. Hal ini dilakukan untuk meminimalisir 
+kesalahan logika pada saat implementasi. Arsitektur simulasi kriptografi 
+menggunakan pendekatan Client-side Processing menggunakan TypeScript. Hal 
+ini dilakukan agar visualisasi proses transformasi byte pada algoritma kriptografi 
+dapat berjalan real-time tanpa membebani server dengan request berulang pada 
+setiap langkah putaran. Sementara itu, backend Laravel menangani business logic, 
+autentikasi, gamifikasi, dan data persistence melalui pendekatan Server-Driven 
+SPA menggunakan Inertia.js v3. 
+
+
+--- Page 38/81 ---
+
+30 
+ 
+Komponen perancangan dalam penelitian ini meliputi: 
+3.2.2.1 Use Case Diagram 
+ 
+Gambar 3. 1 Use Case Diagram 
+Diagram Use Case memetakan batasan sistem dan interaksi fungsional 
+antara pengguna dengan perangkat lunak. Terdapat dua aktor utama dalam sistem 
+ini, yaitu Admin dan Mahasiswa. 
+• 
+Aktor Admin: Memiliki hak akses penuh untuk mengelola data master 
+sistem, 
+yang 
+meliputi 
+manajemen 
+kursus 
+(course 
+CRUD, 
+publish/draft/archive), manajemen pelajaran (lesson) dan tugas (task), 
+manajemen asesmen dengan taksonomi Bloom (assessment CRUD dan 
+question bank), manajemen pengguna, serta memantau laporan progres 
+belajar dan statistik sistem melalui dashboard analytics. 
+• 
+Aktor Mahasiswa: Merupakan pengguna utama yang berinteraksi dengan 
+fitur pembelajaran. Kasus penggunaan (use cases) untuk mahasiswa 
+mencakup melakukan autentikasi (Login/Register, termasuk social login 
+
+
+--- Page 39/81 ---
+
+31 
+ 
+dan 2FA), mengakses kursus dan materi pembelajaran dengan mekanisme 
+prasyarat (unlockable content), menjalankan simulasi visualisasi kriptografi 
+(Glass Box) pada enam lab (Caesar, Vigenere, AES Concept, RSA, Digital 
+Signature, Lattice Cipher), mengerjakan quiz pada setiap lesson task, 
+mengikuti challenge dengan penilaian Kahoot-style, mengerjakan asesmen 
+bertingkat (Bloom's taxonomy), melihat leaderboard real-time, mengunduh 
+sertifikat penyelesaian kursus, melihat profil dan statistik gamifikasi (XP, 
+level, streak, badge), serta berpartisipasi dalam diskusi. 
+3.2.2.2 Activity Diagram 
+ 
+ 
+Gambar 3. 2 Activity Diagram 
+Activity Diagram ini menggambarkan alur kerja sistem secara 
+komprehensif yang mengintegrasikan proses bisnis utama ke dalam satu alur 
+sekuensial: 
+
+
+--- Page 40/81 ---
+
+32 
+ 
+1. Proses Autentikasi: Dimulai saat pengguna memasukkan kredensial (atau 
+menggunakan social login). Sistem memvalidasi data; jika valid, pengguna 
+diarahkan ke dashboard sesuai perannya (Admin atau Mahasiswa). Jika 
+pengguna baru, diarahkan ke halaman onboarding. 
+2. Proses Streak & Daily Goal: Setiap kali mahasiswa login, sistem secara 
+otomatis mengecek dan memperbarui daily streak (melalui middleware). 
+Jika login berturut-turut, streak meningkat dan multiplier XP disesuaikan. 
+Sistem juga mereset daily goal tracker untuk hari baru. 
+3. Proses Akses Materi (Unlockable Logic): Saat mahasiswa memilih materi, 
+sistem secara otomatis mengecek status ketersediaan lesson atau task. Jika 
+materi terkunci, sistem memvalidasi apakah prerequisite lesson/task telah 
+diselesaikan. Akses hanya diberikan jika prasyarat terpenuhi. 
+4. Proses Simulasi Kriptografi: Menggambarkan alur visualisasi Glass Box di 
+mana mahasiswa memilih lab (Caesar, Vigenere, AES Concept, RSA, 
+Digital Signature, atau Lattice Cipher), memasukkan input (plaintext, kunci, 
+mode encrypt/decrypt), dan custom engine TypeScript memproses serta 
+menampilkan langkah-langkah enkripsi secara real-time di sisi client. 
+Badge labs_visited diproses setelah kunjungan lab. 
+5. Proses Quiz & Challenge (Gamification Logic): Menggambarkan logika 
+percabangan (decision node) pada pengerjaan quiz dan challenge. Jika 
+jawaban benar, sistem memberikan XP dan poin (Process-Based Points); 
+jika salah, sistem memberikan umpan balik korektif tanpa penambahan 
+poin. Pada challenge, skor dihitung berdasarkan waktu jawab (Kahoot-style 
+scoring) dan streak bonus. Sistem kemudian memperbarui XP, level, poin, 
+daily goal progress, serta memeriksa apakah badge baru terpenuhi. 
+6. Proses Leaderboard & Certificate: Setelah akumulasi poin, leaderboard 
+diupdate secara real-time via WebSocket. Saat kursus selesai, mahasiswa 
+dapat membangkitkan sertifikat dengan kode verifikasi publik. 
+ 
+ 
+
+
+--- Page 41/81 ---
+
+33 
+ 
+3.2.2.3 Sequence Diagram 
+ 
+ 
+Gambar 3. 3 Sequence Diagram 
+Sequence Diagram merinci interaksi antar objek atau komponen sistem 
+berdasarkan urutan waktu untuk menjalankan fungsionalitas utama. Diagram ini 
+menunjukkan bagaimana pesan (messages) dikirimkan antara komponen utama: 
+1. Mahasiswa & Browser (React + Inertia.js): Antarmuka sisi klien yang 
+menjalankan React 19 sebagai SPA. Komponen ini juga menjalankan 
+custom engine TypeScript untuk simulasi kriptografi. 
+2. Inertia.js v3: Lapisan yang menjembatani frontend React dengan backend 
+Laravel tanpa REST API terpisah. Inertia mengubah respons server menjadi 
+JSON props yang di-render oleh React. 
+3. Controller: Bertindak sebagai jembatan yang menerima permintaan 
+(request) dari Inertia dan meneruskannya ke lapisan logika bisnis. 
+4. Service Layer: Komponen inti yang menangani logika bisnis yang 
+kompleks, termasuk XpService (kalkulasi XP dan level), StreakService 
+(daily streak dan multiplier), BadgeService (award badge otomatis), 
+ChallengeScoreService 
+(Kahoot-style 
+scoring), 
+LeaderboardService 
+
+
+--- Page 42/81 ---
+
+34 
+ 
+(peringkat pengguna), LevelService (threshold level dan bonus), dan lain-
+lain. 
+5. Database (MySQL): Lapisan penyimpanan data persisten yang menyimpan 
+seluruh entitas (User, Course, Lesson, LessonTask, Enrollment, 
+LessonProgress, TaskProgress, QuizSubmission, ChallengeSubmission, 
+Badge, Certificate, Assessment, Discussion, dll). 
+6. Laravel Reverb (WebSocket): Komponen real-time yang mengirim 
+broadcast event ke browser untuk pembaruan leaderboard dan notifikasi 
+badge secara instan. 
+3.2.2.4 Class Diagram 
+ 
+ 
+Gambar 3. 4 Class Diagram 
+Class Diagram menggambarkan struktur statis sistem yang terdiri dari 27+ 
+kelas model Eloquent beserta atribut dan relasinya. Kelas-kelas utama meliputi: 
+• 
+User: Kelas inti yang menyimpan identitas pengguna (Admin/Mahasiswa), 
+akumulasi xp, points, current_streak, longest_streak, daily_xp_earned, 
+daily_goal_met_at, last_active_date, serta relasi ke Badge, Enrollment, 
+Certificate, dan SocialAccount. 
+
+
+--- Page 43/81 ---
+
+35 
+ 
+• 
+Course: Merepresentasikan kursus pembelajaran, memiliki atribut title, 
+slug, description, status (draft/published/archived), serta relasi ke Lesson, 
+Assessment, dan Topic. 
+• 
+Lesson: Merepresentasikan pelajaran dalam kursus, memiliki atribut 
+prerequisite_lesson_id (self-reference) untuk logika Unlockable Content, 
+serta relasi ke LessonTask. 
+• 
+LessonTask: 
+Merepresentasikan 
+tugas 
+dalam 
+pelajaran 
+(video, 
+document/PDF, quiz), memiliki atribut prerequisite_task_id (self-reference) 
+untuk logika prerequisite tingkat tugas. 
+• 
+Enrollment: Kelas asosiasi yang mencatat pendaftaran mahasiswa pada 
+kursus, termasuk progress (persentase) dan completed_at. 
+• 
+LessonProgress & TaskProgress: Mencatat status penyelesaian pelajaran 
+dan tugas per mahasiswa. 
+• 
+QuizSubmission: Mencatat jawaban quiz per mahasiswa. 
+• 
+Challenge & ChallengeSubmission: Merepresentasikan challenge (timed 
+quiz dengan Kahoot-style scoring) dan jawaban per mahasiswa, termasuk 
+score, elapsed_ms, is_correct, dan session_id. 
+• 
+Assessment, 
+AssessmentQuestion, 
+AssessmentSubmission, 
+AssessmentAnswer: Merepresentasikan asesmen bertingkat berdasarkan 
+taksonomi Bloom dengan rubrik penilaian. 
+• 
+Badge: Merepresentasikan badge/achievement dengan criteria_type dan 
+criteria_value untuk evaluasi otomatis. 
+• 
+Certificate: Sertifikat penyelesaian kursus dengan verification_code (SHA-
+256) untuk verifikasi publik. 
+• 
+LabVisit: Mencatat kunjungan lab kriptografi per mahasiswa. 
+• 
+Discussion, DiscussionReply, DiscussionUpvote: Merepresentasikan forum 
+diskusi. 
+• 
+ContentVersion, QuestionBank: Merepresentasikan versioning konten dan 
+bank soal. 
+ 
+ 
+
+
+--- Page 44/81 ---
+
+36 
+ 
+3.2.2.5 Entity Relationship Diagram (ERD) 
+ 
+ 
+Gambar 3. 5 Entity Relationship Diagram 
+ERD merepresentasikan desain skema basis data yang terdiri dari 27+ 
+entitas ternormalisasi melalui 60+ migrasi. Setiap entitas memiliki atribut kunci 
+utama (Primary Key) berupa id yang bersifat auto-increment. Poin krusial dalam 
+perancangan basis data ini meliputi: 
+• 
+Relasi Self-Reference untuk Prerequisite: Tabel lessons memiliki atribut 
+prerequisite_lesson_id yang merupakan Foreign Key ke tabel lessons itu 
+sendiri. 
+Demikian 
+pula, 
+tabel 
+lesson_tasks 
+memiliki 
+atribut 
+prerequisite_task_id sebagai Foreign Key ke tabel lesson_tasks itu sendiri. 
+Desain ini memungkinkan pembuatan struktur ketergantungan materi yang 
+dinamis untuk fitur Unlockable Content pada tingkat pelajaran dan tugas. 
+• 
+Relasi Pengguna dan Progres: Tabel enrollments, lesson_progress, 
+task_progress, quiz_submissions, dan challenge_submissions bertindak 
+sebagai tabel transaksional yang menghubungkan entitas users dengan 
+
+
+--- Page 45/81 ---
+
+37 
+ 
+courses, lessons, atau lesson_tasks, memastikan setiap aktivitas belajar 
+terekam secara terperinci. 
+• 
+Relasi Gamifikasi: Tabel user_badges (pivot) menghubungkan users dan 
+badges dengan timestamp earned_at. Tabel certificates merujuk ke users 
+dan courses dengan kode verifikasi unik. Kolom xp, points, current_streak, 
+longest_streak, daily_xp_earned, dan daily_goal_met_at disimpan langsung 
+pada tabel users untuk efisiensi akses. 
+• 
+Relasi Assessment: Tabel assessments terhubung ke courses (one-to-many), 
+assessment_questions 
+ke 
+assessments 
+(one-to-many), 
+assessment_submissions 
+ke 
+assessments 
+dan 
+users, 
+serta 
+assessment_answers 
+ke 
+assessment_submissions 
+dan 
+assessment_questions. Tabel question_bank menyimpan soal reusable 
+dengan question_bank_id pada assessment_questions. 
+3.2.2.6 Flowchart Sistem 
+
+
+--- Page 46/81 ---
+
+38 
+ 
+ 
+ 
+ 
+Gambar 3. 6 Flowchart 
+Flowchart sistem menggambarkan algoritma dan logika navigasi aplikasi 
+secara menyeluruh, dimulai dari halaman awal hingga proses logout. Alur logika 
+terbagi menjadi beberapa blok keputusan utama: 
+
+
+--- Page 47/81 ---
+
+39 
+ 
+1. Blok Login & Validasi Role: Sistem memisahkan alur antara Admin (ke 
+Dashboard Admin) dan Mahasiswa (ke Dashboard Mahasiswa) berdasarkan 
+hak akses akun. Jika pengguna baru, diarahkan ke halaman onboarding. 
+2. Blok Streak & Daily Goal: Pada setiap login harian pertama, sistem secara 
+otomatis memperbarui streak dan memberikan daily streak XP. Jika daily 
+goal tercapai, bonus XP diberikan. 
+3. Blok Menu Materi (Unlockable Content): Terdapat logika pengecekan 
+kondisi "Apakah lesson/task terkunci?". Jika Ya, sistem mengecek "Apakah 
+prerequisite lesson/task telah diselesaikan?". Jika Tidak, pengguna 
+diarahkan kembali (looping). Jika Ya, materi dibuka dan pengguna dapat 
+mempelajari konten (video, dokumen, quiz). 
+4. Blok Menu Labs (Simulasi Kriptografi): Mengalirkan proses dari pemilihan 
+lab (Caesar, Vigenere, AES Concept, RSA, Digital Signature, Lattice 
+Cipher), input data (plaintext, kunci, mode), visualisasi algoritma step-by-
+step oleh engine TypeScript di sisi client, hingga penampilan output. Badge 
+labs_visited diproses setelah kunjungan. 
+5. Blok Quiz & Challenge (Gamification): Menggambarkan logika 
+percabangan pada pengerjaan quiz dan challenge. Jika jawaban benar, XP 
+dan poin diberikan (dengan Kahoot-style speed bonus pada challenge). 
+Sistem memperbarui level, daily goal, dan memeriksa badge baru. Jika 
+salah, umpan balik korektif ditampilkan tanpa penambahan poin. 
+6. Blok Leaderboard & Certificate: Pengguna dapat melihat leaderboard real-
+time (via WebSocket). Saat kursus selesai, pengguna dapat membangkitkan 
+sertifikat dengan kode verifikasi publik. 
+3.2.2.7 Perancangan Antarmuka 
+Perancangan antarmuka sistem E-Learning Kriptografi disajikan dalam 
+bentuk wireframe low-fidelity. Penggunaan wireframe ini bertujuan untuk 
+memberikan gambaran kerangka dasar (skeleton) tata letak dan struktur navigasi 
+tanpa terdistraksi oleh elemen desain visual. Fokus utama pada tahap ini adalah 
+
+
+--- Page 48/81 ---
+
+40 
+ 
+memvalidasi alur interaksi pengguna (User Experience) dan penempatan 
+komponen fungsional utama. 
+Desain antarmuka menggunakan komponen shadcn/ui (berbasis Radix UI) 
+dengan styling Tailwind CSS v4 dan menerapkan strategi navigasi yang efisien 
+(Streamlined Navigation) dengan sidebar yang memuat menu utama: Dashboard, 
+Courses, Labs (Glass Box), Leaderboard, Certificates, Profile, dan Settings. 
+Rancangan utama meliputi: 
+1. Halaman Login: Menampilkan form autentikasi dengan input email, password, opsi 
+social login (Google, GitHub), dan tombol masuk. Terdapat juga opsi registrasi dan 
+forgot password. 
+2. Halaman Dashboard: Menyajikan ringkasan statistik pembelajaran yang mencakup 
+kartu XP & Level saat ini, streak harian, daily goal progress, recent activity, dan 
+quick actions untuk melanjutkan kursus terakhir. 
+3. Halaman Courses: Menampilkan katalog kursus dengan kartu yang menunjukkan 
+judul, deskripsi, jumlah pelajaran, dan status enrollment. Di dalam kursus, daftar 
+pelajaran ditampilkan dengan penanda visual (ikon gembok untuk materi terkunci, 
+centang untuk materi selesai). 
+4. Halaman Labs (Glass Box): Antarmuka untuk simulasi kriptografi dengan panel 
+input parameter (kiri: plaintext, kunci, mode, format) dan panel visualisasi output 
+(kanan: langkah-langkah, tabel transformasi, hasil). Terdapat 6 lab yang dapat 
+
+
+--- Page 49/81 ---
+
+41 
+ 
+diakses: Caesar, Vigenere, AES Concept, RSA, Digital Signature, dan Lattice 
+Cipher. 
+5. Halaman Leaderboard: Papan peringkat real-time menampilkan ranking pengguna 
+berdasarkan total poin dengan live updates via WebSocket. 
+6. Halaman Certificates: Daftar sertifikat yang telah diperoleh dan halaman verifikasi 
+publik untuk memvalidasi keaslian sertifikat menggunakan kode verifikasi. 
+7. Halaman Profile: Profil publik pengguna dengan statistik gamifikasi (XP, level, 
+streak, badge yang diperoleh, kursus yang diselesaikan). 
+ 
+ 
+Gambar 3. 7  Low Fidelity Halaman Login 
+
+
+--- Page 50/81 ---
+
+42 
+ 
+ 
+Gambar 3. 8 Low Fidelity Halaman Dashboard 
+ 
+Gambar 3. 9 Low Fidelity Halaman Visualisasi & Simulasi Glass Box 
+
+
+--- Page 51/81 ---
+
+43 
+ 
+ 
+Gambar 3. 10 Low Fidelity Halaman Materi 
+3.2.2.8 Arsitektur Sistem 
+Arsitektur sistem E-Learning Kriptografi ini menggunakan pendekatan 
+Server-Driven Single Page Application (SPA) yang membagi tanggung jawab 
+secara jelas antara komponen backend, frontend, real-time, dan database. Diagram 
+berikut menggambarkan arsitektur komunikasi antar komponen: 
+ 
+Penjelasan arsitektur: 
+1. Client-Side (Browser): React 19 menangani rendering UI sebagai SPA. 
+Inertia.js v3 mengelola navigasi halaman tanpa REST API. Custom Crypto 
+Engine TypeScript menjalankan simulasi kriptografi secara lokal tanpa 
+server round-trip. shadcn/ui menyediakan komponen UI yang konsisten. 
+2. Backend (Laravel 13): Middleware melakukan autentikasi (Fortify), 
+tracking streak, dan RBAC. Controller menerima request Inertia dan 
+mendelegasikan ke Service Layer. Service Layer memproses logika bisnis 
+(XP, level, badge, scoring, grading). Wayfinder menghasilkan fungsi 
+TypeScript otomatis untuk type-safe routing. 
+
+
+--- Page 52/81 ---
+
+44 
+ 
+3. Real-Time (Reverb): Laravel Reverb menangani WebSocket untuk 
+broadcast event leaderboard dan notifikasi badge secara real-time ke semua 
+client yang terhubung. 
+4. Data (MySQL): Menyimpan seluruh entitas aplikasi melalui 60+ migrasi 
+terversi. 
+3.2.2.9 Perancangan Alur Gamifikasi 
+Perancangan alur gamifikasi menggambarkan bagaimana mekanisme XP, Level, 
+Streak, Badge, Leaderboard, dan Certificate saling terintegrasi dalam mendukung 
+pengalaman belajar mahasiswa. Diagram state berikut menggambarkan siklus 
+gamifikasi pengguna: 
+Penjelasan alur gamifikasi: 
+1. Streak Check (Setiap Login): Saat mahasiswa login, sistem melalui 
+middleware 
+HandleInertiaRequests 
+memanggil 
+StreakService.updateDailyStreak() 
+yang 
+secara 
+otomatis 
+mengecek 
+last_active_date, menambah atau mereset current_streak, memberikan daily 
+streak XP (2–12 XP sesuai tier), serta memeriksa bonus khusus (First Login, 
+Comeback, Weekly Active). 
+2. Aktivitas Belajar: XP diperoleh dari tiga sumber utama — Quiz (via 
+QuizSubmissionController + XpService.awardTaskXp()), Challenge (via 
+ChallengeScoreService.calculateQuestionScore() 
+dengan 
+Kahoot-style 
+decay + streak bonus), dan Lab Visit (via BadgeService.checkAndAward() 
+untuk badge labs_visited). 
+3. Gamifikasi Reward Pipeline: Setiap XP yang diperoleh melewati pipeline: 
+(a) streak multiplier (1.0×–2.0×), (b) level bonus (0.2% per level untuk 
+poin), (c) tracking daily goal (bonus 20 XP saat target 100 XP tercapai), (d) 
+cek level up, (e) cek badge baru, dan (f) broadcast ke leaderboard via 
+Reverb WebSocket. 
+4. Sertifikat: Saat seluruh lesson dan task dalam kursus diselesaikan, 
+mahasiswa 
+dapat 
+membangkitkan 
+sertifikat 
+dengan 
+Certificate.generateVerificationCode() yang menghasilkan kode SHA-256 
+untuk verifikasi publik melalui halaman /verify/{code}. 
+
+
+--- Page 53/81 ---
+
+45 
+ 
+3.2.2.10 Perancangan Leaderboard Real-Time 
+Fitur 
+leaderboard 
+real-time 
+menggunakan 
+arsitektur 
+event-driven 
+broadcasting melalui Laravel Reverb. Diagram berikut menunjukkan alur teknis 
+pembaruan leaderboard secara real-time: 
+Alur ini dikendalikan oleh feature flag RealtimeLeaderboard melalui Laravel 
+Pennant, sehingga dapat diaktifkan/dinonaktifkan secara gradual tanpa deployment 
+ulang. 
+3.2.3 Implementasi Sistem 
+Tahap implementasi merupakan proses penerjemahan dokumen perancangan 
+menjadi baris kode program yang dapat dijalankan. Pada tahap ini, seluruh 
+rancangan antarmuka (Wireframe) dan logika sistem (Activity/Sequence Diagram) 
+direalisasikan menggunakan teknologi yang telah ditentukan. 
+Proses implementasi dalam penelitian ini meliputi: 
+1. Implementasi Basis Data: Pembuatan tabel dan relasi pada Database MySQL 
+sesuai dengan rancangan Entity Relationship Diagram (ERD), menggunakan 
+sistem migrasi Laravel yang menghasilkan 60+ file migrasi terversioned. 
+Seluruh model dilengkapi dengan factory untuk mendukung testing yang 
+robust. 
+2. Implementasi Backend: Pengembangan logika bisnis menggunakan Framework 
+Laravel 13 (PHP 8.4) dengan arsitektur berbasis Service Layer. Komponen 
+backend meliputi: 
+• 27+ Model Eloquent dengan relasi yang terdefinisi 
+• 29 
+Service 
+class 
+(XpService, 
+StreakService, 
+BadgeService, 
+LevelService, 
+ChallengeScoreService, 
+LeaderboardService, 
+AssessmentGradingService, MasteryService, dll) 
+• Controller terorganisir per domain (Admin, Assessment, Auth, 
+Challenge, Course, Lab, Settings) 
+• Policy 
+untuk 
+otorisasi 
+(CoursePolicy, 
+EnrollmentPolicy, 
+ChallengePolicy, AssessmentPolicy) 
+
+
+--- Page 54/81 ---
+
+46 
+ 
+• Event & Listener untuk broadcasting (XpAwarded, BadgeEarned, 
+LeaderboardUpdated, 
+ChallengeSolved, 
+LessonCompleted, 
+CourseCompleted) 
+• Job 
+untuk 
+pemrosesan 
+asinkron 
+(ConvertLessonVideo, 
+ConvertLessonDocument) 
+• Middleware untuk keamanan (SecurityHeaders, CheckAdmin) dan 
+streak tracking 
+• Autentikasi via Laravel Fortify (registrasi, login, 2FA, password reset) 
+dan Laravel Socialite (social login) 
+• Feature flags via Laravel Pennant untuk gradual rollout 
+3. Implementasi Frontend: Pembuatan antarmuka pengguna (User Interface) SPA 
+menggunakan React 19 + TypeScript + Inertia.js v3 untuk komunikasi server-
+driven, dengan styling Tailwind CSS v4 dan komponen shadcn/ui (berbasis 
+Radix UI). Halaman React terorganisir di resources/js/pages/ 
+meliputi: auth, dashboard, courses, labs, leaderboard, certificates, profile, 
+settings, onboarding, dan welcome. 
+4. Implementasi Mesin Kriptografi (Custom Engine): Mesin visualisasi kriptografi 
+dibangun sebagai modul TypeScript murni (resources/js/lib/lab-
+simulations.ts) yang berjalan di sisi client tanpa ketergantungan pada 
+pustaka kriptografi standar. Modul ini mencakup engine untuk Caesar Cipher 
+(shift), Vigenere Cipher (polyalphabetic), AES Concept (byte-level XOR 
+mixing), 
+RSA 
+(modular 
+exponentiation), 
+Digital 
+Signature 
+(signing/verification), dan Lattice Cipher (LWE). 
+5. Implementasi Real-Time: Komunikasi real-time untuk leaderboard updates 
+dan notifikasi menggunakan Laravel Reverb (WebSocket server native) dengan 
+event broadcasting dari backend ke frontend. 
+6. Implementasi 
+Type-Safe 
+Routing: 
+Komunikasi 
+frontend-backend 
+menggunakan Laravel Wayfinder yang otomatis menghasilkan fungsi 
+TypeScript dari Laravel routes dan controllers, memastikan type-safety end-to-
+end. 
+ 
+ 
+
+
+--- Page 55/81 ---
+
+47 
+ 
+3.2.4 Pengujian Fungsional (Black Box Testing)  
+Setelah tahap implementasi kode selesai, dilakukan pengujian fungsional 
+menggunakan metode Black Box Testing. Pengujian ini bertujuan untuk 
+memastikan bahwa setiap fitur yang dibangun telah berjalan sesuai dengan 
+spesifikasi kebutuhan fungsional (Tabel 3.1) tanpa melihat struktur kode 
+internalnya. 
+Skenario pengujian difokuskan pada: 
+1. Validasi Input-Output Simulasi Kriptografi: Memastikan custom engine 
+TypeScript menghasilkan ciphertext yang akurat pada seluruh lab (Caesar, 
+Vigenere, AES Concept, RSA, Digital Signature, Lattice Cipher) baik mode 
+encrypt maupun decrypt, serta memastikan setiap langkah visualisasi tampil 
+dengan benar. 
+2. Validasi Process-Based Points & Kahoot-Style Scoring: Memastikan poin 
+bertambah hanya jika jawaban quiz benar, skor challenge menurun linear 
+sesuai waktu jawab, dan streak bonus diberikan untuk jawaban benar 
+berurutan. 
+3. Validasi Unlockable Content: Memastikan fitur prerequisite berfungsi, di 
+mana lesson/task lanjut tidak bisa dibuka sebelum prerequisite lesson/task 
+diselesaikan. 
+4. Validasi XP, Level, Streak, dan Daily Goal: Memastikan akurasi 
+perhitungan XP (termasuk streak multiplier dan level bonus), perubahan 
+level saat melewati threshold, perubahan streak sesuai pola login harian, 
+serta daily goal bonus diberikan tepat sekali per hari. 
+5. Validasi Badge / Achievement: Memastikan badge dianugerahkan otomatis 
+saat kriteria terpenuhi tanpa duplikasi. 
+6. Validasi Leaderboard Real-Time: Memastikan pembaruan leaderboard via 
+WebSocket terjadi secara real-time dengan urutan peringkat yang akurat. 
+7. Validasi Certificate Generation & Verification: Memastikan sertifikat 
+dibangkitkan saat kursus selesai, kode verifikasi SHA-256 terbentuk benar, 
+dan halaman verifikasi publik berfungsi. 
+
+
+--- Page 56/81 ---
+
+48 
+ 
+8. Validasi Autentikasi & Manajemen Pengguna: Memastikan registrasi, 
+login, social login, 2FA, RBAC (Admin vs Mahasiswa) berfungsi sesuai 
+policy pada setiap route. 
+9. Validasi Admin CRUD & Content Management: Memastikan fitur CRUD 
+kursus, pelajaran, tugas, asesmen, question bank, dan content versioning 
+berfungsi dengan benar. 
+Apabila ditemukan bug atau kesalahan fungsi pada tahap ini, sistem akan 
+dikembalikan ke tahap implementasi untuk diperbaiki sebelum lanjut ke tahap 
+pengujian pengguna (UAT). 
+3.2.5 Pengujian User Acceptance Testing (UAT)  
+Untuk menjawab rumusan masalah mengenai tingkat penerimaan pengguna, 
+penelitian ini menerapkan User Acceptance Testing (UAT) setelah sistem 
+dinyatakan lolos uji fungsional (Black Box). Pengujian ini melibatkan responden 
+mahasiswa Teknik Informatika yang telah menggunakan sistem. 
+Instrumen pengujian berupa kuesioner yang mengadopsi skala Likert 5 poin 
+(1 = Sangat Tidak Setuju, 5 = Sangat Setuju). Indikator kuesioner dirancang untuk 
+mengukur empat dimensi utama: 
+1. Aspek Visualisasi (Visualization): Kejelasan alur algoritma metode Glass 
+Box dibandingkan metode konvensional, termasuk visualisasi pada keenam 
+lab (Caesar, Vigenere, AES Concept, RSA, Digital Signature, Lattice 
+Cipher). 
+2. Aspek Gamifikasi (Engagement): Pengaruh fitur gamifikasi (XP, level, 
+streak, badge, leaderboard real-time, certificates, process-based points, dan 
+unlockable content) terhadap motivasi dan konsistensi belajar. 
+3. Aspek Kegunaan (Usability): Kemudahan navigasi, responsivitas 
+antarmuka, kecepatan simulasi client-side, dan kualitas komponen UI secara 
+keseluruhan. 
+4. Aspek Kepuasan (Satisfaction): Kepuasan keseluruhan terhadap sistem 
+sebagai 
+media 
+pembelajaran 
+kriptografi 
+dan 
+keinginan 
+untuk 
+merekomendasikan kepada pengguna lain. 
+
+
+--- Page 57/81 ---
+
+49 
+ 
+Data yang terkumpul kemudian dianalisis menggunakan teknik analisis 
+deskriptif persentase untuk menarik kesimpulan mengenai kelayakan sistem 
+sebagai media pembelajaran. Rumus perhitungan persentase kelayakan yang 
+digunakan adalah: 
+𝑃= 𝑆
+𝑁× 100% 
+Keterangan: 
+P = Persentase Kelayakan 
+S = Jumlah skor jawaban responden (Observed Score) 
+N = Jumlah skor ideal (Expected Score) 
+3.3 
+Kebutuhan Sistem 
+Tahap implementasi sistem pembelajaran kriptografi berbasis gamifikasi ini 
+memerlukan dukungan lingkungan pengembangan yang memadai. Kebutuhan 
+sistem dibagi menjadi dua kategori utama, yaitu kebutuhan perangkat keras 
+(hardware) dan kebutuhan perangkat lunak (software). Spesifikasi ini ditentukan 
+untuk menjamin sistem dapat berjalan dengan stabil, responsif, dan aman selama 
+proses pengembangan maupun saat digunakan oleh pengguna akhir. 
+3.3.1 Kebutuhan Perangkat Keras (Hardware) 
+Kebutuhan perangkat keras dibagi menjadi dua sisi, yaitu sisi pengembang 
+(developer) yang digunakan untuk membangun sistem, dan sisi klien (client) yang 
+digunakan oleh mahasiswa untuk mengakses sistem. 
+A. Spesifikasi Perangkat Keras Pengembang (Server/Development) 
+Perangkat komputer yang digunakan untuk merancang, mengkode, dan menguji 
+sistem memiliki spesifikasi sebagai berikut: 
+1. Processor: Minimal Intel Core i5 atau AMD Ryzen 5 (Setara atau lebih 
+tinggi) untuk menangani proses kompilasi kode, build frontend (Vite), dan 
+server lokal. 
+2. Memory (RAM): Minimal 8 GB DDR4 untuk menjalankan Web Server, 
+Database, Node.js (Vite HMR), dan Code Editor secara bersamaan. 
+3. Storage: SSD (Solid State Drive) minimal 256 GB untuk kecepatan 
+baca/tulis data yang optimal. 
+
+
+--- Page 58/81 ---
+
+50 
+ 
+4. Monitor: Resolusi minimal 1366x768 piksel (Disarankan Full HD 
+1920x1080) untuk kenyamanan desain antarmuka. 
+B. Spesifikasi Perangkat Keras Pengguna (Client) 
+Karena sistem ini berbasis web (web-based), spesifikasi sisi pengguna lebih 
+fleksibel. Mahasiswa dapat mengakses sistem menggunakan: 
+1. Perangkat: Laptop, PC Desktop, atau Smartphone / Tablet. 
+2. Koneksi Internet: Diperlukan koneksi internet yang stabil untuk memuat 
+materi video, menjalankan komunikasi WebSocket (leaderboard real-time), 
+dan melakukan validasi simulasi. 
+3.3.2 Kebutuhan Perangkat Lunak (Software) 
+Perangkat lunak merupakan alat bantu utama dalam penerjemahan 
+rancangan sistem menjadi kode program. Berikut adalah daftar perangkat lunak 
+yang digunakan dalam penelitian ini: 
+Tabel 3. 3 Kebutuhan Perangkat Lunak 
+No Kategori Software 
+Nama Perangkat 
+Lunak / Spesifikasi 
+Keterangan 
+1 
+Sistem Operasi 
+Microsoft 
+Windows 
+10 / 11 (64-bit) 
+Lingkungan sistem operasi utama 
+pengembangan. 
+2 
+Bahasa 
+Pemrograman 
+Backend 
+PHP (Versi 8.4) 
+Bahasa pemrograman server-side 
+untuk 
+implementasi 
+business 
+logic, autentikasi, gamifikasi, dan 
+data persistence. 
+3 
+Framework 
+Backend 
+Laravel 13 
+Framework PHP modern untuk 
+routing, 
+middleware, 
+ORM 
+(Eloquent), service layer, event 
+broadcasting, dan fitur keamanan 
+bawaan. 
+4 
+Bahasa 
+Pemrograman 
+Frontend 
+TypeScript (Versi 5.x) 
+Bahasa pemrograman client-side 
+dengan type-safety untuk React 
+components, 
+custom 
+crypto 
+engine, dan Inertia integration. 
+5 
+Library Frontend 
+React 19 
+Library 
+JavaScript 
+untuk 
+membangun UI komponen yang 
+reaktif dan efisien sebagai SPA. 
+6 
+Framework 
+Frontend 
+Inertia.js v3 
+Framework 
+untuk 
+komunikasi 
+server-driven 
+antara 
+Laravel 
+
+
+--- Page 59/81 ---
+
+51 
+ 
+backend dan React frontend tanpa 
+REST API terpisah. 
+7 
+Styling Framework Tailwind CSS v4 
+Framework CSS utility-first untuk 
+styling responsif dan konsisten di 
+seluruh aplikasi. 
+8 
+Component Library shadcn/ui 
+Library komponen UI berbasis 
+Radix UI dan Tailwind CSS untuk 
+membangun 
+antarmuka 
+yang 
+accessible dan konsisten. 
+9 
+Build 
+Tool 
+Frontend 
+Vite 
+Build 
+tool 
+modern 
+untuk 
+development server (HMR) dan 
+production 
+bundling 
+dengan 
+kecepatan tinggi. 
+10 Database 
+MySQL 8.0+ 
+Sistem manajemen basis data 
+relasional 
+untuk 
+menyimpan 
+seluruh entitas aplikasi. 
+11 
+Real-Time 
+Communication 
+Laravel Reverb 
+WebSocket server native Laravel 
+untuk 
+komunikasi 
+real-time 
+(leaderboard, notifikasi badge). 
+12 Authentication 
+Laravel Fortify 
+Backend 
+authentication 
+scaffolding untuk registrasi, login, 
+2FA, password reset, dan email 
+verification. 
+13 
+Social 
+Authentication 
+Laravel Socialite v5 
+Package untuk OAuth social login 
+(Google, GitHub, Facebook, dll). 
+14 Feature Flags 
+Laravel Pennant v1 
+Package untuk feature flags dan 
+gradual rollout tanpa deployment 
+ulang. 
+15 Type-Safe Routing Laravel Wayfinder v0 
+Package 
+untuk 
+auto-generate 
+TypeScript functions dari Laravel 
+routes dan controllers. 
+16 
+Testing Framework 
+(PHP) 
+Pest 4 
+Modern testing framework untuk 
+PHP dengan syntax yang ekspresif 
+dan powerful. 
+17 
+Testing Framework 
+(JS) 
+Vitest 
+Unit testing framework untuk 
+JavaScript/TypeScript 
+dengan 
+kecepatan tinggi. 
+18 E2E Testing 
+Playwright 
+Framework 
+untuk 
+end-to-end 
+testing 
+browser 
+automation 
+(Chrome, Firefox, Safari). 
+19 
+Code 
+Formatter 
+(PHP) 
+Laravel Pint v1 
+Code formatter untuk PHP yang 
+mengikuti PSR-12 standard. 
+20 Code Linter (JS) 
+ESLint v9 
+Linter 
+untuk 
+JavaScript/TypeScript 
+untuk 
+
+
+--- Page 60/81 ---
+
+52 
+ 
+mendeteksi error dan enforce code 
+style. 
+21 
+Code 
+Formatter 
+(JS) 
+Prettier v3 
+Code 
+formatter 
+untuk 
+JavaScript/TypeScript/CSS/JSON. 
+22 Version Control 
+Git 
+Sistem version control untuk 
+tracking perubahan kode. 
+23 Code Editor 
+Visual Studio Code 
+(VSCode) 
+Editor 
+teks 
+modern 
+dengan 
+extension support untuk PHP, 
+JavaScript, 
+TypeScript, 
+dan 
+debugging. 
+24 
+Package Manager 
+(PHP) 
+composer 
+Dependency manager untuk PHP 
+packages. 
+25 
+Package Manager 
+(JS) 
+npm / pnpm 
+Dependency 
+manager 
+untuk 
+JavaScript packages. 
+3.4 
+Kebutuhan Sistem 
+Pelaksanaan penelitian ini mengikuti tahapan model Waterfall yang 
+dilakukan secara sekuensial. Jadwal penelitian disusun sebagai berikut: 
+ 
+ 
+
+
+--- Page 61/81 ---
+
+53 
+ 
+BAB IV HASIL 
+YANG DICAPAI 
+4.1 Implementasi Sistem 
+Pada bab ini dijelaskan hasil implementasi sistem E-Learning Kriptografi 
+berbasis web yang telah dikembangkan berdasarkan rancangan pada BAB III. 
+Implementasi sistem disesuaikan dengan kondisi aktual codebase aplikasi yang 
+dibangun menggunakan Laravel 13, PHP 8.4, Inertia.js v3, React 19, TypeScript, 
+Tailwind CSS v4, dan MySQL. Sistem ini menggabungkan pembelajaran 
+kriptografi berbasis visualisasi Glass Box dengan fitur gamifikasi struktural dan 
+reward untuk meningkatkan keterlibatan mahasiswa. 
+Secara umum, sistem yang dihasilkan memiliki dua aktor utama, yaitu Admin 
+dan Mahasiswa. Admin berperan dalam mengelola konten pembelajaran, kursus, 
+pelajaran, tugas, asesmen, bank soal, pengguna, serta statistik sistem. Mahasiswa 
+berperan sebagai pengguna utama yang mengakses materi, menjalankan simulasi 
+kriptografi, mengerjakan quiz dan challenge, mengumpulkan XP serta poin, melihat 
+leaderboard, dan memperoleh sertifikat setelah menyelesaikan kursus. 
+Implementasi sistem terbagi ke dalam beberapa modul utama, yaitu: 
+1. Modul autentikasi dan manajemen pengguna. 
+2. Modul dashboard pembelajaran. 
+3. Modul course, lesson, task, dan unlockable content. 
+4. Modul visualisasi algoritma kriptografi Glass Box. 
+5. Modul quiz, challenge, dan assessment. 
+6. Modul gamifikasi berupa XP, level, streak, daily goal, badge, leaderboard, 
+dan certificate. 
+7. Modul admin untuk pengelolaan konten dan data sistem. 
+8. Modul pengujian fungsional dan penerimaan pengguna. 
+4.2 Hasil Implementasi Antarmuka Sistem 
+4.2.1 Halaman Login Dan Registrasi 
+Halaman login dan registrasi merupakan pintu masuk utama pengguna ke 
+dalam sistem. Sistem menyediakan autentikasi berbasis Laravel Fortify yang 
+
+
+--- Page 62/81 ---
+
+54 
+ 
+mendukung proses registrasi, login, verifikasi email, reset password, dan two-factor 
+authentication (2FA). Selain autentikasi standar menggunakan email dan password, 
+sistem juga menyediakan integrasi social login melalui Laravel Socialite. 
+Pada halaman login, pengguna memasukkan kredensial yang kemudian 
+divalidasi oleh sistem. Jika data valid, pengguna diarahkan menuju dashboard 
+sesuai dengan perannya. Pengguna dengan hak akses admin diarahkan ke dashboard 
+admin, sedangkan mahasiswa diarahkan ke dashboard mahasiswa. Sistem juga 
+mendukung pemeriksaan keamanan tambahan seperti rate limiting untuk mencegah 
+percobaan login berlebihan. 
+ 
+Gambar 4. 1 Halaman Login Sistem 
+Keterangan gambar: Halaman login menampilkan form input email dan password, 
+opsi login sosial, serta tautan menuju halaman registrasi dan lupa password. 
+ 
+4.2.2 Halaman Dashboard Mahasiswa 
+Dashboard mahasiswa menampilkan ringkasan aktivitas belajar dan progres 
+gamifikasi pengguna. Informasi yang ditampilkan meliputi jumlah XP, level, poin, 
+streak harian, daily goal, aktivitas terbaru, serta akses cepat menuju kursus, lab 
+kriptografi, leaderboard, sertifikat, dan profil. 
+Dashboard ini dirancang untuk memberikan gambaran menyeluruh 
+mengenai perkembangan belajar mahasiswa. Dengan adanya tampilan XP, level, 
+
+
+--- Page 63/81 ---
+
+55 
+ 
+dan streak, mahasiswa dapat melihat capaian belajarnya secara langsung sehingga 
+dapat meningkatkan motivasi untuk terus berinteraksi dengan sistem. 
+ 
+Gambar 4. 2 Halaman Dashboard Mahasiswa 
+Keterangan gambar: Dashboard mahasiswa menampilkan kartu statistik XP, level, 
+poin, streak, progress daily goal, dan menu akses cepat ke fitur utama sistem. 
+4.2.3 Halaman Dashboard Admin 
+Dashboard admin digunakan untuk mengelola data utama sistem. Admin 
+dapat melakukan pengelolaan kursus, pelajaran, tugas, asesmen, bank soal, 
+pengguna, serta melihat statistik sistem. Fitur admin dilindungi oleh middleware 
+autentikasi, verifikasi email, role admin, dan rate limiting. 
+Pada implementasi aktual, route admin berada pada prefix /admin dan 
+mencakup beberapa fitur utama seperti manajemen course, lesson, task, assessment, 
+question bank, content versioning, user management, serta system stats. Dengan 
+struktur ini, admin dapat mengatur konten pembelajaran secara terpusat dan 
+menjaga alur belajar mahasiswa tetap sesuai dengan rancangan pembelajaran. 
+
+
+--- Page 64/81 ---
+
+56 
+ 
+ 
+Gambar 4. 3 Halaman Dashboard Admin 
+Keterangan gambar: Dashboard admin menyediakan akses ke pengelolaan kursus, 
+lesson, task, assessment, question bank, pengguna, dan statistik sistem. 
+4.2.4 Halaman Course dan Lesson 
+Halaman course menampilkan daftar kursus yang tersedia untuk 
+mahasiswa. Setiap kursus memiliki detail berupa judul, deskripsi, kategori, estimasi 
+waktu, daftar lesson, dan progres penyelesaian. Mahasiswa dapat melakukan 
+enrollment pada kursus yang tersedia, kemudian mengakses lesson sesuai dengan 
+status prasyarat. 
+Implementasi course dan lesson mendukung mekanisme Unlockable 
+Content, yaitu pembatasan akses terhadap materi tertentu hingga mahasiswa 
+
+
+--- Page 65/81 ---
+
+57 
+ 
+menyelesaikan materi prasyarat. Mekanisme ini diimplementasikan melalui relasi 
+prerequisite_lesson_id pada lesson dan prerequisite_task_id 
+pada lesson task. Jika prasyarat belum terpenuhi, sistem menampilkan status 
+terkunci sehingga mahasiswa diarahkan untuk menyelesaikan materi sebelumnya 
+terlebih dahulu. 
+ 
+Gambar 4. 4 Halaman Daftar Course 
+Keterangan gambar: Halaman course menampilkan daftar kursus yang dapat dipilih 
+mahasiswa, status enrollment, dan progres penyelesaian. 
+ 
+Gambar 4. 5 Halaman Detail Course dan Lesson 
+Keterangan gambar: Halaman detail course menampilkan daftar lesson dan task 
+dengan indikator terkunci, selesai, atau dapat diakses. 
+
+
+--- Page 66/81 ---
+
+58 
+ 
+4.2.5 Halaman Task Video, Dokumen, dan Quiz 
+Setiap lesson dapat memiliki beberapa task yang terdiri dari tipe video, 
+dokumen PDF, dan quiz. Task video dan dokumen digunakan sebagai media 
+penyampaian materi, sedangkan task quiz digunakan untuk menguji pemahaman 
+mahasiswa. Sistem juga memiliki mekanisme heartbeat pada task video atau 
+dokumen untuk mencatat aktivitas belajar pengguna. 
+Quiz dikirimkan melalui endpoint khusus dan menghasilkan respons JSON. 
+Sistem menghitung jumlah jawaban benar, skor, XP yang diperoleh, serta 
+memperbarui progress task jika quiz diselesaikan sesuai ketentuan. Jika jawaban 
+salah, sistem memberikan umpan balik korektif agar mahasiswa dapat memahami 
+kesalahan dan mencoba kembali. 
+ 
+Gambar 4. 6 Halaman Task Pembelajaran 
+Keterangan gambar: Halaman task menampilkan konten pembelajaran berupa 
+video, dokumen, atau quiz sesuai tipe task yang dipilih. 
+ 
+ 
+4.3 Hasil Implementasi Visualisasi Kriptografi Glass Box 
+4.3.1 Halaman Daftar Lab Kriptografi 
+
+
+--- Page 67/81 ---
+
+59 
+ 
+Sistem menyediakan halaman daftar lab kriptografi yang dapat diakses 
+melalui route /labs. Lab yang tersedia didefinisikan pada konfigurasi 
+config/labs.php, sehingga daftar lab dapat dikembangkan tanpa mengubah 
+controller utama. Berdasarkan implementasi aktual, terdapat enam lab kriptografi, 
+yaitu: 
+1. Caesar Cipher Lab. 
+2. Vigenere Cipher Lab. 
+3. AES Concept Lab. 
+4. RSA Lab. 
+5. Digital Signature Lab. 
+Setiap lab memiliki atribut berupa slug, title, summary, dan group. 
+Pengelompokan lab meliputi klasik, simetris, asimetris, tanda tangan digital, dan 
+post-quantum. 
+Tabel 4. 1 Daftar Lab Kriptografi yang Diimplementasikan 
+No 
+Nama Lab 
+Kelompok  
+Deskripsi Implementasi 
+1 
+Caesar Cipher 
+Classical 
+Visualisasi pergeseran karakter 
+alfabet dengan nilai shift tertentu. 
+2 
+Vigenere Cipher 
+Classical 
+Visualisasi substitusi polialfabetik 
+berbasis kata kunci. 
+3 
+AES Concept 
+Symmetric 
+Visualisasi konsep cipher simetris 
+modern 
+melalui 
+pendekatan 
+pedagogis byte-level XOR mixing. 
+4 
+RSA 
+Asymmetric 
+Visualisasi konsep public-private 
+key 
+dan 
+operasi 
+modular 
+exponentiation dengan parameter 
+kecil. 
+5 
+Digital Signature 
+Signature 
+Visualisasi proses signing dan 
+verification 
+untuk 
+autentikasi, 
+integritas, dan non-repudiation. 
+ 
+
+
+--- Page 68/81 ---
+
+60 
+ 
+ 
+Gambar 4. 7 Halaman Daftar Lab Kriptografi 
+Keterangan gambar: Halaman lab menampilkan daftar simulasi kriptografi yang dapat 
+dipilih oleh mahasiswa. 
+4.3.2 Caesar Chiper Lab 
+Caesar Cipher Lab memvisualisasikan proses enkripsi dan dekripsi 
+menggunakan metode pergeseran alfabet. Pengguna memasukkan plaintext dan 
+nilai shift, kemudian sistem menampilkan transformasi setiap karakter secara 
+langkah-demi-langkah. Implementasi ini membantu mahasiswa memahami konsep 
+substitusi monoalfabetik secara sederhana. 
+Pada mode enkripsi, setiap huruf plaintext digeser sebanyak nilai kunci. 
+Pada mode dekripsi, proses pergeseran dilakukan ke arah sebaliknya. Sistem juga 
+menampilkan hasil akhir dalam bentuk ciphertext atau plaintext sesuai mode yang 
+dipilih. 
+
+
+--- Page 69/81 ---
+
+61 
+ 
+ 
+Gambar 4. 8 Halaman Caesar Cipher Lab 
+Keterangan gambar: Caesar Cipher Lab menampilkan input plaintext, nilai shift, 
+mode proses, hasil transformasi, dan langkah per karakter. 
+4.3.3 Vignere Chiper Lab 
+Vigenere Cipher Lab memvisualisasikan algoritma substitusi polialfabetik 
+berbasis kata kunci. Sistem mengulang kata kunci sepanjang plaintext, kemudian 
+setiap karakter plaintext digeser berdasarkan karakter kunci yang sesuai. Visualisasi 
+ini membantu mahasiswa memahami bahwa Vigenere Cipher menggunakan 
+pergeseran dinamis, tidak seperti Caesar Cipher yang menggunakan satu nilai shift 
+tetap. 
+Hasil implementasi menunjukkan bahwa sistem dapat memproses input teks 
+dan kata kunci, menampilkan pasangan karakter plaintext dan key, serta 
+menghasilkan ciphertext berdasarkan pergeseran alfabet. 
+
+
+--- Page 70/81 ---
+
+62 
+ 
+ 
+Gambar 4. 9 Halaman Vigenere Cipher Lab 
+Keterangan gambar: Vigenere Cipher Lab menampilkan hubungan antara plaintext, 
+repeated key, nilai shift, dan hasil transformasi karakter. 
+4.3.4 AES Concept Lab 
+AES Concept Lab pada sistem ini tidak diimplementasikan sebagai AES-
+128 penuh dengan transformasi state matrix seperti SubBytes, ShiftRows, 
+MixColumns, dan AddRoundKey. Implementasi aktual menggunakan pendekatan 
+pedagogis berupa byte-level XOR mixing untuk menjelaskan konsep dasar cipher 
+simetris modern, khususnya hubungan antara plaintext, key, dan proses 
+pencampuran byte. 
+Pendekatan ini digunakan karena tujuan utama sistem adalah edukasi dan 
+visualisasi, bukan pengamanan data produksi. Dengan penyederhanaan tersebut, 
+mahasiswa dapat memahami ide dasar bahwa plaintext dan key mengalami operasi 
+transformasi sehingga menghasilkan output yang sulit dibaca tanpa kunci. 
+
+
+--- Page 71/81 ---
+
+63 
+ 
+ 
+Gambar 4. 10 Halaman AES Concept Lab 
+Keterangan gambar: AES Concept Lab menampilkan input plaintext dan key, 
+proses XOR byte-level, serta hasil transformasi dalam bentuk visual. 
+4.3.5 RSA Lab 
+RSA Lab memvisualisasikan konsep kriptografi asimetris menggunakan 
+parameter pedagogis kecil. Sistem menampilkan proses penggunaan kunci publik 
+dan kunci privat, serta operasi eksponensial modular yang menjadi inti dari 
+algoritma RSA. 
+Implementasi RSA pada sistem menggunakan angka kecil agar proses 
+perhitungan dapat ditampilkan secara jelas. Dengan demikian, mahasiswa dapat 
+memahami hubungan antara plaintext, public key, private key, modulus, dan 
+ciphertext tanpa terbebani oleh ukuran angka yang sangat besar seperti pada 
+implementasi RSA produksi. 
+
+
+--- Page 72/81 ---
+
+64 
+ 
+ 
+Gambar 4. 11 Halaman RSA Lab 
+Keterangan gambar: RSA Lab menampilkan parameter kunci, proses modular 
+exponentiation, hasil enkripsi, dan hasil dekripsi. 
+4.3.6 Digital Signature Lab 
+Digital Signature Lab memvisualisasikan proses tanda tangan digital yang 
+digunakan untuk menjamin autentikasi, integritas, dan non-repudiation. Alur yang 
+divisualisasikan mencakup pembentukan message digest menggunakan fungsi 
+hash, proses signing dengan private key, dan proses verification dengan public key. 
+Pada implementasi aktual, fungsi hash yang digunakan dalam lab bersifat 
+simulatif untuk tujuan pembelajaran. Dengan pendekatan ini, mahasiswa dapat 
+memahami konsep bahwa perubahan kecil pada pesan akan memengaruhi digest 
+dan status verifikasi tanda tangan digital. 
+
+
+--- Page 73/81 ---
+
+65 
+ 
+ 
+Gambar 4. 12 Halaman Digital Signature Lab 
+Keterangan gambar: Digital Signature Lab menampilkan alur pembentukan digest, 
+proses signing, dan proses verification. 
+4.4 Hasil Implementasi Gamifikasi 
+4.4.1 Xp dan Points 
+Sistem mengimplementasikan mekanisme XP dan poin melalui 
+`XpService`. XP digunakan sebagai indikator perkembangan pengalaman belajar 
+pengguna, sedangkan poin digunakan sebagai dasar peringkat pada leaderboard. XP 
+dan poin diperoleh terutama dari aktivitas quiz dan challenge. 
+Pada implementasi aktual, XP dari quiz task menggunakan nilai konfigurasi 
+`rewards.quiz_task_xp`. XP dapat dipengaruhi oleh streak multiplier, sedangkan 
+poin dihitung dari base XP yang diberi level bonus. Dengan pemisahan ini, sistem 
+menjaga agar XP mencerminkan perkembangan belajar, sementara poin menjadi 
+ukuran kompetitif untuk leaderboard. 
+Tabel 4. 2 Mekanisme XP dan Points 
+Aktivitas 
+XP 
+Points  
+Keterangan 
+Quiz Benar 
+Ya 
+Ya 
+XP dipengaruhi streak multiplier, points 
+dipengaruhi level bonus. 
+Daily Streak 
+Ya 
+Tidak 
+XP harian untuk konsistensi login. 
+ 
+ 
+
+
+--- Page 74/81 ---
+
+66 
+ 
+4.4.2 Level System 
+Level pengguna dihitung berdasarkan akumulasi XP. Semakin tinggi XP 
+pengguna, semakin tinggi level yang dapat dicapai. Level juga memengaruhi bonus 
+poin melalui mekanisme level bonus. Dengan demikian, mahasiswa yang konsisten 
+belajar akan memperoleh keuntungan kompetitif pada leaderboard. 
+Mekanisme level ini memberikan rasa progres jangka panjang bagi 
+mahasiswa. Selain menyelesaikan materi, mahasiswa dapat melihat peningkatan 
+status belajar melalui level yang terus bertambah. 
+ 
+Gambar 4. 13 Tampilan XP dan Level 
+Keterangan gambar: Tampilan XP dan level menunjukkan progres pengalaman 
+pengguna dan posisi perkembangan belajarnya. 
+4.4.3 Daily Streak 
+Daily streak diimplementasikan melalui StreakService. Sistem 
+memeriksa tanggal aktivitas terakhir pengguna (last_active_date) dan 
+membandingkannya dengan tanggal saat ini. Jika pengguna aktif secara berturut-
+turut, nilai current_streak bertambah. Jika terdapat jeda lebih dari satu hari, 
+streak direset menjadi 1. 
+Sistem juga menyimpan longest_streak sebagai rekor streak 
+terpanjang 
+pengguna. 
+Pada 
+setiap 
+hari 
+baru, 
+sistem 
+mereset 
+nilai 
+daily_xp_earned dan daily_goal_met_at agar daily goal dapat dihitung 
+kembali. 
+Streak 
+XP Multiplier 
+Daily Streak XP 
+1–2 hari 
+1.0 X 
+2 XP 
+
+
+--- Page 75/81 ---
+
+67 
+ 
+3–6 hari 
+1.25 X 
+3 XP 
+7–13 hari 
+1.5 X 
+5 XP 
+14–29 hari 
+1.75 X 
+8 XP 
+30+ hari 
+2.0 X 
+12 XP 
+Selain daily streak XP, sistem juga menyediakan bonus khusus seperti first login 
+bonus, comeback bonus, dan weekly active bonus. 
+4.4.4 Leaderboard Real-Time 
+Leaderboard digunakan untuk menampilkan peringkat mahasiswa 
+berdasarkan 
+poin. 
+Implementasi 
+leaderboard 
+dikelola 
+melalui 
+LeaderboardService 
+dan 
+LeaderboardController. 
+Sistem 
+mendukung beberapa rentang waktu, yaitu weekly, monthly, dan all-time. Untuk 
+performa, hasil leaderboard pada rentang waktu tertentu dapat disimpan sementara 
+menggunakan cache. 
+Leaderboard juga mendukung pembaruan real-time melalui Laravel Reverb. 
+Ketika XP atau poin diberikan, sistem dapat mengirim event yang kemudian 
+memperbarui tampilan leaderboard pada pengguna lain tanpa perlu melakukan 
+refresh halaman. 
+ 
+Gambar 4. 14 Halaman Leaderboard 
+Keterangan gambar: Halaman leaderboard menampilkan daftar peringkat 
+mahasiswa, poin, XP, streak, dan pilihan timeframe. 
+
+
+--- Page 76/81 ---
+
+68 
+ 
+4.5 Hasil Implementasi Assessment dan Question Bank 
+Sistem menyediakan fitur assessment berbasis course yang dapat digunakan 
+untuk mengukur penguasaan materi mahasiswa. Assessment mendukung level 
+pembelajaran berdasarkan Bloom's Taxonomy dan dapat diatur oleh admin. Pada 
+sisi admin, assessment dapat dibuat, diperbarui, dihapus, dipublish, diarsipkan, dan 
+diurutkan. 
+Selain assessment, sistem juga memiliki question bank yang memungkinkan 
+admin menyimpan dan menggunakan ulang soal. Question bank mendukung 
+operasi CRUD, duplikasi soal, bulk import, dan statistik penggunaan. Dengan 
+adanya question bank, pengelolaan soal menjadi lebih efisien dan terstruktur. 
+Pada sisi mahasiswa, assessment diakses melalui halaman course. Route 
+assessment lama diarahkan kembali ke halaman course agar pengalaman pengguna 
+lebih terpusat dan tidak membingungkan. 
+Tabel 4. 3 Hasil Implementasi Assessment 
+Fitur 
+Hasil Implementasi 
+Assessment CRUD 
+Tersedia pada admin 
+Assessment 
+question 
+CRUD 
+Tersedia pada admin 
+Publish/archive 
+Tersedia 
+Reorder assessment 
+Tersedia 
+Bulk import question 
+Tersedia 
+Assessment submission Start, save answer, submit 
+Akses mahasiswa 
+Terintegrasi pada halaman course 
+4.6 Hasil Implementasi Assessment dan Question Bank 
+Admin memiliki akses untuk mengelola konten pembelajaran melalui route 
+dengan prefix /admin. Fitur utama yang telah diimplementasikan meliputi 
+manajemen course, lesson, task, assessment, question bank, content versioning, 
+user, dan system stats. 
+Content versioning digunakan untuk melacak perubahan konten dan 
+memungkinkan admin melihat detail versi, membandingkan versi, serta melakukan 
+
+
+--- Page 77/81 ---
+
+69 
+ 
+restore. Fitur ini penting untuk menjaga kualitas materi pembelajaran, terutama 
+karena materi kriptografi membutuhkan ketelitian tinggi. 
+Tabel 4. 4 Modul Admin yang Diimplementasikan 
+Modul Admin 
+Hasil Implementasi 
+Manajemen User 
+Lihat, update, hapus user 
+Manajemen Course 
+CRUD, reorder, publish, archive 
+Manajemen Lesson 
+CRUD, reorder, publish 
+Manajemen Task 
+CRUD, reorder, publish, video status 
+Manajemen Assesment 
+CRUD, reorder, publish, archive 
+Assessment Questions 
+CRUD dan reorder 
+Content Versioning 
+Lihat versi, detail versi, restore, compare 
+ 
+
+
+--- Page 78/81 ---
+
+70 
+ 
+BAB V RENCANA 
+TAHAPAN BERIKUTNYA 
+5.1 Pendahuluan 
+Bab ini menjelaskan rencana tahapan berikutnya setelah sistem E-Learning 
+Kriptografi berhasil dirancang dan diimplementasikan. Rencana ini bertujuan untuk 
+memastikan sistem dapat diuji, dievaluasi, dan disempurnakan agar layak 
+digunakan sebagai media pembelajaran kriptografi berbasis web. 
+Sistem yang telah dibangun mencakup fitur utama seperti visualisasi algoritma 
+kriptografi Glass Box, course dan lesson, quiz, gamifikasi, leaderboard, certificate, 
+serta halaman admin untuk mengelola konten pembelajaran. 
+5.2 Rencana Pengujian Sistem 
+Tahap berikutnya adalah melakukan pengujian sistem menggunakan 
+metode Black Box Testing. Pengujian ini dilakukan untuk memastikan setiap fitur 
+berjalan sesuai dengan kebutuhan yang telah dirancang. 
+Fitur yang akan diuji meliputi: 
+1. Login dan registrasi pengguna. 
+2. Akses dashboard mahasiswa dan admin. 
+3. Pengelolaan course, lesson, dan task. 
+4. Mekanisme unlockable content. 
+5. Simulasi lab kriptografi Caesar Cipher, Vigenere Cipher, AES Concept, 
+RSA, Digital Signature, dan Lattice Cipher. 
+6. Quiz dan pemberian XP atau poin. 
+7. Daily streak, badge, leaderboard, dan certificate. 
+8. Verifikasi sertifikat melalui kode publik. 
+Apabila ditemukan kesalahan saat pengujian, maka sistem akan diperbaiki terlebih 
+dahulu sebelum dilanjutkan ke tahap evaluasi pengguna. 
+5.3 Rencana Pengujian Pengguna 
+Setelah sistem dinyatakan berjalan dengan baik, tahap berikutnya adalah 
+melakukan pengujian kepada pengguna melalui metode User Acceptance 
+
+
+--- Page 79/81 ---
+
+71 
+ 
+Testing (UAT). Pengujian ini dilakukan dengan melibatkan mahasiswa sebagai 
+responden. 
+Pengguna akan mencoba sistem, kemudian mengisi kuesioner menggunakan 
+skala Likert. Aspek yang dinilai meliputi: 
+5.2 Kemudahan penggunaan sistem. 
+5.3 Kejelasan visualisasi algoritma kriptografi. 
+5.4 Manfaat fitur gamifikasi dalam meningkatkan motivasi belajar. 
+5.5 Kenyamanan tampilan dan navigasi sistem. 
+5.6 Kepuasan pengguna secara keseluruhan. 
+Hasil kuesioner akan dianalisis untuk mengetahui tingkat penerimaan pengguna 
+terhadap sistem yang telah dikembangkan. 
+5.4 Rencana Penyempurnaan Sistem 
+Penyempurnaan sistem dilakukan berdasarkan hasil pengujian dan masukan 
+dari pengguna. Beberapa bagian yang dapat disempurnakan antara lain: 
+1. Memperbaiki tampilan antarmuka agar lebih mudah digunakan. 
+2. Menambahkan penjelasan yang lebih detail pada setiap langkah simulasi 
+kriptografi. 
+3. Mengoptimalkan fitur gamifikasi agar lebih menarik bagi mahasiswa. 
+4. Meningkatkan performa sistem agar lebih cepat dan stabil. 
+5. Menyesuaikan fitur berdasarkan kebutuhan pengguna dan masukan dari 
+dosen pembimbing. 
+Dengan penyempurnaan ini, sistem diharapkan dapat menjadi media pembelajaran 
+yang lebih efektif dan nyaman digunakan. 
+5.5 Rencana Pengembangan Lanjutan 
+Untuk pengembangan di masa mendatang, sistem ini masih dapat ditingkatkan 
+dengan beberapa fitur tambahan, yaitu: 
+1. Menambahkan implementasi AES-128 penuh dengan visualisasi SubBytes, 
+ShiftRows, MixColumns, dan AddRoundKey. 
+2. Menambahkan lab khusus SHA-256 untuk mempelajari proses hashing. 
+
+
+--- Page 80/81 ---
+
+72 
+ 
+3. Menambahkan visualisasi yang lebih interaktif pada setiap lab kriptografi. 
+4. Mengembangkan dashboard analitik untuk dosen atau admin. 
+5. Mengoptimalkan tampilan sistem agar lebih nyaman digunakan pada 
+perangkat mobile. 
+Pengembangan lanjutan tersebut diharapkan dapat membuat sistem menjadi 
+lebih lengkap dan bermanfaat dalam proses pembelajaran kriptografi. 
+5.6 Penutup 
+Rencana tahapan berikutnya disusun agar sistem E-Learning Kriptografi dapat 
+diuji, dievaluasi, dan disempurnakan sebelum digunakan secara lebih luas. Dengan 
+adanya tahapan pengujian, evaluasi pengguna, dan pengembangan lanjutan, sistem 
+ini diharapkan mampu menjadi media pembelajaran kriptografi yang interaktif, 
+mudah dipahami, dan mendukung motivasi belajar mahasiswa. 
+ 
+ 
+
+
+--- Page 81/81 ---
+
+73 
+ 
+DAFTAR PUSTAKA 
+Andry, J. F., & Stefanus, M. (2020). Pengembangan Aplikasi E-learning Berbasis Web 
+Menggunakan Model Waterfall Pada SMK Strada 2 Jakarta. JURNAL FASILKOM. 
+https://doi.org/10.37859/JF.V10I1.1878 
+Fariza, P., Nurjannah, E., & Jannah, D. M. (2025). Analisis Penerapan Gamifikasi Dalam 
+Model Pembelajaran E-Learning Terhadap Psikologi Mahasiswa Engineering Major. 
+Innovation 
+and 
+Applied 
+Education 
+Journal, 
+2(1), 
+1–10. 
+https://doi.org/10.61220/IAEJ.V2I1.255 
+Ghinafikar, Z., Mu’thy, M. M., & Yaqin, M. A. (2025). Perbandingan Metode Agile dan 
+Waterfall Berdasarkan Analisis Waktu Pengembangan Sistem. Jurnal Manajemen 
+Teknologi Informatika, 3(1), 26–44. https://doi.org/10.70038/JENTIK.V3I1.149 
+Jiménez-Valverde, G., Fabre-Mitjans, N., & Guimerà-Ballesta, G. (2025). Narrative-
+Driven Digital Gamification for Motivation and Presence: Preservice Teachers’ 
+Experiences in a Science Education Course. Computers 2025, Vol. 14, Page 384, 
+14(9), 384. https://doi.org/10.3390/COMPUTERS14090384 
+Mary, T., & Febriyani, N. (2025). Peningkatan Keamanan Sistem Informasi Berbasis 
+Laravel  12 dengan Rate Limiting dan Role-Based Access Control (RBAC). Jurnal 
+Teknologi  
+Dan 
+Sistem 
+Informasi 
+Bisnis, 
+7(3), 
+473–481. 
+https://doi.org/10.47233/JTEKSIS.V7I3.1976 
+Maulana, M. R., & Dwi Wahyuni, E. (2025). EVALUASI METODOLOGI WATERFALL 
+DAN AGILE: STUDI LITERATUR PADA SISTEM PERPUSTAKAAN. Jurnal 
+Informatika 
+Dan 
+Teknik 
+Elektro 
+Terapan, 
+13(1), 
+2830–7062. 
+https://doi.org/10.23960/JITET.V13I1.5900 
+Novayani, W., & Alhuda, I. (2024). ENHANCING STUDENTS’ LEARNING 
+OUTCOMES IN CLASSICAL CRYPTOGRAPHY THROUGH INTERACTIVE 
+3D 
+SIMULATIONS. 
+Jurnal 
+Komputer 
+Terapan, 
+10(2), 
+161–169. 
+https://doi.org/10.35143/JKT.V10I2.6446 
+Ramadhani, A. P., Ardiyanti, A. V., & Widarti, E. (2025). A Web Application For Playfair 
+Cipher Cryptography: Method and Implementation. Journal of Software Engineering 
+and 
+Multimedia 
+(JASMED), 
+3(1), 
+20–29. 
+https://doi.org/10.20895/JASMED.V3I1.10096 
+Septyanto, K., Hamid, M. A., & Aribowo, D. (2020). Pengembangan E-Learning Berbasis 
+Website menggunakan Metode Waterfall. Elinvo (Electronics Informatics and 
+Vocational Education). https://doi.org/10.21831/ELINVO.V5I1.31054 
+Setiawan, A. B. (2025). Penggunaan Cryptography dalam Keamanan Pesan Digital. 
+Journal of Computer Science and Information Technology, 1(2), 60–66. 
+https://doi.org/10.70716/JOCSIT.V1I2.261 
+Sugiyarto, M. F., Yasa, R. N., Girinoto, G., Setiawan, H., & Wicaksono, H. R. (2025). 
+Spaticrypt : Platform Edukasi Kriptografi Berbasis Web dengan Konsep Gamifikasi 
+Capture-the-Flag dan Integrasi Chatbot Kecerdasan Buatan sebagai Asisten Virtual. 
+Info Kripto. https://doi.org/10.56706/IK.V19I1.120 
+Syukron, A., Muhidin, A., & Setyaningrum, R. P. (2025). PEMBANGUNAN APLIKASI 
+PEMBELAJARAN ONLINE BERBASIS LARAVEL 11 UNTUK PT SEMBILAN 
+DAYA 
+MANUNGGAL. 
+JATI 
+(Jurnal 
+Mahasiswa 
+Teknik 
+Informatika). 
+https://doi.org/10.36040/JATI.V9I3.13671 
+Zainudin, H., & Kadir, R. (n.d.). Mini-AES Algorithm Visualization for Cryptography 
+Teaching and Learning. 2976–2278. 
+  
+

@@ -2,41 +2,56 @@
 
 use Symfony\Component\Process\Process;
 
-function routeListForProductionDomains(string $path): string
+function routeListForProductionDomains(string $path): array
 {
-    $process = new Process(['php', 'artisan', 'route:list', '--path='.$path], base_path(), [
-        'PUBLIC_DOMAIN' => 'cryptere.com',
-        'AUTH_DOMAIN' => 'auth.cryptere.com',
-        'APP_DOMAIN' => 'app.cryptere.com',
+    $process = new Process(['php', 'artisan', 'route:list', '--path='.$path, '--json'], base_path(), [
+        'APP_URL' => 'https://cryptere.com',
+        'AUTH_URL' => 'https://auth.cryptere.com',
+        'APP_HOME_URL' => 'https://app.cryptere.com',
     ]);
 
     $process->mustRun();
 
-    return $process->getOutput();
+    return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
 }
 
 test('public domain auth page paths are canonical redirects to auth domain', function (): void {
-    expect(routeListForProductionDomains('login'))->toContain('cryptere.com/login')
+    $loginRoutes = json_encode(routeListForProductionDomains('login'), JSON_THROW_ON_ERROR);
+    $registerRoutes = json_encode(routeListForProductionDomains('register'), JSON_THROW_ON_ERROR);
+    $forgotPasswordRoutes = json_encode(routeListForProductionDomains('forgot-password'), JSON_THROW_ON_ERROR);
+    $resetPasswordRoutes = json_encode(routeListForProductionDomains('reset-password'), JSON_THROW_ON_ERROR);
+
+    expect($loginRoutes)->toContain('"domain":"cryptere.com"')
+        ->toContain('"uri":"login"')
         ->toContain('public.auth.login')
-        ->toContain('auth.cryptere.com/login')
-        ->toContain('login.store')
-        ->and(routeListForProductionDomains('register'))->toContain('cryptere.com/register')
+        ->toContain('"domain":"auth.cryptere.com"')
+        ->toContain('login.store');
+
+    expect($registerRoutes)->toContain('"domain":"cryptere.com"')
+        ->toContain('"uri":"register"')
         ->toContain('public.auth.register')
-        ->toContain('auth.cryptere.com/register')
-        ->toContain('register.store')
-        ->and(routeListForProductionDomains('forgot-password'))->toContain('cryptere.com/forgot-password')
+        ->toContain('"domain":"auth.cryptere.com"')
+        ->toContain('register.store');
+
+    expect($forgotPasswordRoutes)->toContain('"domain":"cryptere.com"')
+        ->toContain('"uri":"forgot-password"')
         ->toContain('public.auth.forgot-password')
-        ->toContain('auth.cryptere.com/forgot-password')
-        ->toContain('password.email')
-        ->and(routeListForProductionDomains('reset-password'))->toContain('cryptere.com/reset-password/{token}')
+        ->toContain('"domain":"auth.cryptere.com"')
+        ->toContain('password.email');
+
+    expect($resetPasswordRoutes)->toContain('"domain":"cryptere.com"')
+        ->toContain('"uri":"reset-password\\/{token}"')
         ->toContain('public.auth.reset-password')
-        ->toContain('auth.cryptere.com/reset-password/{token}')
+        ->toContain('"domain":"auth.cryptere.com"')
         ->toContain('password.update');
 });
 
 test('public domain logout post is blocked while auth domain logout exists', function (): void {
-    expect(routeListForProductionDomains('logout'))->toContain('cryptere.com/logout')
-        ->toContain('auth.cryptere.com/logout')
+    $logoutRoutes = json_encode(routeListForProductionDomains('logout'), JSON_THROW_ON_ERROR);
+
+    expect($logoutRoutes)->toContain('"domain":"cryptere.com"')
+        ->toContain('"uri":"logout"')
+        ->toContain('"domain":"auth.cryptere.com"')
         ->toContain('logout');
 });
 

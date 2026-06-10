@@ -123,7 +123,6 @@ The app has real learner history tables:
 - `task_progress`
 - `quiz_submissions`
 - `assessment_submissions`
-- `certificates`
 
 Admin delete actions need clear guard behavior before deleting courses, lessons, tasks, users, assessments, and questions.
 
@@ -581,12 +580,12 @@ Files to modify:
 
 Behavior rules:
 
-- Course delete is blocked when enrollments, certificates, lesson progress, task progress, quiz submissions, or assessment submissions exist. Admin should archive instead.
+- Course delete is blocked when enrollments, lesson progress, task progress, quiz submissions, or assessment submissions exist. Admin should archive instead.
 - Lesson delete is blocked when `lesson_progress` or task history exists for tasks under that lesson.
 - Task delete is blocked when `task_progress` or `quiz_submissions` exist.
 - Assessment delete is blocked when `assessment_submissions` exist.
 - Assessment question delete is blocked when submitted answers reference the question.
-- User delete is blocked for the current admin user and for users with learning, certificate, balance, or submission history. Use status deactivation instead.
+- User delete is blocked for the current admin user and for users with learning, balance, or submission history. Use status deactivation instead.
 
 Example controller pattern:
 

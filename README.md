@@ -117,7 +117,6 @@ tests/
 - **Assessments** — Bloom's taxonomy-based assessments with rubric grading (auto + manual)
 - **Challenges** — Timed coding challenges with Kahoot-style scoring
 - **Gamification** — XP, levels, streaks, daily rewards, badges, leaderboards
-- **Certificates** — Auto-generated certificates with public verification
 - **Labs** — Interactive coding environments
 - **Real-time** — WebSocket-powered leaderboard updates via Laravel Reverb
 - **Feature Flags** — Gradual rollouts via Laravel Pennant

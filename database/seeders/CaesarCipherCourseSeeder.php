@@ -830,7 +830,7 @@ HTML;
                         ['name' => 'Konteks penggunaan', 'description' => 'Membedakan pendidikan dan keamanan produksi.', 'max_points' => 8],
                         ['name' => 'Kesimpulan', 'description' => 'Memberi keputusan akhir yang konsisten.', 'max_points' => 5],
                     ])),
-                    $this->manualQuestion('essay', 'Nilai penggunaan ROT13 untuk menyembunyikan spoiler di forum. Kapan cukup, kapan tidak cukup?', 'Jawaban ideal membedakan obfuscation ringan dari keamanan informasi.', 20, 120, 320, $this->rubric([
+                    $this->manualQuestion('essay', 'Nilai penggunaan ROT13 untuk menyembunyikan spoiler ringan pada teks publik. Kapan cukup, kapan tidak cukup?', 'Jawaban ideal membedakan obfuscation ringan dari keamanan informasi.', 20, 120, 320, $this->rubric([
                         ['name' => 'Kriteria cukup', 'description' => 'Menilai ROT13 untuk spoiler ringan.', 'max_points' => 7],
                         ['name' => 'Kriteria tidak cukup', 'description' => 'Menjelaskan batas keamanan.', 'max_points' => 7],
                         ['name' => 'Contoh', 'description' => 'Memberi contoh penggunaan tepat.', 'max_points' => 6],
