@@ -214,6 +214,12 @@ class SocialAuthController extends Controller
         /** @var AbstractProvider $driver */
         $driver = Socialite::driver($provider);
 
+        // Use stateless mode for popup flow to avoid session/state conflicts
+        // between the popup window and the parent window
+        if (session()->get('social_popup')) {
+            $driver = $driver->stateless();
+        }
+
         return $driver->redirectUrl($this->redirectUriFor($provider));
     }
 
