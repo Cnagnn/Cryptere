@@ -48,6 +48,11 @@ class SocialAuthController extends Controller
     {
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
 
+        // If user is already authenticated, skip social auth flow
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
+        }
+
         try {
             $socialUser = $this->socialiteDriver($provider)->user();
         } catch (\Exception $e) {
@@ -89,26 +94,20 @@ class SocialAuthController extends Controller
 
         $user = User::where('email', $socialUser->getEmail())->first();
 
-        // Case 2: Existing user by email — link social account and login
+        // Case 2: Existing user by email — do NOT auto-link (prevents account hijacking)
         if ($user) {
-            $user->socialAccounts()->create([
+            $request->session()->put('social_user', [
                 'provider' => $provider,
-                'provider_user_id' => $socialUser->getId(),
-                'provider_email' => $socialUser->getEmail(),
-                'provider_name' => $socialUser->getName(),
-                'provider_avatar' => $socialUser->getAvatar(),
+                'id' => $socialUser->getId(),
+                'email' => $socialUser->getEmail(),
+                'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? 'User',
+                'avatar' => $socialUser->getAvatar(),
+                'nickname' => $socialUser->getNickname(),
             ]);
 
-            if (! $user->hasVerifiedEmail()) {
-                $user->markEmailAsVerified();
-            }
+            $message = 'Akun dengan email ini sudah terdaftar. Silakan masuk terlebih dahulu, lalu hubungkan akun '.ucfirst($provider).' Anda di pengaturan.';
 
-            $this->socialAvatarService->syncUserAvatarFromUrl($user, $socialUser->getAvatar());
-
-            Auth::login($user, true);
-            $request->session()->regenerate();
-
-            return $this->popupOrRedirect($request, route('dashboard'));
+            return $this->popupOrRedirect($request, route('login', ['message' => $message]));
         }
 
         // Case 3: New user — store social data in session and redirect to register
@@ -119,6 +118,7 @@ class SocialAuthController extends Controller
             'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? 'User',
             'avatar' => $socialUser->getAvatar(),
             'nickname' => $socialUser->getNickname(),
+            'expires_at' => now()->addMinutes(10)->timestamp,
         ]);
 
         return $this->popupOrRedirect($request, route('register'));
@@ -133,20 +133,24 @@ class SocialAuthController extends Controller
             return redirect()->to($url);
         }
 
+        $escapedUrl = json_encode($url, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+        $escapedHref = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+
         $html = <<<HTML
             <!DOCTYPE html>
             <html>
             <head><title>Authenticating...</title></head>
             <body>
                 <script>
+                    var url = {$escapedUrl};
                     if (window.opener) {
-                        window.opener.location.href = "{$url}";
+                        window.opener.location.href = url;
                         window.close();
                     } else {
-                        window.location.href = "{$url}";
+                        window.location.href = url;
                     }
                 </script>
-                <noscript><a href="{$url}">Click here to continue</a></noscript>
+                <noscript><a href="{$escapedHref}">Click here to continue</a></noscript>
             </body>
             </html>
             HTML;
@@ -157,7 +161,7 @@ class SocialAuthController extends Controller
     private function socialiteDriver(string $provider): AbstractProvider
     {
         /** @var AbstractProvider $driver */
-        $driver = Socialite::driver($provider)->stateless();
+        $driver = Socialite::driver($provider);
 
         return $driver->redirectUrl($this->redirectUriFor($provider));
     }

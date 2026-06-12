@@ -42,9 +42,6 @@ class CreateNewUser implements CreatesNewUsers
         $hasSocialRegistrationContext = session()->has('social_user');
 
         $user = DB::transaction(function () use ($input): User {
-            $isFirstUser = ! User::query()->lockForUpdate()->exists();
-            $role = $isFirstUser ? User::ROLE_SUPER_ADMIN : User::ROLE_USER;
-
             $user = User::create([
                 'name' => $input['name'],
                 'email' => $input['email'],
@@ -54,7 +51,12 @@ class CreateNewUser implements CreatesNewUsers
                 'profile_visibility' => $input['profile_visibility'],
             ]);
 
-            $user->assignRole($role);
+            // Check if this is the only user (safe after insert)
+            if (User::count() === 1) {
+                $user->assignRole(User::ROLE_SUPER_ADMIN);
+            } else {
+                $user->assignRole(User::ROLE_USER);
+            }
 
             return $user;
         });

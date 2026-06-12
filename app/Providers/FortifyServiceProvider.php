@@ -92,10 +92,19 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn (Request $request) => Inertia::render('auth/register', [
-            'socialUser' => $request->session()->get('social_user'),
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::registerView(function (Request $request) {
+            $socialUser = $request->session()->get('social_user');
+
+            if ($socialUser && ($socialUser['expires_at'] ?? 0) < now()->timestamp) {
+                $request->session()->forget('social_user');
+                $socialUser = null;
+            }
+
+            return Inertia::render('auth/register', [
+                'socialUser' => $socialUser,
+                'status' => $request->session()->get('status'),
+            ]);
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 

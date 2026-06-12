@@ -68,8 +68,10 @@ Route::domain($authDomain)->group(function () use ($authDomain) {
         Route::redirect('/', '/login')->name('auth.home');
     }
 
-    Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
-    Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
+        Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
+    });
 
     // Username availability check — rate limited to prevent enumeration attacks
     Route::middleware('throttle:10,1')
