@@ -37,7 +37,7 @@ import { cn } from '@/lib/utils';
 import { login, privacy, terms } from '@/routes';
 import { store } from '@/routes/register';
 import { redirect as socialRedirect } from '@/routes/social';
-import { checkUsername } from '@/routes/users';
+import { checkEmail, checkUsername } from '@/routes/users';
 
 function PasswordInput({
     className,
@@ -119,6 +119,10 @@ export default function Register({ status, socialUser }: Props) {
     const [usernameAvailability, setUsernameAvailability] = useState<
         'available' | 'taken' | null
     >(null);
+    const [email, setEmail] = useState(() => socialUser?.email ?? '');
+    const [emailAvailability, setEmailAvailability] = useState<
+        'available' | 'taken' | null
+    >(null);
 
     const getPasswordStrength = (pass: string) => {
         if (!pass) {
@@ -174,6 +178,20 @@ export default function Register({ status, socialUser }: Props) {
         return usernameAvailability ?? 'checking';
     }, [username, usernameAvailability]);
 
+    const emailStatus = useMemo<
+        'idle' | 'invalid' | 'checking' | 'available' | 'taken'
+    >(() => {
+        if (!email) {
+            return 'idle';
+        }
+
+        if (email.length < 5 || !email.includes('@') || !email.includes('.')) {
+            return 'invalid';
+        }
+
+        return emailAvailability ?? 'checking';
+    }, [email, emailAvailability]);
+
     useEffect(() => {
         if (!username || username.trim().length < 4) {
             return;
@@ -192,6 +210,34 @@ export default function Register({ status, socialUser }: Props) {
 
         return () => clearTimeout(timer);
     }, [username]);
+
+    useEffect(() => {
+        if (isSocialRegistration) {
+            return;
+        }
+
+        if (
+            !email ||
+            email.length < 5 ||
+            !email.includes('@') ||
+            !email.includes('.')
+        ) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            fetch(checkEmail.url({ query: { email } }))
+                .then((res) => res.json())
+                .then((data) => {
+                    setEmailAvailability(
+                        data.available ? 'available' : 'taken',
+                    );
+                })
+                .catch(() => setEmailAvailability(null));
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [email, isSocialRegistration]);
 
     return (
         <>
@@ -524,6 +570,32 @@ export default function Register({ status, socialUser }: Props) {
                                                     <span className="ml-1 text-destructive">
                                                         *
                                                     </span>
+                                                    {!isSocialRegistration && (
+                                                        <div className="ml-auto flex items-center">
+                                                            {emailStatus ===
+                                                                'checking' && (
+                                                                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                                    <LoaderCircle className="size-3 animate-spin" />{' '}
+                                                                    Memeriksa...
+                                                                </span>
+                                                            )}
+                                                            {emailStatus ===
+                                                                'available' && (
+                                                                <span className="flex items-center gap-1 text-sm text-foreground">
+                                                                    <CheckCircle2 className="size-3" />{' '}
+                                                                    Tersedia
+                                                                </span>
+                                                            )}
+                                                            {emailStatus ===
+                                                                'taken' && (
+                                                                <span className="flex items-center gap-1 text-sm text-destructive">
+                                                                    <XCircle className="size-3" />{' '}
+                                                                    Email sudah
+                                                                    terdaftar
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     {isSocialRegistration && (
                                                         <Badge
                                                             variant="ghost"
@@ -588,7 +660,7 @@ export default function Register({ status, socialUser }: Props) {
                                                         autoComplete="email"
                                                         name="email"
                                                         placeholder="email@domain.com"
-                                                        className={`pl-9 ${isSocialRegistration ? 'cursor-not-allowed bg-muted text-muted-foreground' : ''}`}
+                                                        className={`pl-9 ${isSocialRegistration ? 'cursor-not-allowed bg-muted text-muted-foreground' : ''} ${emailStatus === 'taken' ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                                                         aria-invalid={
                                                             Boolean(
                                                                 errors.email,
@@ -597,10 +669,16 @@ export default function Register({ status, socialUser }: Props) {
                                                         readOnly={
                                                             isSocialRegistration
                                                         }
-                                                        defaultValue={
-                                                            socialUser?.email ??
-                                                            ''
-                                                        }
+                                                        value={email}
+                                                        onChange={(e) => {
+                                                            setEmailAvailability(
+                                                                null,
+                                                            );
+                                                            setEmail(
+                                                                e.currentTarget
+                                                                    .value,
+                                                            );
+                                                        }}
                                                     />
                                                 </div>
                                                 {errors.email && (
@@ -608,6 +686,19 @@ export default function Register({ status, socialUser }: Props) {
                                                         {errors.email}
                                                     </p>
                                                 )}
+                                                {!isSocialRegistration &&
+                                                    emailStatus === 'taken' && (
+                                                        <p className="text-sm text-destructive">
+                                                            Email sudah
+                                                            terdaftar.{' '}
+                                                            <Link
+                                                                href={login()}
+                                                                className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
+                                                            >
+                                                                Masuk
+                                                            </Link>
+                                                        </p>
+                                                    )}
                                             </Field>
                                         </div>
 

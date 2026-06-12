@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\QuestionBankController;
 use App\Http\Controllers\Admin\TaskController as AdminTaskController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Assessment\AssessmentSubmissionController;
+use App\Http\Controllers\Auth\EmailAvailabilityController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\UsernameAvailabilityController;
 use App\Http\Controllers\Course\CourseController;
@@ -77,6 +78,11 @@ Route::domain($authDomain)->group(function () use ($authDomain) {
     Route::middleware('throttle:10,1')
         ->get('/api/users/check-username', UsernameAvailabilityController::class)
         ->name('users.check-username');
+
+    // Email availability check — rate limited to prevent enumeration attacks
+    Route::middleware('throttle:10,1')
+        ->get('/api/users/check-email', EmailAvailabilityController::class)
+        ->name('users.check-email');
 });
 
 Route::inertia('/terms', 'legal/terms')->name('terms');

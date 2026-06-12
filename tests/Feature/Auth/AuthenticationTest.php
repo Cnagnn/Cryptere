@@ -58,7 +58,7 @@ test('user can register', function () {
         'password' => 'Password123!',
         'password_confirmation' => 'Password123!',
         'terms' => 'on',
-    ])->assertRedirect('/dashboard');
+    ])->assertRedirect('/email/verify');
 
     $this->assertAuthenticated();
     $this->assertDatabaseHas('users', ['email' => 'test@example.com']);

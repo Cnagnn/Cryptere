@@ -105,9 +105,11 @@ class SocialAuthController extends Controller
                 'nickname' => $socialUser->getNickname(),
             ]);
 
-            $message = 'Akun dengan email ini sudah terdaftar. Silakan masuk terlebih dahulu, lalu hubungkan akun '.ucfirst($provider).' Anda di pengaturan.';
-
-            return $this->popupOrRedirect($request, route('login', ['message' => $message]));
+            return $this->popupMessage(
+                $request,
+                'Akun dengan email ini sudah terdaftar. Silakan masuk terlebih dahulu, lalu hubungkan akun '.ucfirst($provider).' Anda di pengaturan.',
+                route('login'),
+            );
         }
 
         // Case 3: New user — store social data in session and redirect to register
@@ -151,6 +153,55 @@ class SocialAuthController extends Controller
                     }
                 </script>
                 <noscript><a href="{$escapedHref}">Click here to continue</a></noscript>
+            </body>
+            </html>
+            HTML;
+
+        return new Response($html);
+    }
+
+    /**
+     * Show a message inside the popup, or redirect with error for non-popup flow.
+     */
+    private function popupMessage(Request $request, string $message, string $fallbackUrl): RedirectResponse|Response
+    {
+        if (! $request->session()->pull('social_popup')) {
+            return redirect()->to($fallbackUrl)->withErrors(['email' => $message]);
+        }
+
+        $escapedMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+        $escapedFallbackUrl = htmlspecialchars($fallbackUrl, ENT_QUOTES, 'UTF-8');
+
+        $html = <<<HTML
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Informasi</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; background: #f9fafb; }
+                    .card { background: white; border-radius: 12px; padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+                    .icon { font-size: 48px; margin-bottom: 16px; }
+                    .message { color: #374151; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+                    .btn { display: inline-block; padding: 10px 24px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+                    .btn:hover { background: #1d4ed8; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <div class="icon">ℹ️</div>
+                    <p class="message">{$escapedMessage}</p>
+                    <button class="btn" onclick="window.close()">Oke, saya mengerti</button>
+                </div>
+                <script>
+                    // If popup was blocked and this opened as a tab, provide fallback
+                    if (!window.opener) {
+                        document.querySelector('.btn').onclick = function() {
+                            window.location.href = '{$escapedFallbackUrl}';
+                        };
+                    }
+                </script>
             </body>
             </html>
             HTML;

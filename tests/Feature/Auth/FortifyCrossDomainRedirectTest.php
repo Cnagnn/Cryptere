@@ -55,7 +55,7 @@ afterEach(function (): void {
     $this->refreshApplication();
 });
 
-test('inertia registration uses location redirect across auth and app subdomains', function (): void {
+test('inertia registration redirects to email verification on same auth domain', function (): void {
     $response = $this
         ->withServerVariables(['HTTP_HOST' => 'auth.cryptere.com', 'HTTPS' => 'on'])
         ->withHeader('X-Inertia', 'true')
@@ -69,9 +69,7 @@ test('inertia registration uses location redirect across auth and app subdomains
             'terms' => 'on',
         ]);
 
-    $response
-        ->assertStatus(409)
-        ->assertHeader('X-Inertia-Location', 'https://app.cryptere.com/dashboard');
+    $response->assertRedirect('/email/verify');
 
     $this->assertAuthenticated();
 });
