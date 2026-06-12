@@ -88,6 +88,12 @@ return [
 
     'prefix' => '',
 
+    'paths' => [
+        'two-factor' => [
+            'login' => '/login/2fa',
+        ],
+    ],
+
     'domain' => config('app.domains.auth'),
 
     'redirects' => [
