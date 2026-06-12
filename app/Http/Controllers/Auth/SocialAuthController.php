@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\SocialAvatarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
@@ -29,9 +30,13 @@ class SocialAuthController extends Controller
      *
      * @return \Symfony\Component\HttpFoundation\RedirectResponse
      */
-    public function redirect(string $provider)
+    public function redirect(Request $request, string $provider)
     {
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
+
+        if ($request->boolean('popup')) {
+            $request->session()->put('social_popup', true);
+        }
 
         return $this->socialiteDriver($provider)->redirect();
     }
@@ -39,7 +44,7 @@ class SocialAuthController extends Controller
     /**
      * Obtain the user information from the provider.
      */
-    public function callback(Request $request, string $provider): RedirectResponse
+    public function callback(Request $request, string $provider): RedirectResponse|Response
     {
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
 
@@ -79,7 +84,7 @@ class SocialAuthController extends Controller
             Auth::login($socialAccount->user, true);
             $request->session()->regenerate();
 
-            return redirect()->intended(route('dashboard'));
+            return $this->popupOrRedirect($request, route('dashboard'));
         }
 
         $user = User::where('email', $socialUser->getEmail())->first();
@@ -103,8 +108,7 @@ class SocialAuthController extends Controller
             Auth::login($user, true);
             $request->session()->regenerate();
 
-            return redirect()->intended(route('dashboard'))
-                ->with('status', 'Your '.ucfirst($provider).' account has been linked.');
+            return $this->popupOrRedirect($request, route('dashboard'));
         }
 
         // Case 3: New user — store social data in session and redirect to register
@@ -117,7 +121,37 @@ class SocialAuthController extends Controller
             'nickname' => $socialUser->getNickname(),
         ]);
 
-        return redirect()->route('register');
+        return $this->popupOrRedirect($request, route('register'));
+    }
+
+    /**
+     * Return a popup-closing HTML response or a standard redirect.
+     */
+    private function popupOrRedirect(Request $request, string $url): RedirectResponse|Response
+    {
+        if (! $request->session()->pull('social_popup')) {
+            return redirect()->to($url);
+        }
+
+        $html = <<<HTML
+            <!DOCTYPE html>
+            <html>
+            <head><title>Authenticating...</title></head>
+            <body>
+                <script>
+                    if (window.opener) {
+                        window.opener.location.href = "{$url}";
+                        window.close();
+                    } else {
+                        window.location.href = "{$url}";
+                    }
+                </script>
+                <noscript><a href="{$url}">Click here to continue</a></noscript>
+            </body>
+            </html>
+            HTML;
+
+        return new Response($html);
     }
 
     private function socialiteDriver(string $provider): AbstractProvider
