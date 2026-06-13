@@ -33,6 +33,27 @@ $appHost = $extractHost($appHomeUrl);
 
 $sessionDomain = $isLocalHost($publicHost) ? null : '.'.$publicHost;
 
+/*
+ * In local development the app is typically served from a single host on a
+ * non-standard port (e.g. `127.0.0.1:8000` via `php artisan serve`). PHP's
+ * `parse_url(..., PHP_URL_HOST)` strips the port, so a route registered with
+ * `Route::domain('127.0.0.1')` would generate links like `//127.0.0.1/login`
+ * (no port) — unreachable from the dev browser. Symfony's host matcher also
+ * strips the port from the request, so adding the port back to the constraint
+ * does not work either.
+ *
+ * Solution: drop the per-route domain constraint entirely when running
+ * locally. Routes match on path only, and Wayfinder emits relative URLs
+ * (e.g. `/login`) that resolve against whatever host:port the browser used.
+ *
+ * Production is untouched — only the `local` environment branch runs here.
+ */
+if (env('APP_ENV') === 'local' && $isLocalHost($publicHost)) {
+    $publicHost = null;
+    $authHost = null;
+    $appHost = null;
+}
+
 return [
 
     /*
