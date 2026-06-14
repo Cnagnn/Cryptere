@@ -55,8 +55,8 @@ test('user can register', function () {
         'name' => 'Test User',
         'username' => 'testuser123',
         'email' => 'test@example.com',
-        'password' => 'Password123!',
-        'password_confirmation' => 'Password123!',
+        'password' => 'CryptereTestUser2026!',
+        'password_confirmation' => 'CryptereTestUser2026!',
         'terms' => 'on',
     ])->assertRedirect('/email/verify');
 

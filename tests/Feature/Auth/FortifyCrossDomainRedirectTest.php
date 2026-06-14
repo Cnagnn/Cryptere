@@ -64,8 +64,8 @@ test('inertia registration redirects to email verification on same auth domain',
             'name' => 'Student Example',
             'username' => 'student_example',
             'email' => 'student@example.com',
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
+            'password' => 'CryptereTestUser2026!',
+            'password_confirmation' => 'CryptereTestUser2026!',
             'terms' => 'on',
         ]);
 
@@ -76,7 +76,7 @@ test('inertia registration redirects to email verification on same auth domain',
 
 test('inertia login uses location redirect across auth and app subdomains', function (): void {
     $user = User::factory()->create([
-        'password' => bcrypt('Password123!'),
+        'password' => bcrypt('CryptereTestUser2026!'),
     ]);
 
     $response = $this
@@ -85,7 +85,7 @@ test('inertia login uses location redirect across auth and app subdomains', func
         ->withHeader('X-Inertia-Version', '')
         ->post('/login', [
             'email' => $user->email,
-            'password' => 'Password123!',
+            'password' => 'CryptereTestUser2026!',
         ]);
 
     $response

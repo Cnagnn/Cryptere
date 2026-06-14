@@ -44,7 +44,7 @@ test('unknown email receives a neutral response without sending notification', f
 test('user can reset password with a valid token', function (): void {
     $user = User::factory()->create([
         'email' => 'student@example.com',
-        'password' => 'OldPassword123!',
+        'password' => 'CryptereTestUserOld2026!',
     ]);
 
     $token = Password::broker()->createToken($user);
@@ -52,9 +52,9 @@ test('user can reset password with a valid token', function (): void {
     $this->post('/reset-password', [
         'token' => $token,
         'email' => 'student@example.com',
-        'password' => 'NewPassword123!',
-        'password_confirmation' => 'NewPassword123!',
+        'password' => 'CryptereTestUserNew2026!',
+        'password_confirmation' => 'CryptereTestUserNew2026!',
     ])->assertRedirect('/login');
 
-    expect(Hash::check('NewPassword123!', $user->fresh()->password))->toBeTrue();
+    expect(Hash::check('CryptereTestUserNew2026!', $user->fresh()->password))->toBeTrue();
 });
