@@ -1,2 +1,7 @@
+# Cryptere — search-engine crawler policy
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://cryptere.com/sitemap.xml

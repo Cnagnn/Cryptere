@@ -26,15 +26,12 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
             <div className="flex min-h-screen items-center justify-center bg-background py-4 lg:h-screen">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
-                    <div
-                        className="flex items-center justify-center select-none"
-                        aria-label="Cryptere"
-                    >
+                    <div className="flex items-center justify-center select-none">
                         <svg
                             viewBox="0 0 203 51"
                             xmlns="http://www.w3.org/2000/svg"
                             role="img"
-                            aria-hidden="true"
+                            aria-label="Cryptere"
                             onContextMenu={(event) => event.preventDefault()}
                             onDragStart={(event) => event.preventDefault()}
                             className="pointer-events-auto h-11 w-auto"

@@ -72,10 +72,39 @@
 <IfModule mod_headers.c>
     # Strip server-fingerprinting headers (defense in depth — middleware
     # also removes them at the app layer, but headers are easier to drop here).
+    # `always` ensures the unset runs on EVERY response, including 4xx/5xx
+    # error pages produced by LSWS itself before the request reaches PHP.
     Header always unset X-Powered-By
     Header always unset X-Turbo-Charged-By
     Header always unset X-AspNet-Version
     Header always unset X-AspNetMvc-Version
+    Header always unset Server
+
+    # ─────────────────────────────────────────────────────────────────
+    # HSTS — defense in depth at web-server layer
+    # ─────────────────────────────────────────────────────────────────
+    # The SecurityHeaders middleware also emits HSTS, but that only fires
+    # when the request actually reaches Laravel. If LSWS returns a 5xx
+    # before PHP runs (overload, OPCache rebuild, etc.) the middleware
+    # never executes and HSTS is missing — exposing first-time visitors
+    # to SSL stripping. `always` here covers every HTTPS response.
+    #
+    # NOTE: HTTPS gate is done by `expr` because we serve plain HTTP only
+    # for the 301 redirect at the top of the rewrite block; everything
+    # else is HTTPS via Cloudflare.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" "expr=%{HTTPS} == 'on'"
+
+    # ─────────────────────────────────────────────────────────────────
+    # NEVER cache server errors at the LSWS / Cloudflare edge
+    # ─────────────────────────────────────────────────────────────────
+    # Without this, a transient 5xx (e.g. PHP-FPM hiccup during deploy)
+    # gets pinned in LiteSpeed's edge cache for the lifetime of the
+    # default Cache-Control set by the public landing-page middleware
+    # (s-maxage=300). Result: the homepage stays "down" for 5 minutes
+    # after the underlying issue is resolved. Force no-store on every
+    # 5xx so the next request always re-hits the origin.
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" "expr=%{REQUEST_STATUS} >= 500"
+    Header always set Pragma "no-cache" "expr=%{REQUEST_STATUS} >= 500"
 
     SetEnvIf Request_URI "^/build/assets/.+\.(css|js)$" vite_asset=1
     Header set Cache-Control "public, max-age=31536000, immutable" env=vite_asset

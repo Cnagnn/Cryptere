@@ -94,19 +94,22 @@ export default function Login({
 
     return (
         <>
-            <Head title="Masuk" />
+            <Head title="Masuk">
+                <meta
+                    name="description"
+                    content="Masuk ke Cryptere untuk melanjutkan kursus, lab, dan progres pembelajaran cybersecurity Anda."
+                />
+                <meta name="robots" content="noindex,follow" />
+            </Head>
 
             <div className="flex min-h-screen items-center justify-center bg-background px-4 py-4 lg:h-screen">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
-                    <div
-                        className="flex items-center justify-center select-none"
-                        aria-label="Cryptere"
-                    >
+                    <div className="flex items-center justify-center select-none">
                         <svg
                             viewBox="0 0 203 51"
                             xmlns="http://www.w3.org/2000/svg"
                             role="img"
-                            aria-hidden="true"
+                            aria-label="Cryptere"
                             onContextMenu={(event) => event.preventDefault()}
                             onDragStart={(event) => event.preventDefault()}
                             className="pointer-events-auto h-11 w-auto"
@@ -317,7 +320,6 @@ export default function Login({
                                                         name="email"
                                                         required
                                                         autoFocus
-                                                        tabIndex={1}
                                                         autoComplete="username"
                                                         placeholder="email@domain.com atau @username"
                                                         className="pl-9"
@@ -362,7 +364,6 @@ export default function Login({
                                                         <Link
                                                             href={request()}
                                                             className="inline-block text-sm text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
-                                                            tabIndex={4}
                                                         >
                                                             Lupa kata sandi?
                                                         </Link>
@@ -372,7 +373,6 @@ export default function Login({
                                                     id="password"
                                                     name="password"
                                                     required
-                                                    tabIndex={2}
                                                     autoComplete="current-password"
                                                     placeholder="Masukkan kata sandi Anda"
                                                     aria-invalid={
@@ -395,7 +395,6 @@ export default function Login({
                                                 <Checkbox
                                                     id="remember"
                                                     name="remember"
-                                                    tabIndex={3}
                                                 />
                                                 <FieldLabel
                                                     htmlFor="remember"
@@ -415,7 +414,6 @@ export default function Login({
                                                 <Button
                                                     type="submit"
                                                     className="w-full"
-                                                    tabIndex={5}
                                                     disabled={processing}
                                                     data-test="login-button"
                                                 >
@@ -431,7 +429,6 @@ export default function Login({
                                                     Belum punya akun?{' '}
                                                     <Link
                                                         href={register()}
-                                                        tabIndex={6}
                                                         className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
                                                     >
                                                         Daftar

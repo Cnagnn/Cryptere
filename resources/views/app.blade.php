@@ -45,10 +45,26 @@
         @endif
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        {{-- Async font load: print-media trick to avoid render-blocking. The
+             onload swap keeps style-src-attr 'unsafe-inline' from our CSP.
+             Noscript fallback ensures fonts still load when JS is disabled. --}}
+        <link
+            rel="preload"
+            as="style"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        >
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
             rel="stylesheet"
+            media="print"
+            onload="this.media='all'"
         >
+        <noscript>
+            <link
+                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+                rel="stylesheet"
+            >
+        </noscript>
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx'])

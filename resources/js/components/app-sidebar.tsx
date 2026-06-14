@@ -249,15 +249,12 @@ export function AppSidebar() {
                                         draggable={false}
                                         className={`${isCollapsed ? 'hidden' : 'hidden dark:block'} pointer-events-auto h-10 w-auto select-none`}
                                     />
-                                    <div
-                                        className="hidden items-center select-none"
-                                        aria-label="Cryptere"
-                                    >
+                                    <div className="hidden items-center select-none">
                                         <svg
                                             viewBox="0 0 203 51"
                                             xmlns="http://www.w3.org/2000/svg"
                                             role="img"
-                                            aria-hidden="true"
+                                            aria-label="Cryptere"
                                             data-brand-logo
                                             onContextMenu={(event) =>
                                                 event.preventDefault()

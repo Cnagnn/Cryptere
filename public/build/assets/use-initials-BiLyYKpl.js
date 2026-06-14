@@ -1,1 +1,0 @@
-import{be as a}from"./app-BGmjf8XX.js";function i(){return a.useCallback(r=>{const t=r.trim().split(" ");if(t.length===0)return"";if(t.length===1)return t[0].charAt(0).toUpperCase();const e=t[0].charAt(0),n=t[t.length-1].charAt(0);return`${e}${n}`.toUpperCase()},[])}export{i as u};

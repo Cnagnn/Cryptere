@@ -241,19 +241,22 @@ export default function Register({ status, socialUser }: Props) {
 
     return (
         <>
-            <Head title="Daftar" />
+            <Head title="Daftar">
+                <meta
+                    name="description"
+                    content="Daftar gratis di Cryptere — mulai jalur pembelajaran cybersecurity yang terstruktur dan lab praktik."
+                />
+                <meta name="robots" content="noindex,follow" />
+            </Head>
 
             <div className="flex min-h-screen items-center justify-center bg-background px-4 py-4 lg:h-screen">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
-                    <div
-                        className="flex items-center justify-center select-none"
-                        aria-label="Cryptere"
-                    >
+                    <div className="flex items-center justify-center select-none">
                         <svg
                             viewBox="0 0 203 51"
                             xmlns="http://www.w3.org/2000/svg"
                             role="img"
-                            aria-hidden="true"
+                            aria-label="Cryptere"
                             onContextMenu={(event) => event.preventDefault()}
                             onDragStart={(event) => event.preventDefault()}
                             className="pointer-events-auto h-11 w-auto"
@@ -450,7 +453,6 @@ export default function Register({ status, socialUser }: Props) {
                                                         type="text"
                                                         required
                                                         autoFocus
-                                                        tabIndex={1}
                                                         autoComplete="name"
                                                         name="name"
                                                         placeholder="Nama lengkap"
@@ -525,7 +527,6 @@ export default function Register({ status, socialUser }: Props) {
                                                         type="text"
                                                         required
                                                         minLength={4}
-                                                        tabIndex={2}
                                                         autoComplete="username"
                                                         name="username"
                                                         placeholder="username"
@@ -656,7 +657,6 @@ export default function Register({ status, socialUser }: Props) {
                                                         id="email"
                                                         type="email"
                                                         required
-                                                        tabIndex={3}
                                                         autoComplete="email"
                                                         name="email"
                                                         placeholder="email@domain.com"
@@ -717,7 +717,6 @@ export default function Register({ status, socialUser }: Props) {
                                                 <PasswordInput
                                                     id="password"
                                                     required
-                                                    tabIndex={4}
                                                     autoComplete="new-password"
                                                     name="password"
                                                     placeholder="Gunakan kata sandi yang kuat"
@@ -771,7 +770,6 @@ export default function Register({ status, socialUser }: Props) {
                                                 <PasswordInput
                                                     id="password_confirmation"
                                                     required
-                                                    tabIndex={5}
                                                     autoComplete="new-password"
                                                     name="password_confirmation"
                                                     placeholder="Ulangi kata sandi"
@@ -798,7 +796,6 @@ export default function Register({ status, socialUser }: Props) {
                                             <Checkbox
                                                 id="terms"
                                                 name="terms"
-                                                tabIndex={6}
                                                 required
                                                 className="mt-0.5"
                                             />
@@ -828,7 +825,6 @@ export default function Register({ status, socialUser }: Props) {
                                         <Button
                                             type="submit"
                                             className="w-full"
-                                            tabIndex={7}
                                             data-test="register-user-button"
                                             disabled={processing}
                                         >
@@ -842,7 +838,6 @@ export default function Register({ status, socialUser }: Props) {
                                             Sudah punya akun?{' '}
                                             <Link
                                                 href={login()}
-                                                tabIndex={8}
                                                 className="text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
                                             >
                                                 Masuk

@@ -151,15 +151,12 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         prefetch
                         className="flex items-center gap-2"
                     >
-                        <div
-                            className="flex items-center select-none"
-                            aria-label="Cryptere"
-                        >
+                        <div className="flex items-center select-none">
                             <svg
                                 viewBox="0 0 203 51"
                                 xmlns="http://www.w3.org/2000/svg"
                                 role="img"
-                                aria-hidden="true"
+                                aria-label="Cryptere"
                                 onContextMenu={(event) =>
                                     event.preventDefault()
                                 }

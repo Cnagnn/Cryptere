@@ -92,6 +92,59 @@ test('auth pages remain private and dynamic', function (): void {
         ->and($response->headers->all('Set-Cookie'))->not->toBeEmpty();
 });
 
+test('public landing page 5xx response is forced to no-store and never cached at the edge', function (): void {
+    // Regression: a transient 5xx on `/` was getting pinned in the LiteSpeed
+    // edge cache for s-maxage=300s because the success-only guard let the
+    // default response Cache-Control through. The middleware must override
+    // it to no-store so the next request always re-hits origin.
+    $middleware = new PublicPageCacheHeaders;
+    $request = Request::create('https://cryptere.com/', 'GET');
+
+    $response = $middleware->handle($request, fn (): Response => new Response('Service Unavailable', 503));
+
+    $cacheControl = (string) $response->headers->get('Cache-Control');
+
+    expect($response->getStatusCode())->toBe(503)
+        ->and($cacheControl)->toContain('no-store')
+        ->and($cacheControl)->toContain('no-cache')
+        ->and($cacheControl)->toContain('must-revalidate')
+        ->and($cacheControl)->toContain('max-age=0')
+        ->and($response->headers->get('CDN-Cache-Control'))->toBe('no-store')
+        ->and($response->headers->get('Cloudflare-CDN-Cache-Control'))->toBe('no-store');
+});
+
+test('public landing page 500 response is forced to no-store', function (): void {
+    $middleware = new PublicPageCacheHeaders;
+    $request = Request::create('https://cryptere.com/', 'GET');
+
+    $response = $middleware->handle($request, fn (): Response => new Response('Boom', 500));
+
+    $cacheControl = (string) $response->headers->get('Cache-Control');
+
+    expect($cacheControl)->toContain('no-store')
+        ->and($cacheControl)->toContain('no-cache')
+        ->and($cacheControl)->toContain('must-revalidate')
+        ->and($cacheControl)->toContain('max-age=0');
+});
+
+test('non-landing 5xx still flows through normal pipeline (no override)', function (): void {
+    // The no-store override is scoped to the public landing path. A 5xx on
+    // some other path (e.g. /terms) shouldn't be touched by this middleware
+    // because PublicPageCacheHeaders is intentionally `/`-only.
+    $middleware = new PublicPageCacheHeaders;
+    $request = Request::create('https://cryptere.com/terms', 'GET');
+
+    $response = $middleware->handle($request, function (): Response {
+        $response = new Response('Boom', 503);
+        $response->headers->set('Cache-Control', 'private');
+
+        return $response;
+    });
+
+    expect($response->headers->get('Cache-Control'))->toBe('private')
+        ->and($response->headers->get('Cloudflare-CDN-Cache-Control'))->toBeNull();
+});
+
 test('security policy allows production font styles without relaxing scripts', function (): void {
     $originalEnv = app()->environment();
     app()->detectEnvironment(fn () => 'production');

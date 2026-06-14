@@ -10,25 +10,33 @@ declare global {
 
 window.Pusher = Pusher;
 
-const reverbHost = import.meta.env.VITE_REVERB_HOST;
+const reverbHostRaw = (import.meta.env.VITE_REVERB_HOST ?? '').toString();
 const reverbPort = Number(import.meta.env.VITE_REVERB_PORT || 8080);
 const reverbScheme = import.meta.env.VITE_REVERB_SCHEME || 'https';
+const pusherKey = import.meta.env.VITE_PUSHER_APP_KEY;
+const reverbKey = import.meta.env.VITE_REVERB_APP_KEY;
 const pusherCluster = import.meta.env.VITE_PUSHER_APP_CLUSTER || 'ap1';
 const forceTls =
     reverbScheme === 'https' ||
     (import.meta.env.VITE_PUSHER_FORCE_TLS || 'true') === 'true';
 
-window.Echo = new Echo({
+// Production safety: never let a stale dev `.env` (REVERB_HOST=127.0.0.1)
+// leak into the prod bundle and force the browser to attempt
+// `wss://127.0.0.1:8080`. That request is (a) impossible on the user's
+// machine and (b) blocked by our CSP. If the build was made with a
+// loopback host but we're shipping to a real origin, fall back to Pusher.
+const looksLikeLoopback =
+    reverbHostRaw === '' ||
+    /^(localhost|127\.0\.0\.1|::1|0\.0\.0\.0)$/i.test(reverbHostRaw);
+
+const useReverb =
+    !!reverbHostRaw && !(import.meta.env.PROD && looksLikeLoopback);
+
+const echoConfig: Record<string, unknown> = {
     broadcaster: 'pusher',
-    key:
-        import.meta.env.VITE_REVERB_APP_KEY ||
-        import.meta.env.VITE_PUSHER_APP_KEY ||
-        'local',
+    key: useReverb ? reverbKey || pusherKey || 'local' : pusherKey || 'local',
     cluster: pusherCluster,
     forceTLS: forceTls,
-    wsHost: reverbHost || undefined,
-    wsPort: reverbPort,
-    wssPort: reverbPort,
     enabledTransports: ['ws', 'wss'],
     authEndpoint: '/broadcasting/auth',
     auth: {
@@ -40,7 +48,15 @@ window.Echo = new Echo({
             Accept: 'application/json',
         },
     },
-});
+};
+
+if (useReverb) {
+    echoConfig.wsHost = reverbHostRaw;
+    echoConfig.wsPort = reverbPort;
+    echoConfig.wssPort = reverbPort;
+}
+
+window.Echo = new Echo(echoConfig);
 
 export const echo = window.Echo;
 

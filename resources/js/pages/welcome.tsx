@@ -114,7 +114,21 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
 
     return (
         <>
-            <Head title="Selamat Datang" />
+            <Head title="Selamat Datang">
+                <meta
+                    name="description"
+                    content="Cryptere — platform pembelajaran cybersecurity Indonesia: kursus terstruktur, lab interaktif, dan progres yang jelas untuk naik level dengan cepat."
+                />
+                <meta property="og:title" content="Cryptere" />
+                <meta
+                    property="og:description"
+                    content="Platform pembelajaran cybersecurity Indonesia. Kursus, lab, dan komunitas dalam satu tempat."
+                />
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://cryptere.com/" />
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="theme-color" content="#0a0a0a" />
+            </Head>
 
             <div className="relative min-h-screen overflow-hidden bg-background">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.12),transparent_45%),radial-gradient(circle_at_bottom_right,hsl(var(--secondary)/0.2),transparent_40%)]" />
@@ -122,15 +136,12 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                 <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 md:px-8">
                     <header className="flex items-center justify-between gap-4">
                         <a href={auth.user ? urls.dashboard : urls.login}>
-                            <div
-                                className="flex items-center select-none"
-                                aria-label="Cryptere"
-                            >
+                            <div className="flex items-center select-none">
                                 <svg
                                     viewBox="0 0 203 51"
                                     xmlns="http://www.w3.org/2000/svg"
                                     role="img"
-                                    aria-hidden="true"
+                                    aria-label="Cryptere"
                                     onContextMenu={(event) =>
                                         event.preventDefault()
                                     }
@@ -162,22 +173,16 @@ export default function Welcome({ canRegister = true }: WelcomeProps) {
                         <div className="flex items-center gap-2">
                             {auth.user ? (
                                 <Button asChild>
-                                    <a href={urls.dashboard}>
-                                        Dasbor
-                                    </a>
+                                    <a href={urls.dashboard}>Dasbor</a>
                                 </Button>
                             ) : (
                                 <>
                                     <Button variant="ghost" asChild>
-                                        <a href={urls.login}>
-                                            Masuk
-                                        </a>
+                                        <a href={urls.login}>Masuk</a>
                                     </Button>
                                     {canRegister && (
                                         <Button asChild>
-                                            <a href={urls.register}>
-                                                Daftar
-                                            </a>
+                                            <a href={urls.register}>Daftar</a>
                                         </Button>
                                     )}
                                 </>

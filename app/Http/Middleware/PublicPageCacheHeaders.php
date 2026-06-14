@@ -17,6 +17,18 @@ class PublicPageCacheHeaders
     {
         $response = $next($request);
 
+        // Belt-and-braces: any 5xx on the public landing path must NEVER be
+        // cached by the LiteSpeed edge or Cloudflare. Without this guard a
+        // transient origin error gets pinned for s-maxage seconds and the
+        // homepage stays "down" long after the underlying issue clears.
+        if ($this->isPublicLandingPath($request) && $response->getStatusCode() >= 500) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            $response->headers->set('CDN-Cache-Control', 'no-store');
+            $response->headers->set('Cloudflare-CDN-Cache-Control', 'no-store');
+
+            return $response;
+        }
+
         if (! $this->isPublicLandingPage($request, $response)) {
             return $response;
         }
@@ -28,11 +40,16 @@ class PublicPageCacheHeaders
         return $response;
     }
 
-    private function isPublicLandingPage(Request $request, Response $response): bool
+    private function isPublicLandingPath(Request $request): bool
     {
         return $request->isMethodCacheable()
             && $request->getHost() === config('app.domains.public')
-            && $request->path() === '/'
+            && $request->path() === '/';
+    }
+
+    private function isPublicLandingPage(Request $request, Response $response): bool
+    {
+        return $this->isPublicLandingPath($request)
             && ! $request->headers->has('X-Inertia')
             && $response->isSuccessful();
     }
