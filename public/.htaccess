@@ -5,6 +5,23 @@
 
     RewriteEngine On
 
+    # ─────────────────────────────────────────────────────────────────
+    # SECURITY — block accidental archive / backup / sensitive files
+    # ─────────────────────────────────────────────────────────────────
+    # Defense in depth: any developer who ever drops a .zip/.tar/.sql/.bak
+    # under public/ leaks it. Match by extension so the .htaccess fail-closed
+    # protects future mistakes too. CI also enforces "no archives in public"
+    # via tests/Feature/Security/PublicArchivesAreBlockedTest.php.
+    RewriteCond %{REQUEST_URI} \.(zip|tar|tar\.gz|tgz|tar\.bz2|tbz2|7z|rar|gz|bz2|sql|sqlite|sqlite3|db|sql\.gz|bak|backup|old|orig|swp|swo|log|env|ini|conf)$ [NC]
+    RewriteRule ^ - [F,L]
+
+    # Block dotfiles outright (.env, .git*, .htpasswd, .DS_Store, .vscode, etc.)
+    RewriteCond %{REQUEST_URI} (^|/)\.(?!well-known/) [NC]
+    RewriteRule ^ - [F,L]
+
+    # ─────────────────────────────────────────────────────────────────
+    # CANONICAL HOSTNAMES & SCHEMES
+    # ─────────────────────────────────────────────────────────────────
     # Force HTTPS
     RewriteCond %{HTTPS} off
     RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
@@ -12,6 +29,10 @@
     # Keep one canonical public hostname for cache efficiency and SEO.
     RewriteCond %{HTTP_HOST} ^www\.cryptere\.com$ [NC]
     RewriteRule ^ https://cryptere.com%{REQUEST_URI} [R=301,L,NE]
+
+    # Front controller is /, not /index.php — canonicalize for cache + SEO.
+    RewriteCond %{THE_REQUEST} \s/+index\.php[\s?] [NC]
+    RewriteRule ^index\.php(/.*)?$ /$1 [R=301,L,NE]
 
     # Canonical auth routes should move at the web server layer.
     RewriteCond %{HTTP_HOST} ^cryptere\.com$ [NC]
@@ -26,6 +47,9 @@
     RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$ [NC]
     RewriteRule ^reset-password/(.*)$ https://auth.cryptere.com/reset-password/$1 [R=302,L,NE]
 
+    # ─────────────────────────────────────────────────────────────────
+    # LARAVEL FRONT CONTROLLER PIPELINE
+    # ─────────────────────────────────────────────────────────────────
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -46,7 +70,12 @@
 </IfModule>
 
 <IfModule mod_headers.c>
+    # Strip server-fingerprinting headers (defense in depth — middleware
+    # also removes them at the app layer, but headers are easier to drop here).
     Header always unset X-Powered-By
+    Header always unset X-Turbo-Charged-By
+    Header always unset X-AspNet-Version
+    Header always unset X-AspNetMvc-Version
 
     SetEnvIf Request_URI "^/build/assets/.+\.(css|js)$" vite_asset=1
     Header set Cache-Control "public, max-age=31536000, immutable" env=vite_asset
