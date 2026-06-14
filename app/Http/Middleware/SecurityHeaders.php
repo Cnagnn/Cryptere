@@ -85,8 +85,22 @@ class SecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set('Content-Security-Policy', $csp);
 
-        if (app()->isProduction()) {
-            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        // HSTS: only emit when the request is actually HTTPS so we don't
+        // make local HTTP dev redirect-loop. We deliberately do NOT gate on
+        // app()->isProduction() — production deploys sometimes ship
+        // `APP_ENV=staging` or similar, and HSTS must follow the transport,
+        // not the env name. `secure` is already required on every cookie,
+        // so HTTPS-only here matches the rest of the stack.
+        if ($request->isSecure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        }
+
+        // Strip backend-fingerprinting headers added by upstream (LiteSpeed,
+        // PHP, etc.). Defense in depth — the .htaccess `Header always unset`
+        // rules also clear these, but we cover the app-level path too in
+        // case the request is ever served by a bare PHP-FPM.
+        foreach (['X-Powered-By', 'X-Turbo-Charged-By', 'Server'] as $sensitive) {
+            $response->headers->remove($sensitive);
         }
 
         return $response;
