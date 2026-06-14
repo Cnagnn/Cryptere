@@ -41,3 +41,28 @@ yarn-error.log
 
 # ---- Stale deploy artifacts (manual upload leftovers) ----
 *.tar.gz
+
+# ---- Archive / backup files ----
+# Never commit zip/tar/sql/bak/db dumps to public/. Defense in depth: the
+# PublicArchivesAreBlockedTest fails CI if anything matching these globs
+# ever ends up in public/.
+/public/*.zip
+/public/*.tar
+/public/*.tar.gz
+/public/*.tgz
+/public/*.7z
+/public/*.rar
+/public/*.gz
+/public/*.bz2
+/public/*.sql
+/public/*.sqlite
+/public/*.sqlite3
+/public/*.db
+/public/*.bak
+/public/*.backup
+/public/*.old
+/public/*.orig
+/public/*.swp
+*.swp
+*.swo
+*~
