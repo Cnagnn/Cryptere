@@ -142,8 +142,16 @@ return [
              * ZipArchive::CM_XZ
              *
              * For more check https://www.php.net/manual/zip.constants.php and confirm it's supported by your system.
+             *
+             * Defensive: resolve the constant only if ext-zip is loaded. Some
+             * shared hosts (notably HyperCloudHost cPanel) ship PHP without the
+             * `zip` extension. Referencing `ZipArchive::CM_DEFAULT` at config
+             * boot time when the class is missing aborts the entire app with
+             * a fatal "Class ZipArchive not found", taking down every route.
+             * The Spatie backup runner itself will still error if invoked
+             * without ext-zip, but the rest of the app stays up.
              */
-            'compression_method' => ZipArchive::CM_DEFAULT,
+            'compression_method' => extension_loaded('zip') ? ZipArchive::CM_DEFAULT : 0,
 
             /*
              * The compression level corresponding to the used algorithm; an integer between 0 and 9.
