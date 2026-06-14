@@ -12,7 +12,7 @@
 #   PHP        /usr/local/bin/php                   (8.4.21)
 #   Composer   /opt/alt/php84/usr/bin/composer      (system)
 #   Node 22    activated via cPanel Node.js App
-#              source /home/cryplvrr/nodevenv/public_html/Cryptere/22/bin/activate
+#              source /home/cryplvrr/nodevenv/cryptere/22/bin/activate
 #
 # Deploy order matters:
 #   1. composer install                   → vendor/ ready
@@ -39,10 +39,10 @@ deployment:
     #     wayfinder live in devDependencies; the production build needs them
     #     to compile assets. The /node_modules tree is gitignored and discarded
     #     after step 3b, so disk impact is temporary.
-    - bash -lc "source /home/cryplvrr/nodevenv/public_html/Cryptere/22/bin/activate && cd /home/cryplvrr/cryptere && npm ci --include=dev --no-audit --no-fund"
+    - bash -lc "source /home/cryplvrr/nodevenv/cryptere/22/bin/activate && cd /home/cryplvrr/cryptere && npm ci --include=dev --no-audit --no-fund"
 
     # 3b. Build Vite assets to /public/build (consumed by @vite() in Blade)
-    - bash -lc "source /home/cryplvrr/nodevenv/public_html/Cryptere/22/bin/activate && cd /home/cryplvrr/cryptere && npm run build"
+    - bash -lc "source /home/cryplvrr/nodevenv/cryptere/22/bin/activate && cd /home/cryplvrr/cryptere && npm run build"
 
     # 4. Drop ALL Laravel caches (config/route/view/event/compiled) so step 5 sees fresh code
     - /usr/local/bin/php /home/cryplvrr/cryptere/artisan optimize:clear
