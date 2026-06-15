@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\SocialAvatarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
@@ -36,20 +35,13 @@ class SocialAuthController extends Controller
     {
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
 
-        $isPopup = $request->boolean('popup');
-
         Log::info('[social-auth] redirect.start', [
             'provider' => $provider,
-            'popup' => $isPopup,
             'session_id' => $request->session()->getId(),
         ]);
 
-        if ($isPopup) {
-            $request->session()->put('social_popup', true);
-        }
-
         try {
-            return $this->socialiteDriver($provider, $isPopup)->redirect();
+            return $this->socialiteDriver($provider)->redirect();
         } catch (Throwable $e) {
             Log::error('[social-auth] redirect.failed', [
                 'provider' => $provider,
@@ -57,26 +49,21 @@ class SocialAuthController extends Controller
                 'exception' => $e,
             ]);
 
-            return $this->popupOrError(
-                $request,
-                'Tidak dapat menghubungi '.ucfirst($provider).'. Silakan coba lagi nanti.',
-                route('login'),
-            );
+            return redirect()->route('login')->withErrors([
+                'email' => 'Tidak dapat menghubungi '.ucfirst($provider).'. Silakan coba lagi nanti.',
+            ]);
         }
     }
 
     /**
      * Obtain the user information from the provider.
      */
-    public function callback(Request $request, string $provider): RedirectResponse|Response
+    public function callback(Request $request, string $provider): RedirectResponse
     {
         abort_unless(in_array($provider, self::ALLOWED_PROVIDERS, true), 404);
 
-        $isPopup = (bool) $request->session()->get('social_popup');
-
         Log::info('[social-auth] callback.start', [
             'provider' => $provider,
-            'popup' => $isPopup,
             'has_code' => $request->filled('code'),
             'has_error' => $request->filled('error'),
             'session_id' => $request->session()->getId(),
@@ -90,11 +77,9 @@ class SocialAuthController extends Controller
                 'error_description' => $request->input('error_description'),
             ]);
 
-            return $this->popupOrError(
-                $request,
-                'Otorisasi '.ucfirst($provider).' dibatalkan. Silakan coba lagi.',
-                route('login'),
-            );
+            return redirect()->route('login')->withErrors([
+                'email' => 'Otorisasi '.ucfirst($provider).' dibatalkan. Silakan coba lagi.',
+            ]);
         }
 
         // If user is already authenticated, skip social auth flow
@@ -104,23 +89,20 @@ class SocialAuthController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return $this->popupOrRedirect($request, route('dashboard'));
+            return redirect()->route('dashboard');
         }
 
         try {
-            $socialUser = $this->socialiteDriver($provider, $isPopup)->user();
+            $socialUser = $this->socialiteDriver($provider)->user();
         } catch (InvalidStateException $e) {
             Log::error('[social-auth] callback.invalid_state', [
                 'provider' => $provider,
-                'popup' => $isPopup,
                 'message' => $e->getMessage(),
             ]);
 
-            return $this->popupOrError(
-                $request,
-                'Sesi otentikasi kedaluwarsa atau tidak cocok. Silakan coba login lagi.',
-                route('login'),
-            );
+            return redirect()->route('login')->withErrors([
+                'email' => 'Sesi otentikasi kedaluwarsa atau tidak cocok. Silakan coba login lagi.',
+            ]);
         } catch (Throwable $e) {
             Log::error('[social-auth] callback.token_exchange_failed', [
                 'provider' => $provider,
@@ -129,11 +111,9 @@ class SocialAuthController extends Controller
                 'exception' => $e,
             ]);
 
-            return $this->popupOrError(
-                $request,
-                'Gagal menghubungi '.ucfirst($provider).'. Silakan coba lagi nanti.',
-                route('login'),
-            );
+            return redirect()->route('login')->withErrors([
+                'email' => 'Gagal menghubungi '.ucfirst($provider).'. Silakan coba lagi nanti.',
+            ]);
         }
 
         $providerEmail = $socialUser->getEmail();
@@ -159,7 +139,7 @@ class SocialAuthController extends Controller
                 ? 'Email akun GitHub Anda bersifat privat. Buka GitHub → Settings → Emails dan aktifkan "Keep my email addresses private = OFF", atau verifikasi minimal satu email primary, lalu coba lagi.'
                 : 'Akun '.ucfirst($provider).' Anda tidak mengembalikan alamat email. Silakan gunakan provider lain atau register manual.';
 
-            return $this->popupOrError($request, $message, route('login'));
+            return redirect()->route('login')->withErrors(['email' => $message]);
         }
 
         // Case 1: Existing social account — update info and login directly
@@ -191,7 +171,7 @@ class SocialAuthController extends Controller
             Auth::login($socialAccount->user, true);
             $request->session()->regenerate();
 
-            return $this->popupOrRedirect($request, route('dashboard'));
+            return redirect()->route('dashboard');
         }
 
         // Case 2: Existing user by email — do NOT auto-link (prevents account hijacking)
@@ -213,11 +193,9 @@ class SocialAuthController extends Controller
                 'nickname' => $socialUser->getNickname(),
             ]);
 
-            return $this->popupMessage(
-                $request,
-                'Akun dengan email ini sudah terdaftar. Silakan masuk terlebih dahulu, lalu hubungkan akun '.ucfirst($provider).' Anda di pengaturan.',
-                route('login'),
-            );
+            return redirect()->route('login')->withErrors([
+                'email' => 'Akun dengan email ini sudah terdaftar. Silakan masuk terlebih dahulu, lalu hubungkan akun '.ucfirst($provider).' Anda di pengaturan.',
+            ]);
         }
 
         // Case 3: New user — store social data in session and redirect to register
@@ -236,197 +214,21 @@ class SocialAuthController extends Controller
             'expires_at' => now()->addMinutes(10)->timestamp,
         ]);
 
-        return $this->popupOrRedirect($request, route('register'));
-    }
-
-    /**
-     * Return a popup-closing HTML response or a standard redirect.
-     */
-    private function popupOrRedirect(Request $request, string $url): RedirectResponse|Response
-    {
-        if (! $request->session()->pull('social_popup')) {
-            return redirect()->to($url);
-        }
-
-        return $this->popupResponse(
-            redirectUrl: $url,
-            title: 'Authenticating...',
-        );
-    }
-
-    /**
-     * Show an info message inside the popup, or redirect with flashed error
-     * for non-popup flow.
-     */
-    private function popupMessage(Request $request, string $message, string $fallbackUrl): RedirectResponse|Response
-    {
-        if (! $request->session()->pull('social_popup')) {
-            return redirect()->to($fallbackUrl)->withErrors(['email' => $message]);
-        }
-
-        return $this->popupResponse(
-            redirectUrl: $fallbackUrl,
-            title: 'Informasi',
-            messageHtml: e($message),
-            tone: 'info',
-        );
-    }
-
-    /**
-     * Show an error message inside the popup, or redirect with flashed error
-     * for non-popup flow. Used for terminal failures (token exchange, missing
-     * email, invalid state, etc.) — never shows a blank screen.
-     */
-    private function popupOrError(Request $request, string $message, string $fallbackUrl): RedirectResponse|Response
-    {
-        if (! $request->session()->pull('social_popup')) {
-            return redirect()->to($fallbackUrl)->withErrors(['email' => $message]);
-        }
-
-        return $this->popupResponse(
-            redirectUrl: $fallbackUrl,
-            title: 'Otentikasi Gagal',
-            messageHtml: e($message),
-            tone: 'error',
-        );
-    }
-
-    /**
-     * Render the popup HTML response. When messageHtml is provided, the user
-     * sees an info/error card and clicks to close the popup; the parent window
-     * is then redirected. When messageHtml is null, the popup auto-redirects
-     * the parent window and closes itself silently.
-     */
-    private function popupResponse(
-        string $redirectUrl,
-        string $title,
-        ?string $messageHtml = null,
-        string $tone = 'info',
-    ): Response {
-        $escapedUrl = json_encode($redirectUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
-        $escapedHref = htmlspecialchars($redirectUrl, ENT_QUOTES, 'UTF-8');
-        $escapedTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-
-        // Silent auto-close + parent redirect (success path).
-        if ($messageHtml === null) {
-            $html = <<<HTML
-                <!DOCTYPE html>
-                <html lang="id">
-                <head>
-                    <meta charset="utf-8">
-                    <title>{$escapedTitle}</title>
-                </head>
-                <body>
-                    <script>
-                        (function () {
-                            var url = {$escapedUrl};
-                            try {
-                                if (window.opener && !window.opener.closed) {
-                                    window.opener.location.href = url;
-                                    window.close();
-                                    return;
-                                }
-                            } catch (e) {}
-                            window.location.href = url;
-                        }());
-                    </script>
-                    <noscript><a href="{$escapedHref}">Click here to continue</a></noscript>
-                </body>
-                </html>
-                HTML;
-
-            return new Response($html);
-        }
-
-        // Visible card with info or error message.
-        $iconColor = $tone === 'error' ? '#dc2626' : '#2563eb';
-        $icon = $tone === 'error' ? '⚠️' : 'ℹ️';
-
-        $html = <<<HTML
-            <!DOCTYPE html>
-            <html lang="id">
-            <head>
-                <meta charset="utf-8">
-                <title>{$escapedTitle}</title>
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body {
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                        display: flex; align-items: center; justify-content: center;
-                        min-height: 100vh; padding: 24px; background: #f9fafb;
-                    }
-                    .card {
-                        background: white; border-radius: 12px; padding: 32px;
-                        max-width: 420px; width: 100%;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;
-                    }
-                    .icon { font-size: 48px; margin-bottom: 16px; }
-                    .title { color: {$iconColor}; font-size: 18px; font-weight: 600; margin-bottom: 12px; }
-                    .message { color: #374151; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
-                    .btn {
-                        display: inline-block; padding: 10px 24px;
-                        background: #2563eb; color: white; border: none; border-radius: 8px;
-                        font-size: 14px; font-weight: 500; cursor: pointer;
-                        transition: background 0.2s;
-                    }
-                    .btn:hover { background: #1d4ed8; }
-                </style>
-            </head>
-            <body>
-                <div class="card">
-                    <div class="icon">{$icon}</div>
-                    <div class="title">{$escapedTitle}</div>
-                    <p class="message">{$messageHtml}</p>
-                    <button class="btn" id="dismiss">Oke</button>
-                </div>
-                <script>
-                    (function () {
-                        var url = {$escapedUrl};
-                        var btn = document.getElementById('dismiss');
-                        var hasOpener = false;
-                        try {
-                            hasOpener = window.opener && !window.opener.closed;
-                        } catch (e) {}
-
-                        btn.addEventListener('click', function () {
-                            try {
-                                if (hasOpener) {
-                                    window.opener.location.href = url;
-                                    window.close();
-                                    return;
-                                }
-                            } catch (e) {}
-                            window.location.href = url;
-                        });
-                    }());
-                </script>
-            </body>
-            </html>
-            HTML;
-
-        return new Response($html);
+        return redirect()->route('register');
     }
 
     /**
      * Build a configured Socialite driver for the given provider.
      *
-     * Stateless mode is REQUIRED for the popup flow because the OAuth
-     * "state" parameter is bound to the session that opened the popup;
-     * by the time the provider redirects back to /auth/{provider}/callback,
-     * cross-site cookie policies (SameSite=Lax/Strict) and the new top-level
-     * navigation can prevent the original session from being attached, so
-     * the state check fails and InvalidStateException leaves the user
-     * staring at a blank screen.
+     * Uses the standard stateful flow: the OAuth "state" parameter is bound
+     * to the user's session, and since we now use a full-page redirect (no
+     * popup window), the session cookie travels with the callback request
+     * and the state check succeeds.
      */
-    private function socialiteDriver(string $provider, bool $isPopup): AbstractProvider
+    private function socialiteDriver(string $provider): AbstractProvider
     {
         /** @var AbstractProvider $driver */
         $driver = Socialite::driver($provider);
-
-        if ($isPopup) {
-            $driver = $driver->stateless();
-        }
 
         return $driver->redirectUrl($this->redirectUriFor($provider));
     }

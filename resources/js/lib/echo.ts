@@ -38,6 +38,7 @@ function createEcho(): Echo<any> | null {
     });
 
     window.Echo = instance;
+
     return instance;
 }
 
