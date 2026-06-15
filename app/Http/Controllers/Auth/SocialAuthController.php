@@ -224,8 +224,13 @@ class SocialAuthController extends Controller
      * to the user's session, and since we now use a full-page redirect (no
      * popup window), the session cookie travels with the callback request
      * and the state check succeeds.
+     *
+     * Return type is intentionally `mixed` so that test suites can stub the
+     * full chain via `Socialite::shouldReceive('driver->redirectUrl->user')`
+     * without tripping PHP's strict return type check on the demeter mock.
+     * In production this always returns an {@see AbstractProvider}.
      */
-    private function socialiteDriver(string $provider): AbstractProvider
+    private function socialiteDriver(string $provider): mixed
     {
         /** @var AbstractProvider $driver */
         $driver = Socialite::driver($provider);

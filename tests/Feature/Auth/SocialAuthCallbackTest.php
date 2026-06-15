@@ -51,8 +51,8 @@ test('callback shows error when provider returns error parameter', function (): 
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toContain('/login');
-    expect(session('errors')->getBag('default')->first('email'))
-        ->toContain('dibatalkan');
+    $response->assertSessionHasErrors('email');
+    expect(session('errors')->first('email'))->toContain('dibatalkan');
 });
 
 test('callback redirects already-authenticated user to dashboard', function (): void {
@@ -71,8 +71,8 @@ test('callback handles invalid state exception with friendly error', function ()
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toContain('/login');
-    expect(session('errors')->getBag('default')->first('email'))
-        ->toContain('Sesi otentikasi');
+    $response->assertSessionHasErrors('email');
+    expect(session('errors')->first('email'))->toContain('Sesi otentikasi');
 });
 
 test('callback handles generic token exchange failure', function (): void {
@@ -83,8 +83,8 @@ test('callback handles generic token exchange failure', function (): void {
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toContain('/login');
-    expect(session('errors')->getBag('default')->first('email'))
-        ->toContain('Gagal menghubungi');
+    $response->assertSessionHasErrors('email');
+    expect(session('errors')->first('email'))->toContain('Gagal menghubungi');
 });
 
 test('callback shows GitHub-specific message when email is missing', function (): void {
@@ -94,9 +94,9 @@ test('callback shows GitHub-specific message when email is missing', function ()
     $response = $this->get('/auth/github/callback?code=abc');
 
     $response->assertRedirect();
-    expect(session('errors')->getBag('default')->first('email'))
-        ->toContain('GitHub')
-        ->toContain('private');
+    $response->assertSessionHasErrors('email');
+    $msg = session('errors')->first('email');
+    expect($msg)->toContain('GitHub')->toContain('private');
 });
 
 test('callback logs in existing social account user', function (): void {
@@ -132,8 +132,8 @@ test('callback prompts existing-email user to login first instead of auto-linkin
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toContain('/login');
-    expect(session('errors')->getBag('default')->first('email'))
-        ->toContain('sudah terdaftar');
+    $response->assertSessionHasErrors('email');
+    expect(session('errors')->first('email'))->toContain('sudah terdaftar');
     $this->assertGuest();
 });
 
