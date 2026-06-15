@@ -95,6 +95,47 @@ test('inertia login uses location redirect across auth and app subdomains', func
     $this->assertAuthenticatedAs($user);
 });
 
+test('inertia social registration uses location redirect across auth and app subdomains', function (): void {
+    // Stash a social_user session entry — this is what SocialAuthController
+    // does after a successful Google/GitHub callback for a brand-new email.
+    // CreateNewUser will detect this on register and mark the email verified,
+    // which causes RegisterResponse to skip /verify and target /dashboard.
+    session([
+        'social_user' => [
+            'provider' => 'google',
+            'id' => 'g-cross-domain',
+            'email' => 'crossdomain.social@example.com',
+            'name' => 'Cross Domain Social',
+            'avatar' => 'https://example.test/avatar.png',
+            'nickname' => null,
+            'expires_at' => now()->addMinutes(5)->timestamp,
+        ],
+    ]);
+
+    $response = $this
+        ->withServerVariables(['HTTP_HOST' => 'auth.cryptere.com', 'HTTPS' => 'on'])
+        ->withHeader('X-Inertia', 'true')
+        ->withHeader('X-Inertia-Version', '')
+        ->post('/register', [
+            'name' => 'Cross Domain Social',
+            'username' => 'cross_domain_social',
+            'email' => 'crossdomain.social@example.com',
+            'password' => 'CryptereTestUser2026!',
+            'password_confirmation' => 'CryptereTestUser2026!',
+            'terms' => 'on',
+        ]);
+
+    // Cross-subdomain (auth → app) under Inertia: must respond with 409
+    // + X-Inertia-Location header so the React client performs a hard
+    // window.location navigation. A plain 302 silently breaks Inertia
+    // and leaves the user stuck on the register page.
+    $response
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', 'https://app.cryptere.com/dashboard');
+
+    $this->assertAuthenticated();
+});
+
 test('inertia guest app request uses location redirect to auth login across subdomains', function (): void {
     $request = Request::create('https://app.cryptere.com/dashboard');
     $inertiaVersion = app(HandleInertiaRequests::class)->version($request) ?? '';
