@@ -183,3 +183,55 @@ test('register flow uses stashed social session to mark email verified', functio
     expect($user->hasVerifiedEmail())->toBeTrue()
         ->and($user->socialAccounts()->where('provider', 'google')->where('provider_user_id', 'g-555')->exists())->toBeTrue();
 });
+
+test('social register auto-redirects to dashboard (verified email skips verify page)', function (): void {
+    bypassSocialAvatarSync();
+
+    session([
+        'social_user' => [
+            'provider' => 'github',
+            'id' => 'gh-777',
+            'email' => 'social.dashboard@example.com',
+            'name' => 'Social Dashboard',
+            'avatar' => 'https://example.test/avatar.png',
+            'nickname' => null,
+            'expires_at' => now()->addMinutes(5)->timestamp,
+        ],
+    ]);
+
+    $response = $this->post('/register', [
+        'name' => 'Social Dashboard',
+        'username' => 'social_dashboard',
+        'email' => 'social.dashboard@example.com',
+        'password' => 'CryptereTestUser2026!',
+        'password_confirmation' => 'CryptereTestUser2026!',
+        'terms' => 'on',
+    ]);
+
+    // Social users have email already verified, so they skip the /verify page
+    // and land directly on the dashboard.
+    $response->assertRedirect();
+    expect($response->headers->get('Location'))
+        ->not->toContain('/verify')
+        ->toContain(config('fortify.home', '/dashboard'));
+
+    $this->assertAuthenticated();
+});
+
+test('regular register (no social context) redirects to email verification', function (): void {
+    // No 'social_user' in session — this is a plain manual registration.
+    $response = $this->post('/register', [
+        'name' => 'Regular User',
+        'username' => 'regular_user',
+        'email' => 'regular.user@example.com',
+        'password' => 'CryptereTestUser2026!',
+        'password_confirmation' => 'CryptereTestUser2026!',
+        'terms' => 'on',
+    ]);
+
+    $response->assertRedirect();
+    expect($response->headers->get('Location'))->toContain('/verify');
+
+    $user = User::query()->where('email', 'regular.user@example.com')->firstOrFail();
+    expect($user->hasVerifiedEmail())->toBeFalse();
+});
