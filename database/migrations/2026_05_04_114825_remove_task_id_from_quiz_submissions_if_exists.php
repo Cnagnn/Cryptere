@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,14 +12,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('quiz_submissions', function (Blueprint $table) {
-            // Check if task_id column exists
-            if (Schema::hasColumn('quiz_submissions', 'task_id')) {
-                // Drop foreign key first if it exists
+        if (! Schema::hasColumn('quiz_submissions', 'task_id')) {
+            return;
+        }
+
+        $hasFk = DB::table('information_schema.TABLE_CONSTRAINTS')
+            ->where('CONSTRAINT_SCHEMA', DB::raw('DATABASE()'))
+            ->where('TABLE_NAME', 'quiz_submissions')
+            ->where('CONSTRAINT_NAME', 'quiz_submissions_task_id_foreign')
+            ->where('CONSTRAINT_TYPE', 'FOREIGN KEY')
+            ->exists();
+
+        Schema::table('quiz_submissions', function (Blueprint $table) use ($hasFk) {
+            if ($hasFk) {
                 $table->dropForeign(['task_id']);
-                // Then drop the column
-                $table->dropColumn('task_id');
             }
+            $table->dropColumn('task_id');
         });
     }
 
