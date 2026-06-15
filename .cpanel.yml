@@ -1,27 +1,31 @@
 # ============================================================
-# Cryptere — cPanel Git Deploy Pipeline
+# Cryptere — cPanel Git Deploy Pipeline (HyperCloudHost)
 # ============================================================
 # Triggered by cPanel Git Version Control after `git pull`.
 # Each task runs in a FRESH shell, so:
 #   - `cd` and `export` from one task do NOT persist to the next.
 #   - We hardcode absolute paths everywhere.
-#   - Node tasks wrap the command in `bash -lc "source <activate> && ..."`
-#     because npm/node only exist inside the cPanel Node.js virtualenv.
 #
-# Env assumptions on the host (verified 2026-06-14, Namecheap):
+# Env assumptions on the host (verified 2026-06-15, HyperCloudHost):
+#   User       fkdzqxmc
+#   App path   /home/fkdzqxmc/public_html/cryptere
 #   PHP        /usr/local/bin/php                   (8.4.21)
 #   Composer   /opt/alt/php84/usr/bin/composer      (system)
-#   Node 22    activated via cPanel Node.js App
-#              source /home/cryplvrr/nodevenv/cryptere/22/bin/activate
 #
-# Deploy order matters:
-#   1. composer install                   → vendor/ ready
-#   2. wayfinder:generate                  → /resources/js/{actions,routes} (gitignored, must regenerate)
-#   3. npm install + npm run build         → /public/build (Vite needs Wayfinder files from step 2)
-#   4. artisan optimize:clear              → drop stale caches before re-caching
-#   5. config/route/view/event cache       → fast cold-start in production
-#   6. migrate --force                     → apply any new schema (idempotent)
-#   7. queue:restart                       → workers pick up new code on next tick
+# IMPORTANT: We DO NOT run `npm install` or `npm run build` on the server.
+# Cloud Mini hosting has insufficient RAM (~512MB-1GB LVE limit) for Vite
+# WebAssembly allocation (~800MB-1.5GB peak). Frontend build is performed
+# LOCALLY and committed to git (public/build/ is NOT gitignored).
+#
+# Deploy order:
+#   1. composer install                    → vendor/ ready
+#   2. wayfinder:generate                  → resources/js/{actions,routes} (gitignored, must regenerate)
+#   3. artisan optimize:clear              → drop stale caches before re-caching
+#   4. config/route/view/event cache       → fast cold-start in production
+#   5. migrate --force                     → apply any new schema (idempotent)
+#   6. queue:restart                       → workers pick up new code on next tick
+#   7. storage:link                        → public/storage symlink (idempotent)
+#   8. chmod                               → ensure storage/ + bootstrap/cache/ writable
 #
 # We deliberately DO NOT run `php artisan db:seed` here — seeding production
 # is a one-shot, manual, console-supervised operation.
@@ -29,38 +33,28 @@
 deployment:
   tasks:
     # 1. PHP dependencies (production-only, optimized autoloader)
-    - /opt/alt/php84/usr/bin/composer install --working-dir=/home/cryplvrr/cryptere --no-dev --optimize-autoloader --no-interaction --prefer-dist
+    - /opt/alt/php84/usr/bin/composer install --working-dir=/home/fkdzqxmc/public_html/cryptere --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
     # 2. Generate Wayfinder TypeScript routes/actions (gitignored, must rebuild every deploy)
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan wayfinder:generate --with-form --no-interaction
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan wayfinder:generate --with-form --no-interaction
 
-    # 3a. JS dependencies — install ALL deps (incl. devDependencies). Vite,
-    #     @vitejs/plugin-react, laravel-vite-plugin, and @laravel/vite-plugin-
-    #     wayfinder live in devDependencies; the production build needs them
-    #     to compile assets. The /node_modules tree is gitignored and discarded
-    #     after step 3b, so disk impact is temporary.
-    - bash -lc "source /home/cryplvrr/nodevenv/cryptere/22/bin/activate && cd /home/cryplvrr/cryptere && npm ci --include=dev --no-audit --no-fund"
+    # 3. Drop ALL Laravel caches (config/route/view/event/compiled) so step 4 sees fresh code
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan optimize:clear
 
-    # 3b. Build Vite assets to /public/build (consumed by @vite() in Blade)
-    - bash -lc "source /home/cryplvrr/nodevenv/cryptere/22/bin/activate && cd /home/cryplvrr/cryptere && npm run build"
+    # 4. Re-cache for production performance
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan config:cache
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan route:cache
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan view:cache
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan event:cache
 
-    # 4. Drop ALL Laravel caches (config/route/view/event/compiled) so step 5 sees fresh code
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan optimize:clear
+    # 5. Apply pending migrations (--force skips production confirmation prompt)
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan migrate --force --no-interaction
 
-    # 5. Re-cache for production performance
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan config:cache
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan route:cache
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan view:cache
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan event:cache
+    # 6. Signal queue workers to restart so they pick up the new code on next tick
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan queue:restart
 
-    # 6. Apply pending migrations (--force skips production confirmation prompt)
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan migrate --force --no-interaction
+    # 7. Storage symlink (idempotent — safe to run every deploy)
+    - /usr/local/bin/php /home/fkdzqxmc/public_html/cryptere/artisan storage:link --no-interaction
 
-    # 7. Signal queue workers to restart so they pick up the new code on next tick
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan queue:restart
-
-    # 8. Storage symlink (idempotent — safe to run every deploy)
-    - /usr/local/bin/php /home/cryplvrr/cryptere/artisan storage:link --no-interaction
-
-    # 9. Filesystem permissions (Laravel needs storage/ + bootstrap/cache/ writable)
-    - /bin/chmod -R 775 /home/cryplvrr/cryptere/storage /home/cryplvrr/cryptere/bootstrap/cache
+    # 8. Filesystem permissions (Laravel needs storage/ + bootstrap/cache/ writable)
+    - /bin/chmod -R 775 /home/fkdzqxmc/public_html/cryptere/storage /home/fkdzqxmc/public_html/cryptere/bootstrap/cache

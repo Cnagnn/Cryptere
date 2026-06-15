@@ -1351,21 +1351,137 @@ composer ci:check         # Full CI pipeline
 
 ---
 
-## 10.17 Deployment (cPanel)
+## 10.17 Deployment (cPanel + Cloudflare)
 
 ### 10.17.1 Hosting Specs
 
 | Item | Value |
 |------|-------|
 | Provider | HyperCloudHost (cPanel shared hosting) |
+| Hosting Package | Cloud Mini |
+| Server Name | `srv100.hypercloudhost.com` |
+| Server IP | `157.66.55.62` |
+| cPanel URL | `https://cpanel.cryptere.com:2083` (atau langsung IP `:2083`) |
 | cPanel username | `fkdzqxmc` |
 | Home directory | `/home/fkdzqxmc/` |
 | App directory | `/home/fkdzqxmc/Cryptere` |
-| Public directory | `/home/fkdzqxmc/public_html` |
-| PHP version | 8.4 |
-| Database | `fkdzqxmc_cryptere` (MySQL via `127.0.0.1`) |
+| Public directory | `/home/fkdzqxmc/public_html` (apex `cryptere.com`) |
+| PHP version | 8.4.21 (`/usr/local/bin/php`) |
+| Composer | `/opt/alt/php84/usr/bin/composer` |
+| Database | `fkdzqxmc_cryptere` (MariaDB 10.11 via `127.0.0.1`) |
+| Apache | 2.4.67 |
+| Kernel | Linux 6.12 (CloudLinux) |
+| Node.js (cPanel App) | Node 22 venv: `/home/fkdzqxmc/nodevenv/cryptere/22/` |
+| Nameserver hosting | `ns1.hypercloudhost.com`, `ns2.hypercloudhost.com` (TIDAK dipakai — pindah ke Cloudflare) |
+| Domain registrar | Spaceship.com (`cryptere.com`) |
 
-### 10.17.2 Git Deployment (`.cpanel.yml`)
+### 10.17.2 Cloudflare DNS (Active)
+
+| Item | Value |
+|------|-------|
+| Cloudflare Account | Yogapratamaputrar@gmail.com's Account |
+| Account ID | `326128e974c9b213fb6bcc540643c657` |
+| Zone | `cryptere.com` |
+| Zone ID | `78b7247ea208e310ec2d591f2dc4f367` |
+| Plan | Free |
+| Status | `active` |
+| Nameservers (set di Spaceship) | `albert.ns.cloudflare.com`, `khloe.ns.cloudflare.com` |
+
+**DNS Records (12 total) — di-provision via Cloudflare MCP:**
+
+| Record | Target | Proxy | Purpose |
+|--------|--------|:-----:|---------|
+| `cryptere.com` (A) | 157.66.55.62 | 🟠 Proxied | Apex — public landing |
+| `www.cryptere.com` (A) | 157.66.55.62 | 🟠 Proxied | Redirect ke apex |
+| `app.cryptere.com` (A) | 157.66.55.62 | 🟠 Proxied | Main project (authenticated) |
+| `auth.cryptere.com` (A) | 157.66.55.62 | 🟠 Proxied | Fortify auth routes |
+| `cpanel.cryptere.com` (A) | 157.66.55.62 | ⚪ DNS-only | cPanel akses (port 2083) |
+| `webmail.cryptere.com` (A) | 157.66.55.62 | ⚪ DNS-only | Webmail (port 2096) |
+| `webdisk.cryptere.com` (A) | 157.66.55.62 | ⚪ DNS-only | WebDisk (port 2078) |
+| `mail.cryptere.com` (A) | 157.66.55.62 | ⚪ DNS-only | SMTP/IMAP (port 25/465/587) |
+| `ftp.cryptere.com` (A) | 157.66.55.62 | ⚪ DNS-only | FTP (port 21) |
+| `cryptere.com` (MX) | `mail.cryptere.com` (priority 10) | — | Email cPanel |
+| `cryptere.com` (TXT/SPF) | `v=spf1 +a +mx +ip4:157.66.55.62 ~all` | — | SPF |
+| `_dmarc.cryptere.com` (TXT) | `v=DMARC1; p=quarantine; rua=mailto:postmaster@cryptere.com` | — | DMARC |
+
+**Catatan penting:**
+- Subdomain `cpanel/webmail/webdisk/mail/ftp` **WAJIB DNS-only (grey cloud)** — Cloudflare proxy hanya support port HTTP/HTTPS standar (80/443/8080/8443), tidak support port khusus cPanel.
+- Subdomain `cryptere.com/www/app/auth` **proxied (orange cloud)** untuk dapat CDN, cache, DDoS protection.
+
+### 10.17.3 Cloudflare Zone Settings (manual via dashboard)
+
+Setting berikut **harus di-apply manual** di Cloudflare dashboard karena scope OAuth MCP tidak include `zone_settings:edit`:
+
+**SSL/TLS → Overview**
+- Encryption mode: **Full** (upgrade ke **Full (Strict)** setelah cPanel AutoSSL aktif)
+
+**SSL/TLS → Edge Certificates**
+- Always Use HTTPS: ON
+- Automatic HTTPS Rewrites: ON
+- Minimum TLS Version: 1.2
+- TLS 1.3: ON
+- Opportunistic Encryption: ON
+
+**Speed → Optimization**
+- Brotli: ON
+- Early Hints: ON
+- HTTP/3 (QUIC): ON
+- 0-RTT Connection Resumption: ON
+- **Rocket Loader: OFF** ⚠️ (penting — bisa break React/Vite hydration)
+
+**Caching → Configuration**
+- Browser Cache TTL: 4 hours
+- Always Online: ON
+- Development Mode: OFF
+
+**Security → Settings**
+- Security Level: Medium
+- Browser Integrity Check: ON
+- Challenge Passage: 30 minutes
+
+**Network**
+- HTTP/2: ON
+- HTTP/3: ON
+- WebSockets: ON ⚠️ (wajib untuk Reverb/Pusher broadcasting)
+- IPv6 Compatibility: ON
+
+### 10.17.4 Cloudflare MCP Integration
+
+Akses Cloudflare via OpenCode MCP (`https://mcp.cloudflare.com/mcp`) — OAuth-based.
+
+**Scope yang dimiliki token OAuth saat ini:**
+- ✅ `zone:read`, `dns_records:edit`, `dns_records:read`, `dns_settings:read`, `dns_analytics:read`
+- ✅ `workers:*`, `pages:*`, `r2_*`, `d1:write`, `kv_*`, `queues:write`, `vectorize:write`
+- ✅ `ai:*`, `aig:*`, `ai-search:*`, `email_routing:write`, `email_sending:write`
+- ❌ **TIDAK ada `zone:create`** — buat zone harus via dashboard manual
+- ❌ **TIDAK ada `zone_settings:edit`** atau `zone:edit` — settings harus manual
+
+**Operasi yang bisa otomatis via MCP:**
+- ✅ List/create/update/delete DNS records
+- ✅ Manage Workers, Pages, R2, D1, KV, Queues, Vectorize
+- ✅ AI Gateway, Email Routing config
+
+**Operasi yang harus manual via dashboard:**
+- ❌ Create zone
+- ❌ Update SSL/TLS mode, optimization, security settings
+- ❌ Generate Origin Certificate (butuh `ssl_certs:write` yang ada, tapi belum ditest)
+
+### 10.17.5 cPanel Setup Checklist
+
+Subdomain harus di-add di cPanel **sebelum** akses HTTP berhasil:
+
+| Domain | Type | Document Root | Status |
+|--------|------|---------------|--------|
+| `cryptere.com` | Primary | `/home/fkdzqxmc/public_html` | ✅ default |
+| `www.cryptere.com` | Alias | (sama) | auto |
+| `app.cryptere.com` | Subdomain | `/home/fkdzqxmc/Cryptere/public` | ⏳ TODO add |
+| `auth.cryptere.com` | Subdomain | `/home/fkdzqxmc/Cryptere/public` | ⏳ TODO add (point ke Laravel sama dengan `app`) |
+
+**Catatan:** `app` dan `auth` keduanya point ke `/home/fkdzqxmc/Cryptere/public` (Laravel project yang sama). Multi-subdomain routing di-handle Laravel via `RouteServiceProvider` + middleware (lihat `routes/web.php` & `app/Providers/RouteServiceProvider.php`).
+
+**AutoSSL:** Harus di-run setelah subdomain ter-add dan DNS propagate. Letak menu: cPanel → SSL/TLS Status → Run AutoSSL.
+
+### 10.17.6 Git Deployment (`.cpanel.yml`)
 
 ```yaml
 deployment:
@@ -1379,7 +1495,7 @@ deployment:
     - /bin/cp -R public/build ${PUBLICPATH}/build
 ```
 
-### 10.17.3 Production `.env` Template
+### 10.17.7 Production `.env` Template
 
 ```env
 APP_NAME=Cryptere
@@ -1416,7 +1532,7 @@ SENTRY_LARAVEL_DSN=...
 SENTRY_TRACES_SAMPLE_RATE=0.1
 ```
 
-### 10.17.4 Production Pitfalls
+### 10.17.8 Production Pitfalls
 
 - ⚠️ `DB_HOST` harus `127.0.0.1` — `localhost` resolve ke Unix socket, bukan TCP
 - ⚠️ `MAIL_ENCRYPTION=ssl` — jangan pakai `MAIL_SCHEME=smtps` (Laravel tidak mengenalinya)
@@ -1424,6 +1540,32 @@ SENTRY_TRACES_SAMPLE_RATE=0.1
 - ⚠️ `.cpanel.yml` gunakan `${HOME}`, bukan hardcoded path
 - ⚠️ `APP_ENV=production`, `APP_DEBUG=false`
 - ⚠️ Production password minimum 12 chars, mixed case, letters, numbers, symbols, uncompromised
+- ⚠️ Subdomain `cpanel/webmail/mail/webdisk/ftp` di Cloudflare WAJIB DNS-only (grey cloud)
+- ⚠️ Cloudflare SSL mode mulai dari **Full**, baru ke **Full (Strict)** setelah cPanel AutoSSL valid
+- ⚠️ Rocket Loader Cloudflare WAJIB OFF (incompatible dengan React/Vite)
+
+### 10.17.9 Deployment Progress Log
+
+**Tanggal mulai:** 2026-06-15
+
+| Tahap | Status | Catatan |
+|-------|:------:|---------|
+| Beli domain `cryptere.com` di Spaceship | ✅ | |
+| Setup hosting cPanel HyperCloudHost | ✅ | Cloud Mini, IP `157.66.55.62` |
+| Add zone `cryptere.com` di Cloudflare (manual) | ✅ | Free plan, status `active` |
+| Update nameserver di Spaceship → Cloudflare | ✅ | `albert.ns` & `khloe.ns` aktif |
+| Provision 12 DNS records via MCP | ✅ | A, MX, TXT untuk apex/www/app/auth/cpanel/mail/dll |
+| Verifikasi `cpanel.cryptere.com:2083` reachable | ✅ | DNS propagate global, port 2083 OK, HTTP/2 200 |
+| Cloudflare zone settings (SSL/Speed/Security) | ⏳ | Manual di dashboard — TODO |
+| Add subdomain `app.cryptere.com` di cPanel | ⏳ | Document root: `/home/fkdzqxmc/Cryptere/public` |
+| Add subdomain `auth.cryptere.com` di cPanel | ⏳ | Document root: `/home/fkdzqxmc/Cryptere/public` (sama) |
+| Run AutoSSL di cPanel | ⏳ | Untuk semua subdomain |
+| Clone repo Cryptere ke `/home/fkdzqxmc/Cryptere` | ⏳ | Via Git Version Control cPanel |
+| Setup `.env` production | ⏳ | DB credentials, Pusher, Sentry, dll |
+| Build & migrate (composer, npm, artisan) | ⏳ | |
+| Setup landing page di `public_html` | ⏳ | HTML/static atau builder |
+| Upgrade Cloudflare SSL ke Full (Strict) | ⏳ | Setelah AutoSSL aktif |
+| Ganti password cPanel default | ⚠️ | **PENTING — masih pakai password awal HyperCloudHost** |
 
 ---
 
