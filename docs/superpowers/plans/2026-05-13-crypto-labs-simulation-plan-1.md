@@ -20,7 +20,7 @@ Allowed overlap with the learner course plan:
 
 ## Current State Findings
 
-- `config/labs.php` contains Caesar, Vigenere, AES, RSA, Digital Signature, and Lattice labs. DES is missing.
+- `config/labs.php` contains Caesar, Vigenere, AES, RSA, and Digital Signature labs. DES is missing.
 - `resources/js/pages/labs/show.tsx` already has a usable lab shell with mode tabs, format selectors, output display, and step playback.
 - `resources/js/lib/lab-simulations.ts` is deterministic and testable, but it is too large and mixes codecs, metadata, concept text, visualization rows, and algorithm logic.
 - Supported formats are currently `ascii`, `hex`, `binary`, `base64`, and `decimal`.
@@ -28,7 +28,7 @@ Allowed overlap with the learner course plan:
 - AES is labeled as AES but currently uses XOR byte mixing as an educational approximation, not AES-128.
 - RSA currently uses small textbook values `p=61`, `q=53`, `n=3233`, not RSA-256.
 - Digital Signature currently uses a pseudo hash and a simulated signature suffix, and verify mode does not accept a real signature token as input.
-- `canFormatOutput()` disables output conversion for RSA, Digital Signature, and Lattice. The requested labs need output conversion wherever the result can be represented as bytes or structured text.
+- `canFormatOutput()` disables output conversion for RSA and Digital Signature. The requested labs need output conversion wherever the result can be represented as bytes or structured text.
 - Existing Vitest coverage is useful, but it validates the current simplified behavior rather than accurate DES/AES/RSA/signature flows.
 
 ## Brainstormed Options
@@ -550,7 +550,6 @@ npm run types
 - OAuth/auth/Fortify changes.
 - Admin management CRUD or assessment authoring.
 - Course lesson/task/video/read/quiz/Bloom assessment implementation.
-- Lattice lab rewrite, except preserving compatibility with shared codec changes.
 - Adding third-party crypto dependencies unless separately approved.
 
 ## Definition Of Done

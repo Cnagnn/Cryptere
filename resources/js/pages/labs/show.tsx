@@ -120,11 +120,6 @@ function keySetupByLab(slug: string): string[] {
                 'Buat dua bilangan prima kecil untuk simulasi: p=61 dan q=53.',
                 'Turunkan kunci publik (e, n) untuk enkripsi dan kunci privat (d, n) untuk dekripsi.',
             ];
-        case 'lattice-cipher-lab':
-            return [
-                'Tentukan secret vector s berisi tiga integer.',
-                'Bangun public matrix A dan noise kecil untuk menyamarkan secret.',
-            ];
         case 'digital-signature-lab':
             return [
                 'Siapkan kunci tanda tangan sebagai representasi kunci privat.',
@@ -150,8 +145,6 @@ function labSummaryBySlug(slug: string, fallback: string): string {
             return 'Pelajari alur Feistel dan putaran kunci pada sandi blok klasik.';
         case 'rsa-lab':
             return 'Pelajari dasar kunci publik, kunci privat, dan aritmetika modular RSA.';
-        case 'lattice-cipher-lab':
-            return 'Pelajari konsep LWE, vektor rahasia, noise, dan dekripsi berbasis pembulatan.';
         case 'digital-signature-lab':
             return 'Pelajari bagaimana pesan diringkas, ditandatangani, lalu diverifikasi.';
         default:
@@ -165,8 +158,6 @@ function conceptTitleInIndonesian(title: string): string {
         'Polyalphabetic Substitution': 'Substitusi Polialfabetik',
         'Symmetric Block Concept': 'Konsep Blok Simetris',
         'Asymmetric Key Exchange': 'Pertukaran Kunci Asimetris',
-        'LWE Encryption': 'Enkripsi LWE',
-        'LWE Decryption': 'Dekripsi LWE',
         'Digital Signature Flow': 'Alur Tanda Tangan Digital',
     };
 
@@ -203,14 +194,6 @@ function translateText(value: string): string {
             'Keamanan bergantung pada sulitnya memfaktorkan bilangan besar.',
         'This lab uses small numbers to make modular arithmetic readable.':
             'Lab ini memakai angka kecil agar aritmetika modular mudah dibaca.',
-        'Security is based on the Learning With Errors (LWE) problem.':
-            'Keamanan didasarkan pada masalah Learning With Errors (LWE).',
-        'A public matrix A and vector b = A·s + e form the public key.':
-            'Matriks publik A dan vektor b = A·s + e membentuk kunci publik.',
-        'Small random errors make the system hard to solve, even for quantum computers.':
-            'Error acak kecil membuat sistem sulit dipecahkan, termasuk oleh komputer kuantum.',
-        'This lab uses tiny parameters (n=3, q=97) for educational visibility.':
-            'Lab ini memakai parameter kecil (n=3, q=97) agar prosesnya terlihat.',
         'A sender signs message digest with private key logic.':
             'Pengirim menandatangani ringkasan pesan dengan logika kunci privat.',
         'Receiver verifies signature using public verification logic.':

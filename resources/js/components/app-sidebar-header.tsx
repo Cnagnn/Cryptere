@@ -215,12 +215,6 @@ const labItems: CommandMenuItem[] = [
         url: labsShow.url('digital-signature-lab'),
         icon: ShieldCheck,
     },
-    {
-        title: 'Lattice Cipher',
-        description: 'LWE concepts and post-quantum cryptography.',
-        url: labsShow.url('lattice-cipher-lab'),
-        icon: FlaskConical,
-    },
 ];
 
 const resultIcons: Record<string, LucideIcon> = {

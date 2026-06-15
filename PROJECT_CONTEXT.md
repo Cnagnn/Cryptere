@@ -109,9 +109,9 @@ Materi dan pengalaman belajar dalam Cryptere berfokus pada visualisasi dan pemah
 - Caesar Cipher
 - Vigenere Cipher
 - AES Concept
+- DES
 - RSA
 - Digital Signature
-- Lattice Cipher
 
 Pendekatan yang dipakai adalah **Glass Box**, yaitu proses algoritma diperlihatkan secara terbuka agar pengguna memahami langkah-langkahnya, bukan hanya hasil akhirnya.
 
@@ -208,7 +208,6 @@ Bagian ini merangkum hasil audit terhadap implementasi Cryptere saat ini, sekali
 | Lab AES | **⚠️ Parsial** | `config/labs.php`, `resources/js/pages/labs/show.tsx` | Ada sebagai lab edukasional, tetapi bukan implementasi AES produksi penuh. |
 | Lab RSA | **⚠️ Parsial** | `config/labs.php`, `resources/js/pages/labs/show.tsx` | Ada sebagai simulasi edukasional, bukan RSA produksi. |
 | Lab Digital Signature | **⚠️ Parsial** | `config/labs.php`, `resources/js/pages/labs/show.tsx` | Ada sebagai lab edukasional, bukan flow production-grade. |
-| Lab Lattice Cipher | **✅ Sudah** | `config/labs.php`, `resources/js/pages/labs/show.tsx` | Tersedia sebagai lab interaktif. |
 | XP & Level | **✅ Sudah** | `XpService`, `LevelService`, model `User` | Mekanisme progres gamifikasi aktif. |
 | Daily Streak | **✅ Sudah** | `StreakService`, model `User` | Streak harian aktif. |
 | Daily Goal | **✅ Sudah** | `XpService`, `config/rewards.php` | Daily XP goal aktif. |
