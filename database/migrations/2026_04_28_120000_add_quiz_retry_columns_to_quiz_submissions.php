@@ -2,16 +2,21 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('quiz_submissions', function (Blueprint $table) {
+        $hasUserFk = $this->foreignKeyExists('quiz_submissions', 'quiz_submissions_user_id_foreign');
+
+        Schema::table('quiz_submissions', function (Blueprint $table) use ($hasUserFk) {
             // Must drop foreign key on user_id before dropping the unique index
-            // MySQL uses the unique index to enforce the FK constraint
-            $table->dropForeign(['user_id']);
+            // (only if it actually exists — fresh DBs may not have it)
+            if ($hasUserFk) {
+                $table->dropForeign(['user_id']);
+            }
 
             // Drop the old unique constraint (user_id + lesson_task_id)
             $table->dropUnique('quiz_submissions_user_id_lesson_task_id_unique');
@@ -46,5 +51,18 @@ return new class extends Migration
             // Re-add the foreign key on user_id
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
+    }
+
+    /**
+     * Check whether a named foreign key exists on the given table.
+     */
+    private function foreignKeyExists(string $table, string $constraintName): bool
+    {
+        return DB::table('information_schema.TABLE_CONSTRAINTS')
+            ->where('CONSTRAINT_SCHEMA', DB::raw('DATABASE()'))
+            ->where('TABLE_NAME', $table)
+            ->where('CONSTRAINT_NAME', $constraintName)
+            ->where('CONSTRAINT_TYPE', 'FOREIGN KEY')
+            ->exists();
     }
 };
