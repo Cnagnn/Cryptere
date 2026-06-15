@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,36 +12,39 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Composite indexes that combine two varchar columns must use prefix lengths
+        // because MariaDB row-format=Antelope on shared hosting caps key size at 1000 bytes
+        // (utf8mb4: 191 chars * 4 bytes = 764 bytes per column → 2 cols overflow).
+        // Use raw SQL with explicit (col(prefix), col(prefix)) form.
+        DB::statement('CREATE INDEX users_points_name_idx ON users (points, name(100))');
+        DB::statement('CREATE INDEX users_role_name_idx ON users (role(50), name(100))');
+        DB::statement('CREATE INDEX users_deleted_points_name_idx ON users (deleted_at, points, name(100))');
+        DB::statement('CREATE INDEX users_deleted_role_name_idx ON users (deleted_at, role(50), name(100))');
+        DB::statement('CREATE INDEX users_deleted_name_idx ON users (deleted_at, name(100))');
+
         Schema::table('users', function (Blueprint $table): void {
-            $table->index(['points', 'name'], 'users_points_name_idx');
-            $table->index(['role', 'name'], 'users_role_name_idx');
-            $table->index(['deleted_at', 'points', 'name'], 'users_deleted_points_name_idx');
-            $table->index(['deleted_at', 'role', 'name'], 'users_deleted_role_name_idx');
-            $table->index(['deleted_at', 'name'], 'users_deleted_name_idx');
             $table->index('last_active_date', 'users_last_active_date_idx');
             $table->index('created_at', 'users_created_at_idx');
         });
 
-        Schema::table('courses', function (Blueprint $table): void {
-            $table->index(['sort_order', 'title'], 'courses_sort_title_idx');
-            $table->index(['status', 'sort_order', 'title'], 'courses_status_sort_title_idx');
-            $table->index(['status', 'created_at'], 'courses_status_created_at_idx');
-        });
+        DB::statement('CREATE INDEX courses_sort_title_idx ON courses (sort_order, title(100))');
+        DB::statement('CREATE INDEX courses_status_sort_title_idx ON courses (status(50), sort_order, title(100))');
+        DB::statement('CREATE INDEX courses_status_created_at_idx ON courses (status(50), created_at)');
 
         Schema::table('lessons', function (Blueprint $table): void {
             $table->index(['course_id', 'position'], 'lessons_course_position_idx');
-            $table->index(['course_id', 'status', 'position'], 'lessons_course_status_position_idx');
         });
+        DB::statement('CREATE INDEX lessons_course_status_position_idx ON lessons (course_id, status(50), position)');
 
         Schema::table('lesson_tasks', function (Blueprint $table): void {
             $table->index(['lesson_id', 'sort_order'], 'lesson_tasks_lesson_sort_idx');
-            $table->index(['lesson_id', 'status', 'sort_order'], 'lesson_tasks_lesson_status_sort_idx');
         });
+        DB::statement('CREATE INDEX lesson_tasks_lesson_status_sort_idx ON lesson_tasks (lesson_id, status(50), sort_order)');
 
         Schema::table('assessments', function (Blueprint $table): void {
             $table->index('sort_order', 'assessments_sort_idx');
-            $table->index(['course_id', 'status', 'sort_order'], 'assessments_course_status_sort_idx');
         });
+        DB::statement('CREATE INDEX assessments_course_status_sort_idx ON assessments (course_id, status(50), sort_order)');
 
         Schema::table('topics', function (Blueprint $table): void {
             $table->index('name', 'topics_name_idx');
@@ -52,15 +56,11 @@ return new class extends Migration
             $table->index(['course_id', 'completed_at'], 'enrollments_course_completed_idx');
         });
 
-        Schema::table('badges', function (Blueprint $table): void {
-            $table->index(['criteria_type', 'sort_order'], 'badges_criteria_sort_idx');
-        });
+        DB::statement('CREATE INDEX badges_criteria_sort_idx ON badges (criteria_type(100), sort_order)');
 
-        Schema::table('question_bank', function (Blueprint $table): void {
-            $table->index(['is_active', 'created_at'], 'question_bank_active_created_idx');
-            $table->index(['bloom_level', 'question_type', 'is_active'], 'question_bank_bloom_type_active_idx');
-            $table->index('category', 'question_bank_category_idx');
-        });
+        DB::statement('CREATE INDEX question_bank_active_created_idx ON question_bank (is_active, created_at)');
+        DB::statement('CREATE INDEX question_bank_bloom_type_active_idx ON question_bank (bloom_level(50), question_type(50), is_active)');
+        DB::statement('CREATE INDEX question_bank_category_idx ON question_bank (category(100))');
 
         Schema::table('quiz_submissions', function (Blueprint $table): void {
             $table->index(['user_id', 'submitted_at'], 'quiz_submissions_user_submitted_idx');
