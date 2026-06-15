@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -43,8 +44,11 @@ return new class extends Migration
         });
 
         // topics: add missing columns
-        Schema::table('topics', function (Blueprint $table) {
-            $table->dropForeign(['course_id']);
+        $hasCourseFk = $this->foreignKeyExists('topics', 'topics_course_id_foreign');
+        Schema::table('topics', function (Blueprint $table) use ($hasCourseFk) {
+            if ($hasCourseFk) {
+                $table->dropForeign(['course_id']);
+            }
             $table->dropColumn(['course_id', 'title', 'description', 'position']);
             $table->string('slug')->unique()->after('id');
             $table->string('name')->after('slug');
@@ -99,5 +103,18 @@ return new class extends Migration
             $table->string('option_d')->after('option_c');
             $table->tinyInteger('correct_option')->after('option_d');
         });
+    }
+
+    /**
+     * Check whether a named foreign key exists on the given table.
+     */
+    private function foreignKeyExists(string $table, string $constraintName): bool
+    {
+        return DB::table('information_schema.TABLE_CONSTRAINTS')
+            ->where('CONSTRAINT_SCHEMA', DB::raw('DATABASE()'))
+            ->where('TABLE_NAME', $table)
+            ->where('CONSTRAINT_NAME', $constraintName)
+            ->where('CONSTRAINT_TYPE', 'FOREIGN KEY')
+            ->exists();
     }
 };
