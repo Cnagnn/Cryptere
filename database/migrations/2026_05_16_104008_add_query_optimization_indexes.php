@@ -59,7 +59,7 @@ return new class extends Migration
         DB::statement('CREATE INDEX badges_criteria_sort_idx ON badges (criteria_type(100), sort_order)');
 
         DB::statement('CREATE INDEX question_bank_active_created_idx ON question_bank (is_active, created_at)');
-        DB::statement('CREATE INDEX question_bank_bloom_type_active_idx ON question_bank (bloom_level(50), question_type(50), is_active)');
+        DB::statement('CREATE INDEX question_bank_bloom_type_active_idx ON question_bank (bloom_level, question_type, is_active)');
         DB::statement('CREATE INDEX question_bank_category_idx ON question_bank (category(100))');
 
         Schema::table('quiz_submissions', function (Blueprint $table): void {
