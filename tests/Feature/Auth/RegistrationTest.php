@@ -24,7 +24,7 @@ test('registration stores the display name separately from username', function (
         'password' => 'CryptereTestUser2026!',
         'password_confirmation' => 'CryptereTestUser2026!',
         'terms' => 'on',
-    ])->assertRedirect('/email/verify');
+    ])->assertRedirect('/verify');
 
     $user = User::query()->where('email', 'student@example.com')->firstOrFail();
 
@@ -41,7 +41,7 @@ test('registration stores username in lowercase', function (): void {
         'password' => 'CryptereTestUser2026!',
         'password_confirmation' => 'CryptereTestUser2026!',
         'terms' => 'on',
-    ])->assertRedirect('/email/verify');
+    ])->assertRedirect('/verify');
 
     $user = User::query()->where('email', 'mixed-case@example.com')->firstOrFail();
 
@@ -61,7 +61,7 @@ test('registration assigns a static png pixabot avatar', function (): void {
         'password' => 'CryptereTestUser2026!',
         'password_confirmation' => 'CryptereTestUser2026!',
         'terms' => 'on',
-    ])->assertRedirect('/email/verify');
+    ])->assertRedirect('/verify');
 
     $user = User::query()->where('email', 'avatar-student@example.com')->firstOrFail();
 

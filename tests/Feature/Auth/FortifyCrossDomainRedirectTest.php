@@ -69,7 +69,7 @@ test('inertia registration redirects to email verification on same auth domain',
             'terms' => 'on',
         ]);
 
-    $response->assertRedirect('/email/verify');
+    $response->assertRedirect('/verify');
 
     $this->assertAuthenticated();
 });

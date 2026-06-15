@@ -92,6 +92,11 @@ return [
         'two-factor' => [
             'login' => '/login/2fa',
         ],
+        'verification' => [
+            'notice' => '/verify',
+            'verify' => '/verify/{id}/{hash}',
+            'send' => '/verify/send',
+        ],
     ],
 
     'domain' => config('app.domains.auth'),

@@ -58,7 +58,7 @@ test('user can register', function () {
         'password' => 'CryptereTestUser2026!',
         'password_confirmation' => 'CryptereTestUser2026!',
         'terms' => 'on',
-    ])->assertRedirect('/email/verify');
+    ])->assertRedirect('/verify');
 
     $this->assertAuthenticated();
     $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
@@ -84,5 +84,5 @@ test('unverified user is redirected to verification notice', function () {
 
     $this->actingAs($user)
         ->get('/dashboard')
-        ->assertRedirect('/email/verify');
+        ->assertRedirect('/verify');
 });

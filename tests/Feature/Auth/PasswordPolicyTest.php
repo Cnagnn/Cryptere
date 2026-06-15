@@ -61,6 +61,6 @@ test('registration accepts a strong, unique password', function (): void {
         'terms' => 'on',
     ]);
 
-    $response->assertRedirect('/email/verify');
+    $response->assertRedirect('/verify');
     expect(User::query()->where('email', 'strongpass@example.com')->exists())->toBeTrue();
 });
