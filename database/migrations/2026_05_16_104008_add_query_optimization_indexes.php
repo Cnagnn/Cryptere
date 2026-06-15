@@ -28,23 +28,23 @@ return new class extends Migration
         });
 
         DB::statement('CREATE INDEX courses_sort_title_idx ON courses (sort_order, title(100))');
-        DB::statement('CREATE INDEX courses_status_sort_title_idx ON courses (status(50), sort_order, title(100))');
-        DB::statement('CREATE INDEX courses_status_created_at_idx ON courses (status(50), created_at)');
+        DB::statement('CREATE INDEX courses_status_sort_title_idx ON courses (status, sort_order, title(100))');
+        DB::statement('CREATE INDEX courses_status_created_at_idx ON courses (status, created_at)');
 
         Schema::table('lessons', function (Blueprint $table): void {
             $table->index(['course_id', 'position'], 'lessons_course_position_idx');
         });
-        DB::statement('CREATE INDEX lessons_course_status_position_idx ON lessons (course_id, status(50), position)');
+        DB::statement('CREATE INDEX lessons_course_status_position_idx ON lessons (course_id, status, position)');
 
         Schema::table('lesson_tasks', function (Blueprint $table): void {
             $table->index(['lesson_id', 'sort_order'], 'lesson_tasks_lesson_sort_idx');
         });
-        DB::statement('CREATE INDEX lesson_tasks_lesson_status_sort_idx ON lesson_tasks (lesson_id, status(50), sort_order)');
+        DB::statement('CREATE INDEX lesson_tasks_lesson_status_sort_idx ON lesson_tasks (lesson_id, status, sort_order)');
 
         Schema::table('assessments', function (Blueprint $table): void {
             $table->index('sort_order', 'assessments_sort_idx');
         });
-        DB::statement('CREATE INDEX assessments_course_status_sort_idx ON assessments (course_id, status(50), sort_order)');
+        DB::statement('CREATE INDEX assessments_course_status_sort_idx ON assessments (course_id, status, sort_order)');
 
         Schema::table('topics', function (Blueprint $table): void {
             $table->index('name', 'topics_name_idx');
