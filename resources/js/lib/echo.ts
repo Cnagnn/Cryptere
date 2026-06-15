@@ -8,7 +8,7 @@ declare global {
     }
 }
 
-window.Pusher = Pusher;
+const isBrowser = typeof window !== 'undefined';
 
 const reverbHostRaw = (import.meta.env.VITE_REVERB_HOST ?? '').toString();
 const reverbPort = Number(import.meta.env.VITE_REVERB_PORT || 8080);
@@ -32,41 +32,57 @@ const looksLikeLoopback =
 const useReverb =
     !!reverbHostRaw && !(import.meta.env.PROD && looksLikeLoopback);
 
-const echoConfig: Record<string, unknown> = {
-    broadcaster: 'pusher',
-    key: useReverb ? reverbKey || pusherKey || 'local' : pusherKey || 'local',
-    cluster: pusherCluster,
-    forceTLS: forceTls,
-    enabledTransports: ['ws', 'wss'],
-    authEndpoint: '/broadcasting/auth',
-    auth: {
-        headers: {
-            'X-CSRF-TOKEN':
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') || '',
-            Accept: 'application/json',
-        },
-    },
-};
+function createEcho(): Echo<any> | null {
+    if (!isBrowser) {
+        return null;
+    }
 
-if (useReverb) {
-    echoConfig.wsHost = reverbHostRaw;
-    echoConfig.wsPort = reverbPort;
-    echoConfig.wssPort = reverbPort;
+    window.Pusher = Pusher;
+
+    const echoConfig: Record<string, unknown> = {
+        broadcaster: 'pusher',
+        key: useReverb
+            ? reverbKey || pusherKey || 'local'
+            : pusherKey || 'local',
+        cluster: pusherCluster,
+        forceTLS: forceTls,
+        enabledTransports: ['ws', 'wss'],
+        authEndpoint: '/broadcasting/auth',
+        auth: {
+            headers: {
+                'X-CSRF-TOKEN':
+                    document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute('content') || '',
+                Accept: 'application/json',
+            },
+        },
+    };
+
+    if (useReverb) {
+        echoConfig.wsHost = reverbHostRaw;
+        echoConfig.wsPort = reverbPort;
+        echoConfig.wssPort = reverbPort;
+    }
+
+    const instance = new Echo(echoConfig);
+    window.Echo = instance;
+    return instance;
 }
 
-window.Echo = new Echo(echoConfig);
-
-export const echo = window.Echo;
+export const echo = createEcho();
 
 export const getConnectionState = () => {
-    return echo.connector?.pusher?.connection?.state || 'disconnected';
+    return echo?.connector?.pusher?.connection?.state || 'disconnected';
 };
 
 export const onConnectionChange = (
     callback: (state: string) => void,
 ): (() => void) => {
+    if (!echo) {
+        return () => {};
+    }
+
     const handler = (states: { current: string; previous: string }) => {
         callback(states.current);
     };
@@ -78,7 +94,7 @@ export const onConnectionChange = (
     };
 };
 
-if (import.meta.env.DEV) {
+if (isBrowser && echo && import.meta.env.DEV) {
     echo.connector?.pusher?.connection?.bind('connected', () => {
         console.log('Echo: Connected to WebSocket');
     });
