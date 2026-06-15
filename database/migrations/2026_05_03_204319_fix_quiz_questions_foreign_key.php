@@ -48,15 +48,33 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('quiz_questions', function (Blueprint $table) {
-            // Drop old foreign key
-            $table->dropForeign('quiz_questions_task_id_foreign');
+        $hasOldFk = DB::table('information_schema.TABLE_CONSTRAINTS')
+            ->where('CONSTRAINT_SCHEMA', DB::raw('DATABASE()'))
+            ->where('TABLE_NAME', 'quiz_questions')
+            ->where('CONSTRAINT_NAME', 'quiz_questions_task_id_foreign')
+            ->where('CONSTRAINT_TYPE', 'FOREIGN KEY')
+            ->exists();
 
-            // Add new foreign key pointing to lesson_tasks
-            $table->foreign('lesson_task_id')
-                ->references('id')
-                ->on('lesson_tasks')
-                ->onDelete('cascade');
+        $hasNewFk = DB::table('information_schema.TABLE_CONSTRAINTS')
+            ->where('CONSTRAINT_SCHEMA', DB::raw('DATABASE()'))
+            ->where('TABLE_NAME', 'quiz_questions')
+            ->where('CONSTRAINT_NAME', 'quiz_questions_lesson_task_id_foreign')
+            ->where('CONSTRAINT_TYPE', 'FOREIGN KEY')
+            ->exists();
+
+        Schema::table('quiz_questions', function (Blueprint $table) use ($hasOldFk, $hasNewFk) {
+            // Drop old foreign key (only if it exists — fresh DBs may not have it)
+            if ($hasOldFk) {
+                $table->dropForeign('quiz_questions_task_id_foreign');
+            }
+
+            // Add new foreign key pointing to lesson_tasks (skip if already added)
+            if (! $hasNewFk) {
+                $table->foreign('lesson_task_id')
+                    ->references('id')
+                    ->on('lesson_tasks')
+                    ->onDelete('cascade');
+            }
         });
     }
 
