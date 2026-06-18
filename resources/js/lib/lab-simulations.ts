@@ -519,6 +519,12 @@ function modPow(base: number, exponent: number, modulus: number): number {
     return result;
 }
 
+/**
+ * @deprecated Bukan SHA-256 sungguhan.
+ * Ini FNV-1a 32-bit + xorshift extension untuk demo edukasi cepat.
+ * Akan diganti dengan SHA-256 asli di Phase 2 (features/labs/algorithms/sha256.ts).
+ * JANGAN dipakai untuk apa pun selain visualisasi pedagogis.
+ */
 function pseudoSha256(input: string): string {
     const seed = 0x811c9dc5;
     const data = new TextEncoder().encode(input);

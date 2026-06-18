@@ -38,8 +38,8 @@ return [
     ],
 
     'rsa-lab' => [
-        'title' => 'RSA-256',
-        'summary' => 'Visualize public-private key concepts with prime-number-based encryption and decryption.',
+        'title' => 'RSA (Demonstrasi)',
+        'summary' => 'Pelajari konsep kunci publik dan privat memakai bilangan prima kecil. Contoh edukasi, bukan implementasi produksi.',
         'group' => 'asymmetric',
     ],
 
