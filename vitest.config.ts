@@ -5,7 +5,7 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'node',
-        include: ['resources/js/**/*.test.ts'],
+        include: ['resources/js/**/*.test.ts', 'resources/js/**/*.test.tsx'],
         coverage: {
             provider: 'v8',
             include: ['resources/js/lib/lab-simulations.ts'],
