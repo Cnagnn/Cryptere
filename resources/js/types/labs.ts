@@ -19,6 +19,7 @@ export type SimulationResult = {
     outputLabel: string;
     output: string;
     steps: string[];
+    trace?: LabSimulationTrace;
 };
 
 export type ConceptLens = {
@@ -82,4 +83,53 @@ export type Sha256RoundStep = {
     h: string;
     W_t: string;
     K_t: string;
+};
+
+// Glass Box trace types for SimulationResult
+export type AesTrace = {
+    plaintext: number[];
+    rounds: Array<{
+        roundIndex: number;
+        stateBefore: string[];
+        afterSubBytes: string[];
+        afterShiftRows: string[];
+        afterMixColumns: string[];
+        afterAddRoundKey: string[];
+    }>;
+    ciphertext: string;
+};
+
+export type DesTrace = {
+    plaintext: string;
+    rounds: Array<{
+        roundIndex: number;
+        L: string;
+        R: string;
+    }>;
+    ciphertext: string;
+};
+
+export type LabSimulationTrace = {
+    aes?: AesTrace;
+    des?: DesTrace;
+    rsa?: RsaKeyGenTraceData;
+    signature?: RsaSignatureTraceData;
+};
+
+export type RsaKeyGenTraceData = {
+    p: string;
+    q: string;
+    n: string;
+    phi: string;
+    e: string;
+    d: string;
+    keyGenSteps: string[];
+};
+
+export type RsaSignatureTraceData = {
+    digestHex: string;
+    digestPrefix: string;
+    signatureInt?: string;
+    isValid?: boolean;
+    explanationSteps: string[];
 };

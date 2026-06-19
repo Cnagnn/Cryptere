@@ -713,6 +713,20 @@ function runAesConcept(
                 'Final round 10: SubBytes, ShiftRows, AddRoundKey.',
                 `Ciphertext: ${aesBytesToHex(trace.ciphertext)}.`,
             ],
+            trace: {
+                aes: {
+                    plaintext: trace.plaintext,
+                    rounds: trace.rounds.map((r) => ({
+                        roundIndex: r.roundIndex,
+                        stateBefore: r.stateBefore.map((b: number) => b.toString()),
+                        afterSubBytes: r.afterSubBytes.map((b: number) => b.toString()),
+                        afterShiftRows: r.afterShiftRows.map((b: number) => b.toString()),
+                        afterMixColumns: r.afterMixColumns.map((b: number) => b.toString()),
+                        afterAddRoundKey: r.afterAddRoundKey.map((b: number) => b.toString()),
+                    })),
+                    ciphertext: aesBytesToHex(trace.ciphertext),
+                },
+            },
         };
     }
 
@@ -739,6 +753,20 @@ function runAesConcept(
                 ),
                 `Recover the original 128-bit plaintext block: ${aesBytesToHex(trace.plaintext)}.`,
             ],
+            trace: {
+                aes: {
+                    plaintext: trace.plaintext,
+                    rounds: trace.rounds.map((r) => ({
+                        roundIndex: r.roundIndex,
+                        stateBefore: r.stateBefore.map((b: number) => b.toString()),
+                        afterSubBytes: r.afterSubBytes.map((b: number) => b.toString()),
+                        afterShiftRows: r.afterShiftRows.map((b: number) => b.toString()),
+                        afterMixColumns: r.afterMixColumns.map((b: number) => b.toString()),
+                        afterAddRoundKey: r.afterAddRoundKey.map((b: number) => b.toString()),
+                    })),
+                    ciphertext: aesBytesToHex(trace.plaintext),
+                },
+            },
         };
     }
 
@@ -761,6 +789,20 @@ function runAesConcept(
             outputLabel: 'Ciphertext (hex)',
             output: aesBytesToHex(trace.ciphertext),
             steps,
+            trace: {
+                aes: {
+                    plaintext: trace.plaintext,
+                    rounds: trace.rounds.map((r) => ({
+                        roundIndex: r.roundIndex,
+                        stateBefore: r.stateBefore.map((b: number) => b.toString()),
+                        afterSubBytes: r.afterSubBytes.map((b: number) => b.toString()),
+                        afterShiftRows: r.afterShiftRows.map((b: number) => b.toString()),
+                        afterMixColumns: r.afterMixColumns.map((b: number) => b.toString()),
+                        afterAddRoundKey: r.afterAddRoundKey.map((b: number) => b.toString()),
+                    })),
+                    ciphertext: aesBytesToHex(trace.ciphertext),
+                },
+            },
         };
     }
 
@@ -793,6 +835,20 @@ function runAesConcept(
         outputLabel: 'Plaintext',
         output: new TextDecoder().decode(Uint8Array.from(plainBytes)),
         steps,
+        trace: {
+            aes: {
+                plaintext: trace.plaintext,
+                rounds: trace.rounds.map((r) => ({
+                    roundIndex: r.roundIndex,
+                    stateBefore: r.stateBefore.map((b: number) => b.toString()),
+                    afterSubBytes: r.afterSubBytes.map((b: number) => b.toString()),
+                    afterShiftRows: r.afterShiftRows.map((b: number) => b.toString()),
+                    afterMixColumns: r.afterMixColumns.map((b: number) => b.toString()),
+                    afterAddRoundKey: r.afterAddRoundKey.map((b: number) => b.toString()),
+                })),
+                ciphertext: aesBytesToHex(trace.plaintext),
+            },
+        },
     };
 }
 
@@ -882,6 +938,17 @@ function runDesConcept(
                 ),
                 'Apply the final permutation to produce the ciphertext block.',
             ],
+            trace: {
+                des: {
+                    plaintext: normalizedText,
+                    rounds: trace.rounds.map((r) => ({
+                        roundIndex: r.roundIndex,
+                        L: bitsToHex(r.newL),
+                        R: bitsToHex(r.newR),
+                    })),
+                    ciphertext: bitsToHex(trace.ciphertext).toUpperCase(),
+                },
+            },
         };
     }
 
@@ -1014,6 +1081,23 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
             outputLabel: 'Cipher blocks',
             output: encrypted.join(' '),
             steps,
+            trace: {
+                rsa: {
+                    p: keys.p.toString(),
+                    q: keys.q.toString(),
+                    n: keys.n.toString(),
+                    phi: keys.phi.toString(),
+                    e: keys.e.toString(),
+                    d: keys.d.toString(),
+                    keyGenSteps: [
+                        `p = ${keys.p}, q = ${keys.q}`,
+                        `n = p × q = ${keys.n}`,
+                        `φ(n) = (p-1)(q-1) = ${keys.phi}`,
+                        `e = ${keys.e}`,
+                        `d = e⁻¹ mod φ(n) = ${keys.d}`,
+                    ],
+                },
+            },
         };
     }
 
@@ -1054,6 +1138,23 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
         outputLabel: 'Plaintext',
         output: decrypted.join(''),
         steps,
+        trace: {
+            rsa: {
+                p: keys.p.toString(),
+                q: keys.q.toString(),
+                n: keys.n.toString(),
+                phi: keys.phi.toString(),
+                e: keys.e.toString(),
+                d: keys.d.toString(),
+                keyGenSteps: [
+                    `p = ${keys.p}, q = ${keys.q}`,
+                    `n = p × q = ${keys.n}`,
+                    `φ(n) = (p-1)(q-1) = ${keys.phi}`,
+                    `e = ${keys.e}`,
+                    `d = e⁻¹ mod φ(n) = ${keys.d}`,
+                ],
+            },
+        },
     };
 }
 
@@ -1089,20 +1190,32 @@ function runSignatureLab(
     const toyKeys = generateRsaKeys(61n, 53n, 17n);
 
     if (mode === 'encrypt') {
-        const trace = signMessage(text, toyKeys);
+        const sig = signMessage(text, toyKeys);
 
         return {
             outputLabel: 'Signature token',
-            output: trace.signatureHex,
+            output: sig.signatureHex,
             steps: [
-                `Hash message with SHA-256: ${trace.digestHex.slice(0, 32)}...`,
-                `Take digest prefix (${trace.digestPrefix.length} hex chars): ${trace.digestPrefix}`,
-                `Parse to integer: ${trace.digestInt.toString()}`,
-                `Sign with private key: ${trace.digestInt.toString()}^${toyKeys.d} mod ${toyKeys.n} = ${trace.signatureInt.toString()}`,
-                `Signature hex: ${trace.signatureHex}`,
+                `Hash message with SHA-256: ${sig.digestHex.slice(0, 32)}...`,
+                `Take digest prefix (${sig.digestPrefix.length} hex chars): ${sig.digestPrefix}`,
+                `Parse to integer: ${sig.digestInt.toString()}`,
+                `Sign with private key: ${sig.digestInt.toString()}^${toyKeys.d} mod ${toyKeys.n} = ${sig.signatureInt.toString()}`,
+                `Signature hex: ${sig.signatureHex}`,
                 `Send: message + signature_token to receiver.`,
                 `This demonstrates: only the private key holder can sign.`,
             ],
+            trace: {
+                signature: {
+                    digestHex: sig.digestHex,
+                    digestPrefix: sig.digestPrefix,
+                    signatureInt: sig.signatureInt.toString(),
+                    explanationSteps: [
+                        `Hash: SHA-256("${text}") = ${sig.digestHex}`,
+                        `Digest prefix: ${sig.digestPrefix}`,
+                        `Signing: ${sig.digestInt.toString()}^${toyKeys.d} mod ${toyKeys.n} = ${sig.signatureInt.toString()}`,
+                    ],
+                },
+            },
         };
     }
 
@@ -1133,6 +1246,14 @@ function runSignatureLab(
                 : 'Digest mismatch → signature INVALID, message tampered or wrong key.',
             'This demonstrates: anyone with public key can verify, only holder of private key can sign.',
         ],
+        trace: {
+            signature: {
+                digestHex: ver.recoveredDigestInt.toString(),
+                digestPrefix: '',
+                isValid: ver.isValid,
+                explanationSteps: ver.explanationSteps,
+            },
+        },
     };
 }
 

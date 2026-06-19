@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -23,17 +21,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
+import GlassBoxLab from '@/features/labs/ui/GlassBoxLab';
 import {
     canFormatOutput,
     conceptLensByLab,
@@ -52,46 +43,18 @@ import {
     recommendedOutputFormatByLab,
     runSimulation,
     validationErrorByLab,
-    visualizationLensByLab,
 } from '@/lib/lab-simulations';
-import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as labsIndex } from '@/routes/labs';
 import type {
+    AesTrace,
     FormatValue,
     LabShowProps,
+    RsaKeyGenTraceData,
+    RsaSignatureTraceData,
     SimulationMode,
     SimulationResult,
 } from '@/types/labs';
-
-function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
-    const touchStartX = useRef<number | null>(null);
-
-    const handleTouchStart = useCallback((event: React.TouchEvent) => {
-        touchStartX.current = event.touches[0].clientX;
-    }, []);
-
-    const handleTouchEnd = useCallback(
-        (event: React.TouchEvent) => {
-            if (touchStartX.current === null) {
-                return;
-            }
-
-            const diff = event.changedTouches[0].clientX - touchStartX.current;
-
-            if (diff > 50) {
-                onSwipeRight();
-            } else if (diff < -50) {
-                onSwipeLeft();
-            }
-
-            touchStartX.current = null;
-        },
-        [onSwipeLeft, onSwipeRight],
-    );
-
-    return { handleTouchStart, handleTouchEnd };
-}
 
 function keySetupByLab(slug: string): string[] {
     switch (slug) {
@@ -296,6 +259,7 @@ export default function LabsShow({ lab }: LabShowProps) {
     const [outputFormat, setOutputFormat] = useState<FormatValue>('ascii');
     const [activeStepIndex, setActiveStepIndex] = useState(0);
     const [isWalkthroughPlaying, setIsWalkthroughPlaying] = useState(false);
+    const [learnerMode, setLearnerMode] = useState<'pemula' | 'mahir'>('pemula');
 
     const conceptLens = useMemo(
         () => conceptLensByLab(lab.slug, mode),
@@ -365,40 +329,30 @@ export default function LabsShow({ lab }: LabShowProps) {
         lab.slug,
         mode,
     );
-    const visualizationLens = visualizationLensByLab(
-        lab.slug,
-        mode,
-        normalizedInput.value ?? '',
-        keyInput,
-        rawResult,
-    );
     const pageSummary = labSummaryBySlug(lab.slug, lab.summary);
     const translatedSteps = rawResult.steps.map(translateText);
-    const translatedHeaders = visualizationLens.headers.map(translateText);
     const translatedOutputLabel = translateText(rawResult.outputLabel);
 
     const safeActiveStepIndex = Math.min(
         activeStepIndex,
         Math.max(0, rawResult.steps.length - 1),
     );
-    const progressValue =
-        rawResult.steps.length <= 1
-            ? 100
-            : ((safeActiveStepIndex + 1) / rawResult.steps.length) * 100;
     const showKeyInput = lab.slug !== 'rsa-lab';
 
-    const swipeHandlers = useSwipe(
-        () =>
-            setActiveStepIndex((index) =>
-                Math.min(index + 1, rawResult.steps.length - 1),
-            ),
-        () => setActiveStepIndex((index) => Math.max(index - 1, 0)),
-    );
+    // Extract trace data for GlassBoxLab
+    const rawTrace = (rawResult as { trace?: { aes?: AesTrace; des?: unknown; rsa?: RsaKeyGenTraceData; signature?: RsaSignatureTraceData } }).trace;
+    const algoTrace = {
+        aes: rawTrace?.aes,
+        des: rawTrace?.des as Parameters<typeof GlassBoxLab>[0]['desTrace'],
+        rsa: rawTrace?.rsa,
+        signature: rawTrace?.signature,
+    };
 
     useEffect(() => {
         setActiveStepIndex(0);
         setIsWalkthroughPlaying(false);
-    }, [inputFormat, inputText, keyInput, mode, outputFormat]);
+        setLearnerMode('pemula');
+    }, [inputFormat, inputText, keyInput, mode, outputFormat, learnerMode]);
 
     useEffect(() => {
         if (!isWalkthroughPlaying || rawResult.steps.length <= 1) {
@@ -671,151 +625,19 @@ export default function LabsShow({ lab }: LabShowProps) {
                     </Card>
                 </section>
                 <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                    <Card className="flex min-h-[30rem] flex-col lg:col-span-8">
-                        <CardHeader className="gap-1 pb-4">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <CardTitle className="flex items-center gap-2">
-                                        Proses Bertahap
-                                    </CardTitle>
-                                    <CardDescription className="text-sm/6">
-                                        Ikuti transformasi dari kunci dan pesan
-                                        hingga hasil akhir.
-                                    </CardDescription>
-                                </div>
-                                <Badge
-                                    variant="outline"
-                                    className="tabular-nums"
-                                >
-                                    {safeActiveStepIndex + 1}/
-                                    {rawResult.steps.length}
-                                </Badge>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
-                            <Progress value={progressValue} />
-
-                            <div
-                                className="rounded-lg border bg-muted/30 p-4"
-                                {...swipeHandlers}
-                            >
-                                <p className="text-sm leading-relaxed">
-                                    {translatedSteps[safeActiveStepIndex]}
-                                </p>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={safeActiveStepIndex === 0}
-                                    onClick={() =>
-                                        setActiveStepIndex((index) =>
-                                            Math.max(index - 1, 0),
-                                        )
-                                    }
-                                >
-                                    Sebelumnya
-                                </Button>
-
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={rawResult.steps.length <= 1}
-                                    onClick={() => {
-                                        if (
-                                            safeActiveStepIndex >=
-                                            rawResult.steps.length - 1
-                                        ) {
-                                            setActiveStepIndex(0);
-                                        }
-
-                                        setIsWalkthroughPlaying(
-                                            (value) => !value,
-                                        );
-                                    }}
-                                >
-                                    {isWalkthroughPlaying ? 'Jeda' : 'Putar'}
-                                </Button>
-
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={
-                                        safeActiveStepIndex >=
-                                        rawResult.steps.length - 1
-                                    }
-                                    onClick={() =>
-                                        setActiveStepIndex((index) =>
-                                            Math.min(
-                                                index + 1,
-                                                rawResult.steps.length - 1,
-                                            ),
-                                        )
-                                    }
-                                >
-                                    Selanjutnya
-                                </Button>
-                            </div>
-
-                            <div className="min-h-0 flex-1 rounded-lg border">
-                                <ScrollArea className="h-full max-h-72">
-                                    {visualizationLens.rows.length > 0 ? (
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    {visualizationLens.headers.map(
-                                                        (header, index) => (
-                                                            <TableHead
-                                                                key={header}
-                                                            >
-                                                                {
-                                                                    translatedHeaders[
-                                                                        index
-                                                                    ]
-                                                                }
-                                                            </TableHead>
-                                                        ),
-                                                    )}
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {visualizationLens.rows.map(
-                                                    (row, index) => (
-                                                        <TableRow
-                                                            key={`${row.source}-${index}`}
-                                                            className={cn(
-                                                                index ===
-                                                                    safeActiveStepIndex &&
-                                                                    'bg-primary/5',
-                                                            )}
-                                                        >
-                                                            <TableCell className="text-sm whitespace-normal">
-                                                                {row.source}
-                                                            </TableCell>
-                                                            <TableCell className="text-sm whitespace-normal text-muted-foreground">
-                                                                {translateText(
-                                                                    row.operation,
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell className="text-sm whitespace-normal">
-                                                                {row.result}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ),
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    ) : (
-                                        <div className="flex min-h-48 items-center justify-center p-6 text-center text-sm text-muted-foreground">
-                                            Masukkan data valid untuk melihat
-                                            transformasi.
-                                        </div>
-                                    )}
-                                </ScrollArea>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <GlassBoxLab
+                        slug={lab.slug}
+                        steps={translatedSteps}
+                        activeStep={safeActiveStepIndex}
+                        onStepChange={setActiveStepIndex}
+                        learnerMode={learnerMode}
+                        onModeChange={setLearnerMode}
+                        mode={mode}
+                        aesTrace={algoTrace.aes}
+                        desTrace={algoTrace.des}
+                        rsaTrace={algoTrace.rsa}
+                        sigTrace={algoTrace.signature}
+                    />
 
                     <Card className="lg:col-span-4">
                         <CardHeader className="gap-1 pb-4">
