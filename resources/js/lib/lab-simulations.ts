@@ -3,6 +3,23 @@
  * No React dependencies — all functions are deterministic and side-effect free.
  */
 
+
+import {
+    aesEncryptBlock,
+    aesDecryptBlock,
+    hexToBytes as aesHexToBytes,
+    bytesToHex as aesBytesToHex,
+} from '@/features/labs/algorithms/aes';
+
+import {
+    desEncryptBlock,
+    desDecryptBlock,
+    hexToBits,
+    bitsToHex,
+} from '@/features/labs/algorithms/des';
+
+import { generateRsaKeys } from '@/features/labs/algorithms/rsa';
+import { signMessage, verifySignature } from '@/features/labs/algorithms/rsa';
 import type {
     ConceptLens,
     FormatValue,
@@ -659,16 +676,22 @@ function runAesConcept(
     text: string,
     key: string,
 ): SimulationResult {
+    // Check for known vector (hex input)
     const normalizedText = text.replace(/\s+/g, '').toUpperCase();
     const normalizedKey = key.replace(/\s+/g, '').toUpperCase();
 
+    // Known vector test case from FIPS-197
     if (
         normalizedKey === '000102030405060708090A0B0C0D0E0F' &&
         normalizedText === '00112233445566778899AABBCCDDEEFF'
     ) {
+        const ptBytes = aesHexToBytes(normalizedText);
+        const keyBytes = aesHexToBytes(normalizedKey);
+        const trace = aesEncryptBlock(ptBytes, keyBytes);
+
         return {
             outputLabel: 'Ciphertext (hex)',
-            output: '69C4E0D86A7B0430D8CDB78070B4C55A',
+            output: aesBytesToHex(trace.ciphertext),
             steps: [
                 'Load 128-bit plaintext into the AES state matrix.',
                 'Expand the 128-bit key into 11 round keys.',
@@ -679,18 +702,24 @@ function runAesConcept(
                         `Round ${index + 1}: SubBytes, ShiftRows, MixColumns, AddRoundKey.`,
                 ),
                 'Final round 10: SubBytes, ShiftRows, AddRoundKey.',
+                `Ciphertext: ${aesBytesToHex(trace.ciphertext)}.`,
             ],
         };
     }
 
+    // Known vector decrypt
     if (
         mode === 'decrypt' &&
         normalizedKey === '000102030405060708090A0B0C0D0E0F' &&
         normalizedText === '69C4E0D86A7B0430D8CDB78070B4C55A'
     ) {
+        const ctBytes = aesHexToBytes(normalizedText);
+        const keyBytes = aesHexToBytes(normalizedKey);
+        const trace = aesDecryptBlock(ctBytes, keyBytes);
+
         return {
             outputLabel: 'Plaintext (hex)',
-            output: '00112233445566778899AABBCCDDEEFF',
+            output: aesBytesToHex(trace.plaintext),
             steps: [
                 'Load ciphertext into the AES state matrix.',
                 'Apply inverse final round.',
@@ -699,68 +728,118 @@ function runAesConcept(
                     (_, index) =>
                         `Inverse round ${10 - index}: InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns.`,
                 ),
-                'Recover the original 128-bit plaintext block.',
+                `Recover the original 128-bit plaintext block: ${aesBytesToHex(trace.plaintext)}.`,
             ],
         };
     }
 
-    const inputBytes = Array.from(new TextEncoder().encode(text));
-    const keyBytes = Array.from(
-        new TextEncoder().encode(key || 'CRYPTER-LAB-KEY'),
-    );
+    // Convert input to 16-byte block (PKCS#7 padding)
+    const textBytes = Array.from(new TextEncoder().encode(text));
+    const padded = pkcs7Pad(textBytes, 16);
+
+    // Convert key to 16 bytes
+    const keyInput = Array.from(new TextEncoder().encode(key || 'CRYPTER-LAB-KEY')).slice(0, 16);
+
+    while (keyInput.length < 16) {
+        keyInput.push(0);
+    }
 
     if (mode === 'encrypt') {
-        const mixed = inputBytes.map(
-            (value, index) => value ^ keyBytes[index % keyBytes.length],
-        );
-        const output = toHex(mixed);
-
-        const steps = mixed.slice(0, 10).map((value, index) => {
-            const plainByte = inputBytes[index] ?? 0;
-            const keyByte = keyBytes[index % keyBytes.length];
-
-            return `Round step ${index + 1}: byte ${plainByte} XOR key ${keyByte} = ${value}`;
-        });
+        const trace = aesEncryptBlock(padded, keyInput);
+        const steps = buildAesSteps(trace);
 
         return {
             outputLabel: 'Ciphertext (hex)',
-            output,
-            steps: [
-                'Convert plaintext and key to byte arrays.',
-                'Simulate key addition and diffusion using XOR byte mixing (educational approximation).',
-                ...steps,
-                'Encode mixed bytes into hexadecimal ciphertext.',
-            ],
+            output: aesBytesToHex(trace.ciphertext),
+            steps,
         };
     }
 
-    const sanitized = text.replace(/\s+/g, '');
-    const chunks = sanitized.match(/.{1,2}/g) ?? [];
-    const cipherBytes = chunks
-        .map((chunk) => Number.parseInt(chunk, 16))
-        .filter((value) => Number.isFinite(value));
-    const plainBytes = cipherBytes.map(
-        (value, index) => value ^ keyBytes[index % keyBytes.length],
-    );
-    const output = new TextDecoder().decode(Uint8Array.from(plainBytes));
+    // decrypt: text is hex ciphertext
+    const hexClean = text.replace(/\s+/g, '').toUpperCase();
+    const cipherBytes = aesHexToBytes(hexClean);
 
-    const steps = plainBytes.slice(0, 10).map((value, index) => {
-        const cipherByte = cipherBytes[index] ?? 0;
-        const keyByte = keyBytes[index % keyBytes.length];
+    // Ensure we have at least 16 bytes for a block
+    if (cipherBytes.length < 16) {
+        return {
+            outputLabel: 'Plaintext',
+            output: '',
+            steps: ['Ciphertext must be at least 16 bytes (32 hex characters) for AES block decryption.'],
+        };
+    }
 
-        return `Round step ${index + 1}: cipher ${cipherByte} XOR key ${keyByte} = ${value}`;
-    });
+    // PKCS#7 unpad after decryption
+    const trace = aesDecryptBlock(cipherBytes.slice(0, 16), keyInput);
+    const unpadLen = trace.plaintext[15];
+    const validPadding =
+        unpadLen > 0 &&
+        unpadLen <= 16 &&
+        trace.plaintext.slice(16 - unpadLen).every((b) => b === unpadLen);
+    const plainBytes = validPadding
+        ? trace.plaintext.slice(0, 16 - unpadLen)
+        : trace.plaintext;
+    const steps = buildAesDecryptSteps(trace, plainBytes, validPadding);
 
     return {
         outputLabel: 'Plaintext',
-        output,
-        steps: [
-            'Parse hexadecimal ciphertext into bytes.',
-            'Apply inverse byte mixing using the same key stream (XOR reversibility).',
-            ...steps,
-            'Decode resulting bytes into UTF-8 text.',
-        ],
+        output: new TextDecoder().decode(Uint8Array.from(plainBytes)),
+        steps,
     };
+}
+
+function pkcs7Pad(data: number[], blockSize: number): number[] {
+    const padLen = blockSize - (data.length % blockSize);
+
+    return [...data, ...Array(padLen).fill(padLen)];
+}
+
+function buildAesSteps(trace: ReturnType<typeof aesEncryptBlock>): string[] {
+    const steps: string[] = [
+        `Normalize plaintext into ${trace.plaintext.length} bytes.`,
+        `Pad to 16-byte block using PKCS#7.`,
+        `Expand 16-byte key into 11 round keys.`,
+        `Initial state: load plaintext into 4×4 matrix.`,
+        `Initial AddRoundKey: XOR state with round key 0.`,
+    ];
+
+    for (let i = 0; i < 10; i++) {
+        if (i < 9) {
+            steps.push(
+                `Round ${i + 1}: SubBytes → ShiftRows → MixColumns → AddRoundKey. ` +
+                `S-box substitution on each byte, row shifts, column mixing, key XOR.`,
+            );
+        } else {
+            steps.push(
+                `Round 10: SubBytes → ShiftRows → AddRoundKey (no MixColumns in final round).`,
+            );
+        }
+    }
+
+    steps.push(`Ciphertext: ${aesBytesToHex(trace.ciphertext).toUpperCase()}.`);
+
+    return steps;
+}
+
+function buildAesDecryptSteps(
+    trace: ReturnType<typeof aesDecryptBlock>,
+    plainBytes: number[],
+    validPadding: boolean,
+): string[] {
+    const steps: string[] = [
+        `Parse hex ciphertext into 16-byte block.`,
+        `Apply Initial Permutation (IP) equivalent via AddRoundKey.`,
+        `10 inverse rounds: InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns.`,
+    ];
+
+    if (validPadding) {
+        steps.push(`Remove PKCS#7 padding (${plainBytes.length} bytes of plaintext).`);
+    } else {
+        steps.push(`Note: padding validation skipped (non-standard or raw decryption).`);
+    }
+
+    steps.push(`Decrypted plaintext: ${aesBytesToHex(plainBytes).toUpperCase()}.`);
+
+    return steps;
 }
 
 function runDesConcept(
@@ -771,13 +850,18 @@ function runDesConcept(
     const normalizedText = text.replace(/\s+/g, '').toUpperCase();
     const normalizedKey = key.replace(/\s+/g, '').toUpperCase();
 
+    // Known vector from FIPS-46-3
     if (
         normalizedKey === '133457799BBCDFF1' &&
         normalizedText === '0123456789ABCDEF'
     ) {
+        const ptBits = hexToBits(normalizedText);
+        const keyBits = hexToBits(normalizedKey);
+        const trace = desEncryptBlock(ptBits, keyBits);
+
         return {
             outputLabel: 'Ciphertext (hex)',
-            output: '85E813540F0AB405',
+            output: bitsToHex(trace.ciphertext).toUpperCase(),
             steps: [
                 'Apply the DES initial permutation to the 64-bit plaintext block.',
                 'Split the permuted block into L0 and R0 halves.',
@@ -791,14 +875,19 @@ function runDesConcept(
         };
     }
 
+    // Known vector decrypt
     if (
         mode === 'decrypt' &&
         normalizedKey === '133457799BBCDFF1' &&
         normalizedText === '85E813540F0AB405'
     ) {
+        const ctBits = hexToBits(normalizedText);
+        const keyBits = hexToBits(normalizedKey);
+        const trace = desDecryptBlock(ctBits, keyBits);
+
         return {
             outputLabel: 'Plaintext (hex)',
-            output: '0123456789ABCDEF',
+            output: bitsToHex(trace.plaintext).toUpperCase(),
             steps: [
                 'Apply the DES initial permutation to the ciphertext block.',
                 'Use the 16 round keys in reverse order.',
@@ -812,123 +901,239 @@ function runDesConcept(
         };
     }
 
-    const bytes = Array.from(new TextEncoder().encode(text));
-    const keyBytes = Array.from(new TextEncoder().encode(key || 'DES-LAB1'));
-    const transformed = bytes.map(
-        (byte, index) => byte ^ keyBytes[index % keyBytes.length] ^ 0x5a,
-    );
-
-    return {
-        outputLabel: mode === 'encrypt' ? 'Ciphertext (hex)' : 'Plaintext',
-        output:
-            mode === 'encrypt'
-                ? toHex(transformed)
-                : new TextDecoder().decode(Uint8Array.from(transformed)),
-        steps: [
-            'DES is a legacy 64-bit Feistel cipher; this educational fallback keeps interaction instant.',
-            'For the standard DES vector, the lab shows the exact known-vector result.',
-            ...Array.from(
-                { length: 16 },
-                (_, index) =>
-                    `Round ${index + 1}: show expansion, key mixing, S-box substitution, and Feistel swap.`,
-            ),
-        ],
-    };
-}
-
-function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
-    const p = 61;
-    const q = 53;
-    const n = p * q;
-    const e = 17;
-    const d = 2753;
-
-    if (mode === 'encrypt') {
-        const chars = Array.from(text);
-        const encrypted = chars.map((char) => modPow(char.charCodeAt(0), e, n));
-
+    // For non-standard inputs, require exact 16 hex chars (64 bits)
+    if (normalizedText.length !== 16 || normalizedKey.length !== 16) {
         return {
-            outputLabel: 'Cipher blocks',
-            output: encrypted.join(' '),
+            outputLabel: mode === 'encrypt' ? 'Ciphertext (hex)' : 'Plaintext',
+            output: '',
             steps: [
-                `Choose primes p=${p}, q=${q}, compute n=${n}.`,
-                'Compute public exponent e and private exponent d.',
-                ...chars
-                    .slice(0, 8)
-                    .map(
-                        (char, index) =>
-                            `Step ${index + 1}: m=${char.charCodeAt(0)}, c=m^e mod n => ${encrypted[index]}`,
-                    ),
-                'Ciphertext is the sequence of modular exponentiation blocks.',
+                'DES requires exactly 16 hexadecimal characters (64 bits) for input.',
+                'For the standard DES known vector, the lab shows the exact result.',
             ],
         };
     }
 
-    const blocks = text
-        .trim()
-        .split(/\s+/)
-        .map((item) => Number.parseInt(item, 10))
-        .filter((value) => Number.isFinite(value));
+    const ptBits = hexToBits(normalizedText);
+    const keyBits = hexToBits(normalizedKey);
 
-    const decrypted = blocks.map((block) => modPow(block, d, n));
-    const output = decrypted
-        .map((value) => String.fromCharCode(value))
-        .join('');
+    if (mode === 'encrypt') {
+        const trace = desEncryptBlock(ptBits, keyBits);
+        const steps = [
+            `64-bit plaintext: ${normalizedText}.`,
+            `64-bit key: ${normalizedKey}.`,
+            `Apply Initial Permutation (IP).`,
+            `Split into L0 and R0 halves (32 bits each).`,
+            ...trace.rounds.map((r) =>
+                `Round ${r.roundIndex}: expand R${r.roundIndex - 1}, XOR with K${r.roundIndex}, S-box substitution, permutation P, swap halves.`,
+            ),
+            `Swap final halves, apply Final Permutation (FP).`,
+            `Ciphertext: ${bitsToHex(trace.ciphertext).toUpperCase()}.`,
+        ];
+
+        return {
+            outputLabel: 'Ciphertext (hex)',
+            output: bitsToHex(trace.ciphertext).toUpperCase(),
+            steps,
+        };
+    }
+
+    // decrypt
+    const ctBits = hexToBits(normalizedText);
+    const trace = desDecryptBlock(ctBits, keyBits);
+    const steps = [
+        `64-bit ciphertext: ${normalizedText}.`,
+        `Apply Initial Permutation (IP).`,
+        `Use 16 round keys in reverse order.`,
+        ...trace.rounds.map((r) =>
+            `Round ${r.roundIndex}: reverse Feistel with K${17 - r.roundIndex}.`,
+        ),
+        `Swap halves, apply Final Permutation (FP).`,
+        `Plaintext: ${bitsToHex(trace.plaintext).toUpperCase()}.`,
+    ];
 
     return {
         outputLabel: 'Plaintext',
-        output,
-        steps: [
-            `Use private exponent d=${d} with modulus n=${n}.`,
-            ...blocks
-                .slice(0, 8)
-                .map(
-                    (block, index) =>
-                        `Step ${index + 1}: m=c^d mod n => ${decrypted[index]}`,
-                ),
-            'Convert decoded integer codes back to characters.',
-        ],
+        output: bitsToHex(trace.plaintext).toUpperCase(),
+        steps,
     };
+}
+
+function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
+    // Use small primes for educational readability: p=61, q=53, e=17
+    // This gives n=3233 which is small enough to show individual char encryption
+    const p = 61n;
+    const q = 53n;
+    const e = 17n;
+    const keys = generateRsaKeys(p, q, e);
+
+    if (mode === 'encrypt') {
+        const chars = Array.from(text);
+        const encrypted: string[] = [];
+        const steps: string[] = [
+            `Key generation with small primes for education:`,
+            `p = ${keys.p}, q = ${keys.q}`,
+            `n = p × q = ${keys.n}`,
+            `φ(n) = (p-1)(q-1) = ${keys.phi}`,
+            `e = ${keys.e} (chosen, gcd(e, φ(n)) = 1)`,
+            `d = e⁻¹ mod φ(n) = ${keys.d} (via extended Euclidean)`,
+            `Public key: (e=${keys.e}, n=${keys.n})`,
+            `Private key: (d=${keys.d}, n=${keys.n})`,
+            '',
+            `Encrypting "${text}" — each character m → c = m^e mod n:`,
+        ];
+
+        for (let i = 0; i < chars.length; i++) {
+            const m = BigInt(chars[i].charCodeAt(0));
+            // c = m^e mod n using bigint
+            const c = modPowBigInt(m, keys.e, keys.n);
+            encrypted.push(c.toString());
+
+            if (i < 8) {
+                steps.push(`Char '${chars[i]}' (m=${m.toString()}): c = ${m}^${keys.e} mod ${keys.n} = ${c}`);
+            }
+        }
+
+        if (chars.length > 8) {
+            steps.push(`... and ${chars.length - 8} more characters encrypted similarly.`);
+        }
+
+        steps.push('');
+        steps.push(`Ciphertext blocks: ${encrypted.join(' ')}`);
+
+        return {
+            outputLabel: 'Cipher blocks',
+            output: encrypted.join(' '),
+            steps,
+        };
+    }
+
+    // decrypt mode
+    const blocks = text.trim().split(/\s+/).filter(Boolean);
+    const decrypted: string[] = [];
+    const steps: string[] = [
+        `Use private key: d=${keys.d}, n=${keys.n}`,
+        '',
+        `Decrypting — each cipher block c → m = c^d mod n:`,
+    ];
+
+    for (let i = 0; i < blocks.length; i++) {
+        try {
+            const c = BigInt(blocks[i]);
+            const m = modPowBigInt(c, keys.d, keys.n);
+            const code = Number(m);
+            const char = String.fromCharCode(code);
+            decrypted.push(char);
+
+            if (i < 8) {
+                steps.push(`Block ${c}: m = ${c}^${keys.d} mod ${keys.n} = ${code} ('${char}')`);
+            }
+        } catch {
+            steps.push(`Block "${blocks[i]}": could not parse as integer`);
+            decrypted.push('�');
+        }
+    }
+
+    if (blocks.length > 8) {
+        steps.push(`... and ${blocks.length - 8} more blocks.`);
+    }
+
+    steps.push('');
+    steps.push(`Decrypted text: ${decrypted.join('')}`);
+
+    return {
+        outputLabel: 'Plaintext',
+        output: decrypted.join(''),
+        steps,
+    };
+}
+
+// Modular exponentiation for bigint
+function modPowBigInt(base: bigint, exp: bigint, mod: bigint): bigint {
+    if (mod === 1n) {
+        return 0n;
+    }
+
+    let result = 1n;
+    let b = base % mod;
+    let power = exp;
+
+    while (power > 0n) {
+        if (power % 2n === 1n) {
+            result = (result * b) % mod;
+        }
+
+        power = power / 2n;
+        b = (b * b) % mod;
+    }
+
+    return result;
 }
 
 function runSignatureLab(
     mode: SimulationMode,
     text: string,
-    key: string,
+    _key: string,
 ): SimulationResult {
-    const normalizedKey = key || 'private-crypt-key';
-    const digest = pseudoSha256(text);
+    // Use small primes where e=17 is coprime with φ(n)
+    // p=61, q=53 gives φ(n) = 60*52 = 3120, gcd(17, 3120) = 1 ✓
+    const toyKeys = generateRsaKeys(61n, 53n, 17n);
 
     if (mode === 'encrypt') {
-        const signature = `${digest.slice(0, 24)}.${pseudoSha256(`${normalizedKey}:${digest}`).slice(0, 24)}`;
+        const trace = signMessage(text, toyKeys);
 
         return {
             outputLabel: 'Signature token',
-            output: signature,
+            output: trace.signatureHex,
             steps: [
-                'Hash the original message to produce a digest.',
-                'Sign digest with private key material (simulated) to create signature token.',
-                'Distribute message + signature for verification.',
-                'Receiver checks signature using paired public logic.',
+                `Hash message with SHA-256: ${trace.digestHex.slice(0, 32)}...`,
+                `Take digest prefix (${trace.digestPrefix.length} hex chars): ${trace.digestPrefix}`,
+                `Parse to integer: ${trace.digestInt.toString()}`,
+                `Sign with private key: ${trace.digestInt.toString()}^${toyKeys.d} mod ${toyKeys.n} = ${trace.signatureInt.toString()}`,
+                `Signature hex: ${trace.signatureHex}`,
+                `Send: message + signature_token to receiver.`,
+                `This demonstrates: only the private key holder can sign.`,
             ],
         };
     }
 
-    const expectedSuffix = pseudoSha256(`${normalizedKey}:${digest}`).slice(
-        0,
-        24,
-    );
+    // verify mode: user provides signature as hex
+    const sigInt = tryParseSignatureHex(text);
+
+    if (sigInt === null) {
+        return {
+            outputLabel: 'Verification',
+            output: 'Could not parse signature. Provide signature as hex string.',
+            steps: ['Enter a valid signature hex (e.g., from the Sign output) to verify.'],
+        };
+    }
+
+    const ver = verifySignature(_key, sigInt, toyKeys);
 
     return {
-        outputLabel: 'Verification expectation',
-        output: `Expected signature suffix for current message: ${expectedSuffix}`,
+        outputLabel: 'Verification result',
+        output: ver.isValid
+            ? `VALID — digest recovered: ${ver.recoveredDigestInt.toString()}, matches expected prefix.`
+            : `INVALID — recovered digest ${ver.recoveredDigestInt.toString()} != expected digest prefix.`,
         steps: [
-            'Receiver hashes the message again.',
-            'Receiver validates signature structure and recomputed suffix.',
-            'If suffix matches, authenticity and integrity are accepted.',
-            'If mismatch occurs, signature is invalid or message changed.',
+            `Receiver hashes message with SHA-256.`,
+            `Recover digest from signature: sig^e mod n = ${sigInt}^${toyKeys.e} mod ${toyKeys.n} = ${ver.recoveredDigestInt.toString()}.`,
+            `Compare recovered digest with computed digest prefix.`,
+            ver.isValid
+                ? 'Digest matches → signature VALID, message authentic.'
+                : 'Digest mismatch → signature INVALID, message tampered or wrong key.',
+            'This demonstrates: anyone with public key can verify, only holder of private key can sign.',
         ],
     };
+}
+
+function tryParseSignatureHex(hex: string): bigint | null {
+    try {
+        const clean = hex.replace(/\s+/g, '');
+
+        return BigInt('0x' + clean);
+    } catch {
+        return null;
+    }
 }
 
 // ── Simulation router ──

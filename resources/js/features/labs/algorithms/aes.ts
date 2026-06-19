@@ -11,10 +11,7 @@ import {
     S_BOX,
     INV_S_BOX,
     RCON,
-    MIX_COLUMN_MATRIX,
-    INV_MIX_COLUMN_MATRIX,
     gfMul,
-    xtime,
     subWord,
     rotWord,
 } from './aes-tables';
@@ -27,9 +24,11 @@ import {
  */
 export function hexToBytes(hex: string): number[] {
     const bytes: number[] = [];
+
     for (let i = 0; i < hex.length; i += 2) {
         bytes.push(parseInt(hex.substring(i, i + 2), 16));
     }
+
     return bytes;
 }
 
@@ -44,14 +43,17 @@ export function bytesToHex(bytes: number[]): string {
 /**
  * Convert state array to column-major 4x4 matrix for visualization
  */
-function stateToMatrix(state: number[]): number[][] {
+export function bytesToMatrix(bytes: number[]): number[][] {
     const matrix: number[][] = [];
+
     for (let row = 0; row < 4; row++) {
         matrix[row] = [];
+
         for (let col = 0; col < 4; col++) {
-            matrix[row][col] = state[col * 4 + row];
+            matrix[row][col] = bytes[col * 4 + row];
         }
     }
+
     return matrix;
 }
 
@@ -95,12 +97,15 @@ function keyExpansion(key: number[]): number[][] {
 
     // Convert words to round keys (each round key = 16 bytes)
     const roundKeys: number[][] = [];
+
     for (let round = 0; round < Nr + 1; round++) {
         const roundKey: number[] = [];
+
         for (let word = 0; word < 4; word++) {
             const wordIdx = round * 4 + word;
             roundKey.push(...w[wordIdx]);
         }
+
         roundKeys.push(roundKey);
     }
 
@@ -299,6 +304,7 @@ export function aesEncryptBlock(plaintext: number[], key: number[]): AesTrace {
     if (plaintext.length !== 16) {
         throw new Error(`Plaintext must be 16 bytes, got ${plaintext.length}`);
     }
+
     if (key.length !== 16) {
         throw new Error(`Key must be 16 bytes, got ${key.length}`);
     }
@@ -383,6 +389,7 @@ export function aesDecryptBlock(ciphertext: number[], key: number[]): AesTrace {
     if (ciphertext.length !== 16) {
         throw new Error(`Ciphertext must be 16 bytes, got ${ciphertext.length}`);
     }
+
     if (key.length !== 16) {
         throw new Error(`Key must be 16 bytes, got ${key.length}`);
     }

@@ -28,6 +28,7 @@ import {
  */
 export function hexToBits(hex: string): number[] {
     const bits: number[] = [];
+
     for (const char of hex.toUpperCase()) {
         const value = parseInt(char, 16);
         bits.push((value >> 3) & 1);
@@ -35,6 +36,7 @@ export function hexToBits(hex: string): number[] {
         bits.push((value >> 1) & 1);
         bits.push(value & 1);
     }
+
     return bits;
 }
 
@@ -44,10 +46,12 @@ export function hexToBits(hex: string): number[] {
  */
 export function bitsToHex(bits: number[]): string {
     let hex = '';
+
     for (let i = 0; i < bits.length; i += 4) {
         const value = (bits[i] << 3) | (bits[i + 1] << 2) | (bits[i + 2] << 1) | bits[i + 3];
         hex += value.toString(16).toUpperCase();
     }
+
     return hex;
 }
 
@@ -62,7 +66,6 @@ function xorBits(a: number[], b: number[]): number[] {
  * Left shift a bit array by n positions
  */
 function leftShift(bits: number[], n: number): number[] {
-    const len = bits.length;
     return [...bits.slice(n), ...bits.slice(0, n)];
 }
 
@@ -124,6 +127,7 @@ function feistelFunction(R: number[], roundKey: number[]): number[] {
 
     // Step 3: S-box substitution (48 → 32 bits)
     const sboxOutput: number[] = [];
+
     for (let i = 0; i < 8; i++) {
         const sixBits = xored.slice(i * 6, i * 6 + 6);
         const fourBits = sboxSubstitute(sixBits, S_BOXES[i]);
@@ -176,6 +180,7 @@ export function desEncryptBlock(plaintext: number[], key: number[]): DesTrace {
     if (plaintext.length !== 64) {
         throw new Error(`Plaintext must be 64 bits, got ${plaintext.length}`);
     }
+
     if (key.length !== 64) {
         throw new Error(`Key must be 64 bits, got ${key.length}`);
     }
@@ -203,10 +208,12 @@ export function desEncryptBlock(plaintext: number[], key: number[]): DesTrace {
         // Calculate intermediate values for trace
         const expandedR = permute(R, E);
         const xoredWithKey = xorBits(expandedR, roundKey);
-        let sboxOutput: number[] = [];
+        const sboxOutput: number[] = [];
+
         for (let i = 0; i < 8; i++) {
             sboxOutput.push(...sboxSubstitute(xoredWithKey.slice(i * 6, i * 6 + 6), S_BOXES[i]));
         }
+
         const permutedOutput = permute(sboxOutput, P);
 
         rounds.push({
@@ -256,6 +263,7 @@ export function desDecryptBlock(ciphertext: number[], key: number[]): DesTrace {
     if (ciphertext.length !== 64) {
         throw new Error(`Ciphertext must be 64 bits, got ${ciphertext.length}`);
     }
+
     if (key.length !== 64) {
         throw new Error(`Key must be 64 bits, got ${key.length}`);
     }
@@ -284,10 +292,12 @@ export function desDecryptBlock(ciphertext: number[], key: number[]): DesTrace {
         // Calculate intermediate values for trace
         const expandedR = permute(R, E);
         const xoredWithKey = xorBits(expandedR, roundKey);
-        let sboxOutput: number[] = [];
+        const sboxOutput: number[] = [];
+
         for (let i = 0; i < 8; i++) {
             sboxOutput.push(...sboxSubstitute(xoredWithKey.slice(i * 6, i * 6 + 6), S_BOXES[i]));
         }
+
         const permutedOutput = permute(sboxOutput, P);
 
         rounds.push({

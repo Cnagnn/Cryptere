@@ -50,6 +50,7 @@ describe('DES', () => {
                 // Generate random 64-bit values as hex strings
                 let ptHex = '';
                 let keyHex = '';
+
                 for (let j = 0; j < 16; j++) {
                     ptHex += randomHexChars[Math.floor(Math.random() * 16)];
                     keyHex += randomHexChars[Math.floor(Math.random() * 16)];

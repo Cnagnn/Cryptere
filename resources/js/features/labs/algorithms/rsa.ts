@@ -31,6 +31,7 @@ export function modPow(base: bigint, exp: bigint, mod: bigint): bigint {
         if (e % 2n === 1n) {
             result = (result * b) % mod;
         }
+
         e = e / 2n;
         b = (b * b) % mod;
     }
@@ -129,6 +130,7 @@ export function modInverse(a: bigint, m: bigint): bigint | null {
 
     // Make result positive
     let inverse = result.x % m;
+
     if (inverse < 0n) {
         inverse += m;
     }
@@ -140,13 +142,24 @@ export function modInverse(a: bigint, m: bigint): bigint | null {
  * Check if a number is prime
  */
 function isPrime(n: bigint): boolean {
-    if (n < 2n) return false;
-    if (n === 2n) return true;
-    if (n % 2n === 0n) return false;
+    if (n < 2n) {
+return false;
+}
+
+    if (n === 2n) {
+return true;
+}
+
+    if (n % 2n === 0n) {
+return false;
+}
 
     for (let i = 3n; i * i <= n; i += 2n) {
-        if (n % i === 0n) return false;
+        if (n % i === 0n) {
+return false;
+}
     }
+
     return true;
 }
 
@@ -193,9 +206,11 @@ export function generateRsaKeys(p: bigint, q: bigint, e: bigint): RsaKeyGenTrace
     if (!isPrime(p)) {
         throw new Error(`p (${p}) is not prime`);
     }
+
     if (!isPrime(q)) {
         throw new Error(`q (${q}) is not prime`);
     }
+
     keyGenSteps.push(`p = ${p} (prime: verified)`);
     keyGenSteps.push(`q = ${q} (prime: verified)`);
 
@@ -224,9 +239,11 @@ export function generateRsaKeys(p: bigint, q: bigint, e: bigint): RsaKeyGenTrace
     }
 
     let d = extGcdResult.x % phi;
+
     if (d < 0n) {
         d += phi;
     }
+
     keyGenSteps.push(`d = e⁻¹ mod φ(n) = ${d}`);
 
     // Verify

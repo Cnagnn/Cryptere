@@ -50,6 +50,7 @@ export const H0: readonly number[] = [
  */
 function rotr(x: number, n: number): number {
     const shifted = ((x >>> n) | (x << (32 - n))) >>> 0;
+
     return shifted;
 }
 
@@ -207,7 +208,7 @@ export function sha256(message: string): string {
     const padded = padMessage(messageBytes);
 
     // Initialize hash values
-    let H = [...H0];
+    const H = [...H0];
 
     // Process each 512-bit (64-byte) block
     const numBlocks = padded.length / 64;
@@ -279,8 +280,7 @@ export function sha256Trace(message: string): Sha256Trace {
     const padded = padMessage(messageBytes);
 
     // Initialize hash values
-    let H = [...H0];
-    const initialHash = [...H];
+    const H = [...H0];
 
     const blocks: Sha256BlockTrace[] = [];
     const numBlocks = padded.length / 64;

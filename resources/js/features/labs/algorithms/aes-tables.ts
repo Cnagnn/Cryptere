@@ -121,10 +121,12 @@ export const INV_MIX_COLUMN_MATRIX: readonly number[][] = [
  */
 export function xtime(b: number): number {
     const result = b << 1;
+
     if (result & 0x100) {
         // If overflow (bit 8 set), XOR with reduction polynomial 0x1b
         return (result & 0xff) ^ 0x1b;
     }
+
     return result & 0xff;
 }
 
@@ -146,8 +148,7 @@ export function gfMul(a: number, b: number): number {
             result ^= aa;
         }
 
-        // Check if high bit of a is set before left shift
-        const highBit = aa & 0x80;
+        // Check if high bit of a is set before left shift (for xtime overflow detection)
         aa = xtime(aa);
         bb = bb >> 1;
 
