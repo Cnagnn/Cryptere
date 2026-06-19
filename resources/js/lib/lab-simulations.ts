@@ -339,29 +339,38 @@ export function conceptLensByLab(
             };
         case 'aes-lab':
             return {
-                title: 'Symmetric Block Concept',
+                title: 'Symmetric Block Cipher (AES-128)',
                 points: [
-                    'Same key is used for encryption and decryption.',
-                    'This lab visualizes byte-level mixing as a learning approximation.',
-                    'Real AES uses multiple rounds with substitution and permutation.',
+                    'AES-128 encrypts 16-byte blocks using a 128-bit key across 10 rounds.',
+                    'Each round applies SubBytes (S-box lookup), ShiftRows (byte rotation), MixColumns (GF multiplication), and AddRoundKey (XOR with round key).',
+                    'Only the correct key can reverse all 10 rounds to recover the plaintext.',
                 ],
             };
         case 'des-lab':
             return {
                 title: 'Feistel Block Cipher',
                 points: [
-                    'DES splits the 64-bit block into left and right halves each round.',
-                    'The f-function expands the right half, mixes with a round key, and passes through S-boxes.',
-                    'Sixteen Feistel rounds with swapped halves produce the final ciphertext.',
+                    'DES encrypts 64-bit blocks using a 64-bit key across 16 Feistel rounds.',
+                    'The f-function expands R from 32→48 bits, XORs with round key, applies 8 S-boxes, and permutes.',
+                    'The Feistel structure makes encryption and decryption use the same algorithm with reversed round keys.',
                 ],
             };
         case 'rsa-lab':
             return {
                 title: 'Asymmetric Key Exchange',
                 points: [
-                    'Public key encrypts, private key decrypts.',
-                    'Security relies on hard factorization of large integers.',
-                    'This lab uses small numbers to make modular arithmetic readable.',
+                    'RSA uses a public key (e, n) to encrypt and a private key (d, n) to decrypt.',
+                    'Security relies on the practical difficulty of factoring large numbers into primes.',
+                    'Key generation uses extended Euclidean algorithm to find d where e × d ≡ 1 (mod φ(n)).',
+                ],
+            };
+        case 'digital-signature-lab':
+            return {
+                title: 'RSA Digital Signature',
+                points: [
+                    'A sender hashes the message with SHA-256 and signs the digest with their private key.',
+                    'Anyone with the public key can verify the signature and recover the digest.',
+                    'If the recovered digest matches the recomputed hash, the message is authentic and unaltered.',
                 ],
             };
         default:
@@ -827,8 +836,9 @@ function buildAesDecryptSteps(
 ): string[] {
     const steps: string[] = [
         `Parse hex ciphertext into 16-byte block.`,
-        `Apply Initial Permutation (IP) equivalent via AddRoundKey.`,
-        `10 inverse rounds: InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns.`,
+        `Begin with final AddRoundKey (round 10 key) — no IP in AES.`,
+        `Round 1-9 inverse: InvShiftRows, InvSubBytes, InvAddRoundKey, InvMixColumns.`,
+        `Round 10 inverse: InvShiftRows, InvSubBytes, InvAddRoundKey (no InvMixColumns).`,
     ];
 
     if (validPadding) {
