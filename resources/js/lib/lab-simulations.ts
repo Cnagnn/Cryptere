@@ -329,6 +329,15 @@ export function conceptLensByLab(
                     'Real AES uses multiple rounds with substitution and permutation.',
                 ],
             };
+        case 'des-lab':
+            return {
+                title: 'Feistel Block Cipher',
+                points: [
+                    'DES splits the 64-bit block into left and right halves each round.',
+                    'The f-function expands the right half, mixes with a round key, and passes through S-boxes.',
+                    'Sixteen Feistel rounds with swapped halves produce the final ciphertext.',
+                ],
+            };
         case 'rsa-lab':
             return {
                 title: 'Asymmetric Key Exchange',
@@ -423,6 +432,22 @@ export function visualizationLensByLab(
                     result: `${mixed} (0x${mixed.toString(16).padStart(2, '0')})`,
                 };
             }),
+        };
+    }
+
+    if (slug === 'des-lab') {
+        const rounds = Array.from({ length: 16 }, (_, i) => i + 1);
+
+        return {
+            title: 'Feistel Round Structure',
+            description:
+                'Each round expands R, mixes with a round key, applies S-boxes, then swaps halves.',
+            headers: ['Round', 'Operation', 'Result'],
+            rows: rounds.map((round) => ({
+                source: `Round ${round}`,
+                operation: `L${round} = R${round - 1}; R${round} = L${round - 1} XOR f(R${round - 1}, K${round})`,
+                result: `K${round} derived from key schedule`,
+            })),
         };
     }
 

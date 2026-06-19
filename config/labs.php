@@ -26,14 +26,14 @@ return [
     ],
 
     'aes-lab' => [
-        'title' => 'AES-128',
-        'summary' => 'Explore a modern block cipher with focus on operation modes and plaintext change effects.',
+        'title' => 'AES (Demonstrasi)',
+        'summary' => 'Pelajari sandi blok modern dengan 10 putaran SubBytes, ShiftRows, MixColumns, dan AddRoundKey. Contoh edukasi, bukan implementasi produksi.',
         'group' => 'symmetric',
     ],
 
     'des-lab' => [
-        'title' => 'DES',
-        'summary' => 'Explore the legacy 64-bit Feistel cipher with round-by-round educational visualization.',
+        'title' => 'DES (Demonstrasi)',
+        'summary' => 'Pelajari sandi blok Feistel 64-bit dengan 16 putaran. Demonstrasi edukasi: struktur Feistel, S-box, dan key schedule. Contoh bukan implementasi produksi.',
         'group' => 'symmetric',
     ],
 
