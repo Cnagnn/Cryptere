@@ -48,6 +48,7 @@ import { dashboard } from '@/routes';
 import { index as labsIndex } from '@/routes/labs';
 import type {
     AesTrace,
+    DesTrace,
     FormatValue,
     LabShowProps,
     RsaKeyGenTraceData,
@@ -340,10 +341,10 @@ export default function LabsShow({ lab }: LabShowProps) {
     const showKeyInput = lab.slug !== 'rsa-lab';
 
     // Extract trace data for GlassBoxLab
-    const rawTrace = (rawResult as { trace?: { aes?: AesTrace; des?: unknown; rsa?: RsaKeyGenTraceData; signature?: RsaSignatureTraceData } }).trace;
+    const rawTrace = (rawResult as { trace?: { aes?: AesTrace; des?: DesTrace; rsa?: RsaKeyGenTraceData; signature?: RsaSignatureTraceData } }).trace;
     const algoTrace = {
         aes: rawTrace?.aes,
-        des: rawTrace?.des as Parameters<typeof GlassBoxLab>[0]['desTrace'],
+        des: rawTrace?.des,
         rsa: rawTrace?.rsa,
         signature: rawTrace?.signature,
     };

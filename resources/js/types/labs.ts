@@ -86,25 +86,30 @@ export type Sha256RoundStep = {
 };
 
 // Glass Box trace types for SimulationResult
+// All byte/bit arrays stay as number[] — conversion to display strings
+// happens at the visualizer panel level only.
 export type AesTrace = {
     plaintext: number[];
     rounds: Array<{
         roundIndex: number;
-        stateBefore: string[];
-        afterSubBytes: string[];
-        afterShiftRows: string[];
-        afterMixColumns: string[];
-        afterAddRoundKey: string[];
+        stateBefore: number[];
+        afterSubBytes: number[];
+        afterShiftRows: number[];
+        afterMixColumns: number[];
+        afterAddRoundKey: number[];
     }>;
-    ciphertext: string;
+    ciphertext: number[];
 };
 
 export type DesTrace = {
     plaintext: string;
     rounds: Array<{
         roundIndex: number;
-        L: string;
-        R: string;
+        L: number[];
+        R: number[];
+        expandedR?: number[];
+        sboxOutput?: number[];
+        permutedOutput?: number[];
     }>;
     ciphertext: string;
 };

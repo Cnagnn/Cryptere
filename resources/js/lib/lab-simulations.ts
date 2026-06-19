@@ -718,13 +718,13 @@ function runAesConcept(
                     plaintext: trace.plaintext,
                     rounds: trace.rounds.map((r) => ({
                         roundIndex: r.roundIndex,
-                        stateBefore: r.stateBefore.map((b: number) => b.toString()),
-                        afterSubBytes: r.afterSubBytes.map((b: number) => b.toString()),
-                        afterShiftRows: r.afterShiftRows.map((b: number) => b.toString()),
-                        afterMixColumns: r.afterMixColumns.map((b: number) => b.toString()),
-                        afterAddRoundKey: r.afterAddRoundKey.map((b: number) => b.toString()),
+                        stateBefore: r.stateBefore,
+                        afterSubBytes: r.afterSubBytes,
+                        afterShiftRows: r.afterShiftRows,
+                        afterMixColumns: r.afterMixColumns,
+                        afterAddRoundKey: r.afterAddRoundKey,
                     })),
-                    ciphertext: aesBytesToHex(trace.ciphertext),
+                    ciphertext: trace.ciphertext,
                 },
             },
         };
@@ -758,13 +758,13 @@ function runAesConcept(
                     plaintext: trace.plaintext,
                     rounds: trace.rounds.map((r) => ({
                         roundIndex: r.roundIndex,
-                        stateBefore: r.stateBefore.map((b: number) => b.toString()),
-                        afterSubBytes: r.afterSubBytes.map((b: number) => b.toString()),
-                        afterShiftRows: r.afterShiftRows.map((b: number) => b.toString()),
-                        afterMixColumns: r.afterMixColumns.map((b: number) => b.toString()),
-                        afterAddRoundKey: r.afterAddRoundKey.map((b: number) => b.toString()),
+                        stateBefore: r.stateBefore,
+                        afterSubBytes: r.afterSubBytes,
+                        afterShiftRows: r.afterShiftRows,
+                        afterMixColumns: r.afterMixColumns,
+                        afterAddRoundKey: r.afterAddRoundKey,
                     })),
-                    ciphertext: aesBytesToHex(trace.plaintext),
+                    ciphertext: trace.plaintext,
                 },
             },
         };
@@ -794,13 +794,13 @@ function runAesConcept(
                     plaintext: trace.plaintext,
                     rounds: trace.rounds.map((r) => ({
                         roundIndex: r.roundIndex,
-                        stateBefore: r.stateBefore.map((b: number) => b.toString()),
-                        afterSubBytes: r.afterSubBytes.map((b: number) => b.toString()),
-                        afterShiftRows: r.afterShiftRows.map((b: number) => b.toString()),
-                        afterMixColumns: r.afterMixColumns.map((b: number) => b.toString()),
-                        afterAddRoundKey: r.afterAddRoundKey.map((b: number) => b.toString()),
+                        stateBefore: r.stateBefore,
+                        afterSubBytes: r.afterSubBytes,
+                        afterShiftRows: r.afterShiftRows,
+                        afterMixColumns: r.afterMixColumns,
+                        afterAddRoundKey: r.afterAddRoundKey,
                     })),
-                    ciphertext: aesBytesToHex(trace.ciphertext),
+                    ciphertext: trace.ciphertext,
                 },
             },
         };
@@ -840,13 +840,13 @@ function runAesConcept(
                 plaintext: trace.plaintext,
                 rounds: trace.rounds.map((r) => ({
                     roundIndex: r.roundIndex,
-                    stateBefore: r.stateBefore.map((b: number) => b.toString()),
-                    afterSubBytes: r.afterSubBytes.map((b: number) => b.toString()),
-                    afterShiftRows: r.afterShiftRows.map((b: number) => b.toString()),
-                    afterMixColumns: r.afterMixColumns.map((b: number) => b.toString()),
-                    afterAddRoundKey: r.afterAddRoundKey.map((b: number) => b.toString()),
+                    stateBefore: r.stateBefore,
+                    afterSubBytes: r.afterSubBytes,
+                    afterShiftRows: r.afterShiftRows,
+                    afterMixColumns: r.afterMixColumns,
+                    afterAddRoundKey: r.afterAddRoundKey,
                 })),
-                ciphertext: aesBytesToHex(trace.plaintext),
+                ciphertext: trace.plaintext,
             },
         },
     };
@@ -943,8 +943,11 @@ function runDesConcept(
                     plaintext: normalizedText,
                     rounds: trace.rounds.map((r) => ({
                         roundIndex: r.roundIndex,
-                        L: bitsToHex(r.newL),
-                        R: bitsToHex(r.newR),
+                        L: r.L,
+                        R: r.R,
+                        expandedR: r.expandedR,
+                        sboxOutput: r.sboxOutput,
+                        permutedOutput: r.permutedOutput,
                     })),
                     ciphertext: bitsToHex(trace.ciphertext).toUpperCase(),
                 },
@@ -975,6 +978,20 @@ function runDesConcept(
                 ),
                 'Apply the final permutation to recover the plaintext block.',
             ],
+            trace: {
+                des: {
+                    plaintext: normalizedText,
+                    rounds: trace.rounds.map((r) => ({
+                        roundIndex: r.roundIndex,
+                        L: r.L,
+                        R: r.R,
+                        expandedR: r.expandedR,
+                        sboxOutput: r.sboxOutput,
+                        permutedOutput: r.permutedOutput,
+                    })),
+                    ciphertext: bitsToHex(trace.ciphertext).toUpperCase(),
+                },
+            },
         };
     }
 
@@ -987,6 +1004,7 @@ function runDesConcept(
                 'DES requires exactly 16 hexadecimal characters (64 bits) for input.',
                 'For the standard DES known vector, the lab shows the exact result.',
             ],
+            trace: { des: { plaintext: normalizedText, rounds: [], ciphertext: '' } },
         };
     }
 
@@ -1011,6 +1029,20 @@ function runDesConcept(
             outputLabel: 'Ciphertext (hex)',
             output: bitsToHex(trace.ciphertext).toUpperCase(),
             steps,
+            trace: {
+                des: {
+                    plaintext: normalizedText,
+                    rounds: trace.rounds.map((r) => ({
+                        roundIndex: r.roundIndex,
+                        L: r.L,
+                        R: r.R,
+                        expandedR: r.expandedR,
+                        sboxOutput: r.sboxOutput,
+                        permutedOutput: r.permutedOutput,
+                    })),
+                    ciphertext: bitsToHex(trace.ciphertext).toUpperCase(),
+                },
+            },
         };
     }
 
@@ -1032,6 +1064,20 @@ function runDesConcept(
         outputLabel: 'Plaintext',
         output: bitsToHex(trace.plaintext).toUpperCase(),
         steps,
+        trace: {
+            des: {
+                plaintext: normalizedText,
+                rounds: trace.rounds.map((r) => ({
+                    roundIndex: r.roundIndex,
+                    L: r.L,
+                    R: r.R,
+                    expandedR: r.expandedR,
+                    sboxOutput: r.sboxOutput,
+                    permutedOutput: r.permutedOutput,
+                })),
+                ciphertext: bitsToHex(trace.ciphertext).toUpperCase(),
+            },
+        },
     };
 }
 
