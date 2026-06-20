@@ -44,6 +44,7 @@ import {
     runSimulation,
     validationErrorByLab,
 } from '@/lib/lab-simulations';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as labsIndex } from '@/routes/labs';
 import type {
@@ -56,6 +57,8 @@ import type {
     SimulationMode,
     SimulationResult,
 } from '@/types/labs';
+
+const bentoCardClass = 'h-full overflow-hidden border-border/70 bg-card/95 shadow-sm';
 
 function keySetupByLab(slug: string): string[] {
     switch (slug) {
@@ -382,8 +385,8 @@ export default function LabsShow({ lab }: LabShowProps) {
         <>
             <Head title={`${lab.title} Lab`} />
 
-            <div className="relative flex flex-col gap-3 px-4 pt-3 pb-4 lg:pt-3 lg:pb-4">
-                <header className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
+                <header className="animate-fade-in-up relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex min-w-0 flex-col gap-1">
                         <TypographyH1>{lab.title}</TypographyH1>
                         <TypographyMuted>{pageSummary}</TypographyMuted>
@@ -406,9 +409,13 @@ export default function LabsShow({ lab }: LabShowProps) {
                             </TabsList>
                         </Tabs>
                     </div>
-                </header>{' '}
-                <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                    <Card className="lg:col-span-4">
+                </header>
+
+                <section
+                    className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12"
+                    style={{ animationDelay: '100ms' }}
+                >
+                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
                         <CardHeader className="gap-1 pb-4">
                             <CardTitle className="flex items-center gap-2">
                                 Dasar Algoritma
@@ -450,7 +457,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                         </CardContent>
                     </Card>
 
-                    <Card className="lg:col-span-4">
+                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
                         <CardHeader className="gap-1 pb-4">
                             <CardTitle className="flex items-center gap-2">
                                 Pembuatan Kunci
@@ -500,7 +507,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                         </CardContent>
                     </Card>
 
-                    <Card className="lg:col-span-4">
+                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
                         <CardHeader className="gap-1 pb-4">
                             <CardTitle className="flex items-center gap-2">
                                 Data dan Format
@@ -628,7 +635,11 @@ export default function LabsShow({ lab }: LabShowProps) {
                         </CardContent>
                     </Card>
                 </section>
-                <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+
+                <section
+                    className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12"
+                    style={{ animationDelay: '200ms' }}
+                >
                     <GlassBoxLab
                         slug={lab.slug}
                         steps={translatedSteps}
@@ -643,7 +654,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                         sigTrace={algoTrace.signature}
                     />
 
-                    <Card className="lg:col-span-4">
+                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
                         <CardHeader className="gap-1 pb-4">
                             <CardTitle className="flex items-center gap-2">
                                 Hasil Akhir

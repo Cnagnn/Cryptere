@@ -32,6 +32,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 import type {
     AesTrace,
     DesTrace,
@@ -100,7 +101,7 @@ export default function GlassBoxLab(props: GlassBoxLabProps) {
     };
 
     return (
-        <Card className="lg:col-span-8 flex min-h-96 flex-col">
+        <Card className={cn('lg:col-span-8 flex min-h-96 flex-col border-border/70 bg-card/95 shadow-sm')}>
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between gap-3">
                     {/* Learner mode toggle */}
