@@ -18,8 +18,9 @@ import {
     bitsToHex,
 } from '@/features/labs/algorithms/des';
 
-import { generateRsaKeys } from '@/features/labs/algorithms/rsa';
+import { generateRsaKeys, modPow as rsaModPow } from '@/features/labs/algorithms/rsa';
 import { signMessage, verifySignature } from '@/features/labs/algorithms/rsa';
+import { sha256 } from '@/features/labs/algorithms/sha256';
 import type {
     ConceptLens,
     FormatValue,
@@ -515,8 +516,8 @@ export function visualizationLensByLab(
         rows: [
             {
                 source: normalizedInput.slice(0, 24) || '(empty)',
-                operation: 'Generate digest',
-                result: pseudoSha256(normalizedInput).slice(0, 16),
+                operation: 'Generate digest (SHA-256)',
+                result: sha256(normalizedInput).slice(0, 16),
             },
             {
                 source: 'Digest + key material',
@@ -568,34 +569,6 @@ function modPow(base: number, exponent: number, modulus: number): number {
     }
 
     return result;
-}
-
-/**
- * @deprecated Bukan SHA-256 sungguhan.
- * Ini FNV-1a 32-bit + xorshift extension untuk demo edukasi cepat.
- * Akan diganti dengan SHA-256 asli di Phase 2 (features/labs/algorithms/sha256.ts).
- * JANGAN dipakai untuk apa pun selain visualisasi pedagogis.
- */
-function pseudoSha256(input: string): string {
-    const seed = 0x811c9dc5;
-    const data = new TextEncoder().encode(input);
-    let hash = seed;
-
-    for (const value of data) {
-        hash ^= value;
-        hash = Math.imul(hash, 0x01000193);
-    }
-
-    let output = '';
-
-    for (let i = 0; i < 8; i += 1) {
-        hash ^= hash << 13;
-        hash ^= hash >>> 17;
-        hash ^= hash << 5;
-        output += (hash >>> 0).toString(16).padStart(8, '0');
-    }
-
-    return output.toUpperCase();
 }
 
 // ── Simulation engines ──
@@ -723,6 +696,7 @@ function runAesConcept(
                         afterShiftRows: r.afterShiftRows,
                         afterMixColumns: r.afterMixColumns,
                         afterAddRoundKey: r.afterAddRoundKey,
+                        roundKey: r.roundKey,
                     })),
                     ciphertext: trace.ciphertext,
                 },
@@ -763,8 +737,9 @@ function runAesConcept(
                         afterShiftRows: r.afterShiftRows,
                         afterMixColumns: r.afterMixColumns,
                         afterAddRoundKey: r.afterAddRoundKey,
+                        roundKey: r.roundKey,
                     })),
-                    ciphertext: trace.plaintext,
+                    ciphertext: ctBytes,
                 },
             },
         };
@@ -799,6 +774,7 @@ function runAesConcept(
                         afterShiftRows: r.afterShiftRows,
                         afterMixColumns: r.afterMixColumns,
                         afterAddRoundKey: r.afterAddRoundKey,
+                        roundKey: r.roundKey,
                     })),
                     ciphertext: trace.ciphertext,
                 },
@@ -816,6 +792,7 @@ function runAesConcept(
             outputLabel: 'Plaintext',
             output: '',
             steps: ['Ciphertext must be at least 16 bytes (32 hex characters) for AES block decryption.'],
+            trace: { aes: { plaintext: [], rounds: [], ciphertext: [] } },
         };
     }
 
@@ -845,8 +822,9 @@ function runAesConcept(
                     afterShiftRows: r.afterShiftRows,
                     afterMixColumns: r.afterMixColumns,
                     afterAddRoundKey: r.afterAddRoundKey,
+                    roundKey: r.roundKey,
                 })),
-                ciphertext: trace.plaintext,
+                ciphertext: cipherBytes.slice(0, 16),
             },
         },
     };
@@ -980,7 +958,7 @@ function runDesConcept(
             ],
             trace: {
                 des: {
-                    plaintext: normalizedText,
+                    plaintext: bitsToHex(trace.plaintext).toUpperCase(),
                     rounds: trace.rounds.map((r) => ({
                         roundIndex: r.roundIndex,
                         L: r.L,
@@ -989,7 +967,7 @@ function runDesConcept(
                         sboxOutput: r.sboxOutput,
                         permutedOutput: r.permutedOutput,
                     })),
-                    ciphertext: bitsToHex(trace.ciphertext).toUpperCase(),
+                    ciphertext: normalizedText,
                 },
             },
         };
@@ -1066,7 +1044,7 @@ function runDesConcept(
         steps,
         trace: {
             des: {
-                plaintext: normalizedText,
+                plaintext: bitsToHex(trace.plaintext).toUpperCase(),
                 rounds: trace.rounds.map((r) => ({
                     roundIndex: r.roundIndex,
                     L: r.L,
@@ -1075,7 +1053,7 @@ function runDesConcept(
                     sboxOutput: r.sboxOutput,
                     permutedOutput: r.permutedOutput,
                 })),
-                ciphertext: bitsToHex(trace.ciphertext).toUpperCase(),
+                ciphertext: normalizedText,
             },
         },
     };
@@ -1108,7 +1086,7 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
         for (let i = 0; i < chars.length; i++) {
             const m = BigInt(chars[i].charCodeAt(0));
             // c = m^e mod n using bigint
-            const c = modPowBigInt(m, keys.e, keys.n);
+            const c = rsaModPow(m, keys.e, keys.n);
             encrypted.push(c.toString());
 
             if (i < 8) {
@@ -1159,7 +1137,7 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
     for (let i = 0; i < blocks.length; i++) {
         try {
             const c = BigInt(blocks[i]);
-            const m = modPowBigInt(c, keys.d, keys.n);
+            const m = rsaModPow(c, keys.d, keys.n);
             const code = Number(m);
             const char = String.fromCharCode(code);
             decrypted.push(char);
@@ -1202,28 +1180,6 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
             },
         },
     };
-}
-
-// Modular exponentiation for bigint
-function modPowBigInt(base: bigint, exp: bigint, mod: bigint): bigint {
-    if (mod === 1n) {
-        return 0n;
-    }
-
-    let result = 1n;
-    let b = base % mod;
-    let power = exp;
-
-    while (power > 0n) {
-        if (power % 2n === 1n) {
-            result = (result * b) % mod;
-        }
-
-        power = power / 2n;
-        b = (b * b) % mod;
-    }
-
-    return result;
 }
 
 function runSignatureLab(
@@ -1278,6 +1234,12 @@ function runSignatureLab(
 
     const ver = verifySignature(_key, sigInt, toyKeys);
 
+    // Compute the expected digest hex and prefix from the original message
+    const expectedDigestHex = sha256(_key);
+    const maxHexChars = toyKeys.n.toString(16).length - 1;
+    const numChars = Math.min(4, maxHexChars);
+    const expectedDigestPrefix = expectedDigestHex.substring(0, numChars);
+
     return {
         outputLabel: 'Verification result',
         output: ver.isValid
@@ -1294,8 +1256,8 @@ function runSignatureLab(
         ],
         trace: {
             signature: {
-                digestHex: ver.recoveredDigestInt.toString(),
-                digestPrefix: '',
+                digestHex: expectedDigestHex,
+                digestPrefix: expectedDigestPrefix,
                 isValid: ver.isValid,
                 explanationSteps: ver.explanationSteps,
             },

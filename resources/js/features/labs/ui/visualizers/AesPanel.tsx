@@ -20,6 +20,7 @@ interface AesPanelProps {
     steps: string[];
     learnerMode: 'pemula' | 'mahir';
     activeStep: number;
+    onStepChange?: (n: number) => void;
 }
 
 function hexValue(value: number): string {
@@ -91,6 +92,7 @@ export default function AesPanel({
     trace,
     learnerMode,
     activeStep,
+    onStepChange,
 }: AesPanelProps) {
     const rounds = trace.rounds;
     const totalRounds = rounds.length;
@@ -223,7 +225,7 @@ export default function AesPanel({
                         {rounds.map((r, i) => (
                             <button
                                 key={r.roundIndex}
-                                onClick={() => {}}
+                                onClick={() => onStepChange?.(i + 1)}
                                 className={cn(
                                     'size-2 rounded-full text-[8px] flex items-center justify-center transition-colors',
                                     i === currentRoundIndex

@@ -40,23 +40,6 @@ export function bytesToHex(bytes: number[]): string {
     return bytes.map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
-/**
- * Convert state array to column-major 4x4 matrix for visualization
- */
-export function bytesToMatrix(bytes: number[]): number[][] {
-    const matrix: number[][] = [];
-
-    for (let row = 0; row < 4; row++) {
-        matrix[row] = [];
-
-        for (let col = 0; col < 4; col++) {
-            matrix[row][col] = bytes[col * 4 + row];
-        }
-    }
-
-    return matrix;
-}
-
 // ── Key Expansion ───────────────────────────────────────────────────────────
 
 /**
@@ -448,6 +431,12 @@ export function aesDecryptBlock(ciphertext: number[], key: number[]): AesTrace {
 
     // Reverse rounds array to show from round 0 to Nr-1
     rounds.reverse();
+
+    // Renumber round indices to 0..Nr-1 for consistent display
+    rounds.forEach((r, i) => {
+        r.roundIndex = i;
+        r.label = `Round ${i + 1}`;
+    });
 
     return {
         plaintext: afterAddRoundKey,

@@ -353,7 +353,8 @@ export default function LabsShow({ lab }: LabShowProps) {
         setActiveStepIndex(0);
         setIsWalkthroughPlaying(false);
         setLearnerMode('pemula');
-    }, [inputFormat, inputText, keyInput, mode, outputFormat, learnerMode]);
+         
+    }, [inputFormat, inputText, keyInput, mode, outputFormat]);
 
     useEffect(() => {
         if (!isWalkthroughPlaying || rawResult.steps.length <= 1) {

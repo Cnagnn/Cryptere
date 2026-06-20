@@ -12,6 +12,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { bitsToHex } from '@/features/labs/algorithms/des';
 import { cn } from '@/lib/utils';
 import type { DesTrace } from '@/types/labs';
 
@@ -20,21 +21,7 @@ interface DesPanelProps {
     steps: string[];
     learnerMode: 'pemula' | 'mahir';
     activeStep: number;
-}
-
-function bitsToHex(bits: number[]): string {
-    let hex = '';
-
-    for (let i = 0; i < bits.length; i += 4) {
-        const nibble = bits.slice(i, i + 4);
-
-        if (nibble.length === 4) {
-            const value = (nibble[0] << 3) | (nibble[1] << 2) | (nibble[2] << 1) | nibble[3];
-            hex += value.toString(16).toUpperCase();
-        }
-    }
-
-    return hex;
+    onStepChange?: (n: number) => void;
 }
 
 function BitCell({ bit, highlighted = false }: { bit: number; highlighted?: boolean }) {
@@ -141,6 +128,7 @@ export default function DesPanel({
     trace,
     learnerMode,
     activeStep,
+    onStepChange,
 }: DesPanelProps) {
     const rounds = trace.rounds;
 
@@ -223,9 +211,10 @@ export default function DesPanel({
 
                         {/* Round navigation */}
                         <div className="flex justify-center gap-1 flex-wrap">
-                            {rounds.map((r) => (
+                            {rounds.map((r, i) => (
                                 <button
                                     key={r.roundIndex}
+                                    onClick={() => onStepChange?.(i + 1)}
                                     className={cn(
                                         'size-2 rounded-full text-[8px] flex items-center justify-center transition-colors',
                                         r.roundIndex === currentRound.roundIndex

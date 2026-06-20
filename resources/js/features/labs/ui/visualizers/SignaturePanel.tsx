@@ -13,6 +13,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { hexToBytes } from '@/features/labs/algorithms/aes';
 import type { RsaSignatureTraceData } from '@/types/labs';
 
 interface SignaturePanelProps {
@@ -20,16 +21,6 @@ interface SignaturePanelProps {
     steps: string[];
     learnerMode: 'pemula' | 'mahir';
     mode: 'encrypt' | 'decrypt';
-}
-
-function hexToBytes(hex: string): number[] {
-    const bytes: number[] = [];
-
-    for (let i = 0; i < hex.length; i += 2) {
-        bytes.push(parseInt(hex.substring(i, i + 2), 16));
-    }
-
-    return bytes;
 }
 
 export default function SignaturePanel({
@@ -153,7 +144,7 @@ export default function SignaturePanel({
                 <CardContent>
                     <div className="rounded bg-muted/40 p-3 text-sm">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs text-muted-foreground">Recovered digest</span>
+                            <span className="text-xs text-muted-foreground">Expected digest (SHA-256)</span>
                             <Badge variant={trace.isValid ? 'default' : 'destructive'}>
                                 {trace.isValid ? 'VALID' : 'INVALID'}
                             </Badge>
@@ -161,6 +152,11 @@ export default function SignaturePanel({
                         <div className="font-mono text-xs break-all">
                             {trace.digestHex || '(none)'}
                         </div>
+                        {trace.digestPrefix && (
+                            <div className="mt-2 text-xs text-muted-foreground">
+                                Prefix compared: <span className="font-mono">{trace.digestPrefix}</span>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>

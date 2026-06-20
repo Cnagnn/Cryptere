@@ -32,7 +32,13 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
-import type { AesTrace, DesTrace, SimulationMode } from '@/types/labs';
+import type {
+    AesTrace,
+    DesTrace,
+    RsaKeyGenTraceData,
+    RsaSignatureTraceData,
+    SimulationMode,
+} from '@/types/labs';
 import { glossary } from './glossary-content';
 import AesPanel from './visualizers/AesPanel';
 import DesPanel from './visualizers/DesPanel';
@@ -47,25 +53,10 @@ export interface GlassBoxLabProps {
     learnerMode: 'pemula' | 'mahir';
     onModeChange: (m: 'pemula' | 'mahir') => void;
     mode: SimulationMode;
-    // Optional traces
     aesTrace?: AesTrace;
     desTrace?: DesTrace;
-    rsaTrace?: {
-        p: string;
-        q: string;
-        n: string;
-        phi: string;
-        e: string;
-        d: string;
-        keyGenSteps: string[];
-    };
-    sigTrace?: {
-        digestHex: string;
-        digestPrefix: string;
-        signatureInt?: string;
-        isValid?: boolean;
-        explanationSteps: string[];
-    };
+    rsaTrace?: RsaKeyGenTraceData;
+    sigTrace?: RsaSignatureTraceData;
 }
 
 type GlossaryEntry = {
@@ -184,6 +175,7 @@ export default function GlassBoxLab(props: GlassBoxLabProps) {
                             steps={steps}
                             learnerMode={learnerMode}
                             activeStep={activeStep}
+                            onStepChange={onStepChange}
                         />
                     )}
                     {slug === 'des-lab' && desTrace && (
@@ -192,6 +184,7 @@ export default function GlassBoxLab(props: GlassBoxLabProps) {
                             steps={steps}
                             learnerMode={learnerMode}
                             activeStep={activeStep}
+                            onStepChange={onStepChange}
                         />
                     )}
                     {slug === 'rsa-lab' && rsaTrace && (
