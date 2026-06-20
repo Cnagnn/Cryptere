@@ -15,7 +15,7 @@ describe('DES Lab', () => {
         );
 
         expect(result.output).toBe('85E813540F0AB405');
-        expect(result.steps.some((step) => step.includes('Round 16'))).toBe(
+        expect(result.steps.some((step) => step.includes('Putaran 16'))).toBe(
             true,
         );
     });
@@ -33,7 +33,7 @@ describe('DES Lab', () => {
 
     it('validates DES input and key block sizes', () => {
         expect(validationErrorByLab('des-lab', 'encrypt', '1234', 'abcd')).toBe(
-            'DES input must be exactly one 64-bit block: 16 hexadecimal characters.',
+            'Masukan DES harus tepat satu blok 64-bit: 16 karakter heksadesimal.',
         );
     });
 });

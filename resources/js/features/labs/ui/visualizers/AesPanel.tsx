@@ -80,7 +80,7 @@ function StateMatrix({
             <div className="grid grid-cols-4 gap-0.5">
                 {[0, 1, 2, 3].map((col) => (
                     <div key={col} className="flex justify-center text-[8px] text-muted-foreground">
-                        col {col}
+                        Kol {col}
                     </div>
                 ))}
             </div>
@@ -124,12 +124,12 @@ export default function AesPanel({
                         AES-128
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                        {totalRounds} rounds
+                        {totalRounds} putaran
                     </span>
                 </div>
                 {currentRound && (
                     <Badge variant="secondary" className="text-xs">
-                        Round {currentRound.roundIndex + 1}
+                        Putaran {currentRound.roundIndex + 1}
                     </Badge>
                 )}
             </div>
@@ -138,13 +138,13 @@ export default function AesPanel({
             {phase === 'initial' && (
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Initial State Matrix</CardTitle>
+                        <CardTitle className="text-sm">Matriks State Awal</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <StateMatrix state={trace.plaintext} title="Plaintext (before AddRoundKey)" />
+                        <StateMatrix state={trace.plaintext} title="Plaintext (sebelum AddRoundKey)" />
                         {learnerMode === 'mahir' && (
                             <p className="mt-2 text-xs text-muted-foreground italic">
-                                16 bytes loaded column-major into a 4×4 matrix.
+                                16 byte dimuat secara kolom-utama ke matriks 4×4.
                             </p>
                         )}
                     </CardContent>
@@ -156,20 +156,20 @@ export default function AesPanel({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm">
-                                Round {currentRound.roundIndex + 1} — State Evolution
+                                Putaran {currentRound.roundIndex + 1} — Evolusi State
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <StateMatrix
                                 state={currentRound.stateBefore}
-                                title="Before Round"
+                                title="Sebelum Putaran"
                             />
 
                             <div className="text-center text-xs text-muted-foreground">↓</div>
 
                             <StateMatrix
                                 state={currentRound.afterSubBytes}
-                                title="After SubBytes (S-box)"
+                                title="Setelah SubBytes (S-box)"
                                 highlightIndices={[]}
                             />
 
@@ -177,7 +177,7 @@ export default function AesPanel({
 
                             <StateMatrix
                                 state={currentRound.afterShiftRows}
-                                title="After ShiftRows"
+                                title="Setelah ShiftRows"
                             />
 
                             {currentRound.roundIndex < 9 && (
@@ -185,7 +185,7 @@ export default function AesPanel({
                                     <div className="text-center text-xs text-muted-foreground">↓</div>
                                     <StateMatrix
                                         state={currentRound.afterMixColumns}
-                                        title="After MixColumns (GF(2^8) × 4)"
+                                        title="Setelah MixColumns (GF(2^8) × 4)"
                                     />
                                 </>
                             )}
@@ -196,8 +196,8 @@ export default function AesPanel({
                                 state={currentRound.afterAddRoundKey}
                                 title={
                                     currentRound.roundIndex < 9
-                                        ? 'After AddRoundKey (round key mixed)'
-                                        : 'After AddRoundKey (final round — no MixColumns)'
+                                        ? 'Setelah AddRoundKey (round key dicampur)'
+                                        : 'Setelah AddRoundKey (putaran akhir — tanpa MixColumns)'
                                 }
                             />
                         </CardContent>
@@ -207,14 +207,14 @@ export default function AesPanel({
                     {learnerMode === 'mahir' && (
                         <Card className="border-blue-200 dark:border-blue-800">
                             <CardContent className="p-3 space-y-1">
-                                <p className="text-xs font-medium">Round Operations:</p>
+                                <p className="text-xs font-medium">Operasi Putaran:</p>
                                 <ul className="text-xs text-muted-foreground space-y-0.5">
-                                    <li>• SubBytes: Each byte replaced via S-box (non-linear substitution)</li>
-                                    <li>• ShiftRows: Rows rotated left (row 0: 0, row 1: 1, row 2: 2, row 3: 3)</li>
+                                    <li>• SubBytes: Setiap byte diganti melalui S-box (substitusi non-linear)</li>
+                                    <li>• ShiftRows: Baris dirotasi ke kiri (baris 0: 0, baris 1: 1, baris 2: 2, baris 3: 3)</li>
                                     {currentRound.roundIndex < 9 && (
-                                        <li>• MixColumns: Each column multiplied in GF(2^8) (column mixing)</li>
+                                        <li>• MixColumns: Setiap kolom dikalikan dalam GF(2^8) (pencampuran kolom)</li>
                                     )}
-                                    <li>• AddRoundKey: XOR with round key (key-dependent mixing)</li>
+                                    <li>• AddRoundKey: XOR dengan round key (pencampuran bergantung kunci)</li>
                                 </ul>
                             </CardContent>
                         </Card>
@@ -232,7 +232,7 @@ export default function AesPanel({
                                         ? 'bg-primary'
                                         : 'bg-muted hover:bg-muted-foreground/30',
                                 )}
-                                title={`Round ${i + 1}`}
+                                title={`Putaran ${i + 1}`}
                             />
                         ))}
                     </div>
@@ -242,19 +242,19 @@ export default function AesPanel({
             {phase === 'final' && (
                 <Card className="border-green-200 dark:border-green-800">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Ciphertext (Final State)</CardTitle>
+                        <CardTitle className="text-sm">Ciphertext (State Akhir)</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <StateMatrix state={trace.ciphertext} title="After all rounds" />
+                        <StateMatrix state={trace.ciphertext} title="Setelah semua putaran" />
                         <div className="mt-2 rounded bg-green-50 dark:bg-green-950/30 p-2 text-xs">
-                            <span className="text-muted-foreground">Hex: </span>
+                            <span className="text-muted-foreground">Heksa: </span>
                             <span className="font-mono font-medium">
                                 {trace.ciphertext.map(hexValue).join('')}
                             </span>
                         </div>
                         {learnerMode === 'mahir' && (
                             <p className="mt-2 text-xs text-muted-foreground italic">
-                                AES decryption reverses all 10 rounds using inverse operations
+                                Dekripsi AES membalik semua 10 putaran menggunakan operasi invers
                                 (InvShiftRows, InvSubBytes, InvAddRoundKey, InvMixColumns).
                             </p>
                         )}

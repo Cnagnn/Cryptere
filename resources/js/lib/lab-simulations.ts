@@ -33,10 +33,10 @@ import type {
 
 export const formatOptions: Array<{ value: FormatValue; label: string }> = [
     { value: 'ascii', label: 'ASCII / UTF-8' },
-    { value: 'hex', label: 'Hex' },
-    { value: 'binary', label: 'Binary' },
+    { value: 'hex', label: 'Heksadesimal' },
+    { value: 'binary', label: 'Biner' },
     { value: 'base64', label: 'Base64' },
-    { value: 'decimal', label: 'Decimal Bytes' },
+    { value: 'decimal', label: 'Byte Desimal' },
 ];
 
 // ── Byte conversion helpers ──
@@ -87,7 +87,7 @@ export function normalizeInputToText(
         if (!/^[0-9a-fA-F]*$/.test(sanitized) || sanitized.length % 2 !== 0) {
             return {
                 value: null,
-                error: 'Hex input must contain only 0-9, A-F with even length.',
+                error: 'Masukan heksadesimal hanya boleh berisi 0-9, A-F dengan panjang genap.',
             };
         }
 
@@ -111,7 +111,7 @@ export function normalizeInputToText(
         ) {
             return {
                 value: null,
-                error: 'Binary input must be 8-bit groups separated by spaces.',
+                error: 'Masukan biner harus berupa kelompok 8-bit dipisahkan spasi.',
             };
         }
 
@@ -129,7 +129,7 @@ export function normalizeInputToText(
         if (bytes === null) {
             return {
                 value: null,
-                error: 'Base64 input is invalid. Check padding and characters.',
+                error: 'Masukan base64 tidak valid. Periksa padding dan karakter.',
             };
         }
 
@@ -144,7 +144,7 @@ export function normalizeInputToText(
     if (chunks.length === 0 || chunks.some((chunk) => !/^\d+$/.test(chunk))) {
         return {
             value: null,
-            error: 'Decimal bytes must be integer groups separated by spaces.',
+            error: 'Byte desimal harus berupa kelompok bilangan bulat dipisahkan spasi.',
         };
     }
 
@@ -153,7 +153,7 @@ export function normalizeInputToText(
     if (bytes.some((value) => value < 0 || value > 255)) {
         return {
             value: null,
-            error: 'Decimal byte values must be between 0 and 255.',
+            error: 'Nilai byte desimal harus antara 0 dan 255.',
         };
     }
 
@@ -179,7 +179,7 @@ export function normalizeInputForSimulation(
             ) {
                 return {
                     value: null,
-                    error: 'AES decrypt input must be valid hex with even length, for example 4A6F686E.',
+                    error: 'Masukan dekripsi AES harus berupa heksadesimal valid dengan panjang genap, contoh 4A6F686E.',
                 };
             }
 
@@ -207,7 +207,7 @@ export function normalizeInputForSimulation(
             if (!/^\d+(\s+\d+)*$/.test(trimmed)) {
                 return {
                     value: null,
-                    error: 'RSA decrypt input must contain numeric cipher blocks separated by spaces.',
+                    error: 'Masukan dekripsi RSA harus berisi blok cipher numerik dipisahkan spasi.',
                 };
             }
 
@@ -225,7 +225,7 @@ export function normalizeInputForSimulation(
         if (!/^\d+(\s+\d+)*$/.test(trimmed)) {
             return {
                 value: null,
-                error: 'For RSA decrypt, decoded content must resolve to numeric cipher blocks.',
+                error: 'Untuk dekripsi RSA, konten yang didekode harus berupa blok cipher numerik.',
             };
         }
 
@@ -322,65 +322,65 @@ export function conceptLensByLab(
     switch (slug) {
         case 'caesar-cipher-lab':
             return {
-                title: 'Classical Shift Cipher',
+                title: 'Sandi Geser Klasik',
                 points: [
-                    'Each letter is shifted by a constant numeric key.',
-                    'Security is low because only 25 meaningful shift keys exist.',
-                    'Decryption simply applies the inverse shift.',
+                    'Setiap huruf digeser dengan kunci numerik yang konstan.',
+                    'Keamanan rendah karena hanya ada 25 kunci pergeseran yang berarti.',
+                    'Dekripsi cukup menerapkan pergeseran kebalikannya.',
                 ],
             };
         case 'vigenere-cipher-lab':
             return {
-                title: 'Polyalphabetic Substitution',
+                title: 'Substitusi Polialfabetik',
                 points: [
-                    'Keyword letters define changing shifts across positions.',
-                    'Repeated keyword patterns can still leak structure.',
-                    'Decryption uses the same keyword with opposite shifts.',
+                    'Huruf kata kunci menentukan pergeseran yang berubah pada setiap posisi.',
+                    'Pola kata kunci yang berulang masih dapat membocorkan struktur.',
+                    'Dekripsi menggunakan kata kunci yang sama dengan pergeseran berlawanan.',
                 ],
             };
         case 'aes-lab':
             return {
-                title: 'Symmetric Block Cipher (AES-128)',
+                title: 'Sandi Blok Simetris (AES-128)',
                 points: [
-                    'AES-128 encrypts 16-byte blocks using a 128-bit key across 10 rounds.',
-                    'Each round applies SubBytes (S-box lookup), ShiftRows (byte rotation), MixColumns (GF multiplication), and AddRoundKey (XOR with round key).',
-                    'Only the correct key can reverse all 10 rounds to recover the plaintext.',
+                    'AES-128 mengenkripsi blok 16-byte menggunakan kunci 128-bit selama 10 putaran.',
+                    'Setiap putaran menerapkan SubBytes (lookup S-box), ShiftRows (rotasi byte), MixColumns (perkalian GF), dan AddRoundKey (XOR dengan round key).',
+                    'Hanya kunci yang benar dapat membalik semua 10 putaran untuk memulihkan plaintext.',
                 ],
             };
         case 'des-lab':
             return {
-                title: 'Feistel Block Cipher',
+                title: 'Sandi Blok Feistel',
                 points: [
-                    'DES encrypts 64-bit blocks using a 64-bit key across 16 Feistel rounds.',
-                    'The f-function expands R from 32→48 bits, XORs with round key, applies 8 S-boxes, and permutes.',
-                    'The Feistel structure makes encryption and decryption use the same algorithm with reversed round keys.',
+                    'DES mengenkripsi blok 64-bit menggunakan kunci 64-bit selama 16 putaran Feistel.',
+                    'Fungsi f memperluas R dari 32→48 bit, melakukan XOR dengan round key, menerapkan 8 S-box, dan mempermutasi.',
+                    'Struktur Feistel membuat enkripsi dan dekripsi menggunakan algoritma yang sama dengan round key terbalik.',
                 ],
             };
         case 'rsa-lab':
             return {
-                title: 'Asymmetric Key Exchange',
+                title: 'Pertukaran Kunci Asimetris',
                 points: [
-                    'RSA uses a public key (e, n) to encrypt and a private key (d, n) to decrypt.',
-                    'Security relies on the practical difficulty of factoring large numbers into primes.',
-                    'Key generation uses extended Euclidean algorithm to find d where e × d ≡ 1 (mod φ(n)).',
+                    'RSA menggunakan kunci publik (e, n) untuk enkripsi dan kunci privat (d, n) untuk dekripsi.',
+                    'Keamanan bergantung pada kesulitan praktis memfaktorkan bilangan besar menjadi prima.',
+                    'Pembangkitan kunci menggunakan algoritma Euclidean yang diperluas untuk mencari d di mana e × d ≡ 1 (mod φ(n)).',
                 ],
             };
         case 'digital-signature-lab':
             return {
-                title: 'RSA Digital Signature',
+                title: 'Tanda Tangan Digital RSA',
                 points: [
-                    'A sender hashes the message with SHA-256 and signs the digest with their private key.',
-                    'Anyone with the public key can verify the signature and recover the digest.',
-                    'If the recovered digest matches the recomputed hash, the message is authentic and unaltered.',
+                    'Pengirim menghash pesan dengan SHA-256 dan menandatangani digest dengan kunci privatnya.',
+                    'Siapa pun dengan kunci publik dapat memverifikasi tanda tangan dan memulihkan digest.',
+                    'Jika digest yang dipulihkan cocok dengan hash yang dihitung ulang, pesan bersifat autentik dan tidak diubah.',
                 ],
             };
         default:
             return {
-                title: 'Digital Signature Flow',
+                title: 'Alur Tanda Tangan Digital',
                 points: [
-                    'A sender signs message digest with private key logic.',
-                    'Receiver verifies signature using public verification logic.',
-                    'Goal: authenticity, integrity, and non-repudiation.',
+                    'Pengirim menandatangani digest pesan dengan logika kunci privat.',
+                    'Penerima memverifikasi tanda tangan menggunakan logika verifikasi publik.',
+                    'Tujuan: autentisitas, integritas, dan non-repudiasi.',
                 ],
             };
     }
@@ -402,12 +402,12 @@ export function visualizationLensByLab(
         const appliedShift = mode === 'encrypt' ? safeShift : -safeShift;
 
         return {
-            title: 'Character Shift Table',
-            description: 'Observe each letter move by the same offset.',
-            headers: ['Source', 'Operation', 'Result'],
+            title: 'Tabel Pergeseran Karakter',
+            description: 'Amati setiap huruf bergeser dengan offset yang sama.',
+            headers: ['Sumber', 'Operasi', 'Hasil'],
             rows: normalized.split('').map((char) => ({
                 source: char,
-                operation: `shift ${appliedShift >= 0 ? '+' : ''}${appliedShift}`,
+                operation: `geser ${appliedShift >= 0 ? '+' : ''}${appliedShift}`,
                 result: shiftCharacter(char, appliedShift),
             })),
         };
@@ -418,10 +418,10 @@ export function visualizationLensByLab(
         const keyword = normalizeLetters(keyInput) || 'KEY';
 
         return {
-            title: 'Keyword-Driven Shift Map',
+            title: 'Peta Pergeseran Berbasis Kata Kunci',
             description:
-                'Each position uses a different shift from the keyword sequence.',
-            headers: ['Source', 'Operation', 'Result'],
+                'Setiap posisi menggunakan pergeseran berbeda dari urutan kata kunci.',
+            headers: ['Sumber', 'Operasi', 'Hasil'],
             rows: text.split('').map((char, index) => {
                 const keyChar = keyword[index % keyword.length];
                 const keyShift = keyChar.charCodeAt(0) - 65;
@@ -445,17 +445,17 @@ export function visualizationLensByLab(
         );
 
         return {
-            title: 'Byte Mixing View',
+            title: 'Tampilan Pencampuran Byte',
             description:
-                'Educational byte XOR view to explain reversible mixing.',
-            headers: ['Source', 'Operation', 'Result'],
+                'Tampilan XOR byte edukatif untuk menjelaskan pencampuran yang dapat dibalik.',
+            headers: ['Sumber', 'Operasi', 'Hasil'],
             rows: bytes.map((byte, index) => {
                 const keyByte = keyBytes[index % keyBytes.length];
                 const mixed = byte ^ keyByte;
 
                 return {
                     source: `${byte} (0x${byte.toString(16).padStart(2, '0')})`,
-                    operation: `XOR key ${keyByte}`,
+                    operation: `Kunci XOR ${keyByte}`,
                     result: `${mixed} (0x${mixed.toString(16).padStart(2, '0')})`,
                 };
             }),
@@ -466,14 +466,14 @@ export function visualizationLensByLab(
         const rounds = Array.from({ length: 16 }, (_, i) => i + 1);
 
         return {
-            title: 'Feistel Round Structure',
+            title: 'Struktur Putaran Feistel',
             description:
-                'Each round expands R, mixes with a round key, applies S-boxes, then swaps halves.',
-            headers: ['Round', 'Operation', 'Result'],
+                'Setiap putaran memperluas R, mencampur dengan round key, menerapkan S-box, lalu menukar bagian.',
+            headers: ['Putaran', 'Operasi', 'Hasil'],
             rows: rounds.map((round) => ({
-                source: `Round ${round}`,
+                source: `Putaran ${round}`,
                 operation: `L${round} = R${round - 1}; R${round} = L${round - 1} XOR f(R${round - 1}, K${round})`,
-                result: `K${round} derived from key schedule`,
+                result: `K${round} diturunkan dari jadwal kunci`,
             })),
         };
     }
@@ -492,10 +492,10 @@ export function visualizationLensByLab(
                       .map((value) => Number.parseInt(value, 10));
 
         return {
-            title: 'Modular Arithmetic Blocks',
+            title: 'Blok Aritmetika Modular',
             description:
-                'Track each block as modular exponentiation is applied.',
-            headers: ['Source', 'Operation', 'Result'],
+                'Lacak setiap blok saat eksponensiasi modular diterapkan.',
+            headers: ['Sumber', 'Operasi', 'Hasil'],
             rows: parts.map((value) => ({
                 source: String(value),
                 operation:
@@ -510,19 +510,19 @@ export function visualizationLensByLab(
     }
 
     return {
-        title: 'Signing and Verification Lens',
-        description: 'Observe how digest and signature token are related.',
-        headers: ['Source', 'Operation', 'Result'],
+        title: 'Lensa Penandatanganan dan Verifikasi',
+        description: 'Amati hubungan antara digest dan token tanda tangan.',
+        headers: ['Sumber', 'Operasi', 'Hasil'],
         rows: [
             {
-                source: normalizedInput.slice(0, 24) || '(empty)',
-                operation: 'Generate digest (SHA-256)',
+                source: normalizedInput.slice(0, 24) || '(kosong)',
+                operation: 'Hasilkan digest (SHA-256)',
                 result: sha256(normalizedInput).slice(0, 16),
             },
             {
-                source: 'Digest + key material',
+                source: 'Digest + material kunci',
                 operation:
-                    mode === 'encrypt' ? 'Sign' : 'Verify expected suffix',
+                    mode === 'encrypt' ? 'Tandatangani' : 'Verifikasi akhiran yang diharapkan',
                 result: rawResult.output.slice(0, 24),
             },
         ],
@@ -594,17 +594,17 @@ function runCaesar(
         .map((char, index) => {
             const to = shiftCharacter(char, appliedShift);
 
-            return `Step ${index + 1}: ${char} -> ${to} (shift ${appliedShift >= 0 ? '+' : ''}${appliedShift})`;
+            return `Langkah ${index + 1}: ${char} -> ${to} (geser ${appliedShift >= 0 ? '+' : ''}${appliedShift})`;
         });
 
     return {
         outputLabel: mode === 'encrypt' ? 'Ciphertext' : 'Plaintext',
         output: transformed,
         steps: [
-            `Normalize input into uppercase alphabetic stream: ${normalized || '(empty)'}`,
-            `Set shift key = ${safeShift} and applied shift = ${appliedShift}.`,
+            `Normalkan masukan menjadi aliran alfabet huruf besar: ${normalized || '(kosong)'}`,
+            `Atur kunci pergeseran = ${safeShift} dan pergeseran yang diterapkan = ${appliedShift}.`,
             ...previewSteps,
-            `Combine transformed letters into final ${mode === 'encrypt' ? 'ciphertext' : 'plaintext'}.`,
+            `Gabungkan huruf yang ditransformasi menjadi ${mode === 'encrypt' ? 'ciphertext' : 'plaintext'} akhir.`,
         ],
     };
 }
@@ -637,18 +637,18 @@ function runVigenere(
             const appliedShift = mode === 'encrypt' ? keyShift : -keyShift;
             const to = shiftCharacter(char, appliedShift);
 
-            return `Step ${index + 1}: text ${char}, key ${keyChar} (${keyShift}) -> ${to}`;
+            return `Langkah ${index + 1}: teks ${char}, kunci ${keyChar} (${keyShift}) -> ${to}`;
         });
 
     return {
         outputLabel: mode === 'encrypt' ? 'Ciphertext' : 'Plaintext',
         output: transformed,
         steps: [
-            `Normalize text: ${normalizedText || '(empty)'}`,
-            `Normalize keyword and repeat sequence: ${normalizedKey}`,
-            `Apply ${mode === 'encrypt' ? 'forward' : 'backward'} shift based on each keyword letter.`,
+            `Normalkan teks: ${normalizedText || '(kosong)'}`,
+            `Normalkan kata kunci dan ulang urutannya: ${normalizedKey}`,
+            `Terapkan pergeseran ${mode === 'encrypt' ? 'maju' : 'mundur'} berdasarkan setiap huruf kata kunci.`,
             ...previewSteps,
-            `Join every transformed character to produce the final output.`,
+            `Gabungkan setiap karakter yang ditransformasi untuk menghasilkan keluaran akhir.`,
         ],
     };
 }
@@ -672,18 +672,18 @@ function runAesConcept(
         const trace = aesEncryptBlock(ptBytes, keyBytes);
 
         return {
-            outputLabel: 'Ciphertext (hex)',
+            outputLabel: 'Ciphertext (heksadesimal)',
             output: aesBytesToHex(trace.ciphertext),
             steps: [
-                'Load 128-bit plaintext into the AES state matrix.',
-                'Expand the 128-bit key into 11 round keys.',
-                'Initial AddRoundKey.',
+                'Muat plaintext 128-bit ke dalam matriks state AES.',
+                'Ekspansi kunci 128-bit menjadi 11 round key.',
+                'AddRoundKey awal.',
                 ...Array.from(
                     { length: 9 },
                     (_, index) =>
-                        `Round ${index + 1}: SubBytes, ShiftRows, MixColumns, AddRoundKey.`,
+                        `Putaran ${index + 1}: SubBytes, ShiftRows, MixColumns, AddRoundKey.`,
                 ),
-                'Final round 10: SubBytes, ShiftRows, AddRoundKey.',
+                'Putaran akhir 10: SubBytes, ShiftRows, AddRoundKey.',
                 `Ciphertext: ${aesBytesToHex(trace.ciphertext)}.`,
             ],
             trace: {
@@ -715,17 +715,17 @@ function runAesConcept(
         const trace = aesDecryptBlock(ctBytes, keyBytes);
 
         return {
-            outputLabel: 'Plaintext (hex)',
+            outputLabel: 'Plaintext (heksadesimal)',
             output: aesBytesToHex(trace.plaintext),
             steps: [
-                'Load ciphertext into the AES state matrix.',
-                'Apply inverse final round.',
+                'Muat ciphertext ke dalam matriks state AES.',
+                'Terapkan putaran akhir invers.',
                 ...Array.from(
                     { length: 9 },
                     (_, index) =>
-                        `Inverse round ${10 - index}: InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns.`,
+                        `Putaran invers ${10 - index}: InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns.`,
                 ),
-                `Recover the original 128-bit plaintext block: ${aesBytesToHex(trace.plaintext)}.`,
+                `Pulihkan blok plaintext 128-bit asli: ${aesBytesToHex(trace.plaintext)}.`,
             ],
             trace: {
                 aes: {
@@ -761,7 +761,7 @@ function runAesConcept(
         const steps = buildAesSteps(trace);
 
         return {
-            outputLabel: 'Ciphertext (hex)',
+            outputLabel: 'Ciphertext (heksadesimal)',
             output: aesBytesToHex(trace.ciphertext),
             steps,
             trace: {
@@ -791,7 +791,7 @@ function runAesConcept(
         return {
             outputLabel: 'Plaintext',
             output: '',
-            steps: ['Ciphertext must be at least 16 bytes (32 hex characters) for AES block decryption.'],
+            steps: ['Ciphertext harus minimal 16 byte (32 karakter heksadesimal) untuk dekripsi blok AES.'],
             trace: { aes: { plaintext: [], rounds: [], ciphertext: [] } },
         };
     }
@@ -838,22 +838,22 @@ function pkcs7Pad(data: number[], blockSize: number): number[] {
 
 function buildAesSteps(trace: ReturnType<typeof aesEncryptBlock>): string[] {
     const steps: string[] = [
-        `Normalize plaintext into ${trace.plaintext.length} bytes.`,
-        `Pad to 16-byte block using PKCS#7.`,
-        `Expand 16-byte key into 11 round keys.`,
-        `Initial state: load plaintext into 4×4 matrix.`,
-        `Initial AddRoundKey: XOR state with round key 0.`,
+        `Normalkan plaintext menjadi ${trace.plaintext.length} byte.`,
+        `Padding ke blok 16-byte menggunakan PKCS#7.`,
+        `Ekspansi kunci 16-byte menjadi 11 round key.`,
+        `State awal: muat plaintext ke matriks 4×4.`,
+        `AddRoundKey awal: XOR state dengan round key 0.`,
     ];
 
     for (let i = 0; i < 10; i++) {
         if (i < 9) {
             steps.push(
-                `Round ${i + 1}: SubBytes → ShiftRows → MixColumns → AddRoundKey. ` +
-                `S-box substitution on each byte, row shifts, column mixing, key XOR.`,
+                `Putaran ${i + 1}: SubBytes → ShiftRows → MixColumns → AddRoundKey. ` +
+                `Substitusi S-box pada setiap byte, pergeseran baris, pencampuran kolom, XOR kunci.`,
             );
         } else {
             steps.push(
-                `Round 10: SubBytes → ShiftRows → AddRoundKey (no MixColumns in final round).`,
+                `Putaran 10: SubBytes → ShiftRows → AddRoundKey (tanpa MixColumns pada putaran akhir).`,
             );
         }
     }
@@ -869,19 +869,19 @@ function buildAesDecryptSteps(
     validPadding: boolean,
 ): string[] {
     const steps: string[] = [
-        `Parse hex ciphertext into 16-byte block.`,
-        `Begin with final AddRoundKey (round 10 key) — no IP in AES.`,
-        `Round 1-9 inverse: InvShiftRows, InvSubBytes, InvAddRoundKey, InvMixColumns.`,
-        `Round 10 inverse: InvShiftRows, InvSubBytes, InvAddRoundKey (no InvMixColumns).`,
+        `Uraikan ciphertext heksadesimal menjadi blok 16-byte.`,
+        `Mulai dengan AddRoundKey akhir (kunci putaran 10) — tidak ada IP pada AES.`,
+        `Putaran 1-9 invers: InvShiftRows, InvSubBytes, InvAddRoundKey, InvMixColumns.`,
+        `Putaran 10 invers: InvShiftRows, InvSubBytes, InvAddRoundKey (tanpa InvMixColumns).`,
     ];
 
     if (validPadding) {
-        steps.push(`Remove PKCS#7 padding (${plainBytes.length} bytes of plaintext).`);
+        steps.push(`Hapus padding PKCS#7 (${plainBytes.length} byte plaintext).`);
     } else {
-        steps.push(`Note: padding validation skipped (non-standard or raw decryption).`);
+        steps.push(`Catatan: validasi padding dilewati (dekripsi non-standar atau mentah).`);
     }
 
-    steps.push(`Decrypted plaintext: ${aesBytesToHex(plainBytes).toUpperCase()}.`);
+    steps.push(`Plaintext yang didekripsi: ${aesBytesToHex(plainBytes).toUpperCase()}.`);
 
     return steps;
 }
@@ -904,17 +904,17 @@ function runDesConcept(
         const trace = desEncryptBlock(ptBits, keyBits);
 
         return {
-            outputLabel: 'Ciphertext (hex)',
+            outputLabel: 'Ciphertext (heksadesimal)',
             output: bitsToHex(trace.ciphertext).toUpperCase(),
             steps: [
-                'Apply the DES initial permutation to the 64-bit plaintext block.',
-                'Split the permuted block into L0 and R0 halves.',
+                'Terapkan permutasi awal DES pada blok plaintext 64-bit.',
+                'Bagi blok yang sudah dipermutasi menjadi bagian L0 dan R0.',
                 ...Array.from(
                     { length: 16 },
                     (_, index) =>
-                        `Round ${index + 1}: expand R, XOR round key, pass through S-boxes, permute, then swap halves.`,
+                        `Putaran ${index + 1}: perluas R, XOR dengan round key, lewatkan S-box, permutasi, lalu tukar bagian.`,
                 ),
-                'Apply the final permutation to produce the ciphertext block.',
+                'Terapkan permutasi akhir untuk menghasilkan blok ciphertext.',
             ],
             trace: {
                 des: {
@@ -944,17 +944,17 @@ function runDesConcept(
         const trace = desDecryptBlock(ctBits, keyBits);
 
         return {
-            outputLabel: 'Plaintext (hex)',
+            outputLabel: 'Plaintext (heksadesimal)',
             output: bitsToHex(trace.plaintext).toUpperCase(),
             steps: [
-                'Apply the DES initial permutation to the ciphertext block.',
-                'Use the 16 round keys in reverse order.',
+                'Terapkan permutasi awal DES pada blok ciphertext.',
+                'Gunakan 16 round key dalam urutan terbalik.',
                 ...Array.from(
                     { length: 16 },
                     (_, index) =>
-                        `Round ${index + 1}: reverse Feistel flow with K${16 - index}.`,
+                        `Putaran ${index + 1}: alur Feistel terbalik dengan K${16 - index}.`,
                 ),
-                'Apply the final permutation to recover the plaintext block.',
+                'Terapkan permutasi akhir untuk memulihkan blok plaintext.',
             ],
             trace: {
                 des: {
@@ -976,11 +976,11 @@ function runDesConcept(
     // For non-standard inputs, require exact 16 hex chars (64 bits)
     if (normalizedText.length !== 16 || normalizedKey.length !== 16) {
         return {
-            outputLabel: mode === 'encrypt' ? 'Ciphertext (hex)' : 'Plaintext',
+            outputLabel: mode === 'encrypt' ? 'Ciphertext (heksadesimal)' : 'Plaintext',
             output: '',
             steps: [
-                'DES requires exactly 16 hexadecimal characters (64 bits) for input.',
-                'For the standard DES known vector, the lab shows the exact result.',
+                'DES memerlukan tepat 16 karakter heksadesimal (64 bit) untuk masukan.',
+                'Untuk vektor uji DES standar, lab menampilkan hasil yang tepat.',
             ],
             trace: { des: { plaintext: normalizedText, rounds: [], ciphertext: '' } },
         };
@@ -992,19 +992,19 @@ function runDesConcept(
     if (mode === 'encrypt') {
         const trace = desEncryptBlock(ptBits, keyBits);
         const steps = [
-            `64-bit plaintext: ${normalizedText}.`,
-            `64-bit key: ${normalizedKey}.`,
-            `Apply Initial Permutation (IP).`,
-            `Split into L0 and R0 halves (32 bits each).`,
+            `Plaintext 64-bit: ${normalizedText}.`,
+            `Kunci 64-bit: ${normalizedKey}.`,
+            `Terapkan Permutasi Awal (IP).`,
+            `Bagi menjadi bagian L0 dan R0 (masing-masing 32 bit).`,
             ...trace.rounds.map((r) =>
-                `Round ${r.roundIndex}: expand R${r.roundIndex - 1}, XOR with K${r.roundIndex}, S-box substitution, permutation P, swap halves.`,
+                `Putaran ${r.roundIndex}: perluas R${r.roundIndex - 1}, XOR dengan K${r.roundIndex}, substitusi S-box, permutasi P, tukar bagian.`,
             ),
-            `Swap final halves, apply Final Permutation (FP).`,
+            `Tukar bagian akhir, terapkan Permutasi Akhir (FP).`,
             `Ciphertext: ${bitsToHex(trace.ciphertext).toUpperCase()}.`,
         ];
 
         return {
-            outputLabel: 'Ciphertext (hex)',
+            outputLabel: 'Ciphertext (heksadesimal)',
             output: bitsToHex(trace.ciphertext).toUpperCase(),
             steps,
             trace: {
@@ -1028,13 +1028,13 @@ function runDesConcept(
     const ctBits = hexToBits(normalizedText);
     const trace = desDecryptBlock(ctBits, keyBits);
     const steps = [
-        `64-bit ciphertext: ${normalizedText}.`,
-        `Apply Initial Permutation (IP).`,
-        `Use 16 round keys in reverse order.`,
+        `Ciphertext 64-bit: ${normalizedText}.`,
+        `Terapkan Permutasi Awal (IP).`,
+        `Gunakan 16 round key dalam urutan terbalik.`,
         ...trace.rounds.map((r) =>
-            `Round ${r.roundIndex}: reverse Feistel with K${17 - r.roundIndex}.`,
+            `Putaran ${r.roundIndex}: Feistel terbalik dengan K${17 - r.roundIndex}.`,
         ),
-        `Swap halves, apply Final Permutation (FP).`,
+        `Tukar bagian, terapkan Permutasi Akhir (FP).`,
         `Plaintext: ${bitsToHex(trace.plaintext).toUpperCase()}.`,
     ];
 
@@ -1071,16 +1071,16 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
         const chars = Array.from(text);
         const encrypted: string[] = [];
         const steps: string[] = [
-            `Key generation with small primes for education:`,
+            `Pembangkitan kunci dengan prima kecil untuk edukasi:`,
             `p = ${keys.p}, q = ${keys.q}`,
             `n = p × q = ${keys.n}`,
             `φ(n) = (p-1)(q-1) = ${keys.phi}`,
-            `e = ${keys.e} (chosen, gcd(e, φ(n)) = 1)`,
-            `d = e⁻¹ mod φ(n) = ${keys.d} (via extended Euclidean)`,
-            `Public key: (e=${keys.e}, n=${keys.n})`,
-            `Private key: (d=${keys.d}, n=${keys.n})`,
+            `e = ${keys.e} (dipilih, gcd(e, φ(n)) = 1)`,
+            `d = e⁻¹ mod φ(n) = ${keys.d} (melalui Euclidean yang diperluas)`,
+            `Kunci publik: (e=${keys.e}, n=${keys.n})`,
+            `Kunci privat: (d=${keys.d}, n=${keys.n})`,
             '',
-            `Encrypting "${text}" — each character m → c = m^e mod n:`,
+            `Mengenkripsi "${text}" — setiap karakter m → c = m^e mod n:`,
         ];
 
         for (let i = 0; i < chars.length; i++) {
@@ -1090,19 +1090,19 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
             encrypted.push(c.toString());
 
             if (i < 8) {
-                steps.push(`Char '${chars[i]}' (m=${m.toString()}): c = ${m}^${keys.e} mod ${keys.n} = ${c}`);
+                steps.push(`Karakter '${chars[i]}' (m=${m.toString()}): c = ${m}^${keys.e} mod ${keys.n} = ${c}`);
             }
         }
 
         if (chars.length > 8) {
-            steps.push(`... and ${chars.length - 8} more characters encrypted similarly.`);
+            steps.push(`... dan ${chars.length - 8} karakter lainnya dienkripsi dengan cara yang sama.`);
         }
 
         steps.push('');
-        steps.push(`Ciphertext blocks: ${encrypted.join(' ')}`);
+        steps.push(`Blok ciphertext: ${encrypted.join(' ')}`);
 
         return {
-            outputLabel: 'Cipher blocks',
+            outputLabel: 'Blok cipher',
             output: encrypted.join(' '),
             steps,
             trace: {
@@ -1129,9 +1129,9 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
     const blocks = text.trim().split(/\s+/).filter(Boolean);
     const decrypted: string[] = [];
     const steps: string[] = [
-        `Use private key: d=${keys.d}, n=${keys.n}`,
+        `Gunakan kunci privat: d=${keys.d}, n=${keys.n}`,
         '',
-        `Decrypting — each cipher block c → m = c^d mod n:`,
+        `Mendekripsi — setiap blok cipher c → m = c^d mod n:`,
     ];
 
     for (let i = 0; i < blocks.length; i++) {
@@ -1143,20 +1143,20 @@ function runRsaConcept(mode: SimulationMode, text: string): SimulationResult {
             decrypted.push(char);
 
             if (i < 8) {
-                steps.push(`Block ${c}: m = ${c}^${keys.d} mod ${keys.n} = ${code} ('${char}')`);
+                steps.push(`Blok ${c}: m = ${c}^${keys.d} mod ${keys.n} = ${code} ('${char}')`);
             }
         } catch {
-            steps.push(`Block "${blocks[i]}": could not parse as integer`);
+            steps.push(`Blok "${blocks[i]}": tidak dapat diuraikan sebagai bilangan bulat`);
             decrypted.push('�');
         }
     }
 
     if (blocks.length > 8) {
-        steps.push(`... and ${blocks.length - 8} more blocks.`);
+        steps.push(`... dan ${blocks.length - 8} blok lainnya.`);
     }
 
     steps.push('');
-    steps.push(`Decrypted text: ${decrypted.join('')}`);
+    steps.push(`Teks yang didekripsi: ${decrypted.join('')}`);
 
     return {
         outputLabel: 'Plaintext',
@@ -1195,16 +1195,16 @@ function runSignatureLab(
         const sig = signMessage(text, toyKeys);
 
         return {
-            outputLabel: 'Signature token',
+            outputLabel: 'Token tanda tangan',
             output: sig.signatureHex,
             steps: [
-                `Hash message with SHA-256: ${sig.digestHex.slice(0, 32)}...`,
-                `Take digest prefix (${sig.digestPrefix.length} hex chars): ${sig.digestPrefix}`,
-                `Parse to integer: ${sig.digestInt.toString()}`,
-                `Sign with private key: ${sig.digestInt.toString()}^${toyKeys.d} mod ${toyKeys.n} = ${sig.signatureInt.toString()}`,
-                `Signature hex: ${sig.signatureHex}`,
-                `Send: message + signature_token to receiver.`,
-                `This demonstrates: only the private key holder can sign.`,
+                `Hash pesan dengan SHA-256: ${sig.digestHex.slice(0, 32)}...`,
+                `Ambil awalan digest (${sig.digestPrefix.length} karakter heksa): ${sig.digestPrefix}`,
+                `Uraikan menjadi bilangan bulat: ${sig.digestInt.toString()}`,
+                `Tandatangani dengan kunci privat: ${sig.digestInt.toString()}^${toyKeys.d} mod ${toyKeys.n} = ${sig.signatureInt.toString()}`,
+                `Tanda tangan (heksa): ${sig.signatureHex}`,
+                `Kirim: pesan + token_tanda_tangan ke penerima.`,
+                `Ini menunjukkan: hanya pemegang kunci privat yang dapat menandatangani.`,
             ],
             trace: {
                 signature: {
@@ -1213,8 +1213,8 @@ function runSignatureLab(
                     signatureInt: sig.signatureInt.toString(),
                     explanationSteps: [
                         `Hash: SHA-256("${text}") = ${sig.digestHex}`,
-                        `Digest prefix: ${sig.digestPrefix}`,
-                        `Signing: ${sig.digestInt.toString()}^${toyKeys.d} mod ${toyKeys.n} = ${sig.signatureInt.toString()}`,
+                        `Awalan digest: ${sig.digestPrefix}`,
+                        `Penandatanganan: ${sig.digestInt.toString()}^${toyKeys.d} mod ${toyKeys.n} = ${sig.signatureInt.toString()}`,
                     ],
                 },
             },
@@ -1226,9 +1226,9 @@ function runSignatureLab(
 
     if (sigInt === null) {
         return {
-            outputLabel: 'Verification',
-            output: 'Could not parse signature. Provide signature as hex string.',
-            steps: ['Enter a valid signature hex (e.g., from the Sign output) to verify.'],
+            outputLabel: 'Verifikasi',
+            output: 'Tidak dapat menguraikan tanda tangan. Berikan tanda tangan sebagai string heksadesimal.',
+            steps: ['Masukkan tanda tangan heksadesimal yang valid (misalnya dari keluaran Tandatangani) untuk verifikasi.'],
         };
     }
 
@@ -1241,18 +1241,18 @@ function runSignatureLab(
     const expectedDigestPrefix = expectedDigestHex.substring(0, numChars);
 
     return {
-        outputLabel: 'Verification result',
+        outputLabel: 'Hasil verifikasi',
         output: ver.isValid
-            ? `VALID — digest recovered: ${ver.recoveredDigestInt.toString()}, matches expected prefix.`
-            : `INVALID — recovered digest ${ver.recoveredDigestInt.toString()} != expected digest prefix.`,
+            ? `VALID — digest dipulihkan: ${ver.recoveredDigestInt.toString()}, cocok dengan awalan yang diharapkan.`
+            : `TIDAK VALID — digest yang dipulihkan ${ver.recoveredDigestInt.toString()} ≠ awalan digest yang diharapkan.`,
         steps: [
-            `Receiver hashes message with SHA-256.`,
-            `Recover digest from signature: sig^e mod n = ${sigInt}^${toyKeys.e} mod ${toyKeys.n} = ${ver.recoveredDigestInt.toString()}.`,
-            `Compare recovered digest with computed digest prefix.`,
+            `Penerima menghash pesan dengan SHA-256.`,
+            `Pulihkan digest dari tanda tangan: sig^e mod n = ${sigInt}^${toyKeys.e} mod ${toyKeys.n} = ${ver.recoveredDigestInt.toString()}.`,
+            `Bandingkan digest yang dipulihkan dengan awalan digest yang dihitung.`,
             ver.isValid
-                ? 'Digest matches → signature VALID, message authentic.'
-                : 'Digest mismatch → signature INVALID, message tampered or wrong key.',
-            'This demonstrates: anyone with public key can verify, only holder of private key can sign.',
+                ? 'Digest cocok → tanda tangan VALID, pesan autentik.'
+                : 'Digest tidak cocok → tanda tangan TIDAK VALID, pesan diubah atau kunci salah.',
+            'Ini menunjukkan: siapa pun dengan kunci publik dapat memverifikasi, hanya pemegang kunci privat yang dapat menandatangani.',
         ],
         trace: {
             signature: {
@@ -1298,9 +1298,9 @@ export function runSimulation(
             return runSignatureLab(mode, text, key);
         default:
             return {
-                outputLabel: 'Result',
+                outputLabel: 'Hasil',
                 output: '',
-                steps: ['Unsupported algorithm.'],
+                steps: ['Algoritma tidak didukung.'],
             };
     }
 }
@@ -1310,17 +1310,17 @@ export function runSimulation(
 export function keyLabelByLab(slug: string): string {
     switch (slug) {
         case 'caesar-cipher-lab':
-            return 'Shift key (number)';
+            return 'Kunci pergeseran (angka)';
         case 'vigenere-cipher-lab':
-            return 'Keyword';
+            return 'Kata kunci';
         case 'aes-lab':
-            return 'Symmetric key';
+            return 'Kunci simetris';
         case 'des-lab':
-            return 'DES key';
+            return 'Kunci DES';
         case 'digital-signature-lab':
-            return 'Signing key';
+            return 'Kunci tanda tangan';
         default:
-            return 'Key parameter';
+            return 'Parameter kunci';
     }
 }
 
@@ -1337,7 +1337,7 @@ export function keyPlaceholderByLab(slug: string): string {
         case 'digital-signature-lab':
             return 'private-crypt-key';
         default:
-            return 'Optional key';
+            return 'Kunci opsional';
     }
 }
 
@@ -1355,21 +1355,21 @@ export function defaultTextByLab(slug: string): string {
 export function modeDescription(labSlug: string, mode: SimulationMode): string {
     if (labSlug === 'digital-signature-lab') {
         return mode === 'encrypt'
-            ? 'Create signature tokens from message digests.'
-            : 'Verify authenticity by recomputing expected signature data.';
+            ? 'Buat token tanda tangan dari digest pesan.'
+            : 'Verifikasi autentisitas dengan menghitung ulang data tanda tangan yang diharapkan.';
     }
 
     return mode === 'encrypt'
-        ? 'Transform plaintext into protected representation.'
-        : 'Reverse protected representation back into readable text.';
+        ? 'Transformasikan plaintext menjadi representasi terlindungi.'
+        : 'Balikkan representasi terlindungi kembali menjadi teks yang dapat dibaca.';
 }
 
 export function inputLabelByLab(labSlug: string, mode: SimulationMode): string {
     if (labSlug === 'digital-signature-lab') {
-        return mode === 'encrypt' ? 'Message to sign' : 'Message to verify';
+        return mode === 'encrypt' ? 'Pesan untuk ditandatangani' : 'Pesan untuk diverifikasi';
     }
 
-    return mode === 'encrypt' ? 'Plain input' : 'Cipher input';
+    return mode === 'encrypt' ? 'Masukan plaintext' : 'Masukan ciphertext';
 }
 
 export function inputPlaceholderByLab(
@@ -1377,22 +1377,22 @@ export function inputPlaceholderByLab(
     mode: SimulationMode,
 ): string {
     if (labSlug === 'aes-lab' && mode === 'decrypt') {
-        return 'Enter hex ciphertext, for example 4A6F686E...';
+        return 'Masukkan ciphertext heksadesimal, contoh 4A6F686E...';
     }
 
     if (labSlug === 'des-lab') {
         return mode === 'encrypt'
-            ? 'Enter a 64-bit plaintext block as hex, for example 0123456789ABCDEF'
-            : 'Enter a 64-bit ciphertext block as hex, for example 85E813540F0AB405';
+            ? 'Masukkan blok plaintext 64-bit sebagai heksadesimal, contoh 0123456789ABCDEF'
+            : 'Masukkan blok ciphertext 64-bit sebagai heksadesimal, contoh 85E813540F0AB405';
     }
 
     if (labSlug === 'rsa-lab' && mode === 'decrypt') {
-        return 'Enter cipher blocks, for example 3000 28 2726';
+        return 'Masukkan blok cipher, contoh 3000 28 2726';
     }
 
     return mode === 'encrypt'
-        ? 'Enter plaintext to encrypt...'
-        : 'Enter ciphertext to decrypt...';
+        ? 'Masukkan plaintext untuk dienkripsi...'
+        : 'Masukkan ciphertext untuk didekripsi...';
 }
 
 export function inputHelperByLab(
@@ -1400,18 +1400,18 @@ export function inputHelperByLab(
     mode: SimulationMode,
 ): string {
     if (labSlug === 'aes-lab' && mode === 'decrypt') {
-        return 'Use only hexadecimal characters (0-9, A-F) with an even number of characters.';
+        return 'Gunakan hanya karakter heksadesimal (0-9, A-F) dengan jumlah karakter genap.';
     }
 
     if (labSlug === 'des-lab') {
-        return 'DES is a legacy cipher. Use this lab for educational round visualization, not real security.';
+        return 'DES adalah sandi warisan. Gunakan lab ini untuk visualisasi putaran edukatif, bukan keamanan nyata.';
     }
 
     if (labSlug === 'rsa-lab' && mode === 'decrypt') {
-        return 'Use integer cipher blocks separated by spaces.';
+        return 'Gunakan blok cipher bilangan bulat dipisahkan spasi.';
     }
 
-    return 'Try changing a single character and compare output differences.';
+    return 'Coba ubah satu karakter dan bandingkan perbedaan keluarannya.';
 }
 
 export function validationErrorByLab(
@@ -1421,20 +1421,20 @@ export function validationErrorByLab(
     key: string,
 ): string | null {
     if (text.trim().length === 0) {
-        return 'Input cannot be empty. Provide a value to run the simulation.';
+        return 'Masukan tidak boleh kosong. Berikan nilai untuk menjalankan simulasi.';
     }
 
     if (labSlug === 'caesar-cipher-lab') {
         const parsed = Number.parseInt(key, 10);
 
         if (!Number.isFinite(parsed)) {
-            return 'Caesar key must be a valid integer shift value.';
+            return 'Kunci Caesar harus berupa nilai pergeseran bilangan bulat yang valid.';
         }
     }
 
     if (labSlug === 'vigenere-cipher-lab') {
         if (normalizeLetters(key).length === 0) {
-            return 'Vigenere keyword must include at least one letter (A-Z).';
+            return 'Kata kunci Vigenère harus mengandung minimal satu huruf (A-Z).';
         }
     }
 
@@ -1442,7 +1442,7 @@ export function validationErrorByLab(
         const sanitized = text.replace(/\s+/g, '');
 
         if (!/^[0-9a-fA-F]+$/.test(sanitized) || sanitized.length % 2 !== 0) {
-            return 'AES decrypt input must be valid hex with even length, for example 4A6F686E.';
+            return 'Masukan dekripsi AES harus berupa heksadesimal valid dengan panjang genap, contoh 4A6F686E.';
         }
     }
 
@@ -1451,14 +1451,14 @@ export function validationErrorByLab(
         const sanitizedKey = key.replace(/\s+/g, '');
 
         if (!/^[0-9a-fA-F]+$/.test(sanitized) || sanitized.length !== 16) {
-            return 'DES input must be exactly one 64-bit block: 16 hexadecimal characters.';
+            return 'Masukan DES harus tepat satu blok 64-bit: 16 karakter heksadesimal.';
         }
 
         if (
             !/^[0-9a-fA-F]+$/.test(sanitizedKey) ||
             sanitizedKey.length !== 16
         ) {
-            return 'DES key must be exactly 16 hexadecimal characters including parity bits.';
+            return 'Kunci DES harus tepat 16 karakter heksadesimal termasuk bit paritas.';
         }
     }
 
@@ -1466,7 +1466,7 @@ export function validationErrorByLab(
         const trimmed = text.trim();
 
         if (!/^\d+(\s+\d+)*$/.test(trimmed)) {
-            return 'RSA decrypt input must contain numeric cipher blocks separated by spaces.';
+            return 'Masukan dekripsi RSA harus berisi blok cipher numerik dipisahkan spasi.';
         }
     }
 

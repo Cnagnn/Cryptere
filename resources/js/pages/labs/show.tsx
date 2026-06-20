@@ -119,134 +119,6 @@ function labSummaryBySlug(slug: string, fallback: string): string {
     }
 }
 
-function conceptTitleInIndonesian(title: string): string {
-    const labels: Record<string, string> = {
-        'Classical Shift Cipher': 'Sandi Pergeseran Klasik',
-        'Polyalphabetic Substitution': 'Substitusi Polialfabetik',
-        'Symmetric Block Concept': 'Konsep Blok Simetris',
-        'Asymmetric Key Exchange': 'Pertukaran Kunci Asimetris',
-        'Digital Signature Flow': 'Alur Tanda Tangan Digital',
-    };
-
-    return labels[title] ?? title;
-}
-
-function translateText(value: string): string {
-    const exact: Record<string, string> = {
-        'Transform plaintext into protected representation.':
-            'Ubah teks asli menjadi representasi terlindungi.',
-        'Reverse protected representation back into readable text.':
-            'Kembalikan representasi terlindungi menjadi teks yang dapat dibaca.',
-        'Each letter is shifted by a constant numeric key.':
-            'Setiap huruf digeser menggunakan kunci angka yang sama.',
-        'Security is low because only 25 meaningful shift keys exist.':
-            'Keamanannya rendah karena hanya ada 25 pergeseran bermakna.',
-        'Decryption simply applies the inverse shift.':
-            'Dekripsi memakai pergeseran kebalikan dari kunci.',
-        'Keyword letters define changing shifts across positions.':
-            'Setiap huruf kata kunci menentukan pergeseran pada posisi tertentu.',
-        'Repeated keyword patterns can still leak structure.':
-            'Pola kata kunci yang berulang masih dapat membocorkan struktur pesan.',
-        'Decryption uses the same keyword with opposite shifts.':
-            'Dekripsi memakai kata kunci yang sama dengan arah pergeseran berlawanan.',
-        'Same key is used for encryption and decryption.':
-            'Kunci yang sama dipakai untuk enkripsi dan dekripsi.',
-        'This lab visualizes byte-level mixing as a learning approximation.':
-            'Lab ini memvisualkan pencampuran byte sebagai pendekatan belajar.',
-        'Real AES uses multiple rounds with substitution and permutation.':
-            'AES asli memakai banyak putaran substitusi dan permutasi.',
-        'Public key encrypts, private key decrypts.':
-            'Kunci publik digunakan untuk enkripsi, kunci privat untuk dekripsi.',
-        'Security relies on hard factorization of large integers.':
-            'Keamanan bergantung pada sulitnya memfaktorkan bilangan besar.',
-        'This lab uses small numbers to make modular arithmetic readable.':
-            'Lab ini memakai angka kecil agar aritmetika modular mudah dibaca.',
-        'A sender signs message digest with private key logic.':
-            'Pengirim menandatangani ringkasan pesan dengan logika kunci privat.',
-        'Receiver verifies signature using public verification logic.':
-            'Penerima memverifikasi tanda tangan dengan logika verifikasi publik.',
-        'Goal: authenticity, integrity, and non-repudiation.':
-            'Tujuannya adalah autentisitas, integritas, dan non-repudiation.',
-        Source: 'Sumber',
-        Operation: 'Operasi',
-        Result: 'Hasil',
-        Plaintext: 'Teks asli',
-        'Ciphertext (hex)': 'Ciphertext (hex)',
-        'Cipher blocks': 'Blok cipher',
-        'Signature token': 'Token tanda tangan',
-        'Validation required': 'Validasi diperlukan',
-        'Input could not be normalized for this algorithm mode.':
-            'Input tidak dapat disesuaikan dengan mode algoritma ini.',
-        'Enter plaintext to encrypt...':
-            'Masukkan teks asli untuk dienkripsi...',
-        'Enter ciphertext to decrypt...': 'Masukkan cipher untuk didekripsi...',
-        'Try changing a single character and compare output differences.':
-            'Ubah satu karakter untuk membandingkan perbedaan hasil.',
-        'Use only hexadecimal characters (0-9, A-F) with an even number of characters.':
-            'Gunakan karakter hex (0-9, A-F) dengan jumlah karakter genap.',
-        'Use integer cipher blocks separated by spaces.':
-            'Gunakan blok cipher berupa angka yang dipisahkan spasi.',
-    };
-
-    let translated = exact[value] ?? value;
-
-    translated = translated
-        .replace('Plain input', 'Masukan teks asli')
-        .replace('Cipher input', 'Masukan cipher')
-        .replace('Shift key (number)', 'Kunci pergeseran (angka)')
-        .replace('Symmetric key', 'Kunci simetris')
-        .replace('Signing key', 'Kunci tanda tangan')
-        .replace('Key parameter', 'Parameter kunci')
-        .replace('Character Shift Table', 'Tabel Pergeseran Karakter')
-        .replace('Keyword-Driven Shift Map', 'Peta Pergeseran Kata Kunci')
-        .replace('Byte Mixing View', 'Tampilan Pencampuran Byte')
-        .replace('Modular Arithmetic Blocks', 'Blok Aritmetika Modular')
-        .replace(
-            'Signing and Verification Lens',
-            'Tampilan Tanda Tangan dan Verifikasi',
-        )
-        .replace(
-            'Observe each letter move by the same offset.',
-            'Lihat setiap huruf bergeser dengan jarak yang sama.',
-        )
-        .replace(
-            'Track each block as modular exponentiation is applied.',
-            'Ikuti setiap blok saat eksponensiasi modular diterapkan.',
-        )
-        .replace(
-            'Observe how digest and signature token are related.',
-            'Lihat hubungan antara ringkasan pesan dan token tanda tangan.',
-        )
-        .replace(
-            'Normalize input into uppercase alphabetic stream:',
-            'Normalisasi input menjadi deretan huruf kapital:',
-        )
-        .replace('Step ', 'Langkah ')
-        .replace('shift ', 'geser ')
-        .replace(
-            'Convert decoded integer codes back to characters.',
-            'Ubah kode integer hasil dekripsi kembali menjadi karakter.',
-        )
-        .replace(
-            'Ciphertext is the sequence of modular exponentiation blocks.',
-            'Ciphertext adalah rangkaian blok hasil eksponensiasi modular.',
-        )
-        .replace(
-            'Hash the original message to produce a digest.',
-            'Hash pesan asli untuk membuat ringkasan.',
-        )
-        .replace(
-            'Distribute message + signature for verification.',
-            'Kirim pesan dan tanda tangan untuk diverifikasi.',
-        )
-        .replace(
-            'Receiver checks signature using paired public logic.',
-            'Penerima memeriksa tanda tangan dengan logika publik pasangannya.',
-        );
-
-    return translated;
-}
-
 function formatLabelInIndonesian(value: FormatValue): string {
     if (value === 'decimal') {
         return 'Byte desimal';
@@ -334,8 +206,8 @@ export default function LabsShow({ lab }: LabShowProps) {
         mode,
     );
     const pageSummary = labSummaryBySlug(lab.slug, lab.summary);
-    const translatedSteps = rawResult.steps.map(translateText);
-    const translatedOutputLabel = translateText(rawResult.outputLabel);
+    const translatedSteps = rawResult.steps;
+    const translatedOutputLabel = rawResult.outputLabel;
 
     const safeActiveStepIndex = Math.min(
         activeStepIndex,
@@ -427,14 +299,10 @@ export default function LabsShow({ lab }: LabShowProps) {
                         <CardContent className="space-y-3">
                             <div>
                                 <p className="text-sm font-medium">
-                                    {conceptTitleInIndonesian(
-                                        conceptLens.title,
-                                    )}
+                                    {conceptLens.title}
                                 </p>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    {translateText(
-                                        modeDescription(lab.slug, mode),
-                                    )}
+                                    {modeDescription(lab.slug, mode)}
                                 </p>
                             </div>
                             <Separator />
@@ -450,7 +318,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                         >
                                             {index + 1}
                                         </Badge>
-                                        <span>{translateText(point)}</span>
+                                        <span>{point}</span>
                                     </div>
                                 ))}
                             </div>
@@ -481,7 +349,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                             {showKeyInput ? (
                                 <div className="space-y-2">
                                     <Label htmlFor="lab-key">
-                                        {translateText(keyLabelByLab(lab.slug))}
+                                        {keyLabelByLab(lab.slug)}
                                     </Label>
                                     <Input
                                         id="lab-key"
@@ -519,9 +387,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="lab-input">
-                                    {translateText(
-                                        inputLabelByLab(lab.slug, mode),
-                                    )}
+                                    {inputLabelByLab(lab.slug, mode)}
                                 </Label>
                                 <Textarea
                                     id="lab-input"
@@ -530,15 +396,11 @@ export default function LabsShow({ lab }: LabShowProps) {
                                     onChange={(event) =>
                                         setInputText(event.target.value)
                                     }
-                                    placeholder={translateText(
-                                        inputPlaceholderByLab(lab.slug, mode),
-                                    )}
+                                    placeholder={inputPlaceholderByLab(lab.slug, mode)}
                                     className="min-h-28 resize-none text-sm"
                                 />
                                 <p className="text-sm/6 text-muted-foreground">
-                                    {translateText(
-                                        inputHelperByLab(lab.slug, mode),
-                                    )}
+                                    {inputHelperByLab(lab.slug, mode)}
                                 </p>
                             </div>
 
@@ -613,7 +475,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                             {validationError && (
                                 <Alert variant="destructive" className="py-3" role="alert">
                                     <AlertDescription id="validation-error-message">
-                                        {translateText(validationError)}
+                                        {validationError}
                                     </AlertDescription>
                                 </Alert>
                             )}

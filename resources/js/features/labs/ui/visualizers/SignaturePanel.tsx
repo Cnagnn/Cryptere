@@ -39,7 +39,7 @@ export default function SignaturePanel({
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm flex items-center gap-2">
                             <span className="size-5 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400">1</span>
-                            SHA-256 Hash
+                            Hash SHA-256
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -48,17 +48,17 @@ export default function SignaturePanel({
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="rounded bg-muted/30 p-2">
-                                <span className="text-muted-foreground">Length: </span>
-                                <span className="font-mono">{trace.digestHex.length} hex chars</span>
+                                <span className="text-muted-foreground">Panjang: </span>
+                                <span className="font-mono">{trace.digestHex.length} karakter heksa</span>
                             </div>
                             <div className="rounded bg-muted/30 p-2">
-                                <span className="text-muted-foreground">Bytes: </span>
-                                <span className="font-mono">{digestBytes.length} bytes</span>
+                                <span className="text-muted-foreground">Byte: </span>
+                                <span className="font-mono">{digestBytes.length} byte</span>
                             </div>
                         </div>
                         {learnerMode === 'mahir' && (
                             <p className="text-xs text-muted-foreground italic">
-                                SHA-256 produces a fixed 256-bit (32-byte) hash from any input.
+                                SHA-256 menghasilkan hash dengan panjang tetap 256-bit (32 byte) dari masukan apa pun.
                             </p>
                         )}
                     </CardContent>
@@ -69,7 +69,7 @@ export default function SignaturePanel({
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm flex items-center gap-2">
                             <span className="size-5 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-[10px] font-bold text-orange-600 dark:text-orange-400">2</span>
-                            Digest Prefix
+                            Awalan Digest
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -77,8 +77,8 @@ export default function SignaturePanel({
                             {trace.digestPrefix}
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground">
-                            For education, only the first {trace.digestPrefix.length} hex characters are used.
-                            In real RSA signatures, the full hash is converted to an integer.
+                            Untuk edukasi, hanya {trace.digestPrefix.length} karakter heksadesimal pertama yang digunakan.
+                            Pada tanda tangan RSA yang sesungguhnya, hash lengkap dikonversi menjadi bilangan bulat.
                         </p>
                     </CardContent>
                 </Card>
@@ -88,7 +88,7 @@ export default function SignaturePanel({
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm flex items-center gap-2">
                             <span className="size-5 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-[10px] font-bold text-green-600 dark:text-green-400">3</span>
-                            Digital Signature
+                            Tanda Tangan Digital
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -106,13 +106,13 @@ export default function SignaturePanel({
                             <>
                                 <Separator />
                                 <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground">Signature (integer)</span>
+                                    <span className="text-xs text-muted-foreground">Tanda tangan (bilangan bulat)</span>
                                     <div className="rounded bg-muted/40 p-2 text-xs font-mono break-all">
                                         {trace.signatureInt}
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground">Signature (hex)</span>
+                                    <span className="text-xs text-muted-foreground">Tanda tangan (heksa)</span>
                                     <div className="rounded bg-muted/40 p-2 text-xs font-mono break-all">
                                         0x{BigInt(trace.signatureInt).toString(16).toUpperCase()}
                                     </div>
@@ -121,8 +121,8 @@ export default function SignaturePanel({
                         )}
                         {learnerMode === 'mahir' && (
                             <p className="text-xs text-muted-foreground italic">
-                                Only the private key holder can compute signature = digest^d mod n.
-                                Anyone with the public key can verify it.
+                                Hanya pemegang kunci privat yang dapat menghitung tanda tangan = digest^d mod n.
+                                Siapa pun dengan kunci publik dapat memverifikasinya.
                             </p>
                         )}
                     </CardContent>
@@ -138,23 +138,23 @@ export default function SignaturePanel({
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                         <span className="size-5 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400">1</span>
-                        Signature Verification
+                        Verifikasi Tanda Tangan
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="rounded bg-muted/40 p-3 text-sm">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs text-muted-foreground">Expected digest (SHA-256)</span>
+                            <span className="text-xs text-muted-foreground">Digest yang diharapkan (SHA-256)</span>
                             <Badge variant={trace.isValid ? 'default' : 'destructive'}>
-                                {trace.isValid ? 'VALID' : 'INVALID'}
+                                {trace.isValid ? 'VALID' : 'TIDAK VALID'}
                             </Badge>
                         </div>
                         <div className="font-mono text-xs break-all">
-                            {trace.digestHex || '(none)'}
+                            {trace.digestHex || '(tidak ada)'}
                         </div>
                         {trace.digestPrefix && (
                             <div className="mt-2 text-xs text-muted-foreground">
-                                Prefix compared: <span className="font-mono">{trace.digestPrefix}</span>
+                                Awalan yang dibandingkan: <span className="font-mono">{trace.digestPrefix}</span>
                             </div>
                         )}
                     </div>
@@ -164,7 +164,7 @@ export default function SignaturePanel({
             {trace.explanationSteps.length > 0 && (
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Verification Steps</CardTitle>
+                        <CardTitle className="text-sm">Langkah Verifikasi</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
@@ -188,13 +188,13 @@ export default function SignaturePanel({
                         <div>
                             <p className="text-sm font-medium">
                                 {trace.isValid
-                                    ? 'Signature is authentic'
-                                    : 'Signature verification failed'}
+                                    ? 'Tanda tangan autentik'
+                                    : 'Verifikasi tanda tangan gagal'}
                             </p>
                             <p className="text-xs text-muted-foreground">
                                 {trace.isValid
-                                    ? 'The message is authentic and has not been tampered with.'
-                                    : 'The signature does not match — message may be tampered or wrong key used.'}
+                                    ? 'Pesan bersifat autentik dan tidak diubah.'
+                                    : 'Tanda tangan tidak cocok — pesan mungkin diubah atau kunci yang salah digunakan.'}
                             </p>
                         </div>
                     </div>

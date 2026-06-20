@@ -67,7 +67,7 @@ function BitGroup({
                 ))}
             </div>
             <span className="text-[9px] text-muted-foreground font-mono">
-                = 0x{bitsToHex(bits)} ({bits.length} bits)
+                = 0x{bitsToHex(bits)} ({bits.length} bit)
             </span>
         </div>
     );
@@ -100,7 +100,7 @@ function FeistelRoundViz({
             {expandedR && (
                 <div className="grid grid-cols-3 gap-2">
                     <div />
-                    <BitGroup bits={expandedR} label="E(R) = 48 bits" variant="orange" />
+                    <BitGroup bits={expandedR} label="E(R) = 48 bit" variant="orange" />
                     <div />
                 </div>
             )}
@@ -108,7 +108,7 @@ function FeistelRoundViz({
             {sboxOutput && (
                 <div className="grid grid-cols-3 gap-2">
                     <div />
-                    <BitGroup bits={sboxOutput} label="S-box = 32 bits" variant="purple" />
+                    <BitGroup bits={sboxOutput} label="S-box = 32 bit" variant="purple" />
                     <div />
                 </div>
             )}
@@ -116,7 +116,7 @@ function FeistelRoundViz({
             {permutedOutput && (
                 <div className="grid grid-cols-3 gap-2">
                     <div />
-                    <BitGroup bits={permutedOutput} label="P(output) = 32 bits" variant="orange" />
+                    <BitGroup bits={permutedOutput} label="P(output) = 32 bit" variant="orange" />
                     <div />
                 </div>
             )}
@@ -156,12 +156,12 @@ export default function DesPanel({
                         DES Feistel
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                        16 rounds
+                        16 putaran
                     </span>
                 </div>
                 {currentRound && (
                     <Badge variant="secondary" className="text-xs">
-                        Round {currentRound.roundIndex}
+                        Putaran {currentRound.roundIndex}
                     </Badge>
                 )}
             </div>
@@ -170,7 +170,7 @@ export default function DesPanel({
             {showInitial && (
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">DES Initial State</CardTitle>
+                        <CardTitle className="text-sm">State Awal DES</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                         <div className="rounded bg-muted/40 p-2 text-xs font-mono break-all">
@@ -179,8 +179,8 @@ export default function DesPanel({
                         </div>
                         {learnerMode === 'mahir' && (
                             <p className="text-xs text-muted-foreground italic">
-                                DES applies Initial Permutation (IP) to the 64-bit input,
-                                then splits into L₀ and R₀ (32 bits each) before Feistel rounds.
+                                DES menerapkan Permutasi Awal (IP) pada masukan 64-bit,
+                                lalu membagi menjadi L₀ dan R₀ (masing-masing 32 bit) sebelum putaran Feistel.
                             </p>
                         )}
                     </CardContent>
@@ -192,14 +192,14 @@ export default function DesPanel({
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm">
-                            Round {currentRound.roundIndex} — Feistel Structure
+                            Putaran {currentRound.roundIndex} — Struktur Feistel
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {/* L and R halves */}
                         <div className="grid grid-cols-2 gap-3">
-                            <BitGroup bits={currentRound.L} label="L (32 bits)" variant="blue" />
-                            <BitGroup bits={currentRound.R} label="R (32 bits)" variant="green" />
+                            <BitGroup bits={currentRound.L} label="L (32 bit)" variant="blue" />
+                            <BitGroup bits={currentRound.R} label="R (32 bit)" variant="green" />
                         </div>
 
                         {/* F-function */}
@@ -221,19 +221,19 @@ export default function DesPanel({
                                             ? 'bg-primary'
                                             : 'bg-muted hover:bg-muted-foreground/30',
                                     )}
-                                    title={`Round ${r.roundIndex}`}
+                                    title={`Putaran ${r.roundIndex}`}
                                 />
                             ))}
                         </div>
 
                         {learnerMode === 'mahir' && (
                             <div className="border-t pt-2 space-y-1">
-                                <p className="text-xs font-medium">F-function breakdown:</p>
+                                <p className="text-xs font-medium">Rincian fungsi F:</p>
                                 <ul className="text-xs text-muted-foreground space-y-0.5">
-                                    <li>• Expansion E: 32 bits → 48 bits (duplicates some bits)</li>
-                                    <li>• XOR with round key K<sub>{currentRound.roundIndex}</sub> (48 bits)</li>
-                                    <li>• S-box substitution: 8 × 6-bit → 8 × 4-bit = 32 bits</li>
-                                    <li>• Permutation P: 32 bits rearranged</li>
+                                    <li>• Ekspansi E: 32 bit → 48 bit (menduplikasi beberapa bit)</li>
+                                    <li>• XOR dengan round key K<sub>{currentRound.roundIndex}</sub> (48 bit)</li>
+                                    <li>• Substitusi S-box: 8 × 6-bit → 8 × 4-bit = 32 bit</li>
+                                    <li>• Permutasi P: 32 bit diatur ulang</li>
                                 </ul>
                             </div>
                         )}
@@ -245,7 +245,7 @@ export default function DesPanel({
             {showFinal && (
                 <Card className="border-green-200 dark:border-green-800">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">DES Final State</CardTitle>
+                        <CardTitle className="text-sm">State Akhir DES</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="rounded bg-green-50 dark:bg-green-950/30 p-3 text-sm space-y-1">
@@ -256,9 +256,9 @@ export default function DesPanel({
                         </div>
                         {learnerMode === 'mahir' && (
                             <p className="mt-2 text-xs text-muted-foreground italic">
-                                The final L and R are swapped (R₁₆L₁₆), then Final Permutation (FP)
-                                is applied to produce the 64-bit ciphertext.
-                                Decryption uses the same process with reversed round keys.
+                                L dan R akhir ditukar (R₁₆L₁₆), lalu Permutasi Akhir (FP)
+                                diterapkan untuk menghasilkan ciphertext 64-bit.
+                                Dekripsi menggunakan proses yang sama dengan round key terbalik.
                             </p>
                         )}
                     </CardContent>

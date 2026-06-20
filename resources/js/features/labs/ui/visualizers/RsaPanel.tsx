@@ -50,7 +50,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                 <Card className="border-purple-200 dark:border-purple-800">
                     <CardContent className="p-3 space-y-1">
                         <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
-                            p (prime)
+                            p (prima)
                         </span>
                         <span className="block font-mono text-lg text-foreground">
                             {p.toString()}
@@ -60,7 +60,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                 <Card className="border-purple-200 dark:border-purple-800">
                     <CardContent className="p-3 space-y-1">
                         <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
-                            q (prime)
+                            q (prima)
                         </span>
                         <span className="block font-mono text-lg text-foreground">
                             {q.toString()}
@@ -87,7 +87,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                     </span>
                     {learnerMode === 'mahir' && (
                         <p className="mt-1 text-xs text-muted-foreground italic">
-                            n is the modulus for both encryption and decryption. Factoring n back into p and q is the hard problem RSA relies on.
+                            n adalah modulus untuk enkripsi dan dekripsi. Memfaktorkan n kembali menjadi p dan q adalah masalah sulit yang menjadi dasar keamanan RSA.
                         </p>
                     )}
                 </CardContent>
@@ -111,7 +111,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                     </span>
                     {learnerMode === 'mahir' && (
                         <p className="mt-1 text-xs text-muted-foreground italic">
-                            Euler&apos;s totient counts integers 1 ≤ x &lt; n that are coprime to n.
+                            Totient Euler menghitung bilangan bulat 1 ≤ x &lt; n yang koprima dengan n.
                         </p>
                     )}
                 </CardContent>
@@ -123,7 +123,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
             <Card className="border-blue-200 dark:border-blue-800">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground font-mono">e (public exponent)</span>
+                        <span className="text-xs text-muted-foreground font-mono">e (eksponen publik)</span>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -131,7 +131,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                         {e.toString()}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                        gcd(e, φ(n)) = 1 (coprime)
+                        gcd(e, φ(n)) = 1 (koprima)
                     </span>
                 </CardContent>
             </Card>
@@ -150,12 +150,12 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                         {d.toString()}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                        Extended Euclidean Algorithm
+                        Algoritma Euclidean yang Diperluas
                     </span>
                     {learnerMode === 'mahir' && (
                         <p className="mt-1 text-xs text-muted-foreground italic">
-                            d is the modular multiplicative inverse of e modulo φ(n).
-                            Finding d from e and n without knowing p and q is computationally infeasible.
+                            d adalah invers perkalian modular dari e modulo φ(n).
+                            Menemukan d dari e dan n tanpa mengetahui p dan q tidak layak secara komputasional.
                         </p>
                     )}
                 </CardContent>
@@ -167,7 +167,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
             <div className="grid grid-cols-2 gap-3">
                 <Card className="border-blue-200 dark:border-blue-800">
                     <CardContent className="p-3 space-y-2">
-                        <Badge variant="secondary" className="text-xs">Public Key</Badge>
+                        <Badge variant="secondary" className="text-xs">Kunci Publik</Badge>
                         <div className="space-y-1 text-xs">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">e:</span>
@@ -178,12 +178,12 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                                 <span className="font-mono text-[10px] break-all">{n.toString()}</span>
                             </div>
                         </div>
-                        <div className="text-[10px] text-muted-foreground italic">Encrypt / verify</div>
+                        <div className="text-[10px] text-muted-foreground italic">Enkripsi / verifikasi</div>
                     </CardContent>
                 </Card>
                 <Card className="border-red-200 dark:border-red-800">
                     <CardContent className="p-3 space-y-2">
-                        <Badge variant="destructive" className="text-xs">Private Key</Badge>
+                        <Badge variant="destructive" className="text-xs">Kunci Privat</Badge>
                         <div className="space-y-1 text-xs">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">d:</span>
@@ -194,7 +194,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                                 <span className="font-mono text-[10px] break-all">{n.toString()}</span>
                             </div>
                         </div>
-                        <div className="text-[10px] text-muted-foreground italic">Decrypt / sign</div>
+                        <div className="text-[10px] text-muted-foreground italic">Dekripsi / tandatangani</div>
                     </CardContent>
                 </Card>
             </div>
@@ -205,7 +205,7 @@ export default function RsaPanel({ trace, learnerMode }: RsaPanelProps) {
                     <Separator />
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium text-muted-foreground">
-                            Generation Steps
+                            Langkah Pembangkitan
                         </h4>
                         <div className="bg-muted/30 rounded-lg p-3 space-y-1 max-h-48 overflow-auto">
                             {trace.keyGenSteps.map((step, i) => (
