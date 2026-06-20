@@ -16,7 +16,7 @@ export function useRealtime(config: RealtimeConfig) {
         config;
 
     useEffect(() => {
-        if (!userId) {
+        if (!userId || !echo) {
             return;
         }
 
@@ -74,7 +74,7 @@ export function useRealtime(config: RealtimeConfig) {
         }
 
         return () => {
-            echo.leave(`user.${userId}`);
+            echo?.leave(`user.${userId}`);
         };
     }, [userId, onStatsUpdate, onBadgeUnlock, onLevelUp, onRankChanged]);
 }

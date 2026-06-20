@@ -126,12 +126,12 @@ export const glossarySignature = {
     'authenticity': {
         term: 'Authenticity',
         definition:
-            'Properti signature yang membuktikan siapa yang发送消息. Hanya pemilik private key bisa membuat signature yang verify dengan public key.',
+            'Properti signature yang membuktikan siapa pengirim pesan. Hanya pemilik private key bisa membuat signature yang terverifikasi dengan public key.',
     },
     'non-repudiation': {
         term: 'Non-repudiation',
         definition:
-            'Penanda tangan digital tidak bisa否认发送者. Private key holder tidak bisa klaim pesan不是他们发送的.',
+            'Penanda tangan digital tidak bisa menyangkal mengirim pesan. Private key holder tidak bisa klaim pesan bukan mereka yang mengirim.',
     },
     'hash-function': {
         term: 'Hash Function',
