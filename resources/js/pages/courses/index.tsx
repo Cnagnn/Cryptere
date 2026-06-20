@@ -140,6 +140,20 @@ const hardcodedCatalogCourses: CourseCard[] = [
         labGroup: 'symmetric',
     },
     {
+        id: 9005,
+        slug: 'des-lab',
+        title: 'DES',
+        summary:
+            'Pelajari struktur Feistel dan 16 putaran pada sandi blok klasik dengan visualisasi langkah demi langkah.',
+        coverImage: null,
+        estimatedMinutes: 30,
+        lessonCount: 1,
+        enrollmentCount: 0,
+        isEnrolled: false,
+        progressPercentage: null,
+        labGroup: 'symmetric',
+    },
+    {
         id: 9004,
         slug: 'rsa-lab',
         title: 'RSA',
