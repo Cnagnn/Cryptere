@@ -517,6 +517,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 </Label>
                                 <Textarea
                                     id="lab-input"
+                                    aria-describedby={validationError ? 'validation-error-message' : undefined}
                                     value={inputText}
                                     onChange={(event) =>
                                         setInputText(event.target.value)
@@ -602,14 +603,15 @@ export default function LabsShow({ lab }: LabShowProps) {
                             </div>
 
                             {validationError && (
-                                <Alert variant="destructive" className="py-3">
-                                    <AlertDescription>
+                                <Alert variant="destructive" className="py-3" role="alert">
+                                    <AlertDescription id="validation-error-message">
                                         {translateText(validationError)}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
                             <Button
+                                type="button"
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {

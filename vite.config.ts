@@ -13,6 +13,28 @@ const enableReactCompiler =
 export default defineConfig({
     build: {
         sourcemap: enableSourceMap ? 'hidden' : false,
+        chunkSizeWarningLimit: 600, // Algorithm implementations (AES/DES/SHA-256/RSA) are intentionally bundled; gzip: ~172KB for labs page
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    // Vendor chunks for large dependencies
+                    if (id.includes('node_modules')) {
+                        if (id.includes('@inertiajs/')) {
+                            return 'inertia-vendor';
+                        }
+                        if (id.includes('recharts')) {
+                            return 'charts-vendor';
+                        }
+                        if (id.includes('@tiptap/')) {
+                            return 'editor-vendor';
+                        }
+                        if (id.includes('lucide-react') || id.includes('clsx') || id.includes('tailwind-merge')) {
+                            return 'ui-vendor';
+                        }
+                    }
+                },
+            },
+        },
     },
     server: {
         host: '127.0.0.1',

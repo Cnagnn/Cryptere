@@ -117,6 +117,7 @@ export default function GlassBoxLab(props: GlassBoxLabProps) {
                         variant={learnerMode === 'mahir' ? 'default' : 'outline'}
                         size="sm"
                         onClick={toggleMode}
+                        aria-label={`Mode saat ini: ${learnerMode === 'pemula' ? 'pemula' : 'mahir'}. Klik untuk ganti.`}
                     >
                         {learnerMode === 'pemula' ? '📘 Pemula' : '⚙️ Mahir'}
                     </Button>
@@ -124,7 +125,7 @@ export default function GlassBoxLab(props: GlassBoxLabProps) {
                     {/* Glossary sheet */}
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" aria-label="Buka glossary istilah kriptografi">
                                 📖 Istilah
                             </Button>
                         </SheetTrigger>
