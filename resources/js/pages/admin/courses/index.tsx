@@ -4231,9 +4231,6 @@ export default function AdminCoursesIndex(props: IndexProps) {
             adminCoursesIndex.url({ query: { section } })
         );
 
-        console.log(`✨ Tab switch: ${section} | Latency: 0ms (instant)`);
-        console.log('🚀 Excellent performance!');
-
         // Lazy load data if not cached or empty
         const needsData =
             (section === 'catalog' && (!cachedData.courses || !cachedData.courses.data || cachedData.courses.data.length === 0)) ||
@@ -4241,12 +4238,10 @@ export default function AdminCoursesIndex(props: IndexProps) {
             (section === 'task' && (!cachedData.tasks || !cachedData.tasks.data || cachedData.tasks.data.length === 0));
 
         if (needsData) {
-            console.log(`📡 Fetching data for ${section} tab...`);
             setIsLoading(true);
             router.reload({
                 only: ['courses', 'lessons', 'tasks', 'allLessons', 'selectedCourseId', 'selectedLessonId'],
                 onSuccess: (page: any) => {
-                    console.log(`✅ Data loaded for ${section} tab`);
                     setCachedData({
                         courses: page.props.courses || cachedData.courses,
                         lessons: page.props.lessons || cachedData.lessons,
@@ -4256,7 +4251,6 @@ export default function AdminCoursesIndex(props: IndexProps) {
                     setIsLoading(false);
                 },
                 onError: () => {
-                    console.error(`❌ Failed to load data for ${section} tab`);
                     setIsLoading(false);
                 },
             });
@@ -4386,6 +4380,10 @@ AdminCoursesIndex.layout = {
         {
             title: 'Home',
             href: dashboard(),
+        },
+        {
+            title: 'Management',
+            href: adminCoursesIndex(),
         },
         {
             title: 'Courses',
