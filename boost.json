@@ -3,6 +3,7 @@
         "gemini",
         "copilot"
     ],
+    "cloud": false,
     "guidelines": true,
     "mcp": true,
     "nightwatch_mcp": false,
@@ -15,6 +16,7 @@
         "wayfinder-development",
         "pest-testing",
         "inertia-react-development",
+        "echo-development",
         "tailwindcss-development"
     ]
 }

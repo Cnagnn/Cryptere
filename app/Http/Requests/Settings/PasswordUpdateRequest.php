@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Concerns\PasswordValidationRules;
+use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PasswordUpdateRequest extends FormRequest
@@ -15,7 +16,7 @@ class PasswordUpdateRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>>
+     * @return array<string, array<int, Rule|array<mixed>|string>>
      */
     public function rules(): array
     {
