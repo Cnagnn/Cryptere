@@ -12,10 +12,11 @@ use App\Models\QuizSubmission;
 use App\Models\TaskProgress;
 use App\Models\User;
 use App\Services\AdaptiveQuestionService;
+use App\Services\BadgeService;
 use App\Services\XpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Inertia;
 
 class QuizSubmissionController extends Controller
 {
@@ -39,26 +40,12 @@ class QuizSubmissionController extends Controller
         $this->authorize('view', $course);
         abort_if($lesson->course_id !== $course->id, 404);
 
-        // Log raw request data
-        \Log::info('Quiz submission raw request', [
-            'all_data' => $request->all(),
-            'answers_data' => $request->input('answers'),
+        $validated = $request->validate([
+            'task_id' => ['required', 'integer', 'exists:lesson_tasks,id'],
+            'answers' => ['required', 'array', 'min:1'],
+            'answers.*.question_id' => ['required', 'integer', 'exists:quiz_questions,id'],
+            'answers.*.answer' => ['required', 'integer', 'min:0', 'max:3'],
         ]);
-
-        try {
-            $validated = $request->validate([
-                'task_id' => ['required', 'integer', 'exists:lesson_tasks,id'],
-                'answers' => ['required', 'array', 'min:1'],
-                'answers.*.question_id' => ['required', 'integer', 'exists:quiz_questions,id'],
-                'answers.*.answer' => ['required', 'integer', 'min:0', 'max:3'],
-            ]);
-        } catch (ValidationException $e) {
-            \Log::error('Quiz validation failed', [
-                'errors' => $e->errors(),
-                'request_data' => $request->all(),
-            ]);
-            throw $e;
-        }
 
         // Verify task belongs to this lesson
         $task = LessonTask::query()
@@ -75,7 +62,7 @@ class QuizSubmissionController extends Controller
             ->first();
 
         if ($enrollment === null) {
-            return back()->withErrors(['error' => 'You must be enrolled in this course to take a quiz.']);
+            return response()->json(['message' => 'Anda harus terdaftar pada course ini untuk mengerjakan quiz.'], 403);
         }
 
         /** @var User $user */
@@ -110,14 +97,6 @@ class QuizSubmissionController extends Controller
 
         // Verify all question IDs belong to this task
         if ($questions->count() !== count($questionIds)) {
-            \Log::error('Quiz submission failed: Invalid question IDs', [
-                'task_id' => $task->id,
-                'submitted_question_ids' => $questionIds,
-                'found_question_ids' => $questions->pluck('id')->all(),
-                'expected_count' => count($questionIds),
-                'actual_count' => $questions->count(),
-            ]);
-
             return response()->json(['message' => 'Invalid question IDs provided.'], 422);
         }
 
@@ -246,6 +225,20 @@ class QuizSubmissionController extends Controller
 
         // Recalculate is_best_attempt across all submissions for this user + task
         $this->recalculateBestAttempt($user->id, $task->id);
+
+        // Check for perfect quiz badge (only on first perfect score)
+        if ($isPerfect) {
+            $badgeService = app(BadgeService::class);
+            $newBadges = $badgeService->checkAndAward($user, 'perfect_quiz');
+
+            if ($newBadges->isNotEmpty()) {
+                Inertia::flash('newBadges', $newBadges->map(fn ($badge) => [
+                    'name' => $badge->name,
+                    'description' => $badge->description,
+                    'icon' => $badge->icon,
+                ])->values()->all());
+            }
+        }
 
         // Update user ability estimate based on quiz accuracy
         $quizAccuracy = $questions->count() > 0 ? $correctCount / $questions->count() : 0.0;

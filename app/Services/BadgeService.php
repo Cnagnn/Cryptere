@@ -7,6 +7,7 @@ use App\Models\Badge;
 use App\Models\Enrollment;
 use App\Models\LabVisit;
 use App\Models\LessonProgress;
+use App\Models\QuizSubmission;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -126,6 +127,15 @@ class BadgeService
                 ->whereBelongsTo($user)
                 ->distinct('lab_slug')
                 ->count('lab_slug');
+        }
+
+        if (in_array('perfect_quiz', $criteriaTypes, true)) {
+            $perfectQuizExists = QuizSubmission::query()
+                ->where('user_id', $user->id)
+                ->whereColumn('score', 'total')
+                ->exists();
+
+            $stats['perfect_quiz'] = $perfectQuizExists;
         }
 
         return $stats;

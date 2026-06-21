@@ -206,7 +206,7 @@ class CourseController extends Controller
             if ($selectedLesson !== null) {
                 if ($selectedLesson->tasks()->exists()) {
                     $taskPaginator = LessonTask::query()
-                        ->select(['id', 'lesson_id', 'type', 'title', 'description', 'sort_order', 'minutes', 'status', 'version', 'published_by', 'prerequisite_task_id', 'video_url', 'document_name', 'conversion_status', 'pdf_url', 'created_at', 'updated_at'])
+                        ->select(['id', 'lesson_id', 'type', 'title', 'description', 'sort_order', 'status', 'version', 'published_by', 'prerequisite_task_id', 'video_url', 'document_name', 'conversion_status', 'pdf_url', 'created_at', 'updated_at'])
                         ->where('lesson_id', $selectedLesson->id)
                         ->with([
                             'quizQuestions' => fn ($q) => $q->select(['id', 'lesson_task_id', 'question', 'options', 'correct_option', 'explanation', 'sort_order'])->orderBy('sort_order'),
@@ -234,7 +234,6 @@ class CourseController extends Controller
                             'description' => (string) ($task->description ?? ''),
                             'content' => (string) ($task->description ?? ''),
                             'position' => $task->sort_order,
-                            'minutes' => $task->minutes,
                             'status' => $task->status,
                             'version' => $task->version,
                             'published_by_name' => $task->publishedBy?->name,
@@ -278,7 +277,6 @@ class CourseController extends Controller
                                 'type' => (string) ($task['type'] ?? 'video'),
                                 'title' => (string) ($task['title'] ?? 'Task'),
                                 'description' => '',
-                                'minutes' => (int) ($task['minutes'] ?? 5),
                                 'video_url' => isset($task['videoUrl']) ? (string) $task['videoUrl'] : null,
                                 'created_at' => null,
                                 'updated_at' => null,

@@ -11,6 +11,7 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { useFlashToast } from '@/hooks/use-flash-toast';
 import type { AppLayoutProps } from '@/types';
 
 type BadgeFlash = {
@@ -98,6 +99,7 @@ export default function AppSidebarLayout({
     breadcrumbs,
 }: AppLayoutProps) {
     useFocusOnNavigate();
+    useFlashToast();
 
     return (
         <AppShell variant="sidebar">
