@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Course;
 
+use App\Concerns\FlashesAchievements;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Enrollment;
@@ -13,16 +14,21 @@ use App\Models\TaskProgress;
 use App\Models\User;
 use App\Services\AdaptiveQuestionService;
 use App\Services\BadgeService;
+use App\Services\LevelService;
 use App\Services\XpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class QuizSubmissionController extends Controller
 {
+    use FlashesAchievements;
+
     public function __construct(
         private readonly XpService $xpService,
         private readonly AdaptiveQuestionService $adaptiveService,
+        private readonly BadgeService $badgeService,
+        private readonly LevelService $levelService,
     ) {}
 
     /**
@@ -151,51 +157,55 @@ class QuizSubmissionController extends Controller
         // Never re-award if already earned XP on a previous attempt with same or better score
         $isPerfect = $correctCount === $questions->count();
 
-        if ($isPerfect && ($maxPreviousXp === 0 || $xpMultiplier > 0)) {
-            // Calculate base XP reward
-            $baseRewards = $this->xpService->awardTaskXp($user, $task);
-            $baseXp = $baseRewards['xp'];
-            $basePoints = $baseRewards['points'];
+        $previousXp = $user->xp;
 
-            if ($maxPreviousXp > 0) {
-                // Already earned XP before — only award if multiplied amount exceeds previous
-                $scaledXp = (int) round($baseXp * $xpMultiplier);
-                $scaledPoints = (int) round($basePoints * $xpMultiplier);
+        DB::transaction(function () use (&$xpEarned, &$pointsEarned, $isPerfect, $maxPreviousXp, $xpMultiplier, $user, $task, $existingSubmissions) {
+            if ($isPerfect && ($maxPreviousXp === 0 || $xpMultiplier > 0)) {
+                // Calculate base XP reward
+                $baseRewards = $this->xpService->awardTaskXp($user, $task);
+                $baseXp = $baseRewards['xp'];
+                $basePoints = $baseRewards['points'];
 
-                // Don't re-award if previous attempt already earned more
-                if ($scaledXp <= $maxPreviousXp) {
-                    $xpEarned = 0;
-                    $pointsEarned = 0;
-                    // Reverse the XP that was just awarded by awardTaskXp
-                    $this->reverseXpAward($user, $baseXp, $basePoints);
-                } else {
-                    // Award the difference only
-                    $xpDiff = $scaledXp - $maxPreviousXp;
-                    $pointsDiff = max(0, $scaledPoints - ($existingSubmissions->max('points_earned') ?? 0));
-                    // Reverse the full award and re-award the correct amount
-                    $this->reverseXpAward($user, $baseXp, $basePoints);
-                    $user->increment('xp', $xpDiff);
-                    $user->increment('points', $pointsDiff);
-                    $xpEarned = $scaledXp;
-                    $pointsEarned = $scaledPoints;
-                }
-            } else {
-                // First time earning XP — apply multiplier
-                if ($xpMultiplier < 1.0) {
+                if ($maxPreviousXp > 0) {
+                    // Already earned XP before — only award if multiplied amount exceeds previous
                     $scaledXp = (int) round($baseXp * $xpMultiplier);
                     $scaledPoints = (int) round($basePoints * $xpMultiplier);
-                    // Reverse full award and re-award scaled amount
-                    $this->reverseXpAward($user, $baseXp, $basePoints);
-                    $user->increment('xp', $scaledXp);
-                    $user->increment('points', $scaledPoints);
-                    $xpEarned = $scaledXp;
-                    $pointsEarned = $scaledPoints;
+
+                    // Don't re-award if previous attempt already earned more
+                    if ($scaledXp <= $maxPreviousXp) {
+                        $xpEarned = 0;
+                        $pointsEarned = 0;
+                        // Reverse the XP that was just awarded by awardTaskXp
+                        $this->reverseXpAward($user, $baseXp, $basePoints);
+                    } else {
+                        // Award the difference only
+                        $xpDiff = $scaledXp - $maxPreviousXp;
+                        $pointsDiff = max(0, $scaledPoints - ($existingSubmissions->max('points_earned') ?? 0));
+                        // Reverse the full award and re-award the correct amount
+                        $this->reverseXpAward($user, $baseXp, $basePoints);
+                        $user->increment('xp', $xpDiff);
+                        $user->increment('points', $pointsDiff);
+                        $xpEarned = $scaledXp;
+                        $pointsEarned = $scaledPoints;
+                    }
                 } else {
-                    $xpEarned = $baseXp;
-                    $pointsEarned = $basePoints;
+                    // First time earning XP — apply multiplier
+                    if ($xpMultiplier < 1.0) {
+                        $scaledXp = (int) round($baseXp * $xpMultiplier);
+                        $scaledPoints = (int) round($basePoints * $xpMultiplier);
+                        // Reverse full award and re-award scaled amount
+                        $this->reverseXpAward($user, $baseXp, $basePoints);
+                        $user->increment('xp', $scaledXp);
+                        $user->increment('points', $scaledPoints);
+                        $xpEarned = $scaledXp;
+                        $pointsEarned = $scaledPoints;
+                    } else {
+                        $xpEarned = $baseXp;
+                        $pointsEarned = $basePoints;
+                    }
                 }
             }
-        }
+        });
 
         // Create the new submission (always create, never update)
         $submission = QuizSubmission::create([
@@ -228,16 +238,13 @@ class QuizSubmissionController extends Controller
 
         // Check for perfect quiz badge (only on first perfect score)
         if ($isPerfect) {
-            $badgeService = app(BadgeService::class);
-            $newBadges = $badgeService->checkAndAward($user, 'perfect_quiz');
-
-            if ($newBadges->isNotEmpty()) {
-                Inertia::flash('newBadges', $newBadges->map(fn ($badge) => [
-                    'name' => $badge->name,
-                    'description' => $badge->description,
-                    'icon' => $badge->icon,
-                ])->values()->all());
-            }
+            $this->checkAndFlashAchievements(
+                $this->badgeService,
+                $this->levelService,
+                $user,
+                'perfect_quiz',
+                $previousXp,
+            );
         }
 
         // Update user ability estimate based on quiz accuracy

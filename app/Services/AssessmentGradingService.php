@@ -105,7 +105,7 @@ class AssessmentGradingService
 
             // Award course completion bonus
             $completionXp = (int) config('rewards.course_completion_xp', 100);
-            $completionPoints = (int) config('rewards.course_completion_points', 200);
+            $completionPoints = (int) config('rewards.course_completion_points', 20);
             $awardedCompletionPoints = $this->xpService->applyLevelBonus($user, $completionPoints);
 
             $this->xpService->awardXp($user, $completionXp);

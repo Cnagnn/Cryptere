@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Features\GamificationRewardVariant;
 use App\Features\IndonesianLocale;
 use App\Features\RealtimeLeaderboard;
 use App\Services\LevelService;
@@ -32,7 +31,10 @@ class HandleInertiaRequests extends Middleware
         $user = $isPublicLandingPage ? null : $request->user();
 
         $streakResult = ['xp' => 0, 'bonuses' => []];
-        if ($user !== null && ! $request->header('X-Inertia-Partial-Data')) {
+        if ($user !== null) {
+            // Always run the streak/daily-goal update — even on partial Inertia
+            // requests — so that daily_xp_earned is reset on a new day regardless
+            // of whether the request asks for partial data only.
             $streakResult = $this->xpService->updateDailyStreak($user);
             $user->refresh();
         }
@@ -77,9 +79,6 @@ class HandleInertiaRequests extends Middleware
                 'realtimeLeaderboard' => Feature::active(RealtimeLeaderboard::class),
                 'indonesianLocale' => Feature::active(IndonesianLocale::class),
             ],
-            'experiments' => $user ? [
-                'gamificationReward' => Feature::for($user)->value(GamificationRewardVariant::class),
-            ] : [],
             'flash' => [
                 'toast' => fn () => $isPublicLandingPage ? null : $request->session()->get('toast'),
                 'newBadges' => fn () => $isPublicLandingPage ? null : $request->session()->get('newBadges'),

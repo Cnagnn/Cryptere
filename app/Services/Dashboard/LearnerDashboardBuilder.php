@@ -247,7 +247,7 @@ class LearnerDashboardBuilder
     {
         $weekStart = now()->startOfWeek();
         $targetLessons = 5;
-        $targetXp = 300;
+        $targetXp = (int) round((float) config('rewards.daily_goal_target_xp', 100) * 7 * 0.7);
         $completedLessons = LessonProgress::query()
             ->whereBelongsTo($user)
             ->whereNotNull('completed_at')
@@ -428,7 +428,7 @@ class LearnerDashboardBuilder
     private function buildDecayWarning(User $user): ?array
     {
         $decayInactiveDays = (int) config('rewards.decay_inactive_days', 14);
-        $decayMinPoints = (int) config('rewards.decay_min_points', 100);
+        $decayMinPoints = (int) config('rewards.decay_min_points', 10);
 
         if ($user->points <= $decayMinPoints || $user->last_active_date === null) {
             return null;

@@ -6,6 +6,7 @@ use App\Events\Dashboard\LevelUp;
 use App\Events\Dashboard\UserStatsUpdated;
 use App\Models\User;
 use App\Services\LevelService;
+use Inertia\Inertia;
 
 class UserObserver
 {
@@ -36,6 +37,17 @@ class UserObserver
                     xp: $newXp,
                     unlockedFeatures: $this->getUnlockedFeatures($newLevel),
                 ));
+
+                // Flash level-up notification to Inertia (single source of truth)
+                // Bonus points are awarded by FlashesAchievements trait.
+                $pointsPerLevel = (int) config('rewards.level_up_points_per_level', 50);
+                $levelUpPoints = $newLevel * $pointsPerLevel;
+
+                Inertia::flash('levelUp', [
+                    'level' => $newLevel,
+                    'bonus_percent' => $newLevelData['bonus_percent'],
+                    'bonus_points' => $levelUpPoints,
+                ]);
             }
 
             // Always dispatch stats updated for XP/points changes

@@ -191,13 +191,11 @@ class LessonProgressController extends Controller
             // Course Completion Bonus — award extra XP + points when course reaches 100%
             if ($courseCompleted && $progressPercentage === 100 && ! $alreadyCompleted) {
                 $completionXp = (int) config('rewards.course_completion_xp', 100);
-                $completionPoints = (int) config('rewards.course_completion_points', 200);
-                $awardedCompletionPoints = $this->xpService->applyLevelBonus($user, $completionPoints);
 
-                $this->xpService->awardXp($user, $completionXp);
-                $user->increment('points', $awardedCompletionPoints);
+                // Use awardXpAndPoints for consistent streak multiplier + points treatment
+                $this->xpService->awardXpAndPoints($user, $completionXp);
 
-                XpAwarded::dispatch($user, $completionXp, $awardedCompletionPoints, 'course_completion');
+                XpAwarded::dispatch($user, $completionXp, 0, 'course_completion');
                 CourseCompleted::dispatch($user, $course);
             }
 

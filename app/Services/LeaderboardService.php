@@ -133,16 +133,14 @@ class LeaderboardService
         $since = $this->resolveSinceDate($timeframe);
 
         return (int) Cache::remember("leaderboard_top_{$timeframe}", CacheService::TTL_LEADERBOARD, function () use ($since): int {
-            $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
-            $lessonMax = (int) DB::table('lesson_progress')
-                ->select(DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
-                ->whereNotNull('completed_at')
-                ->where('completed_at', '>=', $since)
+            $maxXp = (int) DB::table('user_balance_changes')
+                ->select(DB::raw('COALESCE(SUM(xp_delta), 0) as total'))
+                ->where('created_at', '>=', $since)
                 ->groupBy('user_id')
                 ->orderByDesc('total')
                 ->value('total');
 
-            return max($lessonMax, 0);
+            return max($maxXp, 0);
         });
     }
 
@@ -391,17 +389,15 @@ class LeaderboardService
     }
 
     /**
-     * Build the lesson points subquery for a given timeframe.
+     * Build the XP points subquery for a given timeframe.
+     * Uses user_balance_changes to count ALL XP sources (lesson, quiz, assessment, streak, bonus).
      */
     private function lessonPointsSubquery(CarbonImmutable $since): Builder
     {
-        $lessonXpPerLesson = (int) config('rewards.lesson_completion_xp', 30);
-
-        return DB::table('lesson_progress')
-            ->select('lesson_progress.user_id', DB::raw('COUNT(*) * '.$lessonXpPerLesson.' as total'))
-            ->whereNotNull('lesson_progress.completed_at')
-            ->where('lesson_progress.completed_at', '>=', $since)
-            ->groupBy('lesson_progress.user_id');
+        return DB::table('user_balance_changes')
+            ->select('user_id', DB::raw('COALESCE(SUM(xp_delta), 0) as total'))
+            ->where('created_at', '>=', $since)
+            ->groupBy('user_id');
     }
 
     /**

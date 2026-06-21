@@ -19,7 +19,7 @@ class DecayInactivePoints extends Command
     {
         $inactiveDays = (int) config('rewards.decay_inactive_days', 14);
         $decayPercent = (float) config('rewards.decay_percent', 1);
-        $minPoints = (int) config('rewards.decay_min_points', 100);
+        $minPoints = (int) config('rewards.decay_min_points', 10);
         $cutoffDate = CarbonImmutable::today()->subDays($inactiveDays);
 
         $affected = User::query()

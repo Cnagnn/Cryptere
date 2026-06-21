@@ -202,7 +202,7 @@ class EnrollmentController extends Controller
             // Revert course completion bonus if it was completed
             if ($enrollment->completed_at !== null) {
                 $completionXp = (int) config('rewards.course_completion_xp', 100);
-                $completionPoints = (int) config('rewards.course_completion_points', 200);
+                $completionPoints = (int) config('rewards.course_completion_points', 20);
                 $user->forceFill([
                     'points' => max((int) $user->points - $completionPoints, 0),
                     'xp' => max((int) $user->xp - $completionXp, 0),

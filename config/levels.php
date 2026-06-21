@@ -21,7 +21,7 @@ return [
 
     'thresholds' => [
         1 => ['min_xp' => 0,      'bonus_percent' => 0.2],
-        2 => ['min_xp' => 56,     'bonus_percent' => 0.4],
+        2 => ['min_xp' => 50,     'bonus_percent' => 0.4],
         3 => ['min_xp' => 63,     'bonus_percent' => 0.6],
         4 => ['min_xp' => 70,     'bonus_percent' => 0.8],
         5 => ['min_xp' => 79,     'bonus_percent' => 1.0],

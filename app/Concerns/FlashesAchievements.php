@@ -12,8 +12,12 @@ use Inertia\Inertia;
 trait FlashesAchievements
 {
     /**
-     * Check badges, story chapters, and flash any newly awarded ones + level-up info.
+     * Check badges, story chapters, and flash any newly awarded ones.
      * Also persists notifications for each achievement.
+     *
+     * Level-up notification (event dispatch + Inertia flash) is handled
+     * exclusively by UserObserver to avoid duplicate notifications.
+     * This trait only awards the level-up BONUS POINTS here.
      *
      * @param  string|array<int, string>  $criteriaTypes
      */
@@ -40,15 +44,11 @@ trait FlashesAchievements
             $levelUp = $levelService->checkLevelUp($previousXp, $user->xp);
             if ($levelUp !== null) {
                 // Award bonus points for leveling up: level × points_per_level
-                $pointsPerLevel = (int) config('rewards.level_up_points_per_level', 50);
+                // The level-up NOTIFICATION is handled by UserObserver.
+                $pointsPerLevel = (int) config('rewards.level_up_points_per_level', 5);
                 $levelUpPoints = $levelUp['level'] * $pointsPerLevel;
                 $user->increment('points', $levelUpPoints);
                 XpAwarded::dispatch($user, 0, $levelUpPoints, 'level_up');
-
-                Inertia::flash('levelUp', [
-                    ...$levelUp,
-                    'bonus_points' => $levelUpPoints,
-                ]);
             }
         }
 
