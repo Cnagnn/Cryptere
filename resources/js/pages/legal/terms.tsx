@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 
 import AppLogoIcon from '@/components/app-logo-icon';
@@ -19,13 +19,13 @@ export default function Terms() {
             <main className="min-h-screen bg-background px-6 py-10 text-foreground">
                 <div className="mx-auto max-w-3xl space-y-8">
                     <header className="space-y-6">
-                        <Link
+                        <a
                             href={register()}
                             className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
                         >
                             <ArrowLeft className="size-4" />
                             Kembali ke daftar
-                        </Link>
+                        </a>
 
                         <div className="flex items-center gap-3">
                             <AppLogoIcon className="size-10" />
