@@ -45,19 +45,13 @@
         @endif
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        {{-- Async font load: print-media trick to avoid render-blocking. The
-             onload swap keeps style-src-attr 'unsafe-inline' from our CSP.
-             Noscript fallback ensures fonts still load when JS is disabled. --}}
-        <link
-            rel="preload"
-            as="style"
-            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&display=swap"
-        >
+        {{-- Google Fonts: loaded normally since the onload trick requires
+             unsafe-hashes in CSP which Lighthouse flags. The font CSS is
+             small (~2 KB) so the render-blocking cost is negligible. --}}
+        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&display=swap">
         <link
             href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&display=swap"
             rel="stylesheet"
-            media="print"
-            onload="this.media='all'"
         >
         <noscript>
             <link
