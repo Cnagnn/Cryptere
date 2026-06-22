@@ -81,6 +81,17 @@
     Header always unset Server
 
     # ─────────────────────────────────────────────────────────────────
+    # DEFENSE-IN-DEPTH SECURITY HEADERS
+    # ─────────────────────────────────────────────────────────────────
+    # These duplicate the SecurityHeaders middleware, but `always`
+    # ensures they fire on EVERY response — including 4xx/5xx error
+    # pages served by LSWS before the request reaches PHP.
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+    # ─────────────────────────────────────────────────────────────────
     # HSTS — defense in depth at web-server layer
     # ─────────────────────────────────────────────────────────────────
     # The SecurityHeaders middleware also emits HSTS, but that only fires
