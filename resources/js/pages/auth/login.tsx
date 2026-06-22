@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';
 import React, { useState } from 'react';
+import AppLogo from '@/components/app-logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +29,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppearance } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
 import { register } from '@/routes';
-import AppLogo from '@/components/app-logo';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import { redirect as socialRedirect } from '@/routes/social';
@@ -103,7 +103,7 @@ export default function Login({
                 <meta name="robots" content="noindex,follow" />
             </Head>
 
-            <div className="flex min-h-screen items-center justify-center bg-background px-4 py-4 lg:h-screen">
+            <main className="flex min-h-screen items-center justify-center bg-background px-4 py-4 lg:h-screen">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
                     <div className="flex items-center justify-center select-none">
                         <AppLogo className="pointer-events-auto h-11 w-auto" />
@@ -402,7 +402,7 @@ export default function Login({
                         </CardContent>
                     </Card>
                 </div>
-            </div>
+            </main>
         </>
     );
 }

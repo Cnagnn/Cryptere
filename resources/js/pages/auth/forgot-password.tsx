@@ -1,6 +1,7 @@
 // Components
 import { Form, Head, Link } from '@inertiajs/react';
 import { LoaderCircle, Mail, Monitor, Moon, Sun } from 'lucide-react';
+import AppLogo from '@/components/app-logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppearance } from '@/hooks/use-appearance';
 import { login } from '@/routes';
-import AppLogo from '@/components/app-logo';
 import { email } from '@/routes/password';
 
 export default function ForgotPassword({ status }: { status?: string }) {
@@ -25,7 +25,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
         <>
             <Head title="Lupa Kata Sandi" />
 
-            <div className="flex min-h-screen items-center justify-center bg-background py-4 lg:h-screen">
+            <main className="flex min-h-screen items-center justify-center bg-background py-4 lg:h-screen">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
                     <div className="flex items-center justify-center select-none">
                         <AppLogo className="pointer-events-auto h-11 w-auto" />
@@ -161,7 +161,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         </CardContent>
                     </Card>
                 </div>
-            </div>
+            </main>
         </>
     );
 }

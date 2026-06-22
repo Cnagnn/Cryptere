@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { ComponentProps, ReactNode, Ref } from 'react';
 import { useState } from 'react';
+import AppLogo from '@/components/app-logo';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -31,7 +32,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppearance } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
-import AppLogo from '@/components/app-logo';
 import { update } from '@/routes/password';
 
 function PasswordInput({
@@ -88,7 +88,7 @@ export default function ResetPassword({ token, email }: Props) {
         <>
             <Head title="Atur Ulang Kata Sandi" />
 
-            <div className="flex min-h-screen items-center justify-center bg-background py-4 lg:h-screen">
+            <main className="flex min-h-screen items-center justify-center bg-background py-4 lg:h-screen">
                 <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
                     <div className="flex items-center justify-center select-none">
                         <AppLogo className="pointer-events-auto h-11 w-auto" />
@@ -273,7 +273,7 @@ export default function ResetPassword({ token, email }: Props) {
                         </CardContent>
                     </Card>
                 </div>
-            </div>
+            </main>
         </>
     );
 }
