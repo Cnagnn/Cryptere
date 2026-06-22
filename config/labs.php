@@ -26,26 +26,26 @@ return [
     ],
 
     'aes-lab' => [
-        'title' => 'AES (Demonstrasi)',
-        'summary' => 'Pelajari sandi blok modern dengan 10 putaran SubBytes, ShiftRows, MixColumns, dan AddRoundKey. Contoh edukasi, bukan implementasi produksi.',
+        'title' => 'AES-128',
+        'summary' => 'Kalkulator kriptografi AES-128: input plaintext dan kunci, sistem menghasilkan ciphertext dan sebaliknya. Visualisasi 10 putaran SubBytes, ShiftRows, MixColumns, dan AddRoundKey.',
         'group' => 'symmetric',
     ],
 
     'des-lab' => [
-        'title' => 'DES (Demonstrasi)',
-        'summary' => 'Pelajari sandi blok Feistel 64-bit dengan 16 putaran. Demonstrasi edukasi: struktur Feistel, S-box, dan key schedule. Contoh bukan implementasi produksi.',
+        'title' => 'DES',
+        'summary' => 'Kalkulator kriptografi DES: input plaintext ASCII dan kunci 8 karakter, sistem otomatis mengubah ke ciphertext atau sebaliknya. Visualisasi 16 putaran Feistel.',
         'group' => 'symmetric',
     ],
 
     'rsa-lab' => [
-        'title' => 'RSA (Demonstrasi)',
-        'summary' => 'Pelajari konsep kunci publik dan privat memakai bilangan prima kecil. Contoh edukasi, bukan implementasi produksi.',
+        'title' => 'RSA',
+        'summary' => 'Kalkulator kriptografi RSA: enkripsi dan dekripsi berbasis kunci publik-privat dengan bilangan prima. Visualisasi pembangkitan kunci dan operasi modular.',
         'group' => 'asymmetric',
     ],
 
     'digital-signature-lab' => [
         'title' => 'Digital Signature',
-        'summary' => 'Demonstrate digital signature flow for authentication, integrity, and non-repudiation.',
+        'summary' => 'Kalkulator tanda tangan digital RSA: tandatangani pesan dengan SHA-256 dan kunci privat, verifikasi dengan kunci publik. Visualisasi alur penandatanganan dan verifikasi.',
         'group' => 'signature',
     ],
 

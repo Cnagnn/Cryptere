@@ -46,9 +46,11 @@ $sessionDomain = $isLocalHost($publicHost) ? null : '.'.$publicHost;
  * locally. Routes match on path only, and Wayfinder emits relative URLs
  * (e.g. `/login`) that resolve against whatever host:port the browser used.
  *
- * Production is untouched — only the `local` environment branch runs here.
+ * Production is untouched — only the `local` and `testing` environments
+ * bypass domain constraints (tests use Request::create which defaults to
+ * Host: localhost, which would not match domain-bound routes).
  */
-if (env('APP_ENV') === 'local' && $isLocalHost($publicHost)) {
+if (in_array(env('APP_ENV'), ['local', 'testing'], true) && $isLocalHost($publicHost)) {
     $publicHost = null;
     $authHost = null;
     $appHost = null;

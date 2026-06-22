@@ -139,25 +139,55 @@ export function modInverse(a: bigint, m: bigint): bigint | null {
 }
 
 /**
- * Check if a number is prime
+ * Miller-Rabin primality test
+ * Deterministic for n < 3,317,044,064,679,887,385,961,981 with these witnesses.
  */
 function isPrime(n: bigint): boolean {
     if (n < 2n) {
-return false;
-}
+        return false;
+    }
 
-    if (n === 2n) {
-return true;
-}
+    if (n === 2n || n === 3n) {
+        return true;
+    }
 
     if (n % 2n === 0n) {
-return false;
-}
+        return false;
+    }
 
-    for (let i = 3n; i * i <= n; i += 2n) {
-        if (n % i === 0n) {
-return false;
-}
+    // Write n-1 as 2^r * d
+    let r = 0n;
+    let d = n - 1n;
+
+    while (d % 2n === 0n) {
+        r++;
+        d /= 2n;
+    }
+
+    // Witnesses sufficient for n < 3.3 × 10^24
+    const witnesses = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n];
+
+    outer:
+    for (const a of witnesses) {
+        if (a >= n) {
+            continue;
+        }
+
+        let x = modPow(a, d, n);
+
+        if (x === 1n || x === n - 1n) {
+            continue;
+        }
+
+        for (let i = 0n; i < r - 1n; i++) {
+            x = (x * x) % n;
+
+            if (x === n - 1n) {
+                continue outer;
+            }
+        }
+
+        return false;
     }
 
     return true;
@@ -379,7 +409,7 @@ export interface RsaVerifyResult {
 }
 
 /**
- * Sign a message using RSA with SHA-256
+ * Sign a message using RSA with SHA-256 (full digest)
  *
  * @param message - Message to sign
  * @param keys - RSA key pair
@@ -394,30 +424,20 @@ export function signMessage(message: string, keys: RsaKeyGenTrace): RsaSignature
     explanationSteps.push(`SHA-256("${message}") = ${digestHex}`);
     explanationSteps.push(`Digest length: ${digestHex.length} hex chars = ${digestHex.length * 4} bits`);
 
-    // Step 2: Take first few hex chars to get an integer < n
-    // For toy example, we use first 4 hex chars (16 bits)
-    // We need to ensure the digest value is less than n
-    const maxHexChars = keys.n.toString(16).length - 1; // Leave buffer for safety
-    const numChars = Math.min(4, maxHexChars); // Use 4 chars or less if n is small
-    const digestPrefix = digestHex.substring(0, numChars);
+    // Step 2: Convert the FULL digest to a bigint
+    const digestInt = BigInt('0x' + digestHex);
 
-    explanationSteps.push(`Step 2: Extract prefix for RSA signing`);
-    explanationSteps.push(`n has ${keys.n.toString(16).length} hex chars`);
-    explanationSteps.push(`Using first ${numChars} chars: ${digestPrefix}`);
-
-    // Step 3: Convert hex prefix to bigint
-    const digestInt = BigInt('0x' + digestPrefix);
-    explanationSteps.push(`Step 3: Convert to integer`);
-    explanationSteps.push(`${digestPrefix} (hex) = ${digestInt} (decimal)`);
+    explanationSteps.push(`Step 2: Convert full digest to integer`);
+    explanationSteps.push(`${digestHex} (hex) = ${digestInt} (decimal)`);
 
     // Verify digestInt < n
     if (digestInt >= keys.n) {
         explanationSteps.push(`WARNING: digestInt (${digestInt}) >= n (${keys.n})`);
-        explanationSteps.push(`This would not be invertible. Consider using fewer hex chars.`);
+        explanationSteps.push(`This would not be invertible. Consider using larger primes.`);
     }
 
-    // Step 4: Sign = digestInt^d mod n (private key operation)
-    explanationSteps.push(`Step 4: Create signature`);
+    // Step 3: Sign = digestInt^d mod n (private key operation)
+    explanationSteps.push(`Step 3: Create signature`);
     explanationSteps.push(`signature = digest^d mod n`);
     explanationSteps.push(`signature = ${digestInt}^${keys.d} mod ${keys.n}`);
 
@@ -425,14 +445,14 @@ export function signMessage(message: string, keys: RsaKeyGenTrace): RsaSignature
 
     explanationSteps.push(`signature = ${signatureInt}`);
 
-    // Step 5: Convert signature to hex
+    // Step 4: Convert signature to hex
     const signatureHex = signatureInt.toString(16).toUpperCase();
-    explanationSteps.push(`Step 5: Signature in hex: ${signatureHex}`);
+    explanationSteps.push(`Step 4: Signature in hex: ${signatureHex}`);
 
     return {
         message,
         digestHex,
-        digestPrefix,
+        digestPrefix: digestHex,
         digestInt,
         signatureInt,
         signatureHex,
@@ -460,19 +480,14 @@ export function verifySignature(
     const digestHex = sha256(message);
     explanationSteps.push(`SHA-256("${message}") = ${digestHex}`);
 
-    // Step 2: Extract same prefix
-    const maxHexChars = keys.n.toString(16).length - 1;
-    const numChars = Math.min(4, maxHexChars);
-    const digestPrefix = digestHex.substring(0, numChars);
+    // Step 2: Convert full digest to integer
+    const digestInt = BigInt('0x' + digestHex);
 
-    explanationSteps.push(`Step 2: Extract same ${numChars} hex chars: ${digestPrefix}`);
+    explanationSteps.push(`Step 2: Convert full digest to integer`);
+    explanationSteps.push(`digestInt = ${digestInt}`);
 
-    // Step 3: Convert prefix to integer
-    const digestInt = BigInt('0x' + digestPrefix);
-    explanationSteps.push(`Step 3: digestInt = ${digestInt}`);
-
-    // Step 4: Verify = signature^e mod n (public key operation)
-    explanationSteps.push(`Step 4: Verify signature`);
+    // Step 3: Verify = signature^e mod n (public key operation)
+    explanationSteps.push(`Step 3: Verify signature`);
     explanationSteps.push(`recoveredDigest = signature^e mod n`);
     explanationSteps.push(`recoveredDigest = ${signatureInt}^${keys.e} mod ${keys.n}`);
 
@@ -480,9 +495,9 @@ export function verifySignature(
 
     explanationSteps.push(`recoveredDigest = ${recoveredDigestInt}`);
 
-    // Step 5: Compare
+    // Step 4: Compare full digest
     const isValid = recoveredDigestInt === digestInt;
-    explanationSteps.push(`Step 5: Compare`);
+    explanationSteps.push(`Step 4: Compare full digest`);
     explanationSteps.push(`recoveredDigest (${recoveredDigestInt}) === digestInt (${digestInt})`);
     explanationSteps.push(`Signature is ${isValid ? 'VALID' : 'INVALID'}`);
 

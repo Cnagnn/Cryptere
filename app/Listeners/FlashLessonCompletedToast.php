@@ -3,7 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\LessonCompleted;
-use Illuminate\Support\Facades\Inertia;
+use Inertia\Inertia;
 
 class FlashLessonCompletedToast
 {

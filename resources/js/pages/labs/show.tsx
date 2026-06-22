@@ -39,6 +39,7 @@ import {
     keyPlaceholderByLab,
     modeDescription,
     normalizeInputForSimulation,
+    onboardingByLab,
     recommendedInputFormatByLab,
     recommendedOutputFormatByLab,
     runSimulation,
@@ -130,7 +131,7 @@ function formatLabelInIndonesian(value: FormatValue): string {
 export default function LabsShow({ lab }: LabShowProps) {
     const [mode, setMode] = useState<SimulationMode>('encrypt');
     const [inputText, setInputText] = useState(defaultTextByLab(lab.slug));
-    const [keyInput, setKeyInput] = useState(keyPlaceholderByLab(lab.slug));
+    const [keyInput, setKeyInput] = useState(keyPlaceholderByLab(lab.slug, mode));
     const [inputFormat, setInputFormat] = useState<FormatValue>('ascii');
     const [outputFormat, setOutputFormat] = useState<FormatValue>('ascii');
     const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -142,6 +143,7 @@ export default function LabsShow({ lab }: LabShowProps) {
         [lab.slug, mode],
     );
     const keySetupSteps = useMemo(() => keySetupByLab(lab.slug), [lab.slug]);
+    const onboardingSteps = useMemo(() => onboardingByLab(lab.slug), [lab.slug]);
 
     const normalizedInput = useMemo(
         () =>
@@ -190,7 +192,7 @@ export default function LabsShow({ lab }: LabShowProps) {
     }, [keyInput, lab.slug, mode, normalizedInput.value, validationError]);
 
     const outputPresentation = useMemo(() => {
-        if (!canFormatOutput(lab.slug)) {
+        if (!canFormatOutput(lab.slug, mode)) {
             return {
                 value: rawResult.output,
                 error: 'Output ditampilkan apa adanya karena formatnya khusus untuk lab ini.',
@@ -198,7 +200,7 @@ export default function LabsShow({ lab }: LabShowProps) {
         }
 
         return formatOutputValue(rawResult.output, outputFormat);
-    }, [lab.slug, outputFormat, rawResult.output]);
+    }, [lab.slug, mode, outputFormat, rawResult.output]);
 
     const recommendedInputFormat = recommendedInputFormatByLab(lab.slug, mode);
     const recommendedOutputFormat = recommendedOutputFormatByLab(
@@ -228,8 +230,17 @@ export default function LabsShow({ lab }: LabShowProps) {
         setActiveStepIndex(0);
         setIsWalkthroughPlaying(false);
         setLearnerMode('pemula');
-         
     }, [inputFormat, inputText, keyInput, mode, outputFormat]);
+
+    // Reset key input only for labs where the key field has a different
+    // meaning per mode (e.g., Digital Signature verify uses the key field
+    // as the original message). Other labs keep the user's key across
+    // mode switches so encrypt→decrypt round-trips work seamlessly.
+    useEffect(() => {
+        if (lab.slug === 'digital-signature-lab') {
+            setKeyInput(keyPlaceholderByLab(lab.slug, mode));
+        }
+    }, [lab.slug, mode]);
 
     useEffect(() => {
         if (!isWalkthroughPlaying || rawResult.steps.length <= 1) {
@@ -287,6 +298,31 @@ export default function LabsShow({ lab }: LabShowProps) {
                     className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12"
                     style={{ animationDelay: '100ms' }}
                 >
+                    {learnerMode === 'pemula' && (
+                        <Card className={cn(bentoCardClass, 'lg:col-span-12 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20')}>
+                            <CardHeader className="gap-1 pb-3">
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    🎯 Mulai dari sini
+                                </CardTitle>
+                                <CardDescription className="text-sm/6">
+                                    Cara kerja algoritma dalam bahasa sederhana.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {onboardingSteps.map((step, index) => (
+                                    <div key={index} className="flex gap-3 text-sm">
+                                        <Badge
+                                            variant="secondary"
+                                            className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px] bg-blue-100 dark:bg-blue-900"
+                                        >
+                                            {index + 1}
+                                        </Badge>
+                                        <span className="leading-relaxed">{step}</span>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
                     <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
                         <CardHeader className="gap-1 pb-4">
                             <CardTitle className="flex items-center gap-2">
@@ -349,7 +385,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                             {showKeyInput ? (
                                 <div className="space-y-2">
                                     <Label htmlFor="lab-key">
-                                        {keyLabelByLab(lab.slug)}
+                                        {keyLabelByLab(lab.slug, mode)}
                                     </Label>
                                     <Input
                                         id="lab-key"
@@ -359,6 +395,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                         }
                                         placeholder={keyPlaceholderByLab(
                                             lab.slug,
+                                            mode,
                                         )}
                                     />
                                 </div>
@@ -404,73 +441,75 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 </p>
                             </div>
 
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label>Format masukan</Label>
-                                    <Select
-                                        value={inputFormat}
-                                        onValueChange={(value) =>
-                                            setInputFormat(value as FormatValue)
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {formatOptions.map((option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {formatLabelInIndonesian(
-                                                        option.value,
-                                                    )}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <p className="text-sm/6 text-muted-foreground">
-                                        Disarankan:{' '}
-                                        {formatLabelInIndonesian(
-                                            recommendedInputFormat,
-                                        )}
-                                    </p>
-                                </div>
+                            {learnerMode === 'mahir' && (
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label>Format masukan</Label>
+                                        <Select
+                                            value={inputFormat}
+                                            onValueChange={(value) =>
+                                                setInputFormat(value as FormatValue)
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {formatOptions.map((option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {formatLabelInIndonesian(
+                                                            option.value,
+                                                        )}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-sm/6 text-muted-foreground">
+                                            Disarankan:{' '}
+                                            {formatLabelInIndonesian(
+                                                recommendedInputFormat,
+                                            )}
+                                        </p>
+                                    </div>
 
-                                <div className="space-y-2">
-                                    <Label>Format keluaran</Label>
-                                    <Select
-                                        value={outputFormat}
-                                        onValueChange={(value) =>
-                                            setOutputFormat(
-                                                value as FormatValue,
-                                            )
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {formatOptions.map((option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {formatLabelInIndonesian(
-                                                        option.value,
-                                                    )}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <p className="text-sm/6 text-muted-foreground">
-                                        Disarankan:{' '}
-                                        {formatLabelInIndonesian(
-                                            recommendedOutputFormat,
-                                        )}
-                                    </p>
+                                    <div className="space-y-2">
+                                        <Label>Format keluaran</Label>
+                                        <Select
+                                            value={outputFormat}
+                                            onValueChange={(value) =>
+                                                setOutputFormat(
+                                                    value as FormatValue,
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {formatOptions.map((option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {formatLabelInIndonesian(
+                                                            option.value,
+                                                        )}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-sm/6 text-muted-foreground">
+                                            Disarankan:{' '}
+                                            {formatLabelInIndonesian(
+                                                recommendedOutputFormat,
+                                            )}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {validationError && (
                                 <Alert variant="destructive" className="py-3" role="alert">
@@ -486,7 +525,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                                 size="sm"
                                 onClick={() => {
                                     setInputText(defaultTextByLab(lab.slug));
-                                    setKeyInput(keyPlaceholderByLab(lab.slug));
+                                    setKeyInput(keyPlaceholderByLab(lab.slug, 'encrypt'));
                                     setInputFormat('ascii');
                                     setOutputFormat('ascii');
                                     setMode('encrypt');

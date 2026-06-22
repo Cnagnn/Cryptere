@@ -9,7 +9,7 @@ export const glossaryAES = {
     's-box': {
         term: 'S-box (Substitution Box)',
         definition:
-            'Tabel lookup 256 entry yang mengganti setiap byte dengan byte lain secara nonlinear. Di AES, S-box dirancang agar resisten terhadap cryptanalysis.',
+            'Tabel rahasia yang mengganti setiap byte dengan byte lain secara tidak teratur. Inilah sumber kekuatan utama AES.',
     },
     'shift-rows': {
         term: 'ShiftRows',
@@ -19,7 +19,7 @@ export const glossaryAES = {
     'mix-columns': {
         term: 'MixColumns',
         definition:
-            'Operasi AES yang mengalirkan setiap kolom state matrix melalui GF(2^8) multiplication untuk mencampur byte dalam kolom.',
+            'Langkah yang mencampur byte dalam setiap kolom agar perubahan kecil menyebar ke seluruh blok.',
     },
     'add-round-key': {
         term: 'AddRoundKey',
@@ -39,12 +39,12 @@ export const glossaryAES = {
     'rcon': {
         term: 'Rcon (Round Constant)',
         definition:
-            'Konstanta per round untuk key expansion AES. Rcon[i] = 2^(i-1) dalam GF(2^8).',
+            'Konstanta unik per putaran yang dipakai saat menurunkan kunci AES.',
     },
     'gf28': {
         term: 'GF(2^8)',
         definition:
-            'Galois Field dengan 256 elemen untuk operasi MixColumns AES. Memungkinkan diffusion byte antar kolom.',
+            'Bidang matematika khusus dengan 256 elemen yang dipakai AES untuk operasi pencampuran.',
     },
 } as const;
 
@@ -53,32 +53,32 @@ export const glossaryDES = {
     'feistel-structure': {
         term: 'Feistel Structure',
         definition:
-            'Arsitektur cipher yang membagi blok menjadi L dan R, update R dengan f(R,K), swap setiap round. Encryption=Decryption dengan kunci terbalik.',
+            'Cara mengacak data dengan membelah jadi dua bagian, mengacak satu bagian, lalu menukar. Proses yang sama bisa dibalik untuk mengembalikan data asli.',
     },
     's-box-des': {
         term: 'S-box DES',
         definition:
-            '8 tabel lookup 4x16 yang merupakan satu-satunya sumber nonlinearity di DES. Setiap S-box menerima 6-bit input dan menghasilkan 4-bit output.',
+            '8 tabel rahasia yang mengganti angka dengan angka lain secara tidak teratur. Inilah yang membuat DES sulit dibalik tanpa kunci.',
     },
     'expansion-e': {
         term: 'Expansion E',
         definition:
-            'Permutasi yang memperluas 32-bit menjadi 48-bit untuk XOR dengan round key. Menyebarkan bit R untuk diffusion.',
+            'Langkah yang menggandakan beberapa bit agar data lebih tercampur dengan kunci.',
     },
     'l-r-halves': {
         term: 'L/R Halves',
         definition:
-            'Blok 64-bit dipecah jadi 32-bit kiri (L) dan 32-bit kanan (R). Setiap round: L[i]=R[i-1], R[i]=L[i-1] XOR f(R[i-1], K[i]).',
+            'Data dibelah jadi bagian kiri (L) dan bagian kanan (R). Setiap putaran, bagian kanan diacak dan ditukar dengan kiri.',
     },
     'parity-bit': {
         term: 'Parity Bit',
         definition:
-            'Bit ke-8 setiap byte kunci DES untuk error detection. Total efektif kunci hanya 56 bit.',
+            'Bit tambahan di setiap byte kunci untuk mendeteksi kesalahan. Dari 64 bit kunci, hanya 56 bit yang benar-benar dipakai.',
     },
     'ip-fp': {
         term: 'Initial/Final Permutation',
         definition:
-            'Permutasi bit pada awal dan akhir DES. Bukan bagian kriptografis - desain warisan. Bisa dibalik tanpa kunci.',
+            'Langkah pengacakan posisi bit di awal dan akhir DES. Bagian dari desain standar FIPS yang membantu menyebarkan bit.',
     },
 } as const;
 

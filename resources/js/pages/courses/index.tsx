@@ -3,16 +3,8 @@ import { ArrowRight, BookOpenCheck, Filter, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -172,7 +164,7 @@ const hardcodedCatalogCourses: CourseCard[] = [
         slug: 'digital-signature-lab',
         title: 'Digital Signature',
         summary:
-            'Demonstrasikan alur tanda tangan digital untuk autentikasi, integritas, dan non-repudiasi.',
+            'Tanda tangan digital RSA untuk autentikasi, integritas, dan non-repudiasi.',
         coverImage: null,
         estimatedMinutes: 25,
         lessonCount: 1,
@@ -468,6 +460,24 @@ function EnrolledCardFooter({ course }: { course: CourseCard }) {
 }
 
 /* ── Course Card Grid ── */
+const LEARNING_ORDER: Record<string, number> = {
+    'caesar-cipher-lab': 1,
+    'vigenere-cipher-lab': 2,
+    'des-lab': 3,
+    'aes-lab': 4,
+    'rsa-lab': 5,
+    'digital-signature-lab': 6,
+};
+
+const LEARNING_LABELS: Record<string, string> = {
+    'caesar-cipher-lab': 'Mulai dari sini',
+    'vigenere-cipher-lab': 'Berikutnya',
+    'des-lab': 'Berikutnya',
+    'aes-lab': 'Berikutnya',
+    'rsa-lab': 'Berikutnya',
+    'digital-signature-lab': 'Terakhir',
+};
+
 function CourseCardGrid({
     courses,
     isLabsCatalog,
@@ -526,6 +536,23 @@ function CourseCardGrid({
                     />
 
                     <CardHeader>
+                        {isLabsCatalog && LEARNING_ORDER[course.slug] && (
+                            <div className="flex items-center gap-2">
+                                <Badge
+                                    variant={
+                                        course.slug === 'caesar-cipher-lab'
+                                            ? 'default'
+                                            : 'secondary'
+                                    }
+                                    className="text-[10px]"
+                                >
+                                    Langkah {LEARNING_ORDER[course.slug]}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                    {LEARNING_LABELS[course.slug]}
+                                </span>
+                            </div>
+                        )}
                         <CardTitle className="text-xl leading-tight">
                             {course.title}
                         </CardTitle>

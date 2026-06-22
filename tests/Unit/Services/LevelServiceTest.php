@@ -29,8 +29,9 @@ test('level 10 at 139 xp', function () {
 });
 
 test('progress is 0 at level boundary', function () {
-    $result = $this->service->getLevelForXp(56); // exact level 2 boundary
+    $result = $this->service->getLevelForXp(50); // exact level 2 boundary
 
+    expect($result['level'])->toBe(2);
     expect($result['progress'])->toBe(0.0);
 });
 
@@ -42,10 +43,10 @@ test('progress is capped at 100', function () {
 });
 
 test('checkLevelUp detects level increase', function () {
-    $result = $this->service->checkLevelUp(50, 60); // level 1 → level 3
+    $result = $this->service->checkLevelUp(49, 63); // level 1 → level 3
 
     expect($result)->not->toBeNull();
-    expect($result['level'])->toBeGreaterThan(1);
+    expect($result['level'])->toBe(3);
 });
 
 test('checkLevelUp returns null when no level change', function () {

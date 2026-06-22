@@ -153,15 +153,17 @@ export default function DesPanel({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
-                        DES Feistel
+                        {learnerMode === 'pemula' ? 'DES' : 'DES Feistel'}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                        16 putaran
+                        {learnerMode === 'pemula' ? '16 putaran pengacakan' : '16 putaran'}
                     </span>
                 </div>
                 {currentRound && (
                     <Badge variant="secondary" className="text-xs">
-                        Putaran {currentRound.roundIndex}
+                        {learnerMode === 'pemula'
+                            ? `Putaran ${currentRound.roundIndex}/16`
+                            : `Putaran ${currentRound.roundIndex}`}
                     </Badge>
                 )}
             </div>
@@ -170,25 +172,90 @@ export default function DesPanel({
             {showInitial && (
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">State Awal DES</CardTitle>
+                        <CardTitle className="text-sm">
+                            {learnerMode === 'pemula' ? 'Persiapan' : 'State Awal DES'}
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                        <div className="rounded bg-muted/40 p-2 text-xs font-mono break-all">
-                            <span className="text-muted-foreground">Plaintext: </span>
-                            {trace.plaintext}
-                        </div>
-                        {learnerMode === 'mahir' && (
-                            <p className="text-xs text-muted-foreground italic">
-                                DES menerapkan Permutasi Awal (IP) pada masukan 64-bit,
-                                lalu membagi menjadi L₀ dan R₀ (masing-masing 32 bit) sebelum putaran Feistel.
-                            </p>
+                        {learnerMode === 'pemula' ? (
+                            <div className="space-y-3">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    Pesan Anda akan diacak sebanyak <strong>16 kali</strong> berturut-turut.
+                                    Setiap putaran menggunakan kunci yang berbeda untuk membuat data semakin sulit dibaca.
+                                </p>
+                                <div className="flex items-center gap-2 text-xs">
+                                    <div className="rounded bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 px-3 py-2">
+                                        <span className="text-muted-foreground">Data awal: </span>
+                                        <span className="font-mono">{trace.plaintext}</span>
+                                    </div>
+                                    <span className="text-muted-foreground">→</span>
+                                    <div className="rounded bg-muted/40 px-3 py-2 text-muted-foreground">
+                                        16x acak
+                                    </div>
+                                    <span className="text-muted-foreground">→</span>
+                                    <div className="rounded bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-3 py-2">
+                                        <span className="text-muted-foreground">Hasil: </span>
+                                        <span className="font-mono">{trace.ciphertext || '...'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="rounded bg-muted/40 p-2 text-xs font-mono break-all">
+                                    <span className="text-muted-foreground">Plaintext: </span>
+                                    {trace.plaintext}
+                                </div>
+                                <p className="text-xs text-muted-foreground italic">
+                                    DES menerapkan Permutasi Awal (IP) pada masukan 64-bit,
+                                    lalu membagi menjadi L₀ dan R₀ (masing-masing 32 bit) sebelum putaran Feistel.
+                                </p>
+                            </>
                         )}
                     </CardContent>
                 </Card>
             )}
 
             {/* Round visualization */}
-            {currentRound && (
+            {currentRound && learnerMode === 'pemula' && (
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">
+                            Putaran {currentRound.roundIndex} dari 16
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            Data sedang diacak untuk kali ke-{currentRound.roundIndex}.
+                            Setiap putaran menggunakan kunci yang berbeda untuk membuat data semakin sulit dibaca tanpa kunci yang benar.
+                        </p>
+                        {/* Pipeline visualization */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {rounds.map((r) => (
+                                <div
+                                    key={r.roundIndex}
+                                    className={cn(
+                                        'flex h-8 w-8 items-center justify-center rounded text-xs font-medium transition-colors',
+                                        r.roundIndex === currentRound.roundIndex
+                                            ? 'bg-primary text-primary-foreground scale-110 shadow'
+                                            : r.roundIndex < currentRound.roundIndex
+                                              ? 'bg-primary/20 text-primary'
+                                              : 'bg-muted/50 text-muted-foreground',
+                                    )}
+                                >
+                                    {r.roundIndex}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Mulai</span>
+                            <span>Selesai</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Round visualization (mahir mode) */}
+            {currentRound && learnerMode === 'mahir' && (
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm">
@@ -245,43 +312,41 @@ export default function DesPanel({
             {showFinal && (
                 <Card className="border-green-200 dark:border-green-800">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">State Akhir DES</CardTitle>
+                        <CardTitle className="text-sm">
+                            {learnerMode === 'pemula' ? 'Selesai!' : 'State Akhir DES'}
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="rounded bg-green-50 dark:bg-green-950/30 p-3 text-sm space-y-1">
-                            <div>
-                                <span className="text-muted-foreground">Ciphertext: </span>
-                                <span className="font-mono font-medium">{trace.ciphertext}</span>
+                        {learnerMode === 'pemula' ? (
+                            <div className="space-y-3">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    Pengacakan selesai! Setelah 16 putaran, inilah hasil akhirnya:
+                                </p>
+                                <div className="rounded bg-green-50 dark:bg-green-950/30 p-4 text-center">
+                                    <span className="text-xs text-muted-foreground block mb-1">Ciphertext</span>
+                                    <span className="font-mono font-medium text-sm break-all">{trace.ciphertext}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Untuk mengembalikan teks asli, gunakan kunci yang sama dengan mode Dekripsi.
+                                </p>
                             </div>
-                        </div>
-                        {learnerMode === 'mahir' && (
-                            <p className="mt-2 text-xs text-muted-foreground italic">
-                                L dan R akhir ditukar (R₁₆L₁₆), lalu Permutasi Akhir (FP)
-                                diterapkan untuk menghasilkan ciphertext 64-bit.
-                                Dekripsi menggunakan proses yang sama dengan round key terbalik.
-                            </p>
+                        ) : (
+                            <>
+                                <div className="rounded bg-green-50 dark:bg-green-950/30 p-3 text-sm space-y-1">
+                                    <div>
+                                        <span className="text-muted-foreground">Ciphertext: </span>
+                                        <span className="font-mono font-medium">{trace.ciphertext}</span>
+                                    </div>
+                                </div>
+                                <p className="mt-2 text-xs text-muted-foreground italic">
+                                    L dan R akhir ditukar (R₁₆L₁₆), lalu Permutasi Akhir (FP)
+                                    diterapkan untuk menghasilkan ciphertext 64-bit.
+                                    Dekripsi menggunakan proses yang sama dengan round key terbalik.
+                                </p>
+                            </>
                         )}
                     </CardContent>
                 </Card>
-            )}
-
-            {/* Round list (pemula mode) */}
-            {learnerMode === 'pemula' && !showInitial && !showFinal && (
-                <div className="grid grid-cols-4 gap-1">
-                    {rounds.map((r) => (
-                        <div
-                            key={r.roundIndex}
-                            className={cn(
-                                'rounded p-1 text-center text-[10px]',
-                                r.roundIndex === currentRound?.roundIndex
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted/50 text-muted-foreground',
-                            )}
-                        >
-                            R{r.roundIndex}
-                        </div>
-                    ))}
-                </div>
             )}
         </div>
     );

@@ -64,12 +64,12 @@ export default function SignaturePanel({
                     </CardContent>
                 </Card>
 
-                {/* Step 2: Digest Prefix */}
+                {/* Step 2: Digest → Integer */}
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm flex items-center gap-2">
                             <span className="size-5 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-[10px] font-bold text-orange-600 dark:text-orange-400">2</span>
-                            Awalan Digest
+                            Digest → Bilangan Bulat
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -77,8 +77,7 @@ export default function SignaturePanel({
                             {trace.digestPrefix}
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground">
-                            Untuk edukasi, hanya {trace.digestPrefix.length} karakter heksadesimal pertama yang digunakan.
-                            Pada tanda tangan RSA yang sesungguhnya, hash lengkap dikonversi menjadi bilangan bulat.
+                            Digest SHA-256 256-bit dikonversi menjadi bilangan bulat untuk penandatanganan RSA.
                         </p>
                     </CardContent>
                 </Card>
