@@ -39,7 +39,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
@@ -185,7 +184,6 @@ export default function LeaderboardIndex({
         return () => clearTimeout(timer);
     }, [usernameInput]);
 
-    // Track Inertia navigation for skeleton loading
     useEffect(() => {
         const removeStart = router.on('start', () => setIsNavigating(true));
         const removeFinish = router.on('finish', () => setIsNavigating(false));
@@ -313,77 +311,38 @@ export default function LeaderboardIndex({
     );
 
     const buildQuery = useCallback(
-        (overrides: Record<string, string | number>) => {
-            return {
-                timeframe,
-                page: 1,
-                per_page: leaders.per_page,
-                sort_by: sortBy,
-                sort_order: sortOrder,
-                level_min: levelMin,
-                level_max: levelMax,
-                ...overrides,
-            };
-        },
+        (overrides: Record<string, string | number>) => ({
+            timeframe,
+            page: 1,
+            per_page: leaders.per_page,
+            sort_by: sortBy,
+            sort_order: sortOrder,
+            level_min: levelMin,
+            level_max: levelMax,
+            ...overrides,
+        }),
         [timeframe, leaders.per_page, sortBy, sortOrder, levelMin, levelMax],
     );
 
-    const handleTimeframeChange = (value: string): void => {
+    const navigate = (overrides: Record<string, string | number>) => {
         router.get(
-            leaderboardIndex.url({ query: buildQuery({ timeframe: value }) }),
+            leaderboardIndex.url({ query: buildQuery(overrides) }),
             {},
             { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
-    const handleSortChange = (value: string): void => {
-        router.get(
-            leaderboardIndex.url({ query: buildQuery({ sort_by: value }) }),
-            {},
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
+    const handleSortOrderToggle = () => {
+        navigate({ sort_order: sortOrder === 'desc' ? 'asc' : 'desc' });
     };
 
-    const handleSortOrderToggle = (): void => {
-        const next = sortOrder === 'desc' ? 'asc' : 'desc';
-        router.get(
-            leaderboardIndex.url({ query: buildQuery({ sort_order: next }) }),
-            {},
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
-    };
-
-    const handleLevelFilter = (): void => {
+    const handleLevelFilter = () => {
         const minEl = document.getElementById('level-min') as HTMLInputElement | null;
         const maxEl = document.getElementById('level-max') as HTMLInputElement | null;
-        const min = minEl ? parseInt(minEl.value, 10) || 0 : 0;
-        const max = maxEl ? parseInt(maxEl.value, 10) || 0 : 0;
-
-        router.get(
-            leaderboardIndex.url({
-                query: buildQuery({ level_min: min, level_max: max }),
-            }),
-            {},
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
-    };
-
-    const handlePageChange = (nextPage: number): void => {
-        router.get(
-            leaderboardIndex.url({ query: buildQuery({ page: nextPage }) }),
-            {},
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
-    };
-
-    const handlePageSizeChange = (nextPageSize: number): void => {
-        router.get(
-            leaderboardIndex.url({
-                query: buildQuery({ page: 1, per_page: nextPageSize }),
-            }),
-            {},
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
+        navigate({
+            level_min: minEl ? parseInt(minEl.value, 10) || 0 : 0,
+            level_max: maxEl ? parseInt(maxEl.value, 10) || 0 : 0,
+        });
     };
 
     return (
@@ -401,9 +360,12 @@ export default function LeaderboardIndex({
                     </div>
                 </header>
 
-                {/* Controls: search + timeframe + sort + level filter */}
-                <div className="animate-fade-in-up flex flex-col gap-3" style={{ animationDelay: '50ms' }}>
-                    {/* Row 1: search + timeframe */}
+                {/* Controls: search + period + sort + order + level */}
+                <div
+                    className="animate-fade-in-up flex flex-col gap-3"
+                    style={{ animationDelay: '50ms' }}
+                >
+                    {/* Row 1: search */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <Input
                             value={usernameInput}
@@ -413,37 +375,50 @@ export default function LeaderboardIndex({
                             placeholder="Search username..."
                             className="w-full sm:w-64"
                         />
-                        <Tabs
-                            value={timeframe}
-                            onValueChange={handleTimeframeChange}
-                        >
-                            <TabsList>
-                                {timeframes.map((tf) => {
-                                    const Icon = TIMEFRAME_ICONS[tf] ?? null;
-
-                                    return (
-                                        <TabsTrigger key={tf} value={tf}>
-                                            {Icon ? (
-                                                <Icon
-                                                    className="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                            ) : null}
-                                            {TIMEFRAME_LABELS[tf] ?? tf}
-                                        </TabsTrigger>
-                                    );
-                                })}
-                            </TabsList>
-                        </Tabs>
                     </div>
 
-                    {/* Row 2: sort + order + level filter */}
+                    {/* Row 2: period + sort + order + level filter */}
                     <div className="flex flex-wrap items-center gap-2">
+                        {/* Period dropdown */}
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="period" className="text-xs text-muted-foreground">
+                                Period
+                            </Label>
+                            <Select
+                                value={timeframe}
+                                onValueChange={(v) => navigate({ timeframe: v })}
+                            >
+                                <SelectTrigger id="period" className="w-36 h-8 text-xs">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {timeframes.map((tf) => {
+                                        const Icon = TIMEFRAME_ICONS[tf] ?? null;
+
+                                        return (
+                                            <SelectItem key={tf} value={tf}>
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    {Icon ? (
+                                                        <Icon className="size-3.5" />
+                                                    ) : null}
+                                                    {TIMEFRAME_LABELS[tf] ?? tf}
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Sort dropdown */}
                         <div className="flex items-center gap-2">
                             <Label htmlFor="sort-by" className="text-xs text-muted-foreground">
                                 Sort by
                             </Label>
-                            <Select value={sortBy} onValueChange={handleSortChange}>
+                            <Select
+                                value={sortBy}
+                                onValueChange={(v) => navigate({ sort_by: v })}
+                            >
                                 <SelectTrigger id="sort-by" className="w-40 h-8 text-xs">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -457,6 +432,7 @@ export default function LeaderboardIndex({
                             </Select>
                         </div>
 
+                        {/* Order toggle */}
                         <Button
                             variant="outline"
                             size="icon"
@@ -471,8 +447,11 @@ export default function LeaderboardIndex({
                             )}
                         </Button>
 
+                        {/* Level range filter */}
                         <div className="flex items-center gap-1.5 ml-2">
-                            <Label className="text-xs text-muted-foreground">Level</Label>
+                            <Label className="text-xs text-muted-foreground">
+                                Level
+                            </Label>
                             <Input
                                 id="level-min"
                                 type="number"
@@ -481,7 +460,9 @@ export default function LeaderboardIndex({
                                 className="w-16 h-8 text-xs"
                                 min={1}
                             />
-                            <span className="text-xs text-muted-foreground">–</span>
+                            <span className="text-xs text-muted-foreground">
+                                –
+                            </span>
                             <Input
                                 id="level-max"
                                 type="number"
@@ -538,6 +519,7 @@ export default function LeaderboardIndex({
                         ))}
                     </div>
                 ) : null}
+
                 <section
                     className="animate-fade-in-up grid gap-4"
                     style={{ animationDelay: '200ms' }}
@@ -591,8 +573,15 @@ export default function LeaderboardIndex({
                                         page={leaders.current_page}
                                         pageCount={leaders.last_page}
                                         pageSize={leaders.per_page}
-                                        onPageChange={handlePageChange}
-                                        onPageSizeChange={handlePageSizeChange}
+                                        onPageChange={(nextPage) =>
+                                            navigate({ page: nextPage })
+                                        }
+                                        onPageSizeChange={(nextSize) =>
+                                            navigate({
+                                                page: 1,
+                                                per_page: nextSize,
+                                            })
+                                        }
                                         footerInfo={`Showing ${leaders.from ?? 0} - ${leaders.to ?? 0} of ${leaders.total} participants`}
                                         getRowClassName={getRowClassName}
                                     />
@@ -621,10 +610,11 @@ export default function LeaderboardIndex({
                                                     leaders.current_page <= 1
                                                 }
                                                 onClick={() =>
-                                                    handlePageChange(
-                                                        leaders.current_page -
+                                                    navigate({
+                                                        page:
+                                                            leaders.current_page -
                                                             1,
-                                                    )
+                                                    })
                                                 }
                                             >
                                                 Previous
@@ -641,10 +631,11 @@ export default function LeaderboardIndex({
                                                     leaders.last_page
                                                 }
                                                 onClick={() =>
-                                                    handlePageChange(
-                                                        leaders.current_page +
+                                                    navigate({
+                                                        page:
+                                                            leaders.current_page +
                                                             1,
-                                                    )
+                                                    })
                                                 }
                                             >
                                                 Next
@@ -663,11 +654,11 @@ export default function LeaderboardIndex({
 
 /* ─── Podium Section ─── */
 
-const PODIUM_ORDER = [1, 0, 2] as const; // Display order: #2, #1, #3
+const PODIUM_ORDER = [1, 0, 2] as const;
 const PODIUM_COLORS = [
-    'from-amber-400/20 to-amber-400/5 border-amber-400/30', // Gold (#1)
-    'from-slate-300/20 to-slate-300/5 border-slate-300/30', // Silver (#2)
-    'from-amber-600/20 to-amber-600/5 border-amber-600/30', // Bronze (#3)
+    'from-amber-400/20 to-amber-400/5 border-amber-400/30',
+    'from-slate-300/20 to-slate-300/5 border-slate-300/30',
+    'from-amber-600/20 to-amber-600/5 border-amber-600/30',
 ];
 const PODIUM_HEIGHTS = ['h-28', 'h-20', 'h-16'];
 
@@ -679,8 +670,6 @@ function PodiumSection({
     pointsFormatter: Intl.NumberFormat;
 }) {
     const getInitials = useInitials();
-
-    // Reorder: #2, #1, #3
     const ordered = PODIUM_ORDER.map((i) => top3[i]).filter(Boolean);
 
     if (ordered.length === 0) {
@@ -697,7 +686,7 @@ function PodiumSection({
     return (
         <div className={cn('grid items-end gap-3', gridCols)}>
             {ordered.map((entry) => {
-                const rankIndex = entry.rank - 1; // 0-based for color arrays
+                const rankIndex = entry.rank - 1;
                 const isFirst = entry.rank === 1;
 
                 return (
@@ -745,7 +734,6 @@ function PodiumSection({
                             </span>
                         </div>
 
-                        {/* Podium bar */}
                         <div
                             className={cn(
                                 'w-full rounded-t-lg border-t bg-linear-to-b',
@@ -791,13 +779,11 @@ function MobileLeaderboardCards({
                         )}
                     >
                         <CardContent className="flex items-center gap-3 py-3">
-                            {/* Rank */}
                             <div className="flex w-10 shrink-0 items-center justify-center gap-0.5">
                                 <RankDisplay rank={entry.rank} />
                                 <RankTrend change={entry.rankChange} />
                             </div>
 
-                            {/* Avatar */}
                             <Avatar className="size-10 shrink-0 rounded-none">
                                 <AvatarImage
                                     src={entry.avatar ?? undefined}
@@ -812,7 +798,6 @@ function MobileLeaderboardCards({
                                 </AvatarFallback>
                             </Avatar>
 
-                            {/* Info */}
                             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                                 <div className="flex items-center gap-1.5">
                                     <span className="truncate text-sm font-medium">
@@ -837,7 +822,6 @@ function MobileLeaderboardCards({
                                 </div>
                             </div>
 
-                            {/* Points */}
                             <div className="shrink-0 text-right">
                                 <span className="text-sm font-semibold">
                                     {pointsFormatter.format(entry.points)}
