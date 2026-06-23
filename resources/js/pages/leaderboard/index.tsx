@@ -78,14 +78,14 @@ const TIMEFRAME_ICONS: Record<string, typeof CalendarDays> = {
     monthly: CalendarRange,
 };
 
-const SORT_LABELS: Record<string, string> = {
+const OVERALL_LABELS: Record<string, string> = {
     points: 'Points',
     xp: 'XP',
-    longest_streak: 'Longest Streak',
     current_streak: 'Current Streak',
+    longest_streak: 'Longest Streak',
 };
 
-const SORT_OPTIONS = ['points', 'xp', 'longest_streak', 'current_streak'] as const;
+const OVERALL_OPTIONS = ['points', 'xp', 'current_streak', 'longest_streak'] as const;
 
 type Props = {
     leaders: {
@@ -412,9 +412,9 @@ clearTimeout(levelFilterTimer.current);
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {SORT_OPTIONS.map((opt) => (
+                                {OVERALL_OPTIONS.map((opt) => (
                                     <SelectItem key={opt} value={opt}>
-                                        {SORT_LABELS[opt]}
+                                        {OVERALL_LABELS[opt]}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
