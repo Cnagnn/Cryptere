@@ -627,15 +627,33 @@ clearTimeout(levelFilterTimer.current);
     );
 }
 
-/* ─── Podium Section ─── */
+/* ─── Podium Section (Geist + shadcn/ui redesign) ─── */
 
-const PODIUM_ORDER = [1, 0, 2] as const;
-const PODIUM_COLORS = [
-    'from-amber-400/20 to-amber-400/5 border-amber-400/30',
-    'from-slate-300/20 to-slate-300/5 border-slate-300/30',
-    'from-amber-600/20 to-amber-600/5 border-amber-600/30',
-];
-const PODIUM_HEIGHTS = ['h-28', 'h-20', 'h-16'];
+const PODIUM_ORDER = [1, 0, 2] as const; // Display: #2, #1, #3
+
+const PODIUM_STYLES = [
+    // #1 — Gold accent
+    {
+        card: 'border-amber-500/30 bg-linear-to-b from-amber-500/5 to-transparent',
+        rankBg: 'bg-amber-500/10 text-amber-500 ring-amber-500/20',
+        avatarRing: 'ring-amber-500/30',
+        badge: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    },
+    // #2 — Silver accent
+    {
+        card: 'border-slate-400/25 bg-linear-to-b from-slate-400/5 to-transparent',
+        rankBg: 'bg-slate-400/10 text-slate-400 ring-slate-400/20',
+        avatarRing: 'ring-slate-400/30',
+        badge: 'bg-slate-400/10 text-slate-400 border-slate-400/20',
+    },
+    // #3 — Bronze accent
+    {
+        card: 'border-amber-700/25 bg-linear-to-b from-amber-700/5 to-transparent',
+        rankBg: 'bg-amber-700/10 text-amber-700 ring-amber-700/20',
+        avatarRing: 'ring-amber-700/30',
+        badge: 'bg-amber-700/10 text-amber-700 border-amber-700/20',
+    },
+] as const;
 
 function PodiumSection({
     top3,
@@ -653,74 +671,128 @@ function PodiumSection({
 
     const gridCols =
         ordered.length === 1
-            ? 'grid-cols-1 max-w-48 mx-auto'
+            ? 'grid-cols-1 max-w-xs mx-auto'
             : ordered.length === 2
-              ? 'grid-cols-2 max-w-sm mx-auto'
+              ? 'grid-cols-2 max-w-lg mx-auto'
               : 'grid-cols-3';
 
     return (
-        <div className={cn('grid items-end gap-3', gridCols)}>
+        <div className={cn('grid gap-4', gridCols)}>
             {ordered.map((entry) => {
                 const rankIndex = entry.rank - 1;
+                const style = PODIUM_STYLES[rankIndex];
                 const isFirst = entry.rank === 1;
 
                 return (
-                    <div
+                    <Card
                         key={entry.id}
-                        className="flex flex-col items-center gap-2"
+                        className={cn(
+                            'relative flex flex-col items-center gap-4 overflow-hidden border p-6 transition-shadow hover:shadow-md',
+                            style.card,
+                            isFirst && 'shadow-lg shadow-amber-500/5',
+                        )}
                     >
-                        <div className="relative">
-                            {isFirst ? (
-                                <Crown className="absolute -top-3 left-1/2 size-5 -translate-x-1/2 text-amber-400" />
-                            ) : null}
-                            <Avatar
-                                className={cn(isFirst ? 'size-20' : 'size-14')}
-                            >
-                                <AvatarImage
-                                    src={entry.avatar || undefined}
-                                    alt={
-                                        entry.username
-                                            ? `@${entry.username}`
-                                            : entry.name
-                                    }
-                                    onError={(e) =>
-                                        (e.currentTarget.style.display = 'none')
-                                    }
-                                />
-                                <AvatarFallback
-                                    className={cn(isFirst && 'text-lg')}
-                                >
-                                    {getInitials(entry.username ?? entry.name)}
-                                </AvatarFallback>
-                            </Avatar>
+                        {/* Rank badge — top-right */}
+                        <div
+                            className={cn(
+                                'absolute top-3 right-3 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1',
+                                style.rankBg,
+                            )}
+                        >
+                            {isFirst && (
+                                <Crown className="size-3" />
+                            )}
+                            #{entry.rank}
                         </div>
 
-                        <div className="flex flex-col items-center gap-0.5">
+                        {/* Avatar */}
+                        <Avatar
+                            className={cn(
+                                'ring-2 ring-offset-2 ring-offset-background',
+                                style.avatarRing,
+                                isFirst ? 'size-20' : 'size-16',
+                            )}
+                        >
+                            <AvatarImage
+                                src={entry.avatar || undefined}
+                                alt={
+                                    entry.username
+                                        ? `@${entry.username}`
+                                        : entry.name
+                                }
+                                onError={(e) =>
+                                    (e.currentTarget.style.display = 'none')
+                                }
+                            />
+                            <AvatarFallback
+                                className={cn(
+                                    'font-medium',
+                                    isFirst ? 'text-lg' : 'text-sm',
+                                )}
+                            >
+                                {getInitials(entry.username ?? entry.name)}
+                            </AvatarFallback>
+                        </Avatar>
+
+                        {/* Info */}
+                        <div className="flex flex-col items-center gap-1 text-center">
                             <span
                                 className={cn(
-                                    'text-center font-medium',
-                                    isFirst ? 'text-sm' : 'text-xs',
+                                    'font-semibold leading-tight',
+                                    isFirst ? 'text-base' : 'text-sm',
                                 )}
                             >
                                 @{entry.username ?? 'unknown'}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {pointsFormatter.format(entry.points)} pts
+                                {entry.name}
                             </span>
                         </div>
 
-                        <div
-                            className={cn(
-                                'w-full rounded-t-lg border-t bg-linear-to-b',
-                                PODIUM_COLORS[rankIndex],
-                                PODIUM_HEIGHTS[rankIndex],
-                            )}
-                        >
-                            <div className="flex h-full items-center justify-center">
-                                <RankDisplay rank={entry.rank} />
-                            </div>
+                        {/* Stats row */}
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-1">
+                                <Flame className="size-3 fill-orange-500 text-orange-500" />
+                                {entry.longestStreak}d
+                            </span>
+                            <span>Lv.{entry.level}</span>
                         </div>
-                    </div>
+
+                        {/* Points — prominent */}
+                        <div className="flex flex-col items-center">
+                            <span
+                                className={cn(
+                                    'font-bold tabular-nums tracking-tight',
+                                    isFirst ? 'text-2xl' : 'text-xl',
+                                )}
+                            >
+                                {pointsFormatter.format(entry.points)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                                points
+                            </span>
+                        </div>
+
+                        {/* Rank trend */}
+                        {entry.rankChange && (
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    'text-xs',
+                                    style.badge,
+                                )}
+                            >
+                                <RankTrend change={entry.rankChange} />
+                                <span className="ml-1">
+                                    {entry.rankChange === 'up'
+                                        ? 'Rising'
+                                        : entry.rankChange === 'down'
+                                          ? 'Slipping'
+                                          : 'Steady'}
+                                </span>
+                            </Badge>
+                        )}
+                    </Card>
                 );
             })}
         </div>
