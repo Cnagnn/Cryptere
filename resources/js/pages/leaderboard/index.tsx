@@ -627,31 +627,37 @@ clearTimeout(levelFilterTimer.current);
     );
 }
 
-/* ─── Podium Section (Geist + shadcn/ui redesign) ─── */
+/* ─── Podium Section (Geist + shadcn/ui redesign, Behance/Pinterest inspired) ─── */
 
 const PODIUM_ORDER = [1, 0, 2] as const; // Display: #2, #1, #3
 
 const PODIUM_STYLES = [
-    // #1 — Gold accent
+    // #1 — Gold
     {
-        card: 'border-amber-500/30 bg-linear-to-b from-amber-500/5 to-transparent',
-        rankBg: 'bg-amber-500/10 text-amber-500 ring-amber-500/20',
-        avatarRing: 'ring-amber-500/30',
+        accent: 'border-t-amber-500',
+        card: 'border-amber-500/20 bg-linear-to-b from-amber-500/[0.06] to-transparent',
+        rankBg: 'bg-amber-500 text-amber-950',
+        avatarRing: 'ring-amber-500/40',
         badge: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+        pointsGradient: 'bg-linear-to-r from-amber-400 to-amber-500 bg-clip-text text-transparent',
     },
-    // #2 — Silver accent
+    // #2 — Silver
     {
-        card: 'border-slate-400/25 bg-linear-to-b from-slate-400/5 to-transparent',
-        rankBg: 'bg-slate-400/10 text-slate-400 ring-slate-400/20',
+        accent: 'border-t-slate-400',
+        card: 'border-slate-400/15 bg-linear-to-b from-slate-400/[0.04] to-transparent',
+        rankBg: 'bg-slate-400 text-slate-950',
         avatarRing: 'ring-slate-400/30',
         badge: 'bg-slate-400/10 text-slate-400 border-slate-400/20',
+        pointsGradient: '',
     },
-    // #3 — Bronze accent
+    // #3 — Bronze
     {
-        card: 'border-amber-700/25 bg-linear-to-b from-amber-700/5 to-transparent',
-        rankBg: 'bg-amber-700/10 text-amber-700 ring-amber-700/20',
+        accent: 'border-t-amber-700',
+        card: 'border-amber-700/15 bg-linear-to-b from-amber-700/[0.04] to-transparent',
+        rankBg: 'bg-amber-700 text-amber-50',
         avatarRing: 'ring-amber-700/30',
         badge: 'bg-amber-700/10 text-amber-700 border-amber-700/20',
+        pointsGradient: '',
     },
 ] as const;
 
@@ -687,30 +693,36 @@ function PodiumSection({
                     <Card
                         key={entry.id}
                         className={cn(
-                            'relative flex flex-col items-center gap-4 overflow-hidden border p-6 transition-shadow hover:shadow-md',
+                            'group relative flex flex-col items-center gap-4 overflow-hidden border p-6 pt-7 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg',
                             style.card,
-                            isFirst && 'shadow-lg shadow-amber-500/5',
+                            isFirst && 'shadow-md shadow-amber-500/5',
                         )}
                     >
+                        {/* Top accent line */}
+                        <div
+                            className={cn(
+                                'absolute top-0 left-0 right-0 h-0.5',
+                                style.accent,
+                            )}
+                        />
+
                         {/* Rank badge — top-right */}
                         <div
                             className={cn(
-                                'absolute top-3 right-3 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1',
+                                'absolute top-3 right-3 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
                                 style.rankBg,
                             )}
                         >
-                            {isFirst && (
-                                <Crown className="size-3" />
-                            )}
+                            {isFirst && <Crown className="size-3" />}
                             #{entry.rank}
                         </div>
 
                         {/* Avatar */}
                         <Avatar
                             className={cn(
-                                'ring-2 ring-offset-2 ring-offset-background',
+                                'ring-2 ring-offset-2 ring-offset-background transition-transform duration-300 group-hover:scale-105',
                                 style.avatarRing,
-                                isFirst ? 'size-20' : 'size-16',
+                                isFirst ? 'size-24' : 'size-16',
                             )}
                         >
                             <AvatarImage
@@ -726,8 +738,8 @@ function PodiumSection({
                             />
                             <AvatarFallback
                                 className={cn(
-                                    'font-medium',
-                                    isFirst ? 'text-lg' : 'text-sm',
+                                    'font-semibold tracking-tight',
+                                    isFirst ? 'text-xl' : 'text-sm',
                                 )}
                             >
                                 {getInitials(entry.username ?? entry.name)}
@@ -735,7 +747,7 @@ function PodiumSection({
                         </Avatar>
 
                         {/* Info */}
-                        <div className="flex flex-col items-center gap-1 text-center">
+                        <div className="flex flex-col items-center gap-0.5 text-center">
                             <span
                                 className={cn(
                                     'font-semibold leading-tight',
@@ -744,41 +756,44 @@ function PodiumSection({
                             >
                                 @{entry.username ?? 'unknown'}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-[11px] text-muted-foreground leading-tight">
                                 {entry.name}
                             </span>
                         </div>
 
                         {/* Stats row */}
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                             <span className="inline-flex items-center gap-1">
                                 <Flame className="size-3 fill-orange-500 text-orange-500" />
-                                {entry.longestStreak}d
+                                {entry.longestStreak}d streak
                             </span>
+                            <span className="text-border">|</span>
                             <span>Lv.{entry.level}</span>
                         </div>
 
                         {/* Points — prominent */}
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center gap-0.5">
                             <span
                                 className={cn(
                                     'font-bold tabular-nums tracking-tight',
-                                    isFirst ? 'text-2xl' : 'text-xl',
+                                    isFirst
+                                        ? `text-3xl ${style.pointsGradient}`
+                                        : 'text-2xl',
                                 )}
                             >
                                 {pointsFormatter.format(entry.points)}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
                                 points
                             </span>
                         </div>
 
-                        {/* Rank trend */}
+                        {/* Rank trend badge */}
                         {entry.rankChange && (
                             <Badge
                                 variant="outline"
                                 className={cn(
-                                    'text-xs',
+                                    'text-[10px] font-medium',
                                     style.badge,
                                 )}
                             >
