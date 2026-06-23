@@ -136,7 +136,7 @@ class AssessmentController extends Controller
                 'sortOrder' => $q->sort_order,
             ]);
 
-        // Load course context for breadcrumbs (if assessment belongs to a course)
+        // Load course context (if assessment belongs to a course)
         $courseContext = null;
         if ($assessment->course_id) {
             $course = $assessment->course;

@@ -72,7 +72,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
-import { dashboard } from '@/routes';
 import {
     destroy,
     index as questionBankIndex,
@@ -1191,10 +1190,3 @@ export default function AdminQuestionBankIndex({ questions, filters }: Props) {
     );
 }
 
-AdminQuestionBankIndex.layout = {
-    breadcrumbs: [
-        { title: 'Home', href: dashboard() },
-        { title: 'Management', href: questionBankIndex() },
-        { title: 'Question Bank', href: questionBankIndex() },
-    ],
-};

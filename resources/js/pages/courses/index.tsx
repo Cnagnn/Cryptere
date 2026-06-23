@@ -36,9 +36,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import { dashboard } from '@/routes';
 import { enroll, reset as resetCourseProgress, show } from '@/routes/courses';
-import { index as coursesIndex } from '@/routes/courses';
 import { show as showLab } from '@/routes/labs';
 import type {
     CatalogFiltersProps,
@@ -1134,15 +1132,3 @@ export default function CoursesIndex({
     );
 }
 
-CoursesIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Beranda',
-            href: dashboard(),
-        },
-        {
-            title: 'Kursus',
-            href: coursesIndex(),
-        },
-    ],
-};

@@ -1,6 +1,4 @@
 import CoursesIndex from '@/pages/courses/index';
-import { dashboard } from '@/routes';
-import { index as labsIndex } from '@/routes/labs';
 
 export default function LabsIndex() {
     return (
@@ -14,16 +12,3 @@ export default function LabsIndex() {
         />
     );
 }
-
-LabsIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Beranda',
-            href: dashboard(),
-        },
-        {
-            title: 'Laboratorium',
-            href: labsIndex(),
-        },
-    ],
-};

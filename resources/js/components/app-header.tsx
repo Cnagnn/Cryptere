@@ -8,8 +8,8 @@ import {
     Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import AppLogo from '@/components/app-logo';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { UserMenuContent } from '@/components/app-sidebar';
 import {
     AlertDialog,
@@ -18,14 +18,6 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -40,7 +32,6 @@ import {
 } from '@/components/ui/navigation-menu';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
-import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as coursesIndex } from '@/routes/courses';
@@ -48,13 +39,8 @@ import { index as labsIndex } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 import type {
     Auth,
-    BreadcrumbItem as BreadcrumbItemType,
     NavItem,
 } from '@/types';
-
-type Props = {
-    breadcrumbs?: BreadcrumbItemType[];
-};
 
 const mainNavItems: NavItem[] = [
     {
@@ -81,18 +67,13 @@ const mainNavItems: NavItem[] = [
 
 const activeItemStyles = 'bg-accent text-accent-foreground';
 
-export function AppHeader({ breadcrumbs = [] }: Props) {
+export function AppHeader() {
     const page = usePage<{ auth?: Auth }>();
     const { auth } = page.props;
     const user = auth?.user;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const resolvedBreadcrumbs = withHomeBreadcrumb(
-        breadcrumbs.length > 0
-            ? breadcrumbs
-            : buildBreadcrumbsFromUrl(page.url),
-    );
 
     return (
         <>
@@ -233,42 +214,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
                 </div>
             </div>
-            {resolvedBreadcrumbs.length > 1 && (
-                <div className="flex w-full border-b border-sidebar-border/70">
-                    <div className="mx-auto flex h-12 w-full items-center justify-start px-4 text-sm text-muted-foreground md:max-w-7xl">
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                {resolvedBreadcrumbs.map((item, index) => {
-                                    const isLast =
-                                        index ===
-                                        resolvedBreadcrumbs.length - 1;
-                                    const href =
-                                        typeof item.href === 'string'
-                                            ? item.href
-                                            : item.href?.url;
-
-                                    return (
-                                        <BreadcrumbItem key={href ?? index}>
-                                            {isLast ? (
-                                                <BreadcrumbPage>
-                                                    {item.title}
-                                                </BreadcrumbPage>
-                                            ) : (
-                                                <>
-                                                    <BreadcrumbLink href={href}>
-                                                        {item.title}
-                                                    </BreadcrumbLink>
-                                                    <BreadcrumbSeparator />
-                                                </>
-                                            )}
-                                        </BreadcrumbItem>
-                                    );
-                                })}
-                            </BreadcrumbList>
-                        </Breadcrumb>
-                    </div>
-                </div>
-            )}
         </>
     );
 }

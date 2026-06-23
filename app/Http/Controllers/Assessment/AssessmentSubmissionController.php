@@ -116,7 +116,7 @@ class AssessmentSubmissionController extends Controller
             'correctAnswer' => $submission->status === 'graded' ? $answer->question->correct_answer : null,
         ]);
 
-        // Load course context for breadcrumbs
+        // Load course context
         $courseContext = null;
         if ($assessment->course_id) {
             $course = $assessment->course;

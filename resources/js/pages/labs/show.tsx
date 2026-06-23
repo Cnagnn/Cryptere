@@ -46,8 +46,6 @@ import {
     validationErrorByLab,
 } from '@/lib/lab-simulations';
 import { cn } from '@/lib/utils';
-import { dashboard } from '@/routes';
-import { index as labsIndex } from '@/routes/labs';
 import type {
     AesTrace,
     DesTrace,
@@ -586,15 +584,3 @@ export default function LabsShow({ lab }: LabShowProps) {
     );
 }
 
-LabsShow.layout = {
-    breadcrumbs: [
-        {
-            title: 'Beranda',
-            href: dashboard(),
-        },
-        {
-            title: 'Laboratorium',
-            href: labsIndex(),
-        },
-    ],
-};

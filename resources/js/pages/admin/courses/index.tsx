@@ -23,7 +23,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import { dashboard } from '@/routes';
 import { destroy as coursesDestroy, index as adminCoursesIndex, reorder as coursesReorder, store as coursesStore, togglePublish as coursesTogglePublish, update as coursesUpdate } from '@/routes/admin/courses';
 import { destroy as lessonsDestroy, reorder as lessonsReorder, store as lessonsStore, update as lessonsUpdate } from '@/routes/admin/courses/lessons';
 import { destroy as tasksDestroy, reorder as tasksReorder, store as tasksStore, update as tasksUpdate } from '@/routes/admin/courses/tasks';
@@ -4375,19 +4374,3 @@ export default function AdminCoursesIndex(props: IndexProps) {
     );
 }
 
-AdminCoursesIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Home',
-            href: dashboard(),
-        },
-        {
-            title: 'Management',
-            href: adminCoursesIndex(),
-        },
-        {
-            title: 'Courses',
-            href: adminCoursesIndex(),
-        },
-    ],
-};

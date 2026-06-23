@@ -63,14 +63,12 @@ import {
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import {
     saveAnswer as saveAssessmentAnswer,
     start as startAssessment,
     submit as submitAssessment,
 } from '@/routes/assessments';
-import { index as coursesIndex, show as showCourse } from '@/routes/courses';
 import {
     complete as completeLesson,
     heartbeat as heartbeatRoute,
@@ -3454,28 +3452,3 @@ export default function CourseShow({
     );
 }
 
-function CourseShowLayout({ children }: { children: ReactNode }) {
-    const { course } = usePage<{ course?: ServerCourse }>().props;
-
-    return (
-        <AppLayout
-            breadcrumbs={[
-                { title: 'Kursus', href: coursesIndex() },
-                ...(course
-                    ? [
-                          {
-                              title: course.title,
-                              href: showCourse({ course: course.slug }),
-                          },
-                      ]
-                    : []),
-            ]}
-        >
-            {children}
-        </AppLayout>
-    );
-}
-
-CourseShow.layout = (page: ReactNode) => (
-    <CourseShowLayout>{page}</CourseShowLayout>
-);

@@ -96,7 +96,6 @@ function AchievementToast() {
 
 export default function AppSidebarLayout({
     children,
-    breadcrumbs,
 }: AppLayoutProps) {
     useFocusOnNavigate();
     useFlashToast();
@@ -106,7 +105,7 @@ export default function AppSidebarLayout({
             <SkipToContent />
             <AppSidebar />
             <AppContent variant="sidebar" className="overflow-x-hidden">
-                <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                <AppSidebarHeader />
                 <main id="main-content" tabIndex={-1} className="outline-none">
                     {children}
                 </main>

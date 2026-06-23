@@ -14,15 +14,7 @@ import {
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Command,
@@ -35,7 +27,6 @@ import {
     CommandSeparator,
 } from '@/components/ui/command';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { buildBreadcrumbsFromUrl, withHomeBreadcrumb } from '@/lib/breadcrumbs';
 import { dashboard, search as searchRoute } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { index as adminUsersIndex } from '@/routes/admin/users';
@@ -50,12 +41,9 @@ import {
     settings as profileSettings,
     show as profileShow,
 } from '@/routes/profile';
-import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import type { Auth, User as UserType } from '@/types/auth';
 
-type Props = {
-    breadcrumbs?: BreadcrumbItemType[];
-};
+type Props = Record<string, never>;
 
 type SearchResult = {
     type: string;
@@ -227,7 +215,7 @@ const resultIcons: Record<string, LucideIcon> = {
 
 const getResultIcon = (type: string): LucideIcon => resultIcons[type] ?? Search;
 
-export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
+export function AppSidebarHeader({}: Props) {
     const { props, url } = usePage<{ auth: Auth }>();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [query, setQuery] = useState('');
@@ -237,9 +225,6 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
     const visibleAccountItems = useMemo(
         () => accountItems(props.auth?.user),
         [props.auth?.user],
-    );
-    const resolvedBreadcrumbs = withHomeBreadcrumb(
-        breadcrumbs.length > 0 ? breadcrumbs : buildBreadcrumbsFromUrl(url),
     );
     const visibleManagementItems = useMemo(
         () => (isAdmin ? managementItems : []),
@@ -322,44 +307,6 @@ export function AppSidebarHeader({ breadcrumbs = [] }: Props) {
             <div className="flex w-full min-w-0 items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                     <SidebarTrigger className="-ml-1" />
-                    {resolvedBreadcrumbs.length > 1 ? (
-                        <div className="min-w-0 [&_ol]:flex-nowrap [&_ol]:overflow-hidden [&_span[aria-current='page']]:truncate">
-                            <Breadcrumb>
-                                <BreadcrumbList>
-                                    {resolvedBreadcrumbs.map((item, index) => {
-                                        const isLast =
-                                            index ===
-                                            resolvedBreadcrumbs.length - 1;
-                                        const href =
-                                            typeof item.href === 'string'
-                                                ? item.href
-                                                : item.href?.url;
-
-                                        return (
-                                            <Fragment key={href ?? index}>
-                                                <BreadcrumbItem>
-                                                    {isLast ? (
-                                                        <BreadcrumbPage>
-                                                            {item.title}
-                                                        </BreadcrumbPage>
-                                                    ) : (
-                                                        <BreadcrumbLink
-                                                            href={href}
-                                                        >
-                                                            {item.title}
-                                                        </BreadcrumbLink>
-                                                    )}
-                                                </BreadcrumbItem>
-                                                {!isLast ? (
-                                                    <BreadcrumbSeparator />
-                                                ) : null}
-                                            </Fragment>
-                                        );
-                                    })}
-                                </BreadcrumbList>
-                            </Breadcrumb>
-                        </div>
-                    ) : null}
                 </div>
                 <Button
                     type="button"

@@ -1110,7 +1110,7 @@ GET    /admin/versions/{version}/compare/{compareVersion} → ContentVersionCont
 | `assessments.ts` | Assessment, submission, question types |
 | `profile.ts` | `ProfileProps`, `ProfileSettingsProps` |
 | `labs.ts` | Lab, LabVisit types |
-| `navigation.ts` | Sidebar, breadcrumb types |
+| `navigation.ts` | Sidebar types |
 | `ui.ts` | `Toast`, `Modal`, `PageProps` |
 | `global.d.ts` | Global type augmentations |
 | `vite-env.d.ts` | Vite client types |
@@ -1135,7 +1135,7 @@ GET    /admin/versions/{version}/compare/{compareVersion} → ContentVersionCont
 
 Located in `resources/js/components/ui/`. All built with Radix primitives + Tailwind:
 
-`accordion`, `alert`, `alert-dialog`, `avatar`, `badge`, `breadcrumb`, `button`, `button-group`, `calendar`, `card`, `carousel`, `chart`, `checkbox`, `combobox`, `command`, `collapsible`, `data-table`, `dialog`, `direction`, `dropdown-menu`, `empty`, `field`, `input`, `input-group`, `input-otp`, `item`, `label`, `navigation-menu`, `pagination`, `popover`, `progress`, `radio-group`, `scroll-area`, `select`, `separator`, `sheet`, `sidebar`, `skeleton`, `slider`, `spinner`, `sonner`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip`, `typography`
+`accordion`, `alert`, `alert-dialog`, `avatar`, `badge`, `button`, `button-group`, `calendar`, `card`, `carousel`, `chart`, `checkbox`, `combobox`, `command`, `collapsible`, `data-table`, `dialog`, `direction`, `dropdown-menu`, `empty`, `field`, `input`, `input-group`, `input-otp`, `item`, `label`, `navigation-menu`, `pagination`, `popover`, `progress`, `radio-group`, `scroll-area`, `select`, `separator`, `sheet`, `sidebar`, `skeleton`, `slider`, `spinner`, `sonner`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip`, `typography`
 
 ### 10.11.2 Custom Components
 

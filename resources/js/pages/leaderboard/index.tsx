@@ -41,7 +41,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import { dashboard } from '@/routes';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 
@@ -900,15 +899,3 @@ function MobileLeaderboardCards({
     );
 }
 
-LeaderboardIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Home',
-            href: dashboard(),
-        },
-        {
-            title: 'Leaderboard',
-            href: leaderboardIndex(),
-        },
-    ],
-};

@@ -60,7 +60,6 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import { useInitials } from '@/hooks/use-initials';
-import { dashboard } from '@/routes';
 import { destroy, index as usersIndex, update } from '@/routes/admin/users';
 import { show as showProfile } from '@/routes/profile';
 import type { RoleName } from '@/types/auth';
@@ -632,19 +631,3 @@ export default function AdminUsersIndex({ users, filters }: Props) {
     );
 }
 
-AdminUsersIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Home',
-            href: dashboard(),
-        },
-        {
-            title: 'Management',
-            href: usersIndex(),
-        },
-        {
-            title: 'Users',
-            href: usersIndex(),
-        },
-    ],
-};
