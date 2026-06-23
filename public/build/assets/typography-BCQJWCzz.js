@@ -1,1 +1,0 @@
-import{aK as s,aj as o}from"./app-B50CZNyZ.js";function n({children:t,className:e,...a}){return s.jsx("h1",{className:o("scroll-m-20 text-3xl leading-tight font-semibold text-balance md:text-4xl",e),...a,children:t})}function x({children:t,className:e,...a}){return s.jsx("p",{className:o("text-sm/6 text-muted-foreground",e),...a,children:t})}export{n as T,x as a};
