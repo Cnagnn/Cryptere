@@ -14,7 +14,7 @@ import {
     TrendingUp,
     Trophy,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +30,6 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -345,6 +344,16 @@ export default function LeaderboardIndex({
         });
     };
 
+    // Debounced level filter — auto-submit on Enter or after user stops typing
+    const levelFilterTimer = useRef<ReturnType<typeof setTimeout>>(null);
+    const handleLevelInput = () => {
+        if (levelFilterTimer.current) {
+clearTimeout(levelFilterTimer.current);
+}
+
+        levelFilterTimer.current = setTimeout(handleLevelFilter, 400);
+    };
+
     return (
         <>
             <Head title="Leaderboard" />
@@ -360,127 +369,101 @@ export default function LeaderboardIndex({
                     </div>
                 </header>
 
-                {/* Controls: search + period + sort + order + level */}
+                {/* Controls: all filters right-aligned in one row */}
                 <div
-                    className="animate-fade-in-up flex flex-col gap-3"
+                    className="animate-fade-in-up flex flex-wrap items-center justify-end gap-2"
                     style={{ animationDelay: '50ms' }}
                 >
-                    {/* Row 1: search */}
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <Input
-                            value={usernameInput}
-                            onChange={(event) =>
-                                setUsernameInput(event.target.value)
-                            }
-                            placeholder="Search username..."
-                            className="w-full sm:w-64"
-                        />
-                    </div>
+                    {/* Search */}
+                    <Input
+                        value={usernameInput}
+                        onChange={(event) =>
+                            setUsernameInput(event.target.value)
+                        }
+                        placeholder="Search username..."
+                        className="w-40 h-8 text-xs"
+                    />
 
-                    {/* Row 2: period + sort + order + level filter */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Period dropdown */}
-                        <div className="flex items-center gap-2">
-                            <Label htmlFor="period" className="text-xs text-muted-foreground">
-                                Period
-                            </Label>
-                            <Select
-                                value={timeframe}
-                                onValueChange={(v) => navigate({ timeframe: v })}
-                            >
-                                <SelectTrigger id="period" className="w-36 h-8 text-xs">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {timeframes.map((tf) => {
-                                        const Icon = TIMEFRAME_ICONS[tf] ?? null;
+                    {/* Period dropdown */}
+                    <Select
+                        value={timeframe}
+                        onValueChange={(v) => navigate({ timeframe: v })}
+                    >
+                        <SelectTrigger className="w-32 h-8 text-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {timeframes.map((tf) => {
+                                const Icon = TIMEFRAME_ICONS[tf] ?? null;
 
-                                        return (
-                                            <SelectItem key={tf} value={tf}>
-                                                <span className="inline-flex items-center gap-1.5">
-                                                    {Icon ? (
-                                                        <Icon className="size-3.5" />
-                                                    ) : null}
-                                                    {TIMEFRAME_LABELS[tf] ?? tf}
-                                                </span>
-                                            </SelectItem>
-                                        );
-                                    })}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                                return (
+                                    <SelectItem key={tf} value={tf}>
+                                        <span className="inline-flex items-center gap-1.5">
+                                            {Icon ? (
+                                                <Icon className="size-3.5" />
+                                            ) : null}
+                                            {TIMEFRAME_LABELS[tf] ?? tf}
+                                        </span>
+                                    </SelectItem>
+                                );
+                            })}
+                        </SelectContent>
+                    </Select>
 
-                        {/* Sort dropdown */}
-                        <div className="flex items-center gap-2">
-                            <Label htmlFor="sort-by" className="text-xs text-muted-foreground">
-                                Sort by
-                            </Label>
-                            <Select
-                                value={sortBy}
-                                onValueChange={(v) => navigate({ sort_by: v })}
-                            >
-                                <SelectTrigger id="sort-by" className="w-40 h-8 text-xs">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {SORT_OPTIONS.map((opt) => (
-                                        <SelectItem key={opt} value={opt}>
-                                            {SORT_LABELS[opt]}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    {/* Sort dropdown */}
+                    <Select
+                        value={sortBy}
+                        onValueChange={(v) => navigate({ sort_by: v })}
+                    >
+                        <SelectTrigger className="w-36 h-8 text-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {SORT_OPTIONS.map((opt) => (
+                                <SelectItem key={opt} value={opt}>
+                                    {SORT_LABELS[opt]}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                        {/* Order toggle */}
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={handleSortOrderToggle}
-                            title={sortOrder === 'desc' ? 'Descending' : 'Ascending'}
-                        >
-                            {sortOrder === 'desc' ? (
-                                <ArrowDown className="size-3.5" />
-                            ) : (
-                                <ArrowUp className="size-3.5" />
-                            )}
-                        </Button>
+                    {/* Order toggle */}
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handleSortOrderToggle}
+                        title={sortOrder === 'desc' ? 'Descending' : 'Ascending'}
+                    >
+                        {sortOrder === 'desc' ? (
+                            <ArrowDown className="size-3.5" />
+                        ) : (
+                            <ArrowUp className="size-3.5" />
+                        )}
+                    </Button>
 
-                        {/* Level range filter */}
-                        <div className="flex items-center gap-1.5 ml-2">
-                            <Label className="text-xs text-muted-foreground">
-                                Level
-                            </Label>
-                            <Input
-                                id="level-min"
-                                type="number"
-                                defaultValue={levelMin || ''}
-                                placeholder="Min"
-                                className="w-16 h-8 text-xs"
-                                min={1}
-                            />
-                            <span className="text-xs text-muted-foreground">
-                                –
-                            </span>
-                            <Input
-                                id="level-max"
-                                type="number"
-                                defaultValue={levelMax || ''}
-                                placeholder="Max"
-                                className="w-16 h-8 text-xs"
-                                min={1}
-                            />
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 text-xs"
-                                onClick={handleLevelFilter}
-                            >
-                                Go
-                            </Button>
-                        </div>
-                    </div>
+                    {/* Level range filter (auto-submit on input) */}
+                    <Input
+                        id="level-min"
+                        type="number"
+                        defaultValue={levelMin || ''}
+                        placeholder="Min Lv"
+                        className="w-20 h-8 text-xs"
+                        min={1}
+                        onInput={handleLevelInput}
+                        onKeyDown={(e) => e.key === 'Enter' && handleLevelFilter()}
+                    />
+                    <span className="text-xs text-muted-foreground">–</span>
+                    <Input
+                        id="level-max"
+                        type="number"
+                        defaultValue={levelMax || ''}
+                        placeholder="Max Lv"
+                        className="w-20 h-8 text-xs"
+                        min={1}
+                        onInput={handleLevelInput}
+                        onKeyDown={(e) => e.key === 'Enter' && handleLevelFilter()}
+                    />
                 </div>
 
                 {/* Podium Top 3 */}
