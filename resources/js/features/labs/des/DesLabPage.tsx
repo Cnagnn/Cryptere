@@ -54,14 +54,15 @@ return;
         setIsPlaying(false);
     }, [trace]);
 
-    const handleEncrypt = () => {
-        setError('');
-
+    useEffect(() => {
         if (!plaintext.trim() || !key.trim()) {
-            setError('Plaintext dan key tidak boleh kosong');
+            setTrace(null);
+            setError('');
 
             return;
         }
+
+        setError('');
 
         try {
             const result = runSimulation('des-lab', 'encrypt', plaintext, key);
@@ -69,12 +70,13 @@ return;
             if (result.trace?.des) {
                 setTrace(result.trace.des);
             } else {
-                setError('Simulasi gagal');
+                setTrace(null);
             }
         } catch (err) {
+            setTrace(null);
             setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
         }
-    };
+    }, [plaintext, key]);
 
     const handleReset = () => {
         setPlaintext('');
@@ -156,14 +158,9 @@ return <FinalPermutationSlide trace={trace} />;
                             </Alert>
                         )}
 
-                        <div className="flex gap-2">
-                            <Button onClick={handleEncrypt} className="flex-1">
-                                Enkripsi
-                            </Button>
-                            <Button onClick={handleReset} variant="outline">
-                                Reset
-                            </Button>
-                        </div>
+                        <Button onClick={handleReset} variant="outline" className="w-full">
+                            Reset
+                        </Button>
                     </CardContent>
                 </Card>
 
