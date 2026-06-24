@@ -3,26 +3,12 @@ import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { bitsToHex } from '@/features/labs/algorithms/des';
-import { cn } from '@/lib/utils';
 import type { DesTrace } from '@/types/labs';
 
-type HexBoxColor = 'blue' | 'green' | 'orange' | 'amber' | 'purple' | 'violet' | 'cyan' | 'emerald';
-
-const colors: Record<HexBoxColor, { border: string; bg: string; label: string }> = {
-    blue: { border: 'border-blue-500/40', bg: 'bg-blue-950/20', label: 'text-blue-400' },
-    green: { border: 'border-green-500/40', bg: 'bg-green-950/20', label: 'text-green-400' },
-    orange: { border: 'border-orange-500/40', bg: 'bg-orange-950/20', label: 'text-orange-400' },
-    amber: { border: 'border-amber-500/40', bg: 'bg-amber-950/20', label: 'text-amber-400' },
-    purple: { border: 'border-purple-500/40', bg: 'bg-purple-950/20', label: 'text-purple-400' },
-    violet: { border: 'border-violet-500/40', bg: 'bg-violet-950/20', label: 'text-violet-400' },
-    cyan: { border: 'border-cyan-500/40', bg: 'bg-cyan-950/20', label: 'text-cyan-400' },
-    emerald: { border: 'border-emerald-500/40', bg: 'bg-emerald-950/20', label: 'text-emerald-400' },
-};
-
-function HexBox({ label, bits, color }: { label: string; bits: number[]; color: HexBoxColor }) {
+function HexBox({ label, bits }: { label: string; bits: number[] }) {
     return (
-        <Card className={cn('px-3 py-2 min-w-0', colors[color].border, colors[color].bg)}>
-            <p className={cn('text-[10px] font-semibold mb-1', colors[color].label)}>{label}</p>
+        <Card className="px-3 py-2 min-w-0 border-border/50 bg-muted/20">
+            <p className="text-[10px] font-semibold mb-1 text-muted-foreground">{label}</p>
             <p className="font-mono text-xs font-medium break-all text-foreground">{bitsToHex(bits)}</p>
             <p className="text-[8px] text-muted-foreground mt-0.5">{bits.length} bit</p>
         </Card>
@@ -54,19 +40,17 @@ function OpNode({ symbol, label }: { symbol: string; label: string }) {
 
 function FnBox({ label, children }: { label: string; children: React.ReactNode }) {
     return (
-        <div className="inline-flex items-center gap-1 rounded-md border border-orange-500/30 bg-orange-950/10 px-2 py-1">
-            <span className="text-[9px] font-semibold text-orange-400">{label}</span>
+        <div className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-muted/20 px-2 py-1">
+            <span className="text-[9px] font-semibold text-muted-foreground">{label}</span>
             {children}
         </div>
     );
 }
 
-function IoBox({ label, value, color }: { label: string; value: string; color?: HexBoxColor }) {
+function IoBox({ label, value }: { label: string; value: string }) {
     return (
-        <Card className={cn('px-3 py-2', color ? colors[color].border : 'border-border/50', color ? colors[color].bg : 'bg-muted/20')}>
-            <p className={cn('text-[10px] font-semibold mb-1 uppercase tracking-wider', color ? colors[color].label : 'text-muted-foreground')}>
-                {label}
-            </p>
+        <Card className="px-3 py-2 border-border/50 bg-muted/20">
+            <p className="text-[10px] font-semibold mb-1 uppercase tracking-wider text-muted-foreground">{label}</p>
             <p className="font-mono text-xs break-all text-foreground">{value}</p>
         </Card>
     );
@@ -74,18 +58,10 @@ function IoBox({ label, value, color }: { label: string; value: string; color?: 
 
 function Narration({ children }: { children: React.ReactNode }) {
     return (
-        <Card className="border-blue-500/20 bg-blue-950/10 p-3 flex items-start gap-2">
-            <span className="text-sm shrink-0 mt-0.5">📖</span>
+        <Card className="border-border/30 bg-muted/10 p-3 flex items-start gap-2">
+            <span className="text-sm shrink-0 mt-0.5 text-muted-foreground">📖</span>
             <p className="text-xs text-muted-foreground leading-relaxed">{children}</p>
         </Card>
-    );
-}
-
-function CompletedBadge() {
-    return (
-        <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-400 bg-emerald-950/20">
-            ✓ Selesai
-        </Badge>
     );
 }
 
@@ -93,7 +69,7 @@ export function InitialPermutationSlide({ trace }: { trace: DesTrace }) {
     return (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">Step 0</Badge>
+                <Badge variant="outline">Step 0</Badge>
                 <p className="text-sm font-semibold text-foreground">Initial Permutation (IP)</p>
                 <p className="text-[11px] text-muted-foreground ml-auto">64 bit → 32 + 32</p>
             </div>
@@ -101,13 +77,13 @@ export function InitialPermutationSlide({ trace }: { trace: DesTrace }) {
             <p className="text-sm text-muted-foreground leading-relaxed">
                 Plaintext <strong className="text-foreground">64-bit</strong> masuk, lalu diacak oleh <strong className="text-foreground">Initial Permutation</strong>.
                 Hasilnya dibagi dua:{' '}
-                <strong className="text-blue-400">L₀</strong> (32-bit kiri) dan{' '}
-                <strong className="text-green-400">R₀</strong> (32-bit kanan).
+                <strong className="text-foreground">L₀</strong> (32-bit kiri) dan{' '}
+                <strong className="text-foreground">R₀</strong> (32-bit kanan).
             </p>
 
             <Card className="border-dashed p-4 bg-muted/5 space-y-2">
                 <div className="flex justify-center">
-                    <IoBox label="Plaintext" value={bitsToHex(trace.afterIP)} color="cyan" />
+                    <IoBox label="Plaintext" value={bitsToHex(trace.afterIP)} />
                 </div>
                 <VArrow />
                 <div className="flex justify-center">
@@ -115,8 +91,8 @@ export function InitialPermutationSlide({ trace }: { trace: DesTrace }) {
                 </div>
                 <VArrow />
                 <div className="flex justify-center gap-4">
-                    <HexBox label="L₀ 32-bit" bits={trace.L0} color="blue" />
-                    <HexBox label="R₀ 32-bit" bits={trace.R0} color="green" />
+                    <HexBox label="L₀ 32-bit" bits={trace.L0} />
+                    <HexBox label="R₀ 32-bit" bits={trace.R0} />
                 </div>
             </Card>
 
@@ -139,36 +115,36 @@ return null;
     return (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-[10px] text-orange-400 border-orange-500/30">Step {rn}</Badge>
+                <Badge variant="outline">Step {rn}</Badge>
                 <p className="text-sm font-semibold text-foreground">Feistel Round {rn}</p>
                 <p className="text-[11px] text-muted-foreground ml-auto">K{rn}</p>
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
                 <strong className="text-foreground">Round {rn}</strong> dimulai.{' '}
-                <strong className="text-blue-400">L{roundIndex}</strong> dan{' '}
-                <strong className="text-green-400">R{roundIndex}</strong> masuk ke struktur Feistel.{' '}
-                <strong className="text-green-400">R{roundIndex}</strong> melewati{' '}
+                <strong className="text-foreground">L{roundIndex}</strong> dan{' '}
+                <strong className="text-foreground">R{roundIndex}</strong> masuk ke struktur Feistel.{' '}
+                <strong className="text-foreground">R{roundIndex}</strong> melewati{' '}
                 <strong className="text-foreground">fungsi F</strong> bersama round key{' '}
-                <strong className="text-violet-400">K{rn}</strong>,
-                lalu hasilnya di-XOR dengan <strong className="text-blue-400">L{roundIndex}</strong>.
+                <strong className="text-foreground">K{rn}</strong>,
+                lalu hasilnya di-XOR dengan <strong className="text-foreground">L{roundIndex}</strong>.
             </p>
 
             <Card className="border-dashed p-4 bg-muted/5 space-y-2">
                 <div className="flex justify-center gap-4">
-                    <HexBox label={`L${roundIndex} 32-bit`} bits={round.L} color="blue" />
-                    <HexBox label={`R${roundIndex} 32-bit`} bits={round.R} color="green" />
+                    <HexBox label={`L${roundIndex} 32-bit`} bits={round.L} />
+                    <HexBox label={`R${roundIndex} 32-bit`} bits={round.R} />
                 </div>
 
                 <VArrow />
 
                 <div className="flex items-center justify-center gap-3">
                     <OpNode symbol="⊕" label="" />
-                    <div className="px-3 py-2 rounded-md border border-orange-500/30 bg-orange-950/10 text-xs font-medium text-orange-400">
+                    <div className="px-3 py-2 rounded-md border border-border/50 bg-muted/20 text-xs font-medium text-muted-foreground">
                         F(R{roundIndex}, K{rn})
                         <span className="text-muted-foreground ml-1 text-[10px]">32-bit</span>
                     </div>
-                    <HexBox label={`K${rn} 48-bit`} bits={round.roundKey} color="violet" />
+                    <HexBox label={`K${rn} 48-bit`} bits={round.roundKey} />
                 </div>
 
                 <div className="flex items-center justify-center gap-1 py-1">
@@ -192,8 +168,8 @@ return null;
                 <VArrow />
 
                 <div className="flex justify-center gap-4">
-                    <HexBox label={`L${rn} = R${roundIndex} 32-bit`} bits={round.newL} color="blue" />
-                    <HexBox label={`R${rn} = L${roundIndex}⊕F 32-bit`} bits={round.newR} color="green" />
+                    <HexBox label={`L${rn} = R${roundIndex} 32-bit`} bits={round.newL} />
+                    <HexBox label={`R${rn} = L${roundIndex}⊕F 32-bit`} bits={round.newR} />
                 </div>
             </Card>
 
@@ -215,9 +191,9 @@ return null;
     return (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">Step 17</Badge>
+                <Badge variant="outline">Step 17</Badge>
                 <p className="text-sm font-semibold text-foreground">Final Permutation (FP)</p>
-                <p className="text-[11px] text-muted-foreground ml-auto"><CompletedBadge /></p>
+                <Badge variant="outline" className="text-[10px] text-muted-foreground ml-auto">✓ Selesai</Badge>
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -225,13 +201,13 @@ return null;
                 <strong className="text-foreground">ditukar</strong> menjadi R₁₆ L₁₆,
                 lalu melewati <strong className="text-foreground">Final Permutation (FP)</strong> —
                 kebalikan dari IP. Hasilnya:{' '}
-                <strong className="text-emerald-400">ciphertext 64-bit</strong>.
+                <strong className="text-foreground">ciphertext 64-bit</strong>.
             </p>
 
             <Card className="border-dashed p-4 bg-muted/5 space-y-2">
                 <div className="flex justify-center gap-4">
-                    <HexBox label="L₁₆ 32-bit" bits={lastRound.newL} color="blue" />
-                    <HexBox label="R₁₆ 32-bit" bits={lastRound.newR} color="green" />
+                    <HexBox label="L₁₆ 32-bit" bits={lastRound.newL} />
+                    <HexBox label="R₁₆ 32-bit" bits={lastRound.newR} />
                 </div>
 
                 <VArrow />
@@ -245,7 +221,7 @@ return null;
                 <VArrow />
 
                 <div className="flex justify-center">
-                    <IoBox label="Ciphertext" value={trace.ciphertext} color="emerald" />
+                    <IoBox label="Ciphertext" value={trace.ciphertext} />
                 </div>
             </Card>
 
