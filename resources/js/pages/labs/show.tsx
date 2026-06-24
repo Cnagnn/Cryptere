@@ -43,7 +43,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
-import DesLabPage from '@/features/labs/pages/DesLabPage';
+import DesLabPage from '@/features/labs/des/DesLabPage';
 import GlassBoxLab from '@/features/labs/ui/GlassBoxLab';
 import { glossary } from '@/features/labs/ui/glossary-content';
 import {
@@ -692,7 +692,6 @@ export default function LabsShow({ lab }: LabShowProps) {
             <>
                 <Head title={`${lab.title} Lab`} />
                 <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
-                    {/* Header */}
                     <header className="animate-fade-in-up flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div className="flex min-w-0 flex-col gap-1">
                             <TypographyH1>{lab.title}</TypographyH1>
@@ -700,8 +699,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                         </div>
                     </header>
 
-                    {/* DES Lab Page */}
-                    <DesLabPage trace={algoTrace.des} onTraceUpdate={() => {}} />
+                    <DesLabPage />
                 </div>
             </>
         );
