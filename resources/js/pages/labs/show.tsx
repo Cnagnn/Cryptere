@@ -11,6 +11,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -25,6 +30,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import GlassBoxLab from '@/features/labs/ui/GlassBoxLab';
+import { ChevronDown, Info, Key, RotateCcw } from 'lucide-react';
 import {
     canFormatOutput,
     conceptLensByLab,
@@ -135,6 +141,7 @@ export default function LabsShow({ lab }: LabShowProps) {
     const [activeStepIndex, setActiveStepIndex] = useState(0);
     const [isWalkthroughPlaying, setIsWalkthroughPlaying] = useState(false);
     const [learnerMode, setLearnerMode] = useState<'pemula' | 'mahir'>('pemula');
+    const [showDetails, setShowDetails] = useState(false);
 
     const conceptLens = useMemo(
         () => conceptLensByLab(lab.slug, mode),
@@ -230,10 +237,6 @@ export default function LabsShow({ lab }: LabShowProps) {
         setLearnerMode('pemula');
     }, [inputFormat, inputText, keyInput, mode, outputFormat]);
 
-    // Reset key input only for labs where the key field has a different
-    // meaning per mode (e.g., Digital Signature verify uses the key field
-    // as the original message). Other labs keep the user's key across
-    // mode switches so encrypt→decrypt round-trips work seamlessly.
     useEffect(() => {
         if (lab.slug === 'digital-signature-lab') {
             setKeyInput(keyPlaceholderByLab(lab.slug, mode));
@@ -267,6 +270,7 @@ export default function LabsShow({ lab }: LabShowProps) {
             <Head title={`${lab.title} Lab`} />
 
             <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
+                {/* Header */}
                 <header className="animate-fade-in-up relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex min-w-0 flex-col gap-1">
                         <TypographyH1>{lab.title}</TypographyH1>
@@ -292,249 +296,302 @@ export default function LabsShow({ lab }: LabShowProps) {
                     </div>
                 </header>
 
+                {/* Onboarding (pemula only) */}
+                {learnerMode === 'pemula' && (
+                    <div
+                        className="animate-fade-in-up rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4"
+                        style={{ animationDelay: '50ms' }}
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-base">🎯</span>
+                            <span className="text-sm font-semibold">
+                                Mulai dari sini
+                            </span>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                            {onboardingSteps.map((step, index) => (
+                                <div
+                                    key={index}
+                                    className="flex gap-2 text-sm"
+                                >
+                                    <Badge
+                                        variant="secondary"
+                                        className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px] bg-blue-100 dark:bg-blue-900"
+                                    >
+                                        {index + 1}
+                                    </Badge>
+                                    <span className="leading-relaxed text-muted-foreground">
+                                        {step}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Input + Config row */}
                 <section
-                    className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12"
+                    className="animate-fade-in-up grid grid-cols-1 gap-3 lg:grid-cols-12"
                     style={{ animationDelay: '100ms' }}
                 >
-                    {learnerMode === 'pemula' && (
-                        <Card className={cn(bentoCardClass, 'lg:col-span-12 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20')}>
-                            <CardHeader className="gap-1 pb-3">
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    🎯 Mulai dari sini
-                                </CardTitle>
-                                <CardDescription className="text-sm/6">
-                                    Cara kerja algoritma dalam bahasa sederhana.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                {onboardingSteps.map((step, index) => (
-                                    <div key={index} className="flex gap-3 text-sm">
-                                        <Badge
-                                            variant="secondary"
-                                            className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px] bg-blue-100 dark:bg-blue-900"
-                                        >
-                                            {index + 1}
-                                        </Badge>
-                                        <span className="leading-relaxed">{step}</span>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-                    )}
-                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
-                        <CardHeader className="gap-1 pb-4">
-                            <CardTitle className="flex items-center gap-2">
-                                Dasar Algoritma
+                    {/* Main input card */}
+                    <Card className={cn(bentoCardClass, 'lg:col-span-8')}>
+                        <CardHeader className="gap-1 pb-3">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Key className="size-4 text-muted-foreground" />
+                                Data dan Kunci
                             </CardTitle>
                             <CardDescription className="text-sm/6">
-                                Konsep utama sebelum masuk ke operasi.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div>
-                                <p className="text-sm font-medium">
-                                    {conceptLens.title}
-                                </p>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    {modeDescription(lab.slug, mode)}
-                                </p>
-                            </div>
-                            <Separator />
-                            <div className="space-y-2">
-                                {conceptLens.points.map((point, index) => (
-                                    <div
-                                        key={point}
-                                        className="flex gap-2 text-sm"
-                                    >
-                                        <Badge
-                                            variant="secondary"
-                                            className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px]"
-                                        >
-                                            {index + 1}
-                                        </Badge>
-                                        <span>{point}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
-                        <CardHeader className="gap-1 pb-4">
-                            <CardTitle className="flex items-center gap-2">
-                                Pembuatan Kunci
-                            </CardTitle>
-                            <CardDescription className="text-sm/6">
-                                Fondasi awal sebelum pesan diproses.
+                                Masukkan pesan dan kunci untuk memulai
+                                simulasi.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                {keySetupSteps.map((step) => (
-                                    <div
-                                        key={step}
-                                        className="flex gap-2 text-sm"
-                                    >
-                                        <span>{step}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {showKeyInput ? (
+                            <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="lab-key">
-                                        {keyLabelByLab(lab.slug, mode)}
+                                    <Label htmlFor="lab-input">
+                                        {inputLabelByLab(lab.slug, mode)}
                                     </Label>
-                                    <Input
-                                        id="lab-key"
-                                        value={keyInput}
-                                        onChange={(event) =>
-                                            setKeyInput(event.target.value)
+                                    <Textarea
+                                        id="lab-input"
+                                        aria-describedby={
+                                            validationError
+                                                ? 'validation-error-message'
+                                                : undefined
                                         }
-                                        placeholder={keyPlaceholderByLab(
+                                        value={inputText}
+                                        onChange={(event) =>
+                                            setInputText(event.target.value)
+                                        }
+                                        placeholder={inputPlaceholderByLab(
                                             lab.slug,
                                             mode,
                                         )}
+                                        className="min-h-20 resize-none text-sm font-mono"
                                     />
-                                </div>
-                            ) : (
-                                <div className="rounded-md border bg-muted/30 p-3 text-sm">
-                                    <p className="font-medium">
-                                        Kunci publik: (e=17, n=3233)
-                                    </p>
-                                    <p className="text-muted-foreground">
-                                        Kunci privat: (d=2753, n=3233)
+                                    <p className="text-sm/6 text-muted-foreground">
+                                        {inputHelperByLab(lab.slug, mode)}
                                     </p>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
 
-                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
-                        <CardHeader className="gap-1 pb-4">
-                            <CardTitle className="flex items-center gap-2">
-                                Data dan Format
-                            </CardTitle>
-                            <CardDescription className="text-sm/6">
-                                Siapkan pesan dan bentuk representasinya.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="lab-input">
-                                    {inputLabelByLab(lab.slug, mode)}
-                                </Label>
-                                <Textarea
-                                    id="lab-input"
-                                    aria-describedby={validationError ? 'validation-error-message' : undefined}
-                                    value={inputText}
-                                    onChange={(event) =>
-                                        setInputText(event.target.value)
-                                    }
-                                    placeholder={inputPlaceholderByLab(lab.slug, mode)}
-                                    className="min-h-28 resize-none text-sm"
-                                />
-                                <p className="text-sm/6 text-muted-foreground">
-                                    {inputHelperByLab(lab.slug, mode)}
-                                </p>
-                            </div>
-
-                            {learnerMode === 'mahir' && (
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                                {showKeyInput ? (
                                     <div className="space-y-2">
-                                        <Label>Format masukan</Label>
-                                        <Select
-                                            value={inputFormat}
-                                            onValueChange={(value) =>
-                                                setInputFormat(value as FormatValue)
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {formatOptions.map((option) => (
-                                                    <SelectItem
-                                                        key={option.value}
-                                                        value={option.value}
-                                                    >
-                                                        {formatLabelInIndonesian(
-                                                            option.value,
-                                                        )}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <p className="text-sm/6 text-muted-foreground">
-                                            Disarankan:{' '}
-                                            {formatLabelInIndonesian(
-                                                recommendedInputFormat,
-                                            )}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label>Format keluaran</Label>
-                                        <Select
-                                            value={outputFormat}
-                                            onValueChange={(value) =>
-                                                setOutputFormat(
-                                                    value as FormatValue,
+                                        <Label htmlFor="lab-key">
+                                            {keyLabelByLab(lab.slug, mode)}
+                                        </Label>
+                                        <Input
+                                            id="lab-key"
+                                            value={keyInput}
+                                            onChange={(event) =>
+                                                setKeyInput(
+                                                    event.target.value,
                                                 )
                                             }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {formatOptions.map((option) => (
-                                                    <SelectItem
-                                                        key={option.value}
-                                                        value={option.value}
-                                                    >
-                                                        {formatLabelInIndonesian(
-                                                            option.value,
-                                                        )}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <p className="text-sm/6 text-muted-foreground">
-                                            Disarankan:{' '}
-                                            {formatLabelInIndonesian(
-                                                recommendedOutputFormat,
+                                            placeholder={keyPlaceholderByLab(
+                                                lab.slug,
+                                                mode,
                                             )}
-                                        </p>
+                                            className="font-mono"
+                                        />
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground">
+                                                {keySetupSteps[0]}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {keySetupSteps[1]}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Label>Kunci RSA</Label>
+                                        <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
+                                            <p className="font-medium">
+                                                Kunci publik: (e=17, n=3233)
+                                            </p>
+                                            <p className="text-muted-foreground">
+                                                Kunci privat: (d=2753, n=3233)
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             {validationError && (
-                                <Alert variant="destructive" className="py-3" role="alert">
+                                <Alert
+                                    variant="destructive"
+                                    className="py-3"
+                                    role="alert"
+                                >
                                     <AlertDescription id="validation-error-message">
                                         {validationError}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    setInputText(defaultTextByLab(lab.slug));
-                                    setKeyInput(keyPlaceholderByLab(lab.slug, 'encrypt'));
-                                    setInputFormat('ascii');
-                                    setOutputFormat('ascii');
-                                    setMode('encrypt');
-                                }}
+                            {/* Format selectors + reset */}
+                            <div className="flex flex-wrap items-end gap-3">
+                                {learnerMode === 'mahir' && (
+                                    <>
+                                        <div className="space-y-2 min-w-32">
+                                            <Label className="text-xs">
+                                                Format masukan
+                                            </Label>
+                                            <Select
+                                                value={inputFormat}
+                                                onValueChange={(value) =>
+                                                    setInputFormat(
+                                                        value as FormatValue,
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger className="h-9">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {formatOptions.map(
+                                                        (option) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    option.value
+                                                                }
+                                                                value={
+                                                                    option.value
+                                                                }
+                                                            >
+                                                                {formatLabelInIndonesian(
+                                                                    option.value,
+                                                                )}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2 min-w-32">
+                                            <Label className="text-xs">
+                                                Format keluaran
+                                            </Label>
+                                            <Select
+                                                value={outputFormat}
+                                                onValueChange={(value) =>
+                                                    setOutputFormat(
+                                                        value as FormatValue,
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger className="h-9">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {formatOptions.map(
+                                                        (option) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    option.value
+                                                                }
+                                                                value={
+                                                                    option.value
+                                                                }
+                                                            >
+                                                                {formatLabelInIndonesian(
+                                                                    option.value,
+                                                                )}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </>
+                                )}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5 ml-auto"
+                                    onClick={() => {
+                                        setInputText(defaultTextByLab(lab.slug));
+                                        setKeyInput(
+                                            keyPlaceholderByLab(
+                                                lab.slug,
+                                                'encrypt',
+                                            ),
+                                        );
+                                        setInputFormat('ascii');
+                                        setOutputFormat('ascii');
+                                        setMode('encrypt');
+                                    }}
+                                >
+                                    <RotateCcw className="size-3.5" />
+                                    Atur ulang
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Concept card (compact) */}
+                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
+                        <CardHeader className="gap-1 pb-3">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Info className="size-4 text-muted-foreground" />
+                                {conceptLens.title}
+                            </CardTitle>
+                            <CardDescription className="text-sm/6">
+                                {modeDescription(lab.slug, mode)}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Collapsible
+                                open={showDetails}
+                                onOpenChange={setShowDetails}
                             >
-                                Atur ulang
-                            </Button>
+                                <div className="space-y-2">
+                                    {conceptLens.points
+                                        .slice(0, showDetails ? undefined : 2)
+                                        .map((point, index) => (
+                                            <div
+                                                key={point}
+                                                className="flex gap-2 text-sm"
+                                            >
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px]"
+                                                >
+                                                    {index + 1}
+                                                </Badge>
+                                                <span className="leading-relaxed">
+                                                    {point}
+                                                </span>
+                                            </div>
+                                        ))}
+                                </div>
+                                {conceptLens.points.length > 2 && (
+                                    <CollapsibleTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full mt-2 text-xs gap-1"
+                                        >
+                                            {showDetails
+                                                ? 'Sembunyikan'
+                                                : `+${conceptLens.points.length - 2} lainnya`}
+                                            <ChevronDown
+                                                className={cn(
+                                                    'size-3.5 transition-transform',
+                                                    showDetails &&
+                                                        'rotate-180',
+                                                )}
+                                            />
+                                        </Button>
+                                    </CollapsibleTrigger>
+                                )}
+                            </Collapsible>
                         </CardContent>
                     </Card>
                 </section>
 
+                {/* Visualizer + Result */}
                 <section
                     className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12"
                     style={{ animationDelay: '200ms' }}
@@ -547,6 +604,8 @@ export default function LabsShow({ lab }: LabShowProps) {
                         learnerMode={learnerMode}
                         onModeChange={setLearnerMode}
                         mode={mode}
+                        isPlaying={isWalkthroughPlaying}
+                        onPlayingChange={setIsWalkthroughPlaying}
                         aesTrace={algoTrace.aes}
                         desTrace={algoTrace.des}
                         rsaTrace={algoTrace.rsa}
@@ -564,9 +623,9 @@ export default function LabsShow({ lab }: LabShowProps) {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="min-h-40 rounded-lg bg-muted/40 p-3 text-sm leading-relaxed break-all">
+                            <div className="min-h-40 rounded-lg bg-muted/40 p-3 text-sm leading-relaxed break-all font-mono">
                                 {outputPresentation.value || (
-                                    <span className="text-muted-foreground italic">
+                                    <span className="text-muted-foreground italic font-sans">
                                         Menunggu input...
                                     </span>
                                 )}
@@ -583,4 +642,3 @@ export default function LabsShow({ lab }: LabShowProps) {
         </>
     );
 }
-

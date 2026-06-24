@@ -59,13 +59,21 @@ export type AesTrace = {
 
 export type DesTrace = {
     plaintext: string;
+    key: string;
+    afterIP: number[];
+    L0: number[];
+    R0: number[];
     rounds: Array<{
         roundIndex: number;
         L: number[];
         R: number[];
-        expandedR?: number[];
-        sboxOutput?: number[];
-        permutedOutput?: number[];
+        expandedR: number[];
+        xoredWithKey: number[];
+        sboxOutput: number[];
+        permutedOutput: number[];
+        newL: number[];
+        newR: number[];
+        roundKey: number[];
     }>;
     ciphertext: string;
 };

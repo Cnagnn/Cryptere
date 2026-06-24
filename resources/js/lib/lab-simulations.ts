@@ -1059,13 +1059,21 @@ function runDesConcept(
             trace: {
                 des: {
                     plaintext: toHex(paddedBytes.slice(0, 8)).toUpperCase(),
+                    key: keyHex.toUpperCase(),
+                    afterIP: firstTrace.afterIP,
+                    L0: firstTrace.L0,
+                    R0: firstTrace.R0,
                     rounds: firstTrace.rounds.map((r) => ({
                         roundIndex: r.roundIndex,
                         L: r.L,
                         R: r.R,
                         expandedR: r.expandedR,
+                        xoredWithKey: r.xoredWithKey,
                         sboxOutput: r.sboxOutput,
                         permutedOutput: r.permutedOutput,
+                        newL: r.newL,
+                        newR: r.newR,
+                        roundKey: r.roundKey,
                     })),
                     ciphertext: blocks[0],
                 },
@@ -1125,13 +1133,21 @@ function runDesConcept(
         trace: {
             des: {
                 plaintext: bitsToHex(firstTrace.plaintext).toUpperCase(),
+                key: keyHex.toUpperCase(),
+                afterIP: firstTrace.afterIP,
+                L0: firstTrace.L0,
+                R0: firstTrace.R0,
                 rounds: firstTrace.rounds.map((r) => ({
                     roundIndex: r.roundIndex,
                     L: r.L,
                     R: r.R,
                     expandedR: r.expandedR,
+                    xoredWithKey: r.xoredWithKey,
                     sboxOutput: r.sboxOutput,
                     permutedOutput: r.permutedOutput,
+                    newL: r.newL,
+                    newR: r.newR,
+                    roundKey: r.roundKey,
                 })),
                 ciphertext: ctHex.slice(0, 16),
             },
