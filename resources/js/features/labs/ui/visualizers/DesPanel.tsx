@@ -1,119 +1,104 @@
 /**
  * DesPanel — DES Feistel round visualization
  *
- * Single adaptive mode that progressively reveals detail:
- * - Prep (steps 0-2): plaintext, key, padding, IP, L₀/R₀ overview
- * - Structure (rounds 1-4): Feistel diagram + F as black box
- * - Detail (rounds 5-12): Feistel diagram + F-function pipeline opened
- * - Full (rounds 13-16): full detail + contextual explanation
- * - Final (last step): swap L₁₆/R₁₆ → FP → ciphertext
- *
- * Phases are auto-detected from the steps array by finding round markers.
+ * Single adaptive mode. Every round shows the same Feistel diagram,
+ * but the F-function depth auto-grows:
+ *   shallow (1-4):  F as mystery box
+ *   medium (5-11):  pipeline labels visible
+ *   deep   (12-16): full hex values + bit counts
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDown, Info, Lock } from 'lucide-react';
+import { ArrowDown, Lock, Unlock } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { bitsToHex } from '@/features/labs/algorithms/des';
 import { cn } from '@/lib/utils';
 import type { DesTrace } from '@/types/labs';
 
-// ── Color system ─────────────────────────────────────────────────────────────
+// ── Color tokens ─────────────────────────────────────────────────────────────
 
-type Variant = 'blue' | 'green' | 'orange' | 'amber' | 'purple' | 'violet' | 'red' | 'neutral';
+const styles = {
+    box: {
+        blue: 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20',
+        green: 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20',
+        orange: 'border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20',
+        amber: 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20',
+        purple: 'border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20',
+        violet: 'border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/20',
+        red: 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20',
+    } as const,
+    label: {
+        blue: 'text-blue-600 dark:text-blue-400',
+        green: 'text-green-600 dark:text-green-400',
+        orange: 'text-orange-600 dark:text-orange-400',
+        amber: 'text-amber-600 dark:text-amber-400',
+        purple: 'text-purple-600 dark:text-purple-400',
+        violet: 'text-violet-600 dark:text-violet-400',
+        red: 'text-red-600 dark:text-red-400',
+    } as const,
+} as const;
 
-const boxStyle: Record<Variant, string> = {
-    blue: 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20',
-    green: 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20',
-    orange: 'border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20',
-    amber: 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20',
-    purple: 'border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20',
-    violet: 'border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/20',
-    red: 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20',
-    neutral: 'border-border bg-muted/30',
-};
+type Color = keyof typeof styles.box;
 
-const labelStyle: Record<Variant, string> = {
-    blue: 'text-blue-600 dark:text-blue-400',
-    green: 'text-green-600 dark:text-green-400',
-    orange: 'text-orange-600 dark:text-orange-400',
-    amber: 'text-amber-600 dark:text-amber-400',
-    purple: 'text-purple-600 dark:text-purple-400',
-    violet: 'text-violet-600 dark:text-violet-400',
-    red: 'text-red-600 dark:text-red-400',
-    neutral: 'text-muted-foreground',
-};
-
-// ── Helper components ────────────────────────────────────────────────────────
-
-function HexBox({
-    label,
-    bits,
-    variant = 'neutral',
-}: {
-    label: string;
-    bits: number[];
-    variant?: Variant;
-}) {
-    return (
-        <div className={cn('rounded-lg border px-3 py-2 min-w-0', boxStyle[variant])}>
-            <span className={cn('text-[10px] font-semibold', labelStyle[variant])}>{label}</span>
-            <div className="font-mono text-[11px] font-medium break-all mt-0.5">{bitsToHex(bits)}</div>
-            <div className="text-[8px] text-muted-foreground mt-0.5">{bits.length} bit</div>
-        </div>
-    );
+function box(color: Color) {
+    return cn('rounded-lg border', styles.box[color]);
+}
+function lbl(color: Color) {
+    return cn('text-[10px] font-semibold', styles.label[color]);
 }
 
-function HexBoxStr({
+// ── Mini helpers ─────────────────────────────────────────────────────────────
+
+function Hex({
     label,
-    hex,
-    variant = 'neutral',
-    sublabel,
+    value,
+    color = 'blue',
+    subtitle,
 }: {
     label: string;
-    hex: string;
-    variant?: Variant;
-    sublabel?: string;
+    value: string;
+    color?: Color;
+    subtitle?: string;
 }) {
     return (
-        <div className={cn('rounded-lg border px-3 py-2 min-w-0', boxStyle[variant])}>
-            <div className="flex items-baseline justify-between gap-2">
-                <span className={cn('text-[10px] font-semibold', labelStyle[variant])}>{label}</span>
-                {sublabel && <span className="text-[9px] text-muted-foreground">{sublabel}</span>}
+        <div className={cn(box(color), 'px-2.5 py-1.5 min-w-0')}>
+            <div className="flex items-baseline justify-between gap-1.5">
+                <span className={lbl(color)}>{label}</span>
+                {subtitle && <span className="text-[9px] text-muted-foreground">{subtitle}</span>}
             </div>
-            <div className="font-mono text-[11px] font-medium break-all mt-0.5">{hex}</div>
+            <div className="font-mono text-[11px] font-medium break-all mt-0.5">{value}</div>
         </div>
     );
 }
 
-function VerticalArrow({ label, className }: { label?: string; className?: string }) {
+function VSep({ label, className }: { label?: string; className?: string }) {
     return (
-        <div className={cn('flex items-center justify-center gap-2 py-1', className)}>
+        <div className={cn('flex items-center justify-center gap-2 py-0.5', className)}>
             {label && <span className="text-[9px] text-muted-foreground">{label}</span>}
-            <ArrowDown className="size-3 text-muted-foreground/50" />
+            <ArrowDown className="size-3 text-muted-foreground/40" />
         </div>
     );
 }
 
-function RoundDots({
-    count,
+// ── Round dots ───────────────────────────────────────────────────────────────
+
+function Dots({
+    total,
     current,
-    onStepChange,
-    stepOffset,
+    onJump,
 }: {
-    count: number;
+    total: number;
     current: number;
-    onStepChange?: (n: number) => void;
-    stepOffset: number;
+    onJump: (roundIndex: number) => void;
 }) {
     return (
         <div className="flex justify-center gap-1 flex-wrap pt-1">
-            {Array.from({ length: count }, (_, i) => (
+            {Array.from({ length: total }, (_, i) => (
                 <button
                     key={i}
-                    onClick={() => onStepChange?.(stepOffset + i)}
+                    onClick={() => onJump(i)}
                     className={cn(
                         'size-2.5 rounded-full transition-all',
                         i === current
@@ -129,269 +114,257 @@ function RoundDots({
     );
 }
 
-// ── Phase detection ──────────────────────────────────────────────────────────
+// ── F-function pipeline ──────────────────────────────────────────────────────
 
-type RoundPhase = 'prep' | 'structure' | 'detail' | 'full' | 'final';
+type Depth = 'shallow' | 'medium' | 'deep';
 
-const ROUND_REGEX = /Putaran (\d+)/;
-
-function detectPhase(
-    activeStep: number,
-    steps: string[],
-    totalRounds: number,
-): { phase: RoundPhase; roundIndex: number; prepCount: number; roundStepStart: number } {
-    const roundStepIndices: number[] = [];
-    const prepSteps: number[] = [];
-
-    for (let i = 0; i < steps.length; i++) {
-        if (ROUND_REGEX.test(steps[i])) {
-            roundStepIndices.push(i);
-        } else if (roundStepIndices.length === 0) {
-            prepSteps.push(i);
-        }
+function FPipeline({
+    round,
+    depth,
+}: {
+    round: DesTrace['rounds'][number];
+    depth: Depth;
+}) {
+    if (depth === 'shallow') {
+        return (
+            <div className={cn(box('purple'), 'px-3 py-2.5 text-center')}>
+                <Lock className="size-4 mx-auto mb-1 text-purple-500/60" />
+                <span className="text-[10px] text-muted-foreground font-medium">
+                    F(R, K{round.roundIndex})
+                </span>
+                <p className="text-[9px] text-muted-foreground/60 mt-0.5">
+                    Fungsi F masih tersembunyi — lanjut ke putaran 5+ untuk melihat detail
+                </p>
+            </div>
+        );
     }
 
-    const prepCount = prepSteps.length;
-    const roundStepStart = roundStepIndices[0] ?? prepCount;
-    const roundIdx = roundStepIndices.indexOf(activeStep);
+    const ex = bitsToHex(round.expandedR);
+    const xk = bitsToHex(round.xoredWithKey);
+    const sb = bitsToHex(round.sboxOutput);
+    const pp = bitsToHex(round.permutedOutput);
 
-    if (roundIdx === -1) {
-        if (activeStep < roundStepStart) return { phase: 'prep', roundIndex: -1, prepCount, roundStepStart };
-        return { phase: 'final', roundIndex: -1, prepCount, roundStepStart };
+    if (depth === 'medium') {
+        return (
+            <div className={cn(box('purple'), 'px-3 py-2 space-y-1.5')}>
+                <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                    Fungsi F — pipeline
+                </p>
+                <div className="grid grid-cols-4 gap-1 text-center">
+                    <div className="rounded bg-orange-50 dark:bg-orange-950/30 px-1 py-0.5">
+                        <div className="text-[10px] font-medium text-orange-600 dark:text-orange-400">E</div>
+                        <div className="text-[9px] text-muted-foreground">ekspansi</div>
+                    </div>
+                    <div className="rounded bg-amber-50 dark:bg-amber-950/30 px-1 py-0.5">
+                        <div className="text-[10px] font-medium text-amber-600 dark:text-amber-400">⊕ K</div>
+                        <div className="text-[9px] text-muted-foreground">XOR</div>
+                    </div>
+                    <div className="rounded bg-violet-50 dark:bg-violet-950/30 px-1 py-0.5">
+                        <div className="text-[10px] font-medium text-violet-600 dark:text-violet-400">S</div>
+                        <div className="text-[9px] text-muted-foreground">S-box</div>
+                    </div>
+                    <div className="rounded bg-orange-50 dark:bg-orange-950/30 px-1 py-0.5">
+                        <div className="text-[10px] font-medium text-orange-600 dark:text-orange-400">P</div>
+                        <div className="text-[9px] text-muted-foreground">permutasi</div>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
-    if (roundIdx < 4) return { phase: 'structure', roundIndex: roundIdx, prepCount, roundStepStart };
-    if (roundIdx < 12) return { phase: 'detail', roundIndex: roundIdx, prepCount, roundStepStart };
-    return { phase: 'full', roundIndex: roundIdx, prepCount, roundStepStart };
-}
-
-// ── Phase: Preparation ───────────────────────────────────────────────────────
-
-function PrepPhase({ trace }: { trace: DesTrace }) {
+    // deep
     return (
-        <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-                <HexBoxStr label="Plaintext" hex={trace.plaintext} variant="blue" sublabel="64 bit" />
-                <HexBoxStr label="Kunci" hex={trace.key} variant="violet" sublabel="64 bit (56 efektif)" />
-            </div>
-            <VerticalArrow label="IP (Initial Permutation)" />
-            <HexBox label="Setelah IP" bits={trace.afterIP} variant="neutral" />
-            <VerticalArrow label="Pisah L₀ / R₀" />
-            <div className="grid grid-cols-2 gap-2">
-                <HexBox label="L₀" bits={trace.L0} variant="blue" />
-                <HexBox label="R₀" bits={trace.R0} variant="green" />
-            </div>
-            <p className="text-xs text-muted-foreground italic pt-1">
-                IP mengatur ulang bit, lalu blok 64-bit dibagi menjadi L₀ dan R₀ (masing-masing 32 bit) sebelum memasuki 16 putaran Feistel.
+        <div className={cn(box('purple'), 'px-3 py-2 space-y-2')}>
+            <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                Fungsi F — detail penuh
             </p>
+            <div className="grid grid-cols-4 gap-1.5">
+                <div className="space-y-0.5">
+                    <span className={lbl('orange')}>E(R)</span>
+                    <div className="font-mono text-[10px] break-all">{ex}</div>
+                    <div className="text-[8px] text-muted-foreground">48 bit</div>
+                </div>
+                <div className="space-y-0.5">
+                    <span className={lbl('amber')}>⊕ K</span>
+                    <div className="font-mono text-[10px] break-all">{xk}</div>
+                    <div className="text-[8px] text-muted-foreground">48 bit</div>
+                </div>
+                <div className="space-y-0.5">
+                    <span className={lbl('violet')}>S-box</span>
+                    <div className="font-mono text-[10px] break-all">{sb}</div>
+                    <div className="text-[8px] text-muted-foreground">32 bit</div>
+                </div>
+                <div className="space-y-0.5">
+                    <span className={lbl('orange')}>P</span>
+                    <div className="font-mono text-[10px] break-all">{pp}</div>
+                    <div className="text-[8px] text-muted-foreground">32 bit</div>
+                </div>
+            </div>
         </div>
     );
 }
 
-// ── Phase: Structure (rounds 1-4) — Feistel + F black box ────────────────────
+// ── Feistel round card ───────────────────────────────────────────────────────
 
-function StructurePhase({
-    traceRound,
-    roundIndex,
+function FeistelRound({
+    round,
+    depth,
+    onJump,
     totalRounds,
-    onStepChange,
-    stepOffset,
 }: {
-    traceRound: NonNullable<DesTrace['rounds']>[number];
-    roundIndex: number;
+    round: DesTrace['rounds'][number];
+    depth: Depth;
+    onJump: (i: number) => void;
     totalRounds: number;
-    onStepChange?: (n: number) => void;
-    stepOffset: number;
 }) {
-    const Foutput = traceRound.permutedOutput;
+    const i = round.roundIndex;
+    const prevL = bitsToHex(round.L);
+    const prevR = bitsToHex(round.R);
+    const newL = bitsToHex(round.newL);
+    const newR = bitsToHex(round.newR);
+    const rk = bitsToHex(round.roundKey);
 
     return (
         <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-                {/* Left: Feistel flow */}
-                <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-muted-foreground text-center">Diagram Feistel</p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                        <HexBox label={`L${roundIndex - 1}`} bits={traceRound.L} variant="blue" />
-                        <HexBox label={`R${roundIndex - 1}`} bits={traceRound.R} variant="green" />
+            {/* Feistel diagram */}
+            <Card className="border-border/70 bg-card/95">
+                <CardContent className="p-4 space-y-3">
+                    {/* Input side */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <Hex label={`L${i - 1}`} value={prevL} color="blue" subtitle="32 bit" />
+                        <Hex label={`R${i - 1}`} value={prevR} color="green" subtitle="32 bit" />
                     </div>
-                    <VerticalArrow />
-                    {/* F-function black box */}
-                    <div className="rounded-lg border border-dashed border-muted-foreground/40 bg-muted/20 p-2 text-center">
-                        <Lock className="size-3.5 mx-auto mb-1 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground font-medium">F(R, K{roundIndex})</span>
+
+                    {/* Flow annotation */}
+                    <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+                        <div className="flex-1 border-t border-dashed border-muted-foreground/20" />
+                        <span>R masuk ke F, hasil XOR dengan L</span>
+                        <div className="flex-1 border-t border-dashed border-muted-foreground/20" />
                     </div>
-                    <VerticalArrow />
-                    <div className="grid grid-cols-2 gap-1.5">
-                        <HexBox label={`L${roundIndex}`} bits={traceRound.newL} variant="blue" />
-                        <HexBox label={`R${roundIndex}`} bits={traceRound.newR} variant="green" />
+
+                    {/* F-function */}
+                    <FPipeline round={round} depth={depth} />
+
+                    <VSep />
+
+                    {/* Output side */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <Hex label={`L${i} = R${i - 1}`} value={newL} color="blue" subtitle="32 bit" />
+                        <Hex label={`R${i} = L ⊕ F`} value={newR} color="green" subtitle="32 bit" />
                     </div>
-                </div>
-
-                {/* Right: explanation */}
-                <div className="space-y-2">
-                    <Card className="border-blue-200 dark:border-blue-800">
-                        <CardContent className="p-3 space-y-1.5">
-                            <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-                                Cara kerja putaran
-                            </p>
-                            <div className="text-xs text-muted-foreground space-y-1 leading-relaxed">
-                                <p>• Blok 64-bit dibelah jadi dua: L dan R (masing-masing 32 bit)</p>
-                                <p>• R kanan masuk fungsi F dicampur kunci putaran</p>
-                                <p>• Hasil F di-XOR dengan L kiri</p>
-                                <p>• L baru = R lama, R baru = L ⊕ F(R, K)</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 px-3 py-2">
-                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
-                            <Info className="size-3" />
-                            Lihat fungsi F?
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
-                            Fungsi F masih sebagai kotak hitam. Maju ke putaran 5-12 untuk melihat isi fungsi F: ekspansi E, XOR kunci, S-box, dan permutasi P.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <RoundDots count={totalRounds} current={roundIndex} onStepChange={onStepChange} stepOffset={stepOffset} />
-        </div>
-    );
-}
-
-// ── Phase: Detail (rounds 5-12) — F-function pipeline opened ─────────────────
-
-function DetailPhase({
-    traceRound,
-    roundIndex,
-    totalRounds,
-    onStepChange,
-    stepOffset,
-}: {
-    traceRound: NonNullable<DesTrace['rounds']>[number];
-    roundIndex: number;
-    totalRounds: number;
-    onStepChange?: (n: number) => void;
-    stepOffset: number;
-}) {
-    return (
-        <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-                {/* Left: Feistel flow (compact) */}
-                <div className="space-y-1">
-                    <div className="grid grid-cols-2 gap-1.5">
-                        <HexBox label={`L${roundIndex - 1}`} bits={traceRound.L} variant="blue" />
-                        <HexBox label={`R${roundIndex - 1}`} bits={traceRound.R} variant="green" />
-                    </div>
-                    <VerticalArrow />
-                    <div className="grid grid-cols-2 gap-1.5">
-                        <HexBox label={`L${roundIndex}`} bits={traceRound.newL} variant="blue" />
-                        <HexBox label={`R${roundIndex}`} bits={traceRound.newR} variant="green" />
-                    </div>
-                    <p className="text-[9px] text-muted-foreground text-center italic pt-1">
-                        L{roundIndex} = R{roundIndex - 1}, R{roundIndex} = L ⊕ F(R, K)
-                    </p>
-                </div>
-
-                {/* Right: F-function pipeline */}
-                <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-muted-foreground text-center">
-                        Fungsi F — Putaran {roundIndex}
-                    </p>
-                    <HexBox label="R (32-bit)" bits={traceRound.R} variant="green" />
-                    <VerticalArrow label="Ekspansi E (32→48 bit)" />
-                    <HexBox label="E(R)" bits={traceRound.expandedR} variant="orange" />
-                    <VerticalArrow label={`⊕ K${roundIndex}`} />
-                    <HexBox label={`⊕ K${roundIndex}`} bits={traceRound.xoredWithKey} variant="amber" />
-                    <VerticalArrow label="S-box (8× 6→4 bit)" />
-                    <HexBox label="S-box output" bits={traceRound.sboxOutput} variant="purple" />
-                    <VerticalArrow label="Permutasi P" />
-                    <HexBox label="P(S)" bits={traceRound.permutedOutput} variant="orange" />
-                </div>
-            </div>
-
-            {/* Round key highlight */}
-            <div className="flex items-center gap-2 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/20 px-3 py-1.5">
-                <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 shrink-0">K{roundIndex}</span>
-                <span className="font-mono text-[11px] break-all">{bitsToHex(traceRound.roundKey)}</span>
-                <span className="text-[9px] text-muted-foreground shrink-0">48 bit</span>
-            </div>
-
-            <RoundDots count={totalRounds} current={roundIndex} onStepChange={onStepChange} stepOffset={stepOffset} />
-        </div>
-    );
-}
-
-// ── Phase: Full (rounds 13-16) — detail + context ─────────────────────────────
-
-function FullPhase({
-    traceRound,
-    roundIndex,
-    totalRounds,
-    onStepChange,
-    stepOffset,
-}: {
-    traceRound: NonNullable<DesTrace['rounds']>[number];
-    roundIndex: number;
-    totalRounds: number;
-    onStepChange?: (n: number) => void;
-    stepOffset: number;
-}) {
-    return (
-        <div className="space-y-3">
-            <DetailPhase traceRound={traceRound} roundIndex={roundIndex} totalRounds={totalRounds} onStepChange={onStepChange} stepOffset={stepOffset} />
-
-            <Card className="border-blue-200 dark:border-blue-800">
-                <CardContent className="p-3 space-y-1">
-                    <p className="text-xs font-medium">Konteks: fungsi F di putaran akhir</p>
-                    <ul className="text-xs text-muted-foreground space-y-0.5">
-                        <li>
-                            • <strong>Ekspansi E</strong>: menduplikasi 16 bit dari 32 → 48 bit, supaya ukurannya cocok dengan round key
-                        </li>
-                        <li>
-                            • <strong>XOR dengan K{roundIndex}</strong>: bit-bit dicampur dengan round key, hanya bisa dibalik jika tahu kuncinya
-                        </li>
-                        <li>
-                            • <strong>S-box</strong>: 8 tabel substitusi non-linear — inilah jantung keamanan DES
-                        </li>
-                        <li>
-                            • <strong>Permutasi P</strong>: menyebar hasil S-box ke seluruh 32 bit untuk efek avalanche
-                        </li>
-                    </ul>
-                    <p className="text-[10px] text-muted-foreground italic mt-1">
-                        Setiap putaran makin mengaburkan hubungan plaintext-ciphertext. Setelah 16 putaran, setiap bit output bergantung pada semua bit input dan kunci.
-                    </p>
                 </CardContent>
             </Card>
 
-            <RoundDots count={totalRounds} current={roundIndex} onStepChange={onStepChange} stepOffset={stepOffset} />
+            {/* Round key */}
+            <div className={cn(box('violet'), 'px-3 py-2 flex items-center gap-2')}>
+                <span className={lbl('violet')}>K{i}</span>
+                <span className="font-mono text-[11px] break-all flex-1">{rk}</span>
+                <span className="text-[9px] text-muted-foreground">48 bit</span>
+            </div>
+
+            {/* Context card — depth-dependent */}
+            {depth === 'shallow' && (
+                <Card className="border-blue-200 dark:border-blue-800">
+                    <CardContent className="p-3">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Putaran {i} dari 16. Fungsi F masih sebagai kotak hitam — maju ke putaran berikutnya
+                            untuk melihat bagaimana F bekerja secara bertahap.
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {depth === 'medium' && (
+                <Card className="border-blue-200 dark:border-blue-800">
+                    <CardContent className="p-3 space-y-1.5">
+                        <p className="text-xs font-medium">Anatomi fungsi F:</p>
+                        <ul className="text-xs text-muted-foreground space-y-0.5">
+                            <li>• <strong>E</strong>: ekspansi 32→48 bit, menduplikasi 16 bit supaya cocok dengan ukuran kunci putaran</li>
+                            <li>• <strong>⊕ K</strong>: XOR dengan round key — inilah yang bikin dekripsi mustahil tanpa kunci</li>
+                            <li>• <strong>S</strong>: 8 tabel S-box substitusi non-linear, jantung keamanan DES</li>
+                            <li>• <strong>P</strong>: permutasi menyebar hasil ke seluruh 32 bit (efek avalanche)</li>
+                        </ul>
+                    </CardContent>
+                </Card>
+            )}
+
+            {depth === 'deep' && (
+                <Card className="border-blue-200 dark:border-blue-800">
+                    <CardContent className="p-3 space-y-1.5">
+                        <p className="text-xs font-medium">Putaran akhir — konteks penuh</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Setelah 16 putaran, setiap bit ciphertext bergantung pada seluruh bit plaintext dan kunci.
+                            Properti ini disebut <strong>efek avalanche</strong> — mengubah 1 bit input akan mengubah
+                            rata-rata setengah bit output. Dekripsi menjalankan proses yang sama persis, hanya urutan
+                            kunci putaran yang dibalik (K₁₆..K₁).
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
+            <Dots total={totalRounds} current={i - 1} onJump={onJump} />
         </div>
     );
 }
 
-// ── Phase: Final ─────────────────────────────────────────────────────────────
+// ── Prep phase ───────────────────────────────────────────────────────────────
 
-function FinalPhase({ trace, rounds }: { trace: DesTrace; rounds: DesTrace['rounds'] }) {
-    const lastRound = rounds[rounds.length - 1];
-
+function Prep({ trace }: { trace: DesTrace }) {
     return (
         <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-                <HexBox label="L₁₆" bits={lastRound.newL} variant="blue" />
-                <HexBox label="R₁₆" bits={lastRound.newR} variant="green" />
-            </div>
-            <VerticalArrow label="Tukar → R₁₆L₁₆" />
-            <VerticalArrow label="FP (Final Permutation)" />
-            <HexBoxStr label="Ciphertext" hex={trace.ciphertext} variant="green" sublabel="64 bit" />
-            <p className="text-xs text-muted-foreground italic pt-1">
-                L dan R akhir ditukar (R₁₆L₁₆), lalu Permutasi Akhir (FP) diterapkan untuk menghasilkan ciphertext 64-bit. Dekripsi menggunakan proses yang sama dengan round key terbalik.
+            <Card className="border-border/70 bg-card/95">
+                <CardContent className="p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                        <Hex label="Plaintext" value={trace.plaintext} color="blue" subtitle="64 bit" />
+                        <Hex label="Kunci" value={trace.key} color="violet" subtitle="64 bit (56 efektif)" />
+                    </div>
+                    <VSep label="IP — Initial Permutation" />
+                    <Hex label="Setelah IP" value={bitsToHex(trace.afterIP)} color="blue" subtitle="64 bit" />
+                    <VSep label="Pisah L₀ / R₀" />
+                    <div className="grid grid-cols-2 gap-2">
+                        <Hex label="L₀" value={bitsToHex(trace.L0)} color="blue" subtitle="32 bit" />
+                        <Hex label="R₀" value={bitsToHex(trace.R0)} color="green" subtitle="32 bit" />
+                    </div>
+                </CardContent>
+            </Card>
+            <p className="text-xs text-muted-foreground italic text-center">
+                IP mengatur ulang bit plaintext, lalu blok 64-bit dibelah jadi L₀ dan R₀.
+                Siap masuk 16 putaran Feistel.
             </p>
         </div>
     );
 }
 
-// ── Main component ───────────────────────────────────────────────────────────
+// ── Final phase ──────────────────────────────────────────────────────────────
+
+function Final({ trace, rounds }: { trace: DesTrace; rounds: DesTrace['rounds'] }) {
+    const last = rounds[rounds.length - 1];
+    return (
+        <div className="space-y-3">
+            <Card className="border-border/70 bg-card/95">
+                <CardContent className="p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                        <Hex label="L₁₆" value={bitsToHex(last.newL)} color="blue" subtitle="32 bit" />
+                        <Hex label="R₁₆" value={bitsToHex(last.newR)} color="green" subtitle="32 bit" />
+                    </div>
+                    <VSep label="Tukar → R₁₆L₁₆ + FP" />
+                    <Hex label="Ciphertext" value={trace.ciphertext} color="green" subtitle="64 bit" />
+                </CardContent>
+            </Card>
+            <Card className="border-green-200 dark:border-green-800">
+                <CardContent className="p-3 flex items-start gap-2">
+                    <Unlock className="size-4 text-green-500 mt-0.5 shrink-0" />
+                    <div className="text-xs text-muted-foreground leading-relaxed">
+                        L₁₆ dan R₁₆ ditukar lalu melewati Final Permutation (FP). Untuk dekripsi,
+                        jalankan proses yang sama dengan urutan kunci dibalik: K₁₆, K₁₅, ..., K₁.
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
 
 interface DesPanelProps {
     trace: DesTrace;
@@ -400,32 +373,50 @@ interface DesPanelProps {
     onStepChange?: (n: number) => void;
 }
 
+const ROUND_RE = /Putaran (\d+)/;
+
 export default function DesPanel({ trace, steps, activeStep, onStepChange }: DesPanelProps) {
     const rounds = trace.rounds;
     const totalRounds = rounds.length;
 
-    const { phase, roundIndex, prepCount, roundStepStart } = detectPhase(activeStep, steps, totalRounds);
-    const currentRound = roundIndex >= 0 ? rounds[roundIndex] : null;
+    // Detect step type
+    const match = ROUND_RE.exec(steps[activeStep] ?? '');
+    const isRound = match !== null;
+    const roundNumber = match ? Number.parseInt(match[1]) : -1;
 
-    // Only show round dots during round phases
-    const showRoundDots = roundIndex >= 0;
+    // Find first round step index for dot navigation offset
+    let firstRoundStep = 0;
+    for (let i = 0; i < steps.length; i++) {
+        if (ROUND_RE.test(steps[i])) {
+            firstRoundStep = i;
+            break;
+        }
+    }
+
+    const isFinal = !isRound && activeStep > firstRoundStep;
+    const currentRound = isRound ? rounds[roundNumber - 1] : null;
+
+    // Depth based on round number
+    const depth: Depth = roundNumber <= 4 ? 'shallow' : roundNumber <= 11 ? 'medium' : 'deep';
+
+    const handleJump = (roundIndex: number) => {
+        onStepChange?.(firstRoundStep + roundIndex);
+    };
 
     return (
         <div className="space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                        DES Feistel
-                    </Badge>
+                    <Badge variant="outline" className="text-xs">DES Feistel</Badge>
                     <span className="text-xs text-muted-foreground">16 putaran</span>
                 </div>
                 <Badge variant="secondary" className="text-xs tabular-nums">
-                    {phase === 'prep'
+                    {!isRound && !isFinal
                         ? 'Persiapan'
-                        : phase === 'final'
+                        : isFinal
                           ? 'Selesai'
-                          : `Putaran ${roundIndex + 1}/16`}
+                          : `Putaran ${roundNumber}/16`}
                 </Badge>
             </div>
 
@@ -437,44 +428,18 @@ export default function DesPanel({ trace, steps, activeStep, onStepChange }: Des
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.2, ease: 'easeOut' }}
                 >
-                    {/* ═══ PREP ═══ */}
-                    {phase === 'prep' && <PrepPhase trace={trace} />}
+                    {!isRound && !isFinal && <Prep trace={trace} />}
 
-                    {/* ═══ STRUCTURE (rounds 1-4) ═══ */}
-                    {phase === 'structure' && currentRound && (
-                        <StructurePhase
-                            traceRound={currentRound}
-                            roundIndex={roundIndex + 1}
+                    {isRound && currentRound && (
+                        <FeistelRound
+                            round={currentRound}
+                            depth={depth}
+                            onJump={handleJump}
                             totalRounds={totalRounds}
-                            onStepChange={onStepChange}
-                            stepOffset={roundStepStart}
                         />
                     )}
 
-                    {/* ═══ DETAIL (rounds 5-12) ═══ */}
-                    {phase === 'detail' && currentRound && (
-                        <DetailPhase
-                            traceRound={currentRound}
-                            roundIndex={roundIndex + 1}
-                            totalRounds={totalRounds}
-                            onStepChange={onStepChange}
-                            stepOffset={roundStepStart}
-                        />
-                    )}
-
-                    {/* ═══ FULL (rounds 13-16) ═══ */}
-                    {phase === 'full' && currentRound && (
-                        <FullPhase
-                            traceRound={currentRound}
-                            roundIndex={roundIndex + 1}
-                            totalRounds={totalRounds}
-                            onStepChange={onStepChange}
-                            stepOffset={roundStepStart}
-                        />
-                    )}
-
-                    {/* ═══ FINAL ═══ */}
-                    {phase === 'final' && <FinalPhase trace={trace} rounds={rounds} />}
+                    {isFinal && <Final trace={trace} rounds={rounds} />}
                 </motion.div>
             </AnimatePresence>
         </div>
