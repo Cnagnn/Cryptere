@@ -1,6 +1,7 @@
+import { motion } from 'framer-motion';
+
 import { cn } from '@/lib/utils';
 import type { DesTrace } from '@/types/labs';
-
 
 interface TimelineViewProps {
     trace: DesTrace;

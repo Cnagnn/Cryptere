@@ -6,47 +6,25 @@ interface StepBarProps {
     onStepSelect: (step: number) => void;
 }
 
-export default function StepBar({ currentStep, totalSteps, onStepSelect }: StepBarProps) {
+export default function StepBar({ currentStep, onStepSelect }: StepBarProps) {
     return (
         <div className="flex items-center gap-0.5 py-3 overflow-x-auto">
-            {/* IP */}
-            <StepDot
-                label="IP"
-                step={0}
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-                onSelect={onStepSelect}
-            />
+            <StepDot label="IP" step={0} currentStep={currentStep} onSelect={onStepSelect} />
             <StepConnector done={currentStep > 0} />
 
-            {/* Rounds 1-16 */}
             {Array.from({ length: 16 }, (_, i) => {
                 const step = i + 1;
 
                 return (
                     <span key={i} className="contents">
-                        <StepDot
-                            label={`${step}`}
-                            step={step}
-                            currentStep={currentStep}
-                            totalSteps={totalSteps}
-                            onSelect={onStepSelect}
-                        />
+                        <StepDot label={`${step}`} step={step} currentStep={currentStep} onSelect={onStepSelect} />
                         {i < 15 && <StepConnector done={currentStep > step} />}
                     </span>
                 );
             })}
 
             <StepConnector done={currentStep > 16} />
-
-            {/* FP */}
-            <StepDot
-                label="FP"
-                step={17}
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-                onSelect={onStepSelect}
-            />
+            <StepDot label="FP" step={17} currentStep={currentStep} onSelect={onStepSelect} />
         </div>
     );
 }
@@ -60,7 +38,6 @@ function StepDot({
     label: string;
     step: number;
     currentStep: number;
-    totalSteps: number;
     onSelect: (step: number) => void;
 }) {
     const isActive = step === currentStep;

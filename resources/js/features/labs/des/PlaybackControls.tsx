@@ -1,6 +1,7 @@
 import { Pause, Play, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 
@@ -40,40 +41,40 @@ export default function PlaybackControls({
             </div>
 
             <div className="flex items-center gap-2">
-                <Button onClick={onReset} variant="outline" size="sm" className="h-8 w-8 p-0" title="Reset">
-                    <RotateCcw className="w-3.5 h-3.5" />
+                <Button onClick={onReset} variant="outline" size="icon" className="size-8" title="Reset">
+                    <RotateCcw className="size-3.5" />
                 </Button>
                 <Button
                     onClick={onPrev}
                     variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0"
+                    size="icon"
+                    className="size-8"
                     disabled={currentStep === 0}
                     title="Previous step"
                 >
-                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <ChevronLeft className="size-3.5" />
                 </Button>
                 <Button onClick={onPlayPause} size="sm" className="h-8 flex-1 text-xs" title={isPlaying ? 'Pause' : 'Play'}>
                     {isPlaying ? (
-                        <><Pause className="w-3.5 h-3.5 mr-1.5" /> Pause</>
+                        <><Pause className="size-3.5 mr-1.5" /> Pause</>
                     ) : (
-                        <><Play className="w-3.5 h-3.5 mr-1.5" /> Play</>
+                        <><Play className="size-3.5 mr-1.5" /> Play</>
                     )}
                 </Button>
                 <Button
                     onClick={onNext}
                     variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0"
+                    size="icon"
+                    className="size-8"
                     disabled={currentStep === totalSteps - 1}
                     title="Next step"
                 >
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    <ChevronRight className="size-3.5" />
                 </Button>
             </div>
 
             <div className="flex items-center gap-3">
-                <span className="text-[10px] text-muted-foreground font-medium">Speed</span>
+                <Label className="text-[10px] text-muted-foreground">Speed</Label>
                 <Slider
                     value={[playSpeed]}
                     onValueChange={(v) => onSpeedChange(v[0])}

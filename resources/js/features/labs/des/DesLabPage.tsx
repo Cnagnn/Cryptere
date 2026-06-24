@@ -1,10 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { runSimulation } from '@/lib/lab-simulations';
 import type { DesTrace } from '@/types/labs';
 
@@ -106,41 +110,40 @@ return <FinalPermutationSlide trace={trace} />;
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 min-h-[calc(100vh-8rem)]">
-            {/* Left: Input/Output sidebar */}
             <div className="space-y-3">
-                <Card className="border-border/50 bg-card/95 shadow-sm p-4 space-y-4">
-                    <div>
-                        <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30 mb-2">INPUT</Badge>
+                <Card>
+                    <CardContent className="p-4 space-y-4">
+                        <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">INPUT</Badge>
+
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Plaintext</label>
-                            <input
-                                type="text"
+                            <Label className="text-[11px] uppercase tracking-wider">Plaintext</Label>
+                            <Input
                                 value={plaintext}
                                 onChange={(e) => setPlaintext(e.target.value)}
                                 placeholder="8 karakter / 64-bit"
-                                className="w-full h-9 px-3 rounded-md border border-border/50 bg-muted/20 text-xs font-mono text-foreground focus:outline-none focus:border-blue-500/50"
+                                className="h-9 text-xs font-mono"
                             />
-                            <span className="text-[9px] text-muted-foreground">{plaintext.length} karakter</span>
+                            <p className="text-[9px] text-muted-foreground">{plaintext.length} karakter</p>
                         </div>
-                        <div className="space-y-1.5 mt-3">
-                            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Key</label>
-                            <input
-                                type="text"
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[11px] uppercase tracking-wider">Key</Label>
+                            <Input
                                 value={key}
                                 onChange={(e) => setKey(e.target.value)}
                                 placeholder="8 karakter / 64-bit"
-                                className="w-full h-9 px-3 rounded-md border border-border/50 bg-muted/20 text-xs font-mono text-foreground focus:outline-none focus:border-violet-500/50"
+                                className="h-9 text-xs font-mono"
                             />
-                            <span className="text-[9px] text-muted-foreground">{key.length} karakter</span>
+                            <p className="text-[9px] text-muted-foreground">{key.length} karakter</p>
                         </div>
 
                         {error && (
-                            <div className="mt-3 rounded-md bg-destructive/10 p-2 text-[11px] text-destructive">
-                                {error}
-                            </div>
+                            <Alert variant="destructive" className="py-2">
+                                <AlertDescription className="text-xs">{error}</AlertDescription>
+                            </Alert>
                         )}
 
-                        <div className="flex gap-2 mt-4">
+                        <div className="flex gap-2">
                             <Button onClick={handleEncrypt} size="sm" className="flex-1 h-8 text-xs">
                                 Enkripsi
                             </Button>
@@ -148,36 +151,41 @@ return <FinalPermutationSlide trace={trace} />;
                                 Reset
                             </Button>
                         </div>
-                    </div>
+                    </CardContent>
                 </Card>
 
                 {trace && (
-                    <Card className="border-emerald-500/30 bg-card/95 shadow-sm p-4">
-                        <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30 mb-2">OUTPUT</Badge>
-                        <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/10 p-3">
-                            <div className="text-[10px] font-semibold text-emerald-400 mb-1 uppercase tracking-wider">Ciphertext</div>
-                            <div className="font-mono text-xs break-all text-foreground">{trace.ciphertext}</div>
-                        </div>
+                    <Card className="border-emerald-500/30">
+                        <CardContent className="p-4">
+                            <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30 mb-2">OUTPUT</Badge>
+                            <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/10 p-3">
+                                <p className="text-[10px] font-semibold text-emerald-400 mb-1 uppercase tracking-wider">Ciphertext</p>
+                                <p className="font-mono text-xs break-all text-foreground">{trace.ciphertext}</p>
+                            </div>
+                        </CardContent>
                     </Card>
                 )}
 
                 {trace && (
-                    <button
-                        onClick={() => setShowTimeline(!showTimeline)}
-                        className="w-full text-center text-[11px] text-muted-foreground hover:text-foreground transition-colors py-2"
-                    >
-                        {showTimeline ? '⌃ Sembunyikan timeline' : '⌄ Lihat semua langkah'}
-                    </button>
-                )}
-
-                {trace && showTimeline && (
-                    <TimelineView trace={trace} currentStep={currentStep} onStepSelect={setCurrentStep} />
+                    <>
+                        <Separator />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowTimeline(!showTimeline)}
+                            className="w-full h-8 text-xs text-muted-foreground"
+                        >
+                            {showTimeline ? '⌃ Sembunyikan timeline' : '⌄ Lihat semua langkah'}
+                        </Button>
+                        {showTimeline && (
+                            <TimelineView trace={trace} currentStep={currentStep} onStepSelect={setCurrentStep} />
+                        )}
+                    </>
                 )}
             </div>
 
-            {/* Right: Storyboard + Blueprint */}
             <div className="flex flex-col min-h-0">
-                <Card className="flex-1 flex flex-col border-border/50 bg-card/95 shadow-sm overflow-hidden">
+                <Card className="flex-1 flex flex-col overflow-hidden">
                     {trace && (
                         <div className="px-4 pt-3 border-b border-border/30">
                             <StepBar
