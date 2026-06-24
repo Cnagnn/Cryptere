@@ -11,6 +11,7 @@ import {
     User,
     Users,
 } from 'lucide-react';
+import AppLogo from '@/components/app-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     Collapsible,
@@ -49,7 +50,6 @@ import { dashboard } from '@/routes';
 import { index as adminCoursesIndex } from '@/routes/admin/courses';
 import { index as adminQuestionBankIndex } from '@/routes/admin/question-bank';
 import { index as adminUsersIndex } from '@/routes/admin/users';
-import AppLogo from '@/components/app-logo';
 import { index as coursesIndex } from '@/routes/courses';
 import { index as labsIndex } from '@/routes/labs';
 import { index as leaderboardIndex } from '@/routes/leaderboard';

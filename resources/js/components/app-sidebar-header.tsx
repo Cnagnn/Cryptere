@@ -43,8 +43,6 @@ import {
 } from '@/routes/profile';
 import type { Auth, User as UserType } from '@/types/auth';
 
-type Props = Record<string, never>;
-
 type SearchResult = {
     type: string;
     title: string;
@@ -215,8 +213,8 @@ const resultIcons: Record<string, LucideIcon> = {
 
 const getResultIcon = (type: string): LucideIcon => resultIcons[type] ?? Search;
 
-export function AppSidebarHeader({}: Props) {
-    const { props, url } = usePage<{ auth: Auth }>();
+export function AppSidebarHeader() {
+    const { props } = usePage<{ auth: Auth }>();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);

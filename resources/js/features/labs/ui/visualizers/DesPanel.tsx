@@ -6,10 +6,9 @@
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDown, ArrowRight, Minus } from 'lucide-react';
+import { ArrowDown, ArrowRight } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { bitsToHex } from '@/features/labs/algorithms/des';
 import { cn } from '@/lib/utils';
 import type { DesTrace } from '@/types/labs';
@@ -235,6 +234,7 @@ function PrepView({ trace }: { trace: DesTrace }) {
 
 function FinalView({ trace, rounds }: { trace: DesTrace; rounds: DesTrace['rounds'] }) {
     const last = rounds[rounds.length - 1];
+
     return (
         <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -276,6 +276,7 @@ export default function DesPanel({ trace, steps, activeStep, onStepChange }: Des
 
     // Find first round step index
     let firstRoundStep = 0;
+
     for (let i = 0; i < steps.length; i++) {
         if (ROUND_RE.test(steps[i])) {
             firstRoundStep = i;

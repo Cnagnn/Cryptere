@@ -1,23 +1,37 @@
 import { Head } from '@inertiajs/react';
+
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+    BookOpen,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    Info,
+    Key,
+    Menu,
+    Pause,
+    Play,
+    RotateCcw,
+    Sparkles,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+    Command,
+    CommandEmpty,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -25,12 +39,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TypographyH1, TypographyMuted } from '@/components/ui/typography';
 import GlassBoxLab from '@/features/labs/ui/GlassBoxLab';
-import { ChevronDown, Info, Key, RotateCcw } from 'lucide-react';
+import { glossary } from '@/features/labs/ui/glossary-content';
 import {
     canFormatOutput,
     conceptLensByLab,
@@ -46,8 +60,6 @@ import {
     modeDescription,
     normalizeInputForSimulation,
     onboardingByLab,
-    recommendedInputFormatByLab,
-    recommendedOutputFormatByLab,
     runSimulation,
     validationErrorByLab,
 } from '@/lib/lab-simulations';
@@ -63,7 +75,11 @@ import type {
     SimulationResult,
 } from '@/types/labs';
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 const bentoCardClass = 'h-full overflow-hidden border-border/70 bg-card/95 shadow-sm';
+
+type GlossaryEntry = { term: string; definition: string };
 
 function keySetupByLab(slug: string): string[] {
     switch (slug) {
@@ -132,183 +148,360 @@ function formatLabelInIndonesian(value: FormatValue): string {
     return formatLabel(value);
 }
 
-// ── DES-specific layout ──────────────────────────────────────────────────────
+// ── Sidebar content ──────────────────────────────────────────────────────────
 
-function DesLayout({
+function LabSidebar({
     lab,
     mode,
-    setMode,
     inputText,
     setInputText,
     keyInput,
     setKeyInput,
-    validationError,
-    rawResult,
-    outputPresentation,
-    translatedSteps,
-    translatedOutputLabel,
+    inputFormat,
+    setInputFormat,
     outputFormat,
-    safeActiveStepIndex,
-    setActiveStepIndex,
-    isWalkthroughPlaying,
-    setIsWalkthroughPlaying,
-    algoTrace,
+    setOutputFormat,
+    validationError,
+    learnerMode,
+    showDetails,
+    setShowDetails,
+    conceptLens,
+    keySetupSteps,
+    onboardingSteps,
+    showKeyInput,
+    onReset,
 }: {
     lab: LabShowProps['lab'];
     mode: SimulationMode;
-    setMode: (m: SimulationMode) => void;
     inputText: string;
     setInputText: (s: string) => void;
     keyInput: string;
     setKeyInput: (s: string) => void;
-    validationError: string | null;
-    rawResult: SimulationResult;
-    outputPresentation: { value: string; error?: string };
-    translatedSteps: string[];
-    translatedOutputLabel: string;
+    inputFormat: FormatValue;
+    setInputFormat: (f: FormatValue) => void;
     outputFormat: FormatValue;
-    safeActiveStepIndex: number;
-    setActiveStepIndex: (n: number) => void;
-    isWalkthroughPlaying: boolean;
-    setIsWalkthroughPlaying: (b: boolean) => void;
-    algoTrace: {
-        aes?: AesTrace;
-        des?: DesTrace;
-        rsa?: RsaKeyGenTraceData;
-        signature?: RsaSignatureTraceData;
-    };
+    setOutputFormat: (f: FormatValue) => void;
+    validationError: string | null;
+    learnerMode: 'pemula' | 'mahir';
+    showDetails: boolean;
+    setShowDetails: (b: boolean) => void;
+    conceptLens: { title: string; points: string[] };
+    keySetupSteps: string[];
+    onboardingSteps: string[];
+    showKeyInput: boolean;
+    onReset: () => void;
 }) {
     return (
-        <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-5 lg:pt-3 lg:pb-4">
-            <Head title={`${lab.title} Lab`} />
+        <div className="flex flex-col gap-4">
+            {/* Input + Key */}
+            <Card className={cn(bentoCardClass)}>
+                <CardHeader className="gap-1 pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <Key className="size-4 text-muted-foreground" />
+                        Data dan Kunci
+                    </CardTitle>
+                    <CardDescription className="text-sm/6">
+                        Masukkan pesan dan kunci untuk memulai simulasi.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="lab-input">
+                            {inputLabelByLab(lab.slug, mode)}
+                        </Label>
+                        <Textarea
+                            id="lab-input"
+                            aria-describedby={
+                                validationError
+                                    ? 'validation-error-message'
+                                    : undefined
+                            }
+                            value={inputText}
+                            onChange={(event) => setInputText(event.target.value)}
+                            placeholder={inputPlaceholderByLab(lab.slug, mode)}
+                            className="min-h-20 resize-none text-sm font-mono"
+                        />
+                        <p className="text-sm/6 text-muted-foreground">
+                            {inputHelperByLab(lab.slug, mode)}
+                        </p>
+                    </div>
 
-            {/* Header — compact */}
-            <header className="animate-fade-in-up flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                    <TypographyH1 className="text-2xl">{lab.title}</TypographyH1>
-                    <TypographyMuted className="text-sm">
-                        {labSummaryBySlug(lab.slug, lab.summary)}
-                    </TypographyMuted>
-                </div>
-                <Tabs
-                    value={mode}
-                    onValueChange={(v) => setMode(v as SimulationMode)}
-                >
-                    <TabsList className="grid h-9 w-full grid-cols-2 sm:w-64">
-                        <TabsTrigger value="encrypt" className="text-xs">Enkripsi</TabsTrigger>
-                        <TabsTrigger value="decrypt" className="text-xs">Dekripsi</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-            </header>
-
-            {/* Input + Output — side by side, compact */}
-            <section className="animate-fade-in-up grid grid-cols-1 gap-3 lg:grid-cols-2" style={{ animationDelay: '50ms' }}>
-                {/* Input card */}
-                <Card className={cn(bentoCardClass)}>
-                    <CardHeader className="gap-1 pb-2">
-                        <CardTitle className="flex items-center gap-2 text-sm">
-                            <Key className="size-3.5 text-muted-foreground" />
-                            Input
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="lab-input" className="text-xs">
-                                {inputLabelByLab(lab.slug, mode)}
-                            </Label>
-                            <Textarea
-                                id="lab-input"
-                                aria-describedby={validationError ? 'validation-error-message' : undefined}
-                                value={inputText}
-                                onChange={(e) => setInputText(e.target.value)}
-                                placeholder={inputPlaceholderByLab(lab.slug, mode)}
-                                className="min-h-16 resize-none text-sm font-mono"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="lab-key" className="text-xs">
+                    {showKeyInput ? (
+                        <div className="space-y-2">
+                            <Label htmlFor="lab-key">
                                 {keyLabelByLab(lab.slug, mode)}
                             </Label>
                             <Input
                                 id="lab-key"
                                 value={keyInput}
-                                onChange={(e) => setKeyInput(e.target.value)}
+                                onChange={(event) => setKeyInput(event.target.value)}
                                 placeholder={keyPlaceholderByLab(lab.slug, mode)}
-                                className="font-mono text-sm"
+                                className="font-mono"
                             />
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    {keySetupSteps[0]}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {keySetupSteps[1]}
+                                </p>
+                            </div>
                         </div>
-                        {validationError && (
-                            <Alert variant="destructive" className="py-2" role="alert">
-                                <AlertDescription id="validation-error-message" className="text-xs">
-                                    {validationError}
-                                </AlertDescription>
-                            </Alert>
+                    ) : (
+                        <div className="space-y-2">
+                            <Label>Kunci RSA</Label>
+                            <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
+                                <p className="font-medium">
+                                    Kunci publik: (e=17, n=3233)
+                                </p>
+                                <p className="text-muted-foreground">
+                                    Kunci privat: (d=2753, n=3233)
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {validationError && (
+                        <Alert variant="destructive" className="py-3" role="alert">
+                            <AlertDescription id="validation-error-message">
+                                {validationError}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {/* Format selectors (mahir only) + reset */}
+                    <div className="flex flex-wrap items-end gap-3">
+                        {learnerMode === 'mahir' && (
+                            <>
+                                <div className="space-y-2 min-w-32">
+                                    <Label className="text-xs">Format masukan</Label>
+                                    <Select
+                                        value={inputFormat}
+                                        onValueChange={(value) =>
+                                            setInputFormat(value as FormatValue)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {formatOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {formatLabelInIndonesian(option.value)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2 min-w-32">
+                                    <Label className="text-xs">Format keluaran</Label>
+                                    <Select
+                                        value={outputFormat}
+                                        onValueChange={(value) =>
+                                            setOutputFormat(value as FormatValue)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {formatOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {formatLabelInIndonesian(option.value)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </>
                         )}
                         <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="gap-1.5 text-xs"
-                            onClick={() => {
-                                setInputText(defaultTextByLab(lab.slug));
-                                setKeyInput(keyPlaceholderByLab(lab.slug, 'encrypt'));
-                                setMode('encrypt');
-                            }}
+                            className="gap-1.5 ml-auto"
+                            onClick={onReset}
                         >
-                            <RotateCcw className="size-3" />
+                            <RotateCcw className="size-3.5" />
                             Atur ulang
                         </Button>
-                    </CardContent>
-                </Card>
+                    </div>
+                </CardContent>
+            </Card>
 
-                {/* Output card */}
-                <Card className={cn(bentoCardClass)}>
-                    <CardHeader className="gap-1 pb-2">
-                        <CardTitle className="text-sm">Hasil</CardTitle>
-                        <CardDescription className="text-xs">
-                            {translatedOutputLabel}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="min-h-32 rounded-lg bg-muted/40 p-3 text-sm leading-relaxed break-all font-mono">
-                            {outputPresentation.value || (
-                                <span className="text-muted-foreground italic font-sans">
-                                    Menunggu input...
+            {/* Onboarding (pemula only) */}
+            {learnerMode === 'pemula' && (
+                <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-base">🎯</span>
+                        <span className="text-sm font-semibold">Mulai dari sini</span>
+                    </div>
+                    <div className="grid gap-2">
+                        {onboardingSteps.map((step, index) => (
+                            <div key={index} className="flex gap-2 text-sm">
+                                <Badge
+                                    variant="secondary"
+                                    className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px] bg-blue-100 dark:bg-blue-900"
+                                >
+                                    {index + 1}
+                                </Badge>
+                                <span className="leading-relaxed text-muted-foreground">
+                                    {step}
                                 </span>
-                            )}
-                        </div>
-                        {outputPresentation.error && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                                {outputPresentation.error}
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
-            </section>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-            {/* Visualization — full width, dominant */}
-            <section className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                <GlassBoxLab
-                    slug={lab.slug}
-                    steps={translatedSteps}
-                    activeStep={safeActiveStepIndex}
-                    onStepChange={setActiveStepIndex}
-                    learnerMode="mahir"
-                    onModeChange={() => {}}
-                    mode={mode}
-                    isPlaying={isWalkthroughPlaying}
-                    onPlayingChange={setIsWalkthroughPlaying}
-                    aesTrace={algoTrace.aes}
-                    desTrace={algoTrace.des}
-                    rsaTrace={algoTrace.rsa}
-                    sigTrace={algoTrace.signature}
-                />
-            </section>
+            {/* Concept card */}
+            <Card className={cn(bentoCardClass)}>
+                <CardHeader className="gap-1 pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <Info className="size-4 text-muted-foreground" />
+                        {conceptLens.title}
+                    </CardTitle>
+                    <CardDescription className="text-sm/6">
+                        {modeDescription(lab.slug, mode)}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+                        <div className="space-y-2">
+                            {conceptLens.points
+                                .slice(0, showDetails ? undefined : 2)
+                                .map((point, index) => (
+                                    <div key={point} className="flex gap-2 text-sm">
+                                        <Badge
+                                            variant="secondary"
+                                            className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px]"
+                                        >
+                                            {index + 1}
+                                        </Badge>
+                                        <span className="leading-relaxed">{point}</span>
+                                    </div>
+                                ))}
+                        </div>
+                        {conceptLens.points.length > 2 && (
+                            <CollapsibleTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full mt-2 text-xs gap-1"
+                                >
+                                    {showDetails
+                                        ? 'Sembunyikan'
+                                        : `+${conceptLens.points.length - 2} lainnya`}
+                                    <ChevronDown
+                                        className={cn(
+                                            'size-3.5 transition-transform',
+                                            showDetails && 'rotate-180',
+                                        )}
+                                    />
+                                </Button>
+                            </CollapsibleTrigger>
+                        )}
+                    </Collapsible>
+                </CardContent>
+            </Card>
         </div>
     );
 }
 
-// ── Default layout (all other labs) ──────────────────────────────────────────
+// ── Glossary sheet (shared) ──────────────────────────────────────────────────
+
+function GlossarySheet({ slug }: { slug: string }) {
+    const currentGlossary =
+        (glossary as Record<string, Record<string, GlossaryEntry>>)[slug] ?? {};
+
+    return (
+        <Sheet>
+            <SheetTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    aria-label="Buka glossary istilah kriptografi"
+                >
+                    <BookOpen className="size-3.5" />
+                    Istilah
+                </Button>
+            </SheetTrigger>
+            <SheetContent className="w-80">
+                <SheetHeader>
+                    <SheetTitle>Istilah Kriptografi</SheetTitle>
+                </SheetHeader>
+                <ScrollArea className="h-[calc(100vh-8rem)]">
+                    <Command className="rounded-lg border">
+                        <CommandInput placeholder="Cari istilah..." />
+                        <CommandList>
+                            <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                            {Object.entries(currentGlossary).map(([key, item]) => (
+                                <CommandItem key={key} value={key}>
+                                    <div className="space-y-1">
+                                        <div className="font-medium text-sm">
+                                            {item.term}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {item.definition}
+                                        </div>
+                                    </div>
+                                </CommandItem>
+                            ))}
+                        </CommandList>
+                    </Command>
+                </ScrollArea>
+            </SheetContent>
+        </Sheet>
+    );
+}
+
+// ── Learner mode toggle ──────────────────────────────────────────────────────
+
+function LearnerModeToggle({
+    learnerMode,
+    onModeChange,
+}: {
+    learnerMode: 'pemula' | 'mahir';
+    onModeChange: (m: 'pemula' | 'mahir') => void;
+}) {
+    return (
+        <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
+            <button
+                onClick={() => onModeChange('pemula')}
+                className={cn(
+                    'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+                    learnerMode === 'pemula'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                )}
+            >
+                <Sparkles className="size-3" />
+                Pemula
+            </button>
+            <button
+                onClick={() => onModeChange('mahir')}
+                className={cn(
+                    'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+                    learnerMode === 'mahir'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                )}
+            >
+                <BookOpen className="size-3" />
+                Mahir
+            </button>
+        </div>
+    );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
 
 export default function LabsShow({ lab }: LabShowProps) {
     const [mode, setMode] = useState<SimulationMode>('encrypt');
@@ -320,6 +513,7 @@ export default function LabsShow({ lab }: LabShowProps) {
     const [isWalkthroughPlaying, setIsWalkthroughPlaying] = useState(false);
     const [learnerMode, setLearnerMode] = useState<'pemula' | 'mahir'>('pemula');
     const [showDetails, setShowDetails] = useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
     const conceptLens = useMemo(
         () => conceptLensByLab(lab.slug, mode),
@@ -329,8 +523,7 @@ export default function LabsShow({ lab }: LabShowProps) {
     const onboardingSteps = useMemo(() => onboardingByLab(lab.slug), [lab.slug]);
 
     const normalizedInput = useMemo(
-        () =>
-            normalizeInputForSimulation(lab.slug, mode, inputText, inputFormat),
+        () => normalizeInputForSimulation(lab.slug, mode, inputText, inputFormat),
         [inputFormat, inputText, lab.slug, mode],
     );
 
@@ -343,12 +536,7 @@ export default function LabsShow({ lab }: LabShowProps) {
             return 'Input tidak dapat disesuaikan dengan mode algoritma ini.';
         }
 
-        return validationErrorByLab(
-            lab.slug,
-            mode,
-            normalizedInput.value,
-            keyInput,
-        );
+        return validationErrorByLab(lab.slug, mode, normalizedInput.value, keyInput);
     }, [
         keyInput,
         lab.slug,
@@ -385,28 +573,36 @@ export default function LabsShow({ lab }: LabShowProps) {
         return formatOutputValue(rawResult.output, outputFormat);
     }, [lab.slug, mode, outputFormat, rawResult.output]);
 
-    const recommendedInputFormat = recommendedInputFormatByLab(lab.slug, mode);
-    const recommendedOutputFormat = recommendedOutputFormatByLab(
-        lab.slug,
-        mode,
-    );
     const pageSummary = labSummaryBySlug(lab.slug, lab.summary);
     const translatedSteps = rawResult.steps;
     const translatedOutputLabel = rawResult.outputLabel;
 
-    const safeActiveStepIndex = Math.min(
-        activeStepIndex,
-        Math.max(0, rawResult.steps.length - 1),
-    );
+    const total = translatedSteps.length;
+    const progress = total <= 1 ? 100 : ((activeStepIndex + 1) / total) * 100;
+    const safeActiveStepIndex = Math.min(activeStepIndex, Math.max(0, total - 1));
     const showKeyInput = lab.slug !== 'rsa-lab';
 
-    // Extract trace data for GlassBoxLab
+    // Extract trace data
     const rawTrace = (rawResult as { trace?: { aes?: AesTrace; des?: DesTrace; rsa?: RsaKeyGenTraceData; signature?: RsaSignatureTraceData } }).trace;
     const algoTrace = {
         aes: rawTrace?.aes,
         des: rawTrace?.des,
         rsa: rawTrace?.rsa,
         signature: rawTrace?.signature,
+    };
+
+    const goPrev = () =>
+        safeActiveStepIndex > 0 && setActiveStepIndex(safeActiveStepIndex - 1);
+    const goNext = () =>
+        safeActiveStepIndex < total - 1 &&
+        setActiveStepIndex(safeActiveStepIndex + 1);
+
+    const handleReset = () => {
+        setInputText(defaultTextByLab(lab.slug));
+        setKeyInput(keyPlaceholderByLab(lab.slug, 'encrypt'));
+        setInputFormat('ascii');
+        setOutputFormat('ascii');
+        setMode('encrypt');
     };
 
     useEffect(() => {
@@ -422,13 +618,13 @@ export default function LabsShow({ lab }: LabShowProps) {
     }, [lab.slug, mode]);
 
     useEffect(() => {
-        if (!isWalkthroughPlaying || rawResult.steps.length <= 1) {
+        if (!isWalkthroughPlaying || total <= 1) {
             return;
         }
 
         const intervalId = setInterval(() => {
             setActiveStepIndex((currentIndex) => {
-                const lastStepIndex = Math.max(0, rawResult.steps.length - 1);
+                const lastStepIndex = Math.max(0, total - 1);
 
                 if (currentIndex >= lastStepIndex) {
                     setIsWalkthroughPlaying(false);
@@ -441,42 +637,61 @@ export default function LabsShow({ lab }: LabShowProps) {
         }, 1200);
 
         return () => clearInterval(intervalId);
-    }, [isWalkthroughPlaying, rawResult.steps.length]);
+    }, [isWalkthroughPlaying, total]);
 
-    // ── DES uses its own layout ──────────────────────────────────────────────
-    if (lab.slug === 'des-lab') {
-        return (
-            <DesLayout
-                lab={lab}
-                mode={mode}
-                setMode={setMode}
-                inputText={inputText}
-                setInputText={setInputText}
-                keyInput={keyInput}
-                setKeyInput={setKeyInput}
-                validationError={validationError}
-                rawResult={rawResult}
-                outputPresentation={outputPresentation}
-                translatedSteps={translatedSteps}
-                translatedOutputLabel={translatedOutputLabel}
-                outputFormat={outputFormat}
-                safeActiveStepIndex={safeActiveStepIndex}
-                setActiveStepIndex={setActiveStepIndex}
-                isWalkthroughPlaying={isWalkthroughPlaying}
-                setIsWalkthroughPlaying={setIsWalkthroughPlaying}
-                algoTrace={algoTrace}
-            />
-        );
-    }
+    // Keyboard shortcuts: ← → for step navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const tag = (e.target as HTMLElement)?.tagName;
 
-    // ── Default layout for all other labs ────────────────────────────────────
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+                return;
+            }
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                goPrev();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                goNext();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => window.removeEventListener('keydown', handleKeyDown);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [safeActiveStepIndex, total]);
+
+    const sidebarProps = {
+        lab,
+        mode,
+        inputText,
+        setInputText,
+        keyInput,
+        setKeyInput,
+        inputFormat,
+        setInputFormat,
+        outputFormat,
+        setOutputFormat,
+        validationError,
+        learnerMode,
+        showDetails,
+        setShowDetails,
+        conceptLens,
+        keySetupSteps,
+        onboardingSteps,
+        showKeyInput,
+        onReset: handleReset,
+    };
+
     return (
         <>
             <Head title={`${lab.title} Lab`} />
 
             <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
                 {/* Header */}
-                <header className="animate-fade-in-up relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <header className="animate-fade-in-up flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex min-w-0 flex-col gap-1">
                         <TypographyH1>{lab.title}</TypographyH1>
                         <TypographyMuted>{pageSummary}</TypographyMuted>
@@ -484,9 +699,7 @@ export default function LabsShow({ lab }: LabShowProps) {
                     <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                         <Tabs
                             value={mode}
-                            onValueChange={(value) =>
-                                setMode(value as SimulationMode)
-                            }
+                            onValueChange={(value) => setMode(value as SimulationMode)}
                             className="w-full sm:w-auto"
                         >
                             <TabsList className="grid h-10 w-full grid-cols-2 sm:w-80">
@@ -501,347 +714,170 @@ export default function LabsShow({ lab }: LabShowProps) {
                     </div>
                 </header>
 
-                {/* Onboarding (pemula only) */}
-                {learnerMode === 'pemula' && (
-                    <div
-                        className="animate-fade-in-up rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4"
-                        style={{ animationDelay: '50ms' }}
-                    >
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="text-base">🎯</span>
-                            <span className="text-sm font-semibold">
-                                Mulai dari sini
-                            </span>
-                        </div>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                            {onboardingSteps.map((step, index) => (
-                                <div
-                                    key={index}
-                                    className="flex gap-2 text-sm"
-                                >
-                                    <Badge
-                                        variant="secondary"
-                                        className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px] bg-blue-100 dark:bg-blue-900"
-                                    >
-                                        {index + 1}
-                                    </Badge>
-                                    <span className="leading-relaxed text-muted-foreground">
-                                        {step}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* Mobile sidebar trigger */}
+                <div className="lg:hidden">
+                    <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Menu className="mr-2 size-4" />
+                                Konfigurasi Lab
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="w-85 p-0 overflow-y-auto">
+                            <SheetHeader className="border-b px-4 py-3">
+                                <SheetTitle>Konfigurasi Lab</SheetTitle>
+                            </SheetHeader>
+                            <div className="p-3">
+                                <LabSidebar {...sidebarProps} />
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                </div>
 
-                {/* Input + Config row */}
+                {/* Sidebar + Main content */}
                 <section
-                    className="animate-fade-in-up grid grid-cols-1 gap-3 lg:grid-cols-12"
+                    className="animate-fade-in-up grid gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start"
                     style={{ animationDelay: '100ms' }}
                 >
-                    {/* Main input card */}
-                    <Card className={cn(bentoCardClass, 'lg:col-span-8')}>
-                        <CardHeader className="gap-1 pb-3">
-                            <CardTitle className="flex items-center gap-2 text-base">
-                                <Key className="size-4 text-muted-foreground" />
-                                Data dan Kunci
-                            </CardTitle>
-                            <CardDescription className="text-sm/6">
-                                Masukkan pesan dan kunci untuk memulai
-                                simulasi.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="lab-input">
-                                        {inputLabelByLab(lab.slug, mode)}
-                                    </Label>
-                                    <Textarea
-                                        id="lab-input"
-                                        aria-describedby={
-                                            validationError
-                                                ? 'validation-error-message'
-                                                : undefined
-                                        }
-                                        value={inputText}
-                                        onChange={(event) =>
-                                            setInputText(event.target.value)
-                                        }
-                                        placeholder={inputPlaceholderByLab(
-                                            lab.slug,
-                                            mode,
-                                        )}
-                                        className="min-h-20 resize-none text-sm font-mono"
+                    {/* Desktop sidebar */}
+                    <div className="hidden lg:block">
+                        <LabSidebar {...sidebarProps} />
+                    </div>
+
+                    {/* Main content */}
+                    <main className="min-w-0 space-y-4">
+                        {/* Visualizer container */}
+                        <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border pt-0">
+                            {/* Container header: mode toggle + glossary + progress */}
+                            <div className="border-b px-4 py-3 sm:px-5">
+                                <div className="flex items-center justify-between gap-3">
+                                    <LearnerModeToggle
+                                        learnerMode={learnerMode}
+                                        onModeChange={setLearnerMode}
                                     />
-                                    <p className="text-sm/6 text-muted-foreground">
-                                        {inputHelperByLab(lab.slug, mode)}
-                                    </p>
+                                    <GlossarySheet slug={lab.slug} />
                                 </div>
-
-                                {showKeyInput ? (
-                                    <div className="space-y-2">
-                                        <Label htmlFor="lab-key">
-                                            {keyLabelByLab(lab.slug, mode)}
-                                        </Label>
-                                        <Input
-                                            id="lab-key"
-                                            value={keyInput}
-                                            onChange={(event) =>
-                                                setKeyInput(
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder={keyPlaceholderByLab(
-                                                lab.slug,
-                                                mode,
-                                            )}
-                                            className="font-mono"
-                                        />
-                                        <div className="space-y-1">
-                                            <p className="text-xs text-muted-foreground">
-                                                {keySetupSteps[0]}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {keySetupSteps[1]}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <Label>Kunci RSA</Label>
-                                        <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
-                                            <p className="font-medium">
-                                                Kunci publik: (e=17, n=3233)
-                                            </p>
-                                            <p className="text-muted-foreground">
-                                                Kunci privat: (d=2753, n=3233)
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="mt-3">
+                                    <Progress value={progress} className="h-1.5" />
+                                </div>
                             </div>
 
-                            {validationError && (
-                                <Alert
-                                    variant="destructive"
-                                    className="py-3"
-                                    role="alert"
-                                >
-                                    <AlertDescription id="validation-error-message">
-                                        {validationError}
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-
-                            {/* Format selectors + reset */}
-                            <div className="flex flex-wrap items-end gap-3">
-                                {learnerMode === 'mahir' && (
-                                    <>
-                                        <div className="space-y-2 min-w-32">
-                                            <Label className="text-xs">
-                                                Format masukan
-                                            </Label>
-                                            <Select
-                                                value={inputFormat}
-                                                onValueChange={(value) =>
-                                                    setInputFormat(
-                                                        value as FormatValue,
-                                                    )
-                                                }
-                                            >
-                                                <SelectTrigger className="h-9">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {formatOptions.map(
-                                                        (option) => (
-                                                            <SelectItem
-                                                                key={
-                                                                    option.value
-                                                                }
-                                                                value={
-                                                                    option.value
-                                                                }
-                                                            >
-                                                                {formatLabelInIndonesian(
-                                                                    option.value,
-                                                                )}
-                                                            </SelectItem>
-                                                        ),
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2 min-w-32">
-                                            <Label className="text-xs">
-                                                Format keluaran
-                                            </Label>
-                                            <Select
-                                                value={outputFormat}
-                                                onValueChange={(value) =>
-                                                    setOutputFormat(
-                                                        value as FormatValue,
-                                                    )
-                                                }
-                                            >
-                                                <SelectTrigger className="h-9">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {formatOptions.map(
-                                                        (option) => (
-                                                            <SelectItem
-                                                                key={
-                                                                    option.value
-                                                                }
-                                                                value={
-                                                                    option.value
-                                                                }
-                                                            >
-                                                                {formatLabelInIndonesian(
-                                                                    option.value,
-                                                                )}
-                                                            </SelectItem>
-                                                        ),
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </>
-                                )}
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1.5 ml-auto"
-                                    onClick={() => {
-                                        setInputText(defaultTextByLab(lab.slug));
-                                        setKeyInput(
-                                            keyPlaceholderByLab(
-                                                lab.slug,
-                                                'encrypt',
-                                            ),
-                                        );
-                                        setInputFormat('ascii');
-                                        setOutputFormat('ascii');
-                                        setMode('encrypt');
-                                    }}
-                                >
-                                    <RotateCcw className="size-3.5" />
-                                    Atur ulang
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Concept card (compact) */}
-                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
-                        <CardHeader className="gap-1 pb-3">
-                            <CardTitle className="flex items-center gap-2 text-base">
-                                <Info className="size-4 text-muted-foreground" />
-                                {conceptLens.title}
-                            </CardTitle>
-                            <CardDescription className="text-sm/6">
-                                {modeDescription(lab.slug, mode)}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Collapsible
-                                open={showDetails}
-                                onOpenChange={setShowDetails}
-                            >
-                                <div className="space-y-2">
-                                    {conceptLens.points
-                                        .slice(0, showDetails ? undefined : 2)
-                                        .map((point, index) => (
-                                            <div
-                                                key={point}
-                                                className="flex gap-2 text-sm"
-                                            >
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="mt-0.5 size-5 shrink-0 justify-center rounded-full p-0 text-[10px]"
-                                                >
-                                                    {index + 1}
-                                                </Badge>
-                                                <span className="leading-relaxed">
-                                                    {point}
-                                                </span>
-                                            </div>
-                                        ))}
-                                </div>
-                                {conceptLens.points.length > 2 && (
-                                    <CollapsibleTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="w-full mt-2 text-xs gap-1"
+                            {/* Step narration */}
+                            <div className="px-4 pt-3 sm:px-5">
+                                <div className="rounded-lg border bg-muted/30 p-3 min-h-16">
+                                    <AnimatePresence mode="wait">
+                                        <motion.p
+                                            key={safeActiveStepIndex}
+                                            initial={{ opacity: 0, x: -8 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 8 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="text-sm leading-relaxed"
                                         >
-                                            {showDetails
-                                                ? 'Sembunyikan'
-                                                : `+${conceptLens.points.length - 2} lainnya`}
-                                            <ChevronDown
-                                                className={cn(
-                                                    'size-3.5 transition-transform',
-                                                    showDetails &&
-                                                        'rotate-180',
-                                                )}
-                                            />
-                                        </Button>
-                                    </CollapsibleTrigger>
-                                )}
-                            </Collapsible>
-                        </CardContent>
-                    </Card>
-                </section>
-
-                {/* Visualizer + Result */}
-                <section
-                    className="animate-fade-in-up grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12"
-                    style={{ animationDelay: '200ms' }}
-                >
-                    <GlassBoxLab
-                        slug={lab.slug}
-                        steps={translatedSteps}
-                        activeStep={safeActiveStepIndex}
-                        onStepChange={setActiveStepIndex}
-                        learnerMode={learnerMode}
-                        onModeChange={setLearnerMode}
-                        mode={mode}
-                        isPlaying={isWalkthroughPlaying}
-                        onPlayingChange={setIsWalkthroughPlaying}
-                        aesTrace={algoTrace.aes}
-                        desTrace={algoTrace.des}
-                        rsaTrace={algoTrace.rsa}
-                        sigTrace={algoTrace.signature}
-                    />
-
-                    <Card className={cn(bentoCardClass, 'lg:col-span-4')}>
-                        <CardHeader className="gap-1 pb-4">
-                            <CardTitle className="flex items-center gap-2">
-                                Hasil Akhir
-                            </CardTitle>
-                            <CardDescription className="text-sm/6">
-                                {translatedOutputLabel} dalam format{' '}
-                                {formatLabelInIndonesian(outputFormat)}.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="min-h-40 rounded-lg bg-muted/40 p-3 text-sm leading-relaxed break-all font-mono">
-                                {outputPresentation.value || (
-                                    <span className="text-muted-foreground italic font-sans">
-                                        Menunggu input...
-                                    </span>
-                                )}
+                                            {translatedSteps[safeActiveStepIndex]}
+                                        </motion.p>
+                                    </AnimatePresence>
+                                </div>
                             </div>
-                            {outputPresentation.error && (
-                                <p className="text-sm/6 text-muted-foreground">
-                                    {outputPresentation.error}
-                                </p>
-                            )}
-                        </CardContent>
-                    </Card>
+
+                            {/* Visualizer */}
+                            <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-5">
+                                <GlassBoxLab
+                                    slug={lab.slug}
+                                    steps={translatedSteps}
+                                    activeStep={safeActiveStepIndex}
+                                    onStepChange={setActiveStepIndex}
+                                    learnerMode={learnerMode}
+                                    mode={mode}
+                                    aesTrace={algoTrace.aes}
+                                    desTrace={algoTrace.des}
+                                    rsaTrace={algoTrace.rsa}
+                                    sigTrace={algoTrace.signature}
+                                />
+                            </div>
+
+                            {/* Footer nav: prev/next + step indicator */}
+                            <div className="border-t bg-muted/20 p-4 sm:p-5">
+                                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={goPrev}
+                                        disabled={safeActiveStepIndex === 0}
+                                        className="gap-1"
+                                    >
+                                        <ChevronLeft className="size-4" />
+                                        Sebelumnya
+                                    </Button>
+
+                                    <div className="flex items-center gap-2">
+                                        {total > 1 && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-8"
+                                                onClick={() =>
+                                                    setIsWalkthroughPlaying(!isWalkthroughPlaying)
+                                                }
+                                                aria-label={
+                                                    isWalkthroughPlaying
+                                                        ? 'Jeda walkthrough'
+                                                        : 'Putar walkthrough'
+                                                }
+                                            >
+                                                {isWalkthroughPlaying ? (
+                                                    <Pause className="size-4" />
+                                                ) : (
+                                                    <Play className="size-4" />
+                                                )}
+                                            </Button>
+                                        )}
+                                        <Badge variant="outline" className="tabular-nums">
+                                            {safeActiveStepIndex + 1} / {total}
+                                        </Badge>
+                                    </div>
+
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={goNext}
+                                        disabled={safeActiveStepIndex >= total - 1}
+                                        className="gap-1"
+                                    >
+                                        Selanjutnya
+                                        <ChevronRight className="size-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Result card */}
+                        <Card className={cn(bentoCardClass)}>
+                            <CardHeader className="gap-1 pb-4">
+                                <CardTitle className="flex items-center gap-2">
+                                    Hasil Akhir
+                                </CardTitle>
+                                <CardDescription className="text-sm/6">
+                                    {translatedOutputLabel} dalam format{' '}
+                                    {formatLabelInIndonesian(outputFormat)}.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="min-h-40 rounded-lg bg-muted/40 p-3 text-sm leading-relaxed break-all font-mono">
+                                    {outputPresentation.value || (
+                                        <span className="text-muted-foreground italic font-sans">
+                                            Menunggu input...
+                                        </span>
+                                    )}
+                                </div>
+                                {outputPresentation.error && (
+                                    <p className="text-sm/6 text-muted-foreground">
+                                        {outputPresentation.error}
+                                    </p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </main>
                 </section>
             </div>
         </>
