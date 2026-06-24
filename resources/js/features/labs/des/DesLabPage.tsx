@@ -2,12 +2,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { runSimulation } from '@/lib/lab-simulations';
+import { cn } from '@/lib/utils';
 import type { DesTrace } from '@/types/labs';
 
 import PlaybackControls from './PlaybackControls';
@@ -105,48 +108,59 @@ return <FinalPermutationSlide trace={trace} />;
         return null;
     };
 
+    const bentoCardClass =
+        'h-full overflow-hidden border-border/70 bg-card/95 shadow-sm';
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 min-h-[calc(100vh-8rem)]">
             <div className="space-y-3">
-                <Card size="sm">
-                    <CardHeader>
-                        <CardTitle>INPUT</CardTitle>
+                <Card className={cn(bentoCardClass)}>
+                    <CardHeader className="gap-1">
+                        <CardTitle>Input</CardTitle>
+                        <CardDescription>
+                            Masukkan plaintext dan kunci untuk memulai enkripsi
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-
-                        <div className="space-y-1.5">
-                            <CardDescription className="text-[11px] uppercase tracking-wider">Plaintext</CardDescription>
+                    <CardContent className="flex flex-col gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="plaintext">Plaintext</Label>
                             <Input
+                                id="plaintext"
                                 value={plaintext}
                                 onChange={(e) => setPlaintext(e.target.value)}
                                 placeholder="8 karakter / 64-bit"
-                                className="h-9 text-xs font-mono"
+                                className="font-mono"
                             />
-                            <p className="text-[9px] text-muted-foreground">{plaintext.length} karakter</p>
+                            <p className="text-sm text-muted-foreground">
+                                {plaintext.length} karakter
+                            </p>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <CardDescription className="text-[11px] uppercase tracking-wider">Key</CardDescription>
+                        <div className="space-y-2">
+                            <Label htmlFor="key">Key</Label>
                             <Input
+                                id="key"
                                 value={key}
                                 onChange={(e) => setKey(e.target.value)}
                                 placeholder="8 karakter / 64-bit"
-                                className="h-9 text-xs font-mono"
+                                className="font-mono"
                             />
-                            <p className="text-[9px] text-muted-foreground">{key.length} karakter</p>
+                            <p className="text-sm text-muted-foreground">
+                                {key.length} karakter
+                            </p>
                         </div>
 
                         {error && (
-                            <Alert variant="destructive" className="py-2">
-                                <AlertDescription className="text-xs">{error}</AlertDescription>
+                            <Alert variant="destructive" className="py-3">
+                                <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}
 
                         <div className="flex gap-2">
-                            <Button onClick={handleEncrypt} size="sm" className="flex-1 h-8 text-xs">
+                            <Button onClick={handleEncrypt} className="flex-1">
                                 Enkripsi
                             </Button>
-                            <Button onClick={handleReset} variant="outline" size="sm" className="h-8 text-xs">
+                            <Button onClick={handleReset} variant="outline">
                                 Reset
                             </Button>
                         </div>
@@ -154,14 +168,23 @@ return <FinalPermutationSlide trace={trace} />;
                 </Card>
 
                 {trace && (
-                    <Card size="sm">
-                        <CardHeader>
-                            <CardTitle>OUTPUT</CardTitle>
+                    <Card className={cn(bentoCardClass)}>
+                        <CardHeader className="gap-1">
+                            <CardTitle>Output</CardTitle>
+                            <CardDescription>
+                                Hasil ciphertext dari enkripsi DES
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
-                                <p className="text-[10px] font-semibold text-muted-foreground mb-1 uppercase tracking-wider">Ciphertext</p>
-                                <p className="font-mono text-xs break-all text-foreground">{trace.ciphertext}</p>
+                        <CardContent className="flex flex-col gap-4">
+                            <div className="flex items-end justify-between gap-3">
+                                <div>
+                                    <p className="font-mono text-sm break-all">
+                                        {trace.ciphertext}
+                                    </p>
+                                </div>
+                                <Badge variant="outline">
+                                    64 bit
+                                </Badge>
                             </div>
                         </CardContent>
                     </Card>
