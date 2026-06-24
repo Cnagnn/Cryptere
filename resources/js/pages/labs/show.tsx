@@ -697,9 +697,22 @@ export default function LabsShow({ lab }: LabShowProps) {
                             <TypographyH1>{lab.title}</TypographyH1>
                             <TypographyMuted>{pageSummary}</TypographyMuted>
                         </div>
+                        <Tabs
+                            value={mode}
+                            onValueChange={(value) => setMode(value as SimulationMode)}
+                        >
+                            <TabsList className="grid h-10 w-full grid-cols-2 sm:w-80">
+                                <TabsTrigger value="encrypt" className="gap-2">
+                                    Enkripsi
+                                </TabsTrigger>
+                                <TabsTrigger value="decrypt" className="gap-2">
+                                    Dekripsi
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </header>
 
-                    <DesLabPage />
+                    <DesLabPage mode={mode} />
                 </div>
             </>
         );

@@ -11,14 +11,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { runSimulation } from '@/lib/lab-simulations';
 import { cn } from '@/lib/utils';
-import type { DesTrace } from '@/types/labs';
+import type { DesTrace, SimulationMode } from '@/types/labs';
 
 import PlaybackControls from './PlaybackControls';
 import { FeistelRoundSlide, FinalPermutationSlide, InitialPermutationSlide } from './slides';
 import StepBar from './StepBar';
 import TimelineView from './TimelineView';
 
-export default function DesLabPage() {
+export default function DesLabPage({ mode = 'encrypt' }: { mode?: SimulationMode }) {
     const [plaintext, setPlaintext] = useState('');
     const [key, setKey] = useState('');
     const [trace, setTrace] = useState<DesTrace | null>(null);
@@ -65,7 +65,7 @@ return;
         setError('');
 
         try {
-            const result = runSimulation('des-lab', 'encrypt', plaintext, key);
+            const result = runSimulation('des-lab', mode, plaintext, key);
 
             if (result.trace?.des) {
                 setTrace(result.trace.des);
@@ -76,7 +76,7 @@ return;
             setTrace(null);
             setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
         }
-    }, [plaintext, key]);
+    }, [plaintext, key, mode]);
 
     const handleReset = () => {
         setPlaintext('');
@@ -120,12 +120,16 @@ return <FinalPermutationSlide trace={trace} />;
                     <CardHeader className="gap-1">
                         <CardTitle>Input</CardTitle>
                         <CardDescription>
-                            Masukkan plaintext dan kunci untuk memulai enkripsi
+                            {mode === 'encrypt'
+                                ? 'Masukkan plaintext dan kunci untuk memulai enkripsi'
+                                : 'Masukkan ciphertext dan kunci untuk memulai dekripsi'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="plaintext">Plaintext</Label>
+                            <Label htmlFor="plaintext">
+                                {mode === 'encrypt' ? 'Plaintext' : 'Ciphertext'}
+                            </Label>
                             <Input
                                 id="plaintext"
                                 value={plaintext}
@@ -169,7 +173,9 @@ return <FinalPermutationSlide trace={trace} />;
                         <CardHeader className="gap-1">
                             <CardTitle>Output</CardTitle>
                             <CardDescription>
-                                Hasil ciphertext dari enkripsi DES
+                                {mode === 'encrypt'
+                                    ? 'Hasil ciphertext dari enkripsi DES'
+                                    : 'Hasil plaintext dari dekripsi DES'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-4">
