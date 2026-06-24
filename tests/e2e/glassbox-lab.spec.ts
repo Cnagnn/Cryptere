@@ -121,7 +121,7 @@ test.describe('GlassBoxLab component', () => {
         await page.goto('/labs/des-lab');
 
         await expect(page.getByText('DES Feistel')).toBeVisible();
-        await expect(page.getByText('16 rounds')).toBeVisible();
+        await expect(page.getByText('16 putaran')).toBeVisible();
         await expect(page.getByText('Sebelumnya')).toBeVisible();
     });
 
