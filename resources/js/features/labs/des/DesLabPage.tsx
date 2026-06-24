@@ -2,11 +2,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { runSimulation } from '@/lib/lab-simulations';
@@ -110,12 +108,14 @@ return <FinalPermutationSlide trace={trace} />;
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 min-h-[calc(100vh-8rem)]">
             <div className="space-y-3">
-                <Card>
-                    <CardContent className="p-4 space-y-4">
-                        <Badge variant="outline" className="text-[10px] text-muted-foreground">INPUT</Badge>
+                <Card size="sm">
+                    <CardHeader>
+                        <CardTitle>INPUT</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
 
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] uppercase tracking-wider">Plaintext</Label>
+                            <CardDescription className="text-[11px] uppercase tracking-wider">Plaintext</CardDescription>
                             <Input
                                 value={plaintext}
                                 onChange={(e) => setPlaintext(e.target.value)}
@@ -126,7 +126,7 @@ return <FinalPermutationSlide trace={trace} />;
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] uppercase tracking-wider">Key</Label>
+                            <CardDescription className="text-[11px] uppercase tracking-wider">Key</CardDescription>
                             <Input
                                 value={key}
                                 onChange={(e) => setKey(e.target.value)}
@@ -154,9 +154,11 @@ return <FinalPermutationSlide trace={trace} />;
                 </Card>
 
                 {trace && (
-                    <Card>
-                        <CardContent className="p-4">
-                            <Badge variant="outline" className="text-[10px] text-muted-foreground mb-2">OUTPUT</Badge>
+                    <Card size="sm">
+                        <CardHeader>
+                            <CardTitle>OUTPUT</CardTitle>
+                        </CardHeader>
+                        <CardContent>
                             <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
                                 <p className="text-[10px] font-semibold text-muted-foreground mb-1 uppercase tracking-wider">Ciphertext</p>
                                 <p className="font-mono text-xs break-all text-foreground">{trace.ciphertext}</p>
