@@ -1,9 +1,7 @@
 import { Pause, Play, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Slider } from '@/components/ui/slider';
 
 interface PlaybackControlsProps {
     isPlaying: boolean;
@@ -11,8 +9,6 @@ interface PlaybackControlsProps {
     onNext: () => void;
     onPrev: () => void;
     onReset: () => void;
-    playSpeed: number;
-    onSpeedChange: (speed: number) => void;
     currentStep: number;
     totalSteps: number;
 }
@@ -23,8 +19,6 @@ export default function PlaybackControls({
     onNext,
     onPrev,
     onReset,
-    playSpeed,
-    onSpeedChange,
     currentStep,
     totalSteps,
 }: PlaybackControlsProps) {
@@ -71,19 +65,6 @@ export default function PlaybackControls({
                 >
                     <ChevronRight className="size-3.5" />
                 </Button>
-            </div>
-
-            <div className="flex items-center gap-3">
-                <Label className="text-[10px] text-muted-foreground">Speed</Label>
-                <Slider
-                    value={[playSpeed]}
-                    onValueChange={(v) => onSpeedChange(v[0])}
-                    min={0.5}
-                    max={2}
-                    step={0.5}
-                    className="flex-1"
-                />
-                <span className="text-[10px] text-muted-foreground min-w-[2rem] text-right">{playSpeed.toFixed(1)}x</span>
             </div>
         </div>
     );

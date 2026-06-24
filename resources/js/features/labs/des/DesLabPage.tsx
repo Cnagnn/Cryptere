@@ -25,7 +25,6 @@ export default function DesLabPage() {
 
     const [currentStep, setCurrentStep] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [playSpeed, setPlaySpeed] = useState(1);
     const [showTimeline, setShowTimeline] = useState(false);
     const totalSteps = 18;
 
@@ -44,10 +43,10 @@ return;
 
                 return prev + 1;
             });
-        }, 1200 / playSpeed);
+        }, 1200);
 
         return () => clearInterval(interval);
-    }, [isPlaying, playSpeed, trace, totalSteps]);
+    }, [isPlaying, trace, totalSteps]);
 
     useEffect(() => {
         setCurrentStep(0);
@@ -226,8 +225,6 @@ return <FinalPermutationSlide trace={trace} />;
                                 onNext={handleNext}
                                 onPrev={handlePrev}
                                 onReset={() => setCurrentStep(0)}
-                                playSpeed={playSpeed}
-                                onSpeedChange={setPlaySpeed}
                                 currentStep={currentStep}
                                 totalSteps={totalSteps}
                             />
