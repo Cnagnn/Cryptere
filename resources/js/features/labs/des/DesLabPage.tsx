@@ -112,7 +112,7 @@ return <FinalPermutationSlide trace={trace} />;
             <div className="space-y-3">
                 <Card>
                     <CardContent className="p-4 space-y-4">
-                        <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">INPUT</Badge>
+                        <Badge variant="outline" className="text-[10px] text-muted-foreground">INPUT</Badge>
 
                         <div className="space-y-1.5">
                             <Label className="text-[11px] uppercase tracking-wider">Plaintext</Label>
@@ -154,11 +154,11 @@ return <FinalPermutationSlide trace={trace} />;
                 </Card>
 
                 {trace && (
-                    <Card className="border-emerald-500/30">
+                    <Card>
                         <CardContent className="p-4">
-                            <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30 mb-2">OUTPUT</Badge>
-                            <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/10 p-3">
-                                <p className="text-[10px] font-semibold text-emerald-400 mb-1 uppercase tracking-wider">Ciphertext</p>
+                            <Badge variant="outline" className="text-[10px] text-muted-foreground mb-2">OUTPUT</Badge>
+                            <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                                <p className="text-[10px] font-semibold text-muted-foreground mb-1 uppercase tracking-wider">Ciphertext</p>
                                 <p className="font-mono text-xs break-all text-foreground">{trace.ciphertext}</p>
                             </div>
                         </CardContent>
