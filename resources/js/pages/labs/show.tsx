@@ -132,6 +132,184 @@ function formatLabelInIndonesian(value: FormatValue): string {
     return formatLabel(value);
 }
 
+// ── DES-specific layout ──────────────────────────────────────────────────────
+
+function DesLayout({
+    lab,
+    mode,
+    setMode,
+    inputText,
+    setInputText,
+    keyInput,
+    setKeyInput,
+    validationError,
+    rawResult,
+    outputPresentation,
+    translatedSteps,
+    translatedOutputLabel,
+    outputFormat,
+    safeActiveStepIndex,
+    setActiveStepIndex,
+    isWalkthroughPlaying,
+    setIsWalkthroughPlaying,
+    algoTrace,
+}: {
+    lab: LabShowProps['lab'];
+    mode: SimulationMode;
+    setMode: (m: SimulationMode) => void;
+    inputText: string;
+    setInputText: (s: string) => void;
+    keyInput: string;
+    setKeyInput: (s: string) => void;
+    validationError: string | null;
+    rawResult: SimulationResult;
+    outputPresentation: { value: string; error?: string };
+    translatedSteps: string[];
+    translatedOutputLabel: string;
+    outputFormat: FormatValue;
+    safeActiveStepIndex: number;
+    setActiveStepIndex: (n: number) => void;
+    isWalkthroughPlaying: boolean;
+    setIsWalkthroughPlaying: (b: boolean) => void;
+    algoTrace: {
+        aes?: AesTrace;
+        des?: DesTrace;
+        rsa?: RsaKeyGenTraceData;
+        signature?: RsaSignatureTraceData;
+    };
+}) {
+    return (
+        <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-5 lg:pt-3 lg:pb-4">
+            <Head title={`${lab.title} Lab`} />
+
+            {/* Header — compact */}
+            <header className="animate-fade-in-up flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                    <TypographyH1 className="text-2xl">{lab.title}</TypographyH1>
+                    <TypographyMuted className="text-sm">
+                        {labSummaryBySlug(lab.slug, lab.summary)}
+                    </TypographyMuted>
+                </div>
+                <Tabs
+                    value={mode}
+                    onValueChange={(v) => setMode(v as SimulationMode)}
+                >
+                    <TabsList className="grid h-9 w-full grid-cols-2 sm:w-64">
+                        <TabsTrigger value="encrypt" className="text-xs">Enkripsi</TabsTrigger>
+                        <TabsTrigger value="decrypt" className="text-xs">Dekripsi</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </header>
+
+            {/* Input + Output — side by side, compact */}
+            <section className="animate-fade-in-up grid grid-cols-1 gap-3 lg:grid-cols-2" style={{ animationDelay: '50ms' }}>
+                {/* Input card */}
+                <Card className={cn(bentoCardClass)}>
+                    <CardHeader className="gap-1 pb-2">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                            <Key className="size-3.5 text-muted-foreground" />
+                            Input
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="lab-input" className="text-xs">
+                                {inputLabelByLab(lab.slug, mode)}
+                            </Label>
+                            <Textarea
+                                id="lab-input"
+                                aria-describedby={validationError ? 'validation-error-message' : undefined}
+                                value={inputText}
+                                onChange={(e) => setInputText(e.target.value)}
+                                placeholder={inputPlaceholderByLab(lab.slug, mode)}
+                                className="min-h-16 resize-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="lab-key" className="text-xs">
+                                {keyLabelByLab(lab.slug, mode)}
+                            </Label>
+                            <Input
+                                id="lab-key"
+                                value={keyInput}
+                                onChange={(e) => setKeyInput(e.target.value)}
+                                placeholder={keyPlaceholderByLab(lab.slug, mode)}
+                                className="font-mono text-sm"
+                            />
+                        </div>
+                        {validationError && (
+                            <Alert variant="destructive" className="py-2" role="alert">
+                                <AlertDescription id="validation-error-message" className="text-xs">
+                                    {validationError}
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1.5 text-xs"
+                            onClick={() => {
+                                setInputText(defaultTextByLab(lab.slug));
+                                setKeyInput(keyPlaceholderByLab(lab.slug, 'encrypt'));
+                                setMode('encrypt');
+                            }}
+                        >
+                            <RotateCcw className="size-3" />
+                            Atur ulang
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Output card */}
+                <Card className={cn(bentoCardClass)}>
+                    <CardHeader className="gap-1 pb-2">
+                        <CardTitle className="text-sm">Hasil</CardTitle>
+                        <CardDescription className="text-xs">
+                            {translatedOutputLabel}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="min-h-32 rounded-lg bg-muted/40 p-3 text-sm leading-relaxed break-all font-mono">
+                            {outputPresentation.value || (
+                                <span className="text-muted-foreground italic font-sans">
+                                    Menunggu input...
+                                </span>
+                            )}
+                        </div>
+                        {outputPresentation.error && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                                {outputPresentation.error}
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
+            </section>
+
+            {/* Visualization — full width, dominant */}
+            <section className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+                <GlassBoxLab
+                    slug={lab.slug}
+                    steps={translatedSteps}
+                    activeStep={safeActiveStepIndex}
+                    onStepChange={setActiveStepIndex}
+                    learnerMode="mahir"
+                    onModeChange={() => {}}
+                    mode={mode}
+                    isPlaying={isWalkthroughPlaying}
+                    onPlayingChange={setIsWalkthroughPlaying}
+                    aesTrace={algoTrace.aes}
+                    desTrace={algoTrace.des}
+                    rsaTrace={algoTrace.rsa}
+                    sigTrace={algoTrace.signature}
+                />
+            </section>
+        </div>
+    );
+}
+
+// ── Default layout (all other labs) ──────────────────────────────────────────
+
 export default function LabsShow({ lab }: LabShowProps) {
     const [mode, setMode] = useState<SimulationMode>('encrypt');
     const [inputText, setInputText] = useState(defaultTextByLab(lab.slug));
@@ -265,6 +443,33 @@ export default function LabsShow({ lab }: LabShowProps) {
         return () => clearInterval(intervalId);
     }, [isWalkthroughPlaying, rawResult.steps.length]);
 
+    // ── DES uses its own layout ──────────────────────────────────────────────
+    if (lab.slug === 'des-lab') {
+        return (
+            <DesLayout
+                lab={lab}
+                mode={mode}
+                setMode={setMode}
+                inputText={inputText}
+                setInputText={setInputText}
+                keyInput={keyInput}
+                setKeyInput={setKeyInput}
+                validationError={validationError}
+                rawResult={rawResult}
+                outputPresentation={outputPresentation}
+                translatedSteps={translatedSteps}
+                translatedOutputLabel={translatedOutputLabel}
+                outputFormat={outputFormat}
+                safeActiveStepIndex={safeActiveStepIndex}
+                setActiveStepIndex={setActiveStepIndex}
+                isWalkthroughPlaying={isWalkthroughPlaying}
+                setIsWalkthroughPlaying={setIsWalkthroughPlaying}
+                algoTrace={algoTrace}
+            />
+        );
+    }
+
+    // ── Default layout for all other labs ────────────────────────────────────
     return (
         <>
             <Head title={`${lab.title} Lab`} />

@@ -106,7 +106,8 @@ export default function GlassBoxLab(props: GlassBoxLabProps) {
     return (
         <Card
             className={cn(
-                'lg:col-span-8 flex min-h-96 flex-col border-border/70 bg-card/95 shadow-sm',
+                'flex min-h-96 flex-col border-border/70 bg-card/95 shadow-sm',
+                slug !== 'des-lab' && 'lg:col-span-8',
             )}
         >
             <CardContent className="flex flex-1 flex-col gap-3 p-4 min-h-0">
