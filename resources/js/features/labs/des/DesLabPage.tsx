@@ -128,7 +128,7 @@ return <FinalPermutationSlide trace={trace} />;
                                 id="plaintext"
                                 value={plaintext}
                                 onChange={(e) => setPlaintext(e.target.value)}
-                                placeholder="8 karakter / 64-bit"
+                                placeholder="8 Karakter ASCII / 64 bit hexadesimal"
                                 className="font-mono"
                             />
                             <p className="text-sm text-muted-foreground">
@@ -142,7 +142,7 @@ return <FinalPermutationSlide trace={trace} />;
                                 id="key"
                                 value={key}
                                 onChange={(e) => setKey(e.target.value)}
-                                placeholder="8 karakter / 64-bit"
+                                placeholder="8 Karakter ASCII / 64 bit hexadesimal"
                                 className="font-mono"
                             />
                             <p className="text-sm text-muted-foreground">
