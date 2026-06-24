@@ -108,13 +108,13 @@ return <FinalPermutationSlide trace={trace} />;
         return null;
     };
 
-    const bentoCardClass =
-        'h-full overflow-hidden border-border/70 bg-card/95 shadow-sm';
+    const cardClass =
+        'overflow-hidden border-border/70 bg-card/95 shadow-sm';
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 min-h-[calc(100vh-8rem)]">
             <div className="space-y-3">
-                <Card className={cn(bentoCardClass)}>
+                    <Card className={cn(cardClass)}>
                     <CardHeader className="gap-1">
                         <CardTitle>Input</CardTitle>
                         <CardDescription>
@@ -168,7 +168,7 @@ return <FinalPermutationSlide trace={trace} />;
                 </Card>
 
                 {trace && (
-                    <Card className={cn(bentoCardClass)}>
+                <Card className={cn(cardClass)}>
                         <CardHeader className="gap-1">
                             <CardTitle>Output</CardTitle>
                             <CardDescription>
