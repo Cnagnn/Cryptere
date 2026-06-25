@@ -1,12 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { runSimulation } from '@/lib/lab-simulations';
@@ -17,6 +19,8 @@ import PlaybackControls from './PlaybackControls';
 import { FeistelRoundSlide, FinalPermutationSlide, InitialPermutationSlide } from './slides';
 import StepBar from './StepBar';
 import TimelineView from './TimelineView';
+
+const cardClass = 'overflow-hidden border-border/70 bg-card/95 shadow-sm';
 
 export default function DesLabPage({ mode = 'encrypt' }: { mode?: SimulationMode }) {
     const [plaintext, setPlaintext] = useState('');
@@ -58,6 +62,7 @@ return;
     useEffect(() => {
         if (!plaintext.trim() || !key.trim()) {
             setTrace(null);
+            setOutput('');
             setError('');
 
             return;
@@ -115,13 +120,10 @@ return <FinalPermutationSlide trace={trace} />;
         return null;
     };
 
-    const cardClass =
-        'overflow-hidden border-border/70 bg-card/95 shadow-sm';
-
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 min-h-[calc(100vh-8rem)]">
-            <div className="space-y-3">
-                    <Card className={cn(cardClass)}>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)] min-h-[calc(100vh-8rem)]">
+            <div className="flex flex-col gap-3">
+                <Card className={cn(cardClass)}>
                     <CardHeader className="gap-1">
                         <CardTitle>Input</CardTitle>
                         <CardDescription>
@@ -130,53 +132,52 @@ return <FinalPermutationSlide trace={trace} />;
                                 : 'Masukkan ciphertext dan kunci untuk memulai dekripsi'}
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="plaintext">
-                                {mode === 'encrypt' ? 'Plaintext' : 'Ciphertext'}
-                            </Label>
-                            <Input
-                                id="plaintext"
-                                value={plaintext}
-                                onChange={(e) => setPlaintext(e.target.value)}
-                                placeholder={mode === 'encrypt'
-                                    ? '8 Karakter ASCII / 64 bit hexadesimal'
-                                    : 'Hexadesimal ciphertext (min 16 char per blok)'}
-                                className="font-mono"
-                            />
-                            <p className="text-sm text-muted-foreground">
-                                {plaintext.length} karakter
-                            </p>
-                        </div>
+                    <CardContent>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="plaintext">
+                                    {mode === 'encrypt' ? 'Plaintext' : 'Ciphertext'}
+                                </FieldLabel>
+                                <Input
+                                    id="plaintext"
+                                    value={plaintext}
+                                    onChange={(e) => setPlaintext(e.target.value)}
+                                    placeholder={mode === 'encrypt'
+                                        ? '8 Karakter ASCII / 64 bit hexadesimal'
+                                        : 'Hexadesimal ciphertext (min 16 char per blok)'}
+                                    className="font-mono"
+                                />
+                                <FieldDescription>{plaintext.length} karakter</FieldDescription>
+                            </Field>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="key">Key</Label>
-                            <Input
-                                id="key"
-                                value={key}
-                                onChange={(e) => setKey(e.target.value)}
-                                placeholder="8 Karakter ASCII / 64 bit hexadesimal"
-                                className="font-mono"
-                            />
-                            <p className="text-sm text-muted-foreground">
-                                {key.length} karakter
-                            </p>
-                        </div>
+                            <Field>
+                                <FieldLabel htmlFor="key">Key</FieldLabel>
+                                <Input
+                                    id="key"
+                                    value={key}
+                                    onChange={(e) => setKey(e.target.value)}
+                                    placeholder="8 Karakter ASCII / 64 bit hexadesimal"
+                                    className="font-mono"
+                                />
+                                <FieldDescription>{key.length} karakter</FieldDescription>
+                            </Field>
 
-                        {error && (
-                            <Alert variant="destructive" className="py-3">
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        )}
+                            {error && (
+                                <Alert variant="destructive">
+                                    <AlertDescription>{error}</AlertDescription>
+                                </Alert>
+                            )}
 
-                        <Button onClick={handleReset} variant="outline" className="w-full">
-                            Reset
-                        </Button>
+                            <Button onClick={handleReset} variant="outline" className="w-full">
+                                <RotateCcw data-icon="inline-start" />
+                                Reset
+                            </Button>
+                        </FieldGroup>
                     </CardContent>
                 </Card>
 
                 {trace && (
-                <Card className={cn(cardClass)}>
+                    <Card className={cn(cardClass)}>
                         <CardHeader className="gap-1">
                             <CardTitle>Output</CardTitle>
                             <CardDescription>
@@ -185,16 +186,10 @@ return <FinalPermutationSlide trace={trace} />;
                                     : 'Hasil plaintext dari dekripsi DES'}
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-4">
+                        <CardContent>
                             <div className="flex items-end justify-between gap-3">
-                                <div>
-                                    <p className="font-mono text-sm break-all">
-                                        {output}
-                                    </p>
-                                </div>
-                                <Badge variant="outline">
-                                    {mode === 'encrypt' ? '64 bit' : 'ASCII'}
-                                </Badge>
+                                <p className="font-mono text-sm break-all">{output}</p>
+                                <Badge variant="outline">{mode === 'encrypt' ? '64 bit' : 'ASCII'}</Badge>
                             </div>
                         </CardContent>
                     </Card>
@@ -207,9 +202,9 @@ return <FinalPermutationSlide trace={trace} />;
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowTimeline(!showTimeline)}
-                            className="w-full h-8 text-xs text-muted-foreground"
+                            className="w-full text-muted-foreground"
                         >
-                            {showTimeline ? '⌃ Sembunyikan timeline' : '⌄ Lihat semua langkah'}
+                            {showTimeline ? 'Sembunyikan timeline' : 'Lihat semua langkah'}
                         </Button>
                         {showTimeline && (
                             <TimelineView trace={trace} currentStep={currentStep} onStepSelect={setCurrentStep} />
@@ -221,13 +216,16 @@ return <FinalPermutationSlide trace={trace} />;
             <div className="flex flex-col min-h-0">
                 <Card className="flex-1 flex flex-col overflow-hidden">
                     {trace && (
-                        <div className="px-4 pt-3 border-b border-border/30">
-                            <StepBar
-                                currentStep={currentStep}
-                                totalSteps={totalSteps}
-                                onStepSelect={setCurrentStep}
-                            />
-                        </div>
+                        <>
+                            <div className="px-4 pt-3">
+                                <StepBar
+                                    currentStep={currentStep}
+                                    totalSteps={totalSteps}
+                                    onStepSelect={setCurrentStep}
+                                />
+                            </div>
+                            <Separator />
+                        </>
                     )}
 
                     <ScrollArea className="flex-1">
@@ -245,25 +243,33 @@ return <FinalPermutationSlide trace={trace} />;
                                     </motion.div>
                                 </AnimatePresence>
                             ) : (
-                                <div className="flex items-center justify-center h-64 text-muted-foreground">
-                                    <p className="text-sm">Masukkan plaintext dan key, lalu klik Enkripsi</p>
-                                </div>
+                                <Empty>
+                                    <EmptyHeader>
+                                        <EmptyTitle>Belum ada visualisasi</EmptyTitle>
+                                        <EmptyDescription>
+                                            Masukkan plaintext dan key untuk memulai enkripsi
+                                        </EmptyDescription>
+                                    </EmptyHeader>
+                                </Empty>
                             )}
                         </div>
                     </ScrollArea>
 
                     {trace && (
-                        <div className="p-4 border-t border-border/30">
-                            <PlaybackControls
-                                isPlaying={isPlaying}
-                                onPlayPause={() => setIsPlaying(!isPlaying)}
-                                onNext={handleNext}
-                                onPrev={handlePrev}
-                                onReset={() => setCurrentStep(0)}
-                                currentStep={currentStep}
-                                totalSteps={totalSteps}
-                            />
-                        </div>
+                        <>
+                            <Separator />
+                            <div className="p-4">
+                                <PlaybackControls
+                                    isPlaying={isPlaying}
+                                    onPlayPause={() => setIsPlaying(!isPlaying)}
+                                    onNext={handleNext}
+                                    onPrev={handlePrev}
+                                    onReset={() => setCurrentStep(0)}
+                                    currentStep={currentStep}
+                                    totalSteps={totalSteps}
+                                />
+                            </div>
+                        </>
                     )}
                 </Card>
             </div>

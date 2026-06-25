@@ -47,12 +47,10 @@ function StepDot({
         <button
             onClick={() => onSelect(step)}
             className={cn(
-                'shrink-0 size-7 rounded-full text-[10px] font-semibold transition-all duration-200',
-                isActive
-                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/30 scale-110'
-                    : isDone
-                      ? 'bg-primary/15 text-primary border border-primary/30'
-                      : 'bg-muted/30 text-muted-foreground border border-border/30 hover:border-border/60',
+                'shrink-0 size-7 rounded-full text-[10px] font-semibold transition-all',
+                isActive && 'bg-primary text-primary-foreground shadow-sm scale-110',
+                !isActive && isDone && 'bg-primary/15 text-primary border border-primary/30',
+                !isActive && !isDone && 'bg-muted text-muted-foreground border border-border hover:bg-muted/80',
             )}
             title={label === 'IP' ? 'Initial Permutation' : label === 'FP' ? 'Final Permutation' : `Round ${label}`}
         >
@@ -65,8 +63,8 @@ function StepConnector({ done }: { done: boolean }) {
     return (
         <div
             className={cn(
-                'h-px flex-1 min-w-2 transition-colors duration-200',
-                done ? 'bg-primary/40' : 'bg-border/30',
+                'h-px flex-1 min-w-2 transition-colors',
+                done ? 'bg-primary/40' : 'bg-border',
             )}
         />
     );
