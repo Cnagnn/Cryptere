@@ -22,6 +22,7 @@ export default function DesLabPage({ mode = 'encrypt' }: { mode?: SimulationMode
     const [plaintext, setPlaintext] = useState('');
     const [key, setKey] = useState('');
     const [trace, setTrace] = useState<DesTrace | null>(null);
+    const [output, setOutput] = useState('');
     const [error, setError] = useState('');
 
     const [currentStep, setCurrentStep] = useState(0);
@@ -69,11 +70,14 @@ return;
 
             if (result.trace?.des) {
                 setTrace(result.trace.des);
+                setOutput(result.output);
             } else {
                 setTrace(null);
+                setOutput('');
             }
         } catch (err) {
             setTrace(null);
+            setOutput('');
             setError(err instanceof Error ? err.message : 'Terjadi kesalahan');
         }
     }, [plaintext, key, mode]);
@@ -82,6 +86,7 @@ return;
         setPlaintext('');
         setKey('');
         setTrace(null);
+        setOutput('');
         setError('');
         setCurrentStep(0);
         setIsPlaying(false);
@@ -134,7 +139,9 @@ return <FinalPermutationSlide trace={trace} />;
                                 id="plaintext"
                                 value={plaintext}
                                 onChange={(e) => setPlaintext(e.target.value)}
-                                placeholder="8 Karakter ASCII / 64 bit hexadesimal"
+                                placeholder={mode === 'encrypt'
+                                    ? '8 Karakter ASCII / 64 bit hexadesimal'
+                                    : 'Hexadesimal ciphertext (min 16 char per blok)'}
                                 className="font-mono"
                             />
                             <p className="text-sm text-muted-foreground">
@@ -182,11 +189,11 @@ return <FinalPermutationSlide trace={trace} />;
                             <div className="flex items-end justify-between gap-3">
                                 <div>
                                     <p className="font-mono text-sm break-all">
-                                        {trace.ciphertext}
+                                        {output}
                                     </p>
                                 </div>
                                 <Badge variant="outline">
-                                    64 bit
+                                    {mode === 'encrypt' ? '64 bit' : 'ASCII'}
                                 </Badge>
                             </div>
                         </CardContent>
