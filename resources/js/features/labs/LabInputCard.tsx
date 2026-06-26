@@ -7,7 +7,7 @@ import { ArrowDownUp, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
@@ -28,6 +28,9 @@ const FORMAT_OPTIONS: Array<{ value: FormatValue; label: string }> = [
     { value: 'base64', label: 'Base64' },
     { value: 'decimal', label: 'Byte Desimal' },
 ];
+
+/** Bento card class — referensi dari dashboard.tsx (bentoCardClass). */
+const bentoCardClass = 'h-full overflow-hidden border-border/70 bg-card/95 shadow-sm';
 
 interface Props {
     mode: SimulationMode;
@@ -76,10 +79,15 @@ export default function LabInputCard({
     onConvert,
 }: Props) {
     return (
-        <Card className="overflow-hidden border-border/70 bg-card/95 shadow-sm">
-            <CardHeader className="gap-1 pb-3">
+        <Card className={bentoCardClass}>
+            <CardHeader className="gap-1">
                 <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-base">Data & Kunci</CardTitle>
+                    <div className="space-y-1">
+                        <CardTitle>Data & Kunci</CardTitle>
+                        <CardDescription>
+                            Masukkan kunci dan input untuk memulai simulasi.
+                        </CardDescription>
+                    </div>
                     <Badge variant="outline" className="capitalize">
                         {mode === 'encrypt' ? 'Enkripsi' : 'Dekripsi'}
                     </Badge>
