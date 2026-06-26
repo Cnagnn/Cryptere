@@ -1,9 +1,8 @@
 /**
  * LabInputCard — sisi kiri lab detail. Field: Key, Input, Output (read-only)
- * dengan dropdown format untuk masing-masing field, tombol Convert untuk swap
- * arah (encrypt ↔ decrypt) + tombol Reset.
+ * dengan dropdown format untuk input dan output.
  */
-import { ArrowDownUp, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -102,7 +101,6 @@ interface Props {
     canChangeOutputFormat: boolean;
     error: string | null;
     onReset: () => void;
-    onConvert: () => void;
 }
 
 export default function LabInputCard({
@@ -124,7 +122,6 @@ export default function LabInputCard({
     canChangeOutputFormat,
     error,
     onReset,
-    onConvert,
 }: Props) {
     return (
         <Card className={bentoCardClass}>
@@ -174,18 +171,6 @@ export default function LabInputCard({
                                     label="Format hasil"
                                 />
                             )}
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={onConvert}
-                                disabled={!output || !!error}
-                                title="Pindahkan output ke input dan balik arah"
-                                className="h-7 gap-1.5 text-xs"
-                            >
-                                <ArrowDownUp className="size-3.5" />
-                                Convert
-                            </Button>
                         </FieldHeader>
                         <Textarea
                             id="lab-output"

@@ -118,17 +118,6 @@ export default function LabsShow({ lab }: LabShowProps) {
         return formatOutputValue(result.output, outputFormat).value;
     }, [canChangeOutputFormat, outputFormat, result.output]);
 
-    const handleConvert = () => {
-        if (!result.output) {
-            return;
-        }
-
-        // Output baru jadi input — pakai format yang sama agar bisa langsung diproses.
-        setInputValue(displayedOutput);
-        setInputFormat(canChangeOutputFormat ? outputFormat : 'ascii');
-        setMode((m) => (m === 'encrypt' ? 'decrypt' : 'encrypt'));
-    };
-
     const handleReset = () => {
         setKeyValue('');
         setInputValue('');
@@ -176,7 +165,6 @@ export default function LabsShow({ lab }: LabShowProps) {
                         canChangeOutputFormat={canChangeOutputFormat}
                         error={result.error}
                         onReset={handleReset}
-                        onConvert={handleConvert}
                     />
 
                     <LabVisualizerCard
