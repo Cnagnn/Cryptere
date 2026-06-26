@@ -88,8 +88,6 @@ interface Props {
     onKeyChange: (v: string) => void;
     keyLabel: string;
     keyPlaceholder: string;
-    keyFormat: FormatValue;
-    onKeyFormatChange: (f: FormatValue) => void;
     inputValue: string;
     onInputChange: (v: string) => void;
     inputLabel: string;
@@ -112,8 +110,6 @@ export default function LabInputCard({
     onKeyChange,
     keyLabel,
     keyPlaceholder,
-    keyFormat,
-    onKeyFormatChange,
     inputValue,
     onInputChange,
     inputLabel,
@@ -141,13 +137,7 @@ export default function LabInputCard({
             <CardContent>
                 <FieldGroup>
                     <Field>
-                        <FieldHeader htmlFor="lab-key" label={keyLabel}>
-                            <FormatSelect
-                                value={keyFormat}
-                                onChange={onKeyFormatChange}
-                                label="Format kunci"
-                            />
-                        </FieldHeader>
+                        <FieldHeader htmlFor="lab-key" label={keyLabel} />
                         <Input
                             id="lab-key"
                             value={keyValue}

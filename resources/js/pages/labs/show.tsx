@@ -24,7 +24,6 @@ import {
     keyLabelByLab,
     keyPlaceholderByLab,
     normalizeInputForSimulation,
-    normalizeInputToText,
     runSimulation,
     validationErrorByLab,
 } from '@/lib/lab-simulations';
@@ -56,27 +55,13 @@ function computeResult(
     slug: string,
     mode: SimulationMode,
     rawInput: string,
-    rawKey: string,
+    keyValue: string,
     inputFormat: FormatValue,
-    keyFormat: FormatValue,
 ): ResultBundle {
-    if (!rawInput.trim() && !rawKey.trim()) {
+    if (!rawInput.trim() && !keyValue.trim()) {
         return { output: '', outputLabel: 'Hasil', steps: [], traces: {}, error: null };
     }
 
-    const normalizedKey = normalizeInputToText(rawKey, keyFormat);
-
-    if (normalizedKey.error) {
-        return {
-            output: '',
-            outputLabel: 'Hasil',
-            steps: [],
-            traces: {},
-            error: `Kunci: ${normalizedKey.error}`,
-        };
-    }
-
-    const keyValue = normalizedKey.value ?? '';
     const normalized = normalizeInputForSimulation(slug, mode, rawInput, inputFormat);
 
     if (normalized.error) {
@@ -110,13 +95,12 @@ export default function LabsShow({ lab }: LabShowProps) {
     const [mode, setMode] = useState<SimulationMode>('encrypt');
     const [keyValue, setKeyValue] = useState('');
     const [inputValue, setInputValue] = useState('');
-    const [keyFormat, setKeyFormat] = useState<FormatValue>('ascii');
     const [inputFormat, setInputFormat] = useState<FormatValue>('ascii');
     const [outputFormat, setOutputFormat] = useState<FormatValue>('ascii');
 
     const result = useMemo(
-        () => computeResult(lab.slug, mode, inputValue, keyValue, inputFormat, keyFormat),
-        [lab.slug, mode, inputValue, keyValue, inputFormat, keyFormat],
+        () => computeResult(lab.slug, mode, inputValue, keyValue, inputFormat),
+        [lab.slug, mode, inputValue, keyValue, inputFormat],
     );
 
     const player = useStepPlayer(result.steps.length);
@@ -149,7 +133,6 @@ export default function LabsShow({ lab }: LabShowProps) {
         setKeyValue('');
         setInputValue('');
         setMode('encrypt');
-        setKeyFormat('ascii');
         setInputFormat('ascii');
         setOutputFormat('ascii');
         player.reset();
@@ -179,8 +162,6 @@ export default function LabsShow({ lab }: LabShowProps) {
                         onKeyChange={setKeyValue}
                         keyLabel={keyLabelByLab(lab.slug, mode)}
                         keyPlaceholder={keyPlaceholderByLab(lab.slug, mode)}
-                        keyFormat={keyFormat}
-                        onKeyFormatChange={setKeyFormat}
                         inputValue={inputValue}
                         onInputChange={setInputValue}
                         inputLabel={inputLabelByLab(lab.slug, mode)}
