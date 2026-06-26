@@ -1,11 +1,13 @@
 import { createInertiaApp } from '@inertiajs/react';
 import * as Sentry from '@sentry/react';
+import SmoothScroll from '@/components/smooth-scroll';
 import { DirectionProvider } from '@/components/ui/direction';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
+import '@/lib/gsap'; // registers GSAP + ScrollTrigger plugins
 import '@/lib/echo'; // Initialize Laravel Echo
 
 if (import.meta.env.VITE_SENTRY_DSN) {
@@ -61,8 +63,10 @@ createInertiaApp({
             <Sentry.ErrorBoundary>
                 <DirectionProvider dir="ltr">
                     <TooltipProvider delayDuration={0}>
-                        {app}
-                        <Toaster />
+                        <SmoothScroll>
+                            {app}
+                            <Toaster />
+                        </SmoothScroll>
                     </TooltipProvider>
                 </DirectionProvider>
             </Sentry.ErrorBoundary>

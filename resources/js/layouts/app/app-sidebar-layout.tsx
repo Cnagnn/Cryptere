@@ -11,6 +11,7 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import PageTransition from '@/components/page-transition';
 import { useFlashToast } from '@/hooks/use-flash-toast';
 import type { AppLayoutProps } from '@/types';
 
@@ -107,7 +108,7 @@ export default function AppSidebarLayout({
             <AppContent variant="sidebar" className="overflow-x-hidden">
                 <AppSidebarHeader />
                 <main id="main-content" tabIndex={-1} className="outline-none">
-                    {children}
+                    <PageTransition>{children}</PageTransition>
                 </main>
             </AppContent>
             <AchievementToast />

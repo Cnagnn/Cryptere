@@ -66,3 +66,4 @@ yarn-error.log
 *.swp
 *.swo
 *~
+.opencode/
