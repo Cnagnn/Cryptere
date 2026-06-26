@@ -5,8 +5,8 @@
  * structure: L→XOR, R→F→XOR, with F-function pipeline always visible.
  */
 
-import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, ArrowRight } from 'lucide-react';
+import FadeIn from '@/components/fade-in';
 
 import { Badge } from '@/components/ui/badge';
 import { bitsToHex } from '@/features/labs/algorithms/des';
@@ -305,28 +305,20 @@ export default function DesPanel({ trace, steps, activeStep, onStepChange }: Des
                 </Badge>
             </div>
 
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={activeStep}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.15 }}
-                >
-                    {!isRound && !isFinal && <PrepView trace={trace} />}
+            <FadeIn flushKey={activeStep} y={6} duration={0.15}>
+                {!isRound && !isFinal && <PrepView trace={trace} />}
 
-                    {isRound && currentRound && (
-                        <FeistelRound
-                            round={currentRound}
-                            totalRounds={totalRounds}
-                            onJump={handleJump}
-                            roundIdx={roundIdx}
-                        />
-                    )}
+                {isRound && currentRound && (
+                    <FeistelRound
+                        round={currentRound}
+                        totalRounds={totalRounds}
+                        onJump={handleJump}
+                        roundIdx={roundIdx}
+                    />
+                )}
 
-                    {isFinal && <FinalView trace={trace} rounds={rounds} />}
-                </motion.div>
-            </AnimatePresence>
+                {isFinal && <FinalView trace={trace} rounds={rounds} />}
+            </FadeIn>
         </div>
     );
 }
