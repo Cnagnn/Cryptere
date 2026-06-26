@@ -1,8 +1,10 @@
 /**
  * LabInputCard — sisi kiri lab detail. Field: Key, Input, Output (read-only)
- * dengan tombol Convert untuk swap arah (encrypt ↔ decrypt) + tombol Reset.
+ * dengan dropdown format untuk masing-masing field, tombol Convert untuk swap
+ * arah (encrypt ↔ decrypt) + tombol Reset.
  */
 import { ArrowDownUp, RotateCcw } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -31,11 +33,63 @@ const FORMAT_OPTIONS: Array<{ value: FormatValue; label: string }> = [
 /** Bento card class — referensi dari dashboard.tsx (bentoCardClass). */
 const bentoCardClass = 'h-full overflow-hidden border-border/70 bg-card/95 shadow-sm';
 
+/** Header baris label-kiri + slot-kanan untuk konsistensi alignment semua field. */
+function FieldHeader({
+    htmlFor,
+    label,
+    children,
+}: {
+    htmlFor: string;
+    label: string;
+    children?: ReactNode;
+}) {
+    return (
+        <div className="flex min-h-7 items-center justify-between gap-2">
+            <FieldLabel htmlFor={htmlFor} className="text-sm font-medium">
+                {label}
+            </FieldLabel>
+            {children && <div className="flex items-center gap-1.5">{children}</div>}
+        </div>
+    );
+}
+
+/** Dropdown format — dipakai oleh key/input/output dengan styling identik. */
+function FormatSelect({
+    value,
+    onChange,
+    label,
+}: {
+    value: FormatValue;
+    onChange: (v: FormatValue) => void;
+    label: string;
+}) {
+    return (
+        <Select value={value} onValueChange={onChange}>
+            <SelectTrigger
+                size="sm"
+                className="h-7 w-auto min-w-[7.5rem] gap-1 text-xs"
+                aria-label={label}
+            >
+                <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+                {FORMAT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                        {opt.label}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+}
+
 interface Props {
     keyValue: string;
     onKeyChange: (v: string) => void;
     keyLabel: string;
     keyPlaceholder: string;
+    keyFormat: FormatValue;
+    onKeyFormatChange: (f: FormatValue) => void;
     inputValue: string;
     onInputChange: (v: string) => void;
     inputLabel: string;
@@ -58,6 +112,8 @@ export default function LabInputCard({
     onKeyChange,
     keyLabel,
     keyPlaceholder,
+    keyFormat,
+    onKeyFormatChange,
     inputValue,
     onInputChange,
     inputLabel,
@@ -85,7 +141,13 @@ export default function LabInputCard({
             <CardContent>
                 <FieldGroup>
                     <Field>
-                        <FieldLabel htmlFor="lab-key">{keyLabel}</FieldLabel>
+                        <FieldHeader htmlFor="lab-key" label={keyLabel}>
+                            <FormatSelect
+                                value={keyFormat}
+                                onChange={onKeyFormatChange}
+                                label="Format kunci"
+                            />
+                        </FieldHeader>
                         <Input
                             id="lab-key"
                             value={keyValue}
@@ -96,21 +158,13 @@ export default function LabInputCard({
                     </Field>
 
                     <Field>
-                        <div className="flex items-center justify-between gap-2">
-                            <FieldLabel htmlFor="lab-input">{inputLabel}</FieldLabel>
-                            <Select value={inputFormat} onValueChange={onInputFormatChange}>
-                                <SelectTrigger size="sm" className="h-7 w-auto gap-1 text-xs">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    {FORMAT_OPTIONS.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                                            {opt.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <FieldHeader htmlFor="lab-input" label={inputLabel}>
+                            <FormatSelect
+                                value={inputFormat}
+                                onChange={onInputFormatChange}
+                                label="Format input"
+                            />
+                        </FieldHeader>
                         <Textarea
                             id="lab-input"
                             value={inputValue}
@@ -122,37 +176,27 @@ export default function LabInputCard({
                     </Field>
 
                     <Field>
-                        <div className="flex items-center justify-between gap-2">
-                            <FieldLabel htmlFor="lab-output">{outputLabel}</FieldLabel>
-                            <div className="flex items-center gap-1.5">
-                                {canChangeOutputFormat && (
-                                    <Select value={outputFormat} onValueChange={onOutputFormatChange}>
-                                        <SelectTrigger size="sm" className="h-7 w-auto gap-1 text-xs">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent align="end">
-                                            {FORMAT_OPTIONS.map((opt) => (
-                                                <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                                                    {opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={onConvert}
-                                    disabled={!output || !!error}
-                                    title="Pindahkan output ke input dan balik arah"
-                                    className="h-7 gap-1.5 text-xs"
-                                >
-                                    <ArrowDownUp className="size-3.5" />
-                                    Convert
-                                </Button>
-                            </div>
-                        </div>
+                        <FieldHeader htmlFor="lab-output" label={outputLabel}>
+                            {canChangeOutputFormat && (
+                                <FormatSelect
+                                    value={outputFormat}
+                                    onChange={onOutputFormatChange}
+                                    label="Format hasil"
+                                />
+                            )}
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={onConvert}
+                                disabled={!output || !!error}
+                                title="Pindahkan output ke input dan balik arah"
+                                className="h-7 gap-1.5 text-xs"
+                            >
+                                <ArrowDownUp className="size-3.5" />
+                                Convert
+                            </Button>
+                        </FieldHeader>
                         <Textarea
                             id="lab-output"
                             readOnly
