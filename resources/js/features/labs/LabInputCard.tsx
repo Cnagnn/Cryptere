@@ -22,11 +22,11 @@ import type { FormatValue, SimulationMode } from '@/types/labs';
 
 /** Format options dengan ASCII sebagai default (paling mudah dipahami). */
 const FORMAT_OPTIONS: Array<{ value: FormatValue; label: string }> = [
-    { value: 'ascii', label: 'Nama karakter (ASCII) — default' },
+    { value: 'ascii', label: 'ASCII (Default)' },
     { value: 'hex', label: 'Heksadesimal' },
     { value: 'binary', label: 'Biner' },
     { value: 'base64', label: 'Base64' },
-    { value: 'decimal', label: 'Byte desimal' },
+    { value: 'decimal', label: 'Byte Desimal' },
 ];
 
 interface Props {
