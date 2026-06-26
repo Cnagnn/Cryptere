@@ -158,8 +158,6 @@ export default function LabsShow({ lab }: LabShowProps) {
 
                 <section className="grid min-h-[calc(100vh-12rem)] gap-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-stretch">
                     <LabInputCard
-                        mode={mode}
-                        onModeChange={setMode}
                         keyValue={keyValue}
                         onKeyChange={setKeyValue}
                         keyLabel={keyLabelByLab(lab.slug, mode)}

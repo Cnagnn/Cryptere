@@ -5,7 +5,6 @@
 import { ArrowDownUp, RotateCcw } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -18,7 +17,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { FormatValue, SimulationMode } from '@/types/labs';
+import type { FormatValue } from '@/types/labs';
 
 /** Format options dengan ASCII sebagai default (paling mudah dipahami). */
 const FORMAT_OPTIONS: Array<{ value: FormatValue; label: string }> = [
@@ -33,8 +32,6 @@ const FORMAT_OPTIONS: Array<{ value: FormatValue; label: string }> = [
 const bentoCardClass = 'h-full overflow-hidden border-border/70 bg-card/95 shadow-sm';
 
 interface Props {
-    mode: SimulationMode;
-    onModeChange: (m: SimulationMode) => void;
     keyValue: string;
     onKeyChange: (v: string) => void;
     keyLabel: string;
@@ -57,7 +54,6 @@ interface Props {
 }
 
 export default function LabInputCard({
-    mode,
     keyValue,
     onKeyChange,
     keyLabel,
@@ -81,17 +77,10 @@ export default function LabInputCard({
     return (
         <Card className={bentoCardClass}>
             <CardHeader className="gap-1">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="space-y-1">
-                        <CardTitle>Data & Kunci</CardTitle>
-                        <CardDescription>
-                            Masukkan kunci dan input untuk memulai simulasi.
-                        </CardDescription>
-                    </div>
-                    <Badge variant="outline" className="capitalize">
-                        {mode === 'encrypt' ? 'Enkripsi' : 'Dekripsi'}
-                    </Badge>
-                </div>
+                <CardTitle>Data & Kunci</CardTitle>
+                <CardDescription>
+                    Masukkan kunci dan input untuk memulai simulasi.
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 <FieldGroup>
