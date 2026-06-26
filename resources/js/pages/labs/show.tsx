@@ -16,6 +16,8 @@ import LabInputCard from '@/features/labs/LabInputCard';
 import LabVisualizerCard from '@/features/labs/LabVisualizerCard';
 import { useStepPlayer } from '@/features/labs/useStepPlayer';
 import {
+    canFormatOutput,
+    formatOutputValue,
     inputHelperByLab,
     inputLabelByLab,
     inputPlaceholderByLab,
@@ -28,6 +30,7 @@ import {
 import type {
     AesTrace,
     DesTrace,
+    FormatValue,
     LabShowProps,
     RsaKeyGenTraceData,
     RsaSignatureTraceData,
@@ -53,12 +56,13 @@ function computeResult(
     mode: SimulationMode,
     rawInput: string,
     keyValue: string,
+    inputFormat: FormatValue,
 ): ResultBundle {
     if (!rawInput.trim() && !keyValue.trim()) {
         return { output: '', outputLabel: 'Hasil', steps: [], traces: {}, error: null };
     }
 
-    const normalized = normalizeInputForSimulation(slug, mode, rawInput, 'ascii');
+    const normalized = normalizeInputForSimulation(slug, mode, rawInput, inputFormat);
 
     if (normalized.error) {
         return { output: '', outputLabel: 'Hasil', steps: [], traces: {}, error: normalized.error };
@@ -91,21 +95,37 @@ export default function LabsShow({ lab }: LabShowProps) {
     const [mode, setMode] = useState<SimulationMode>('encrypt');
     const [keyValue, setKeyValue] = useState('');
     const [inputValue, setInputValue] = useState('');
+    const [inputFormat, setInputFormat] = useState<FormatValue>('ascii');
+    const [outputFormat, setOutputFormat] = useState<FormatValue>('ascii');
 
     const result = useMemo(
-        () => computeResult(lab.slug, mode, inputValue, keyValue),
-        [lab.slug, mode, inputValue, keyValue],
+        () => computeResult(lab.slug, mode, inputValue, keyValue, inputFormat),
+        [lab.slug, mode, inputValue, keyValue, inputFormat],
     );
 
     const player = useStepPlayer(result.steps.length);
     const hasResult = result.steps.length > 0 && !!result.output;
+    const canChangeOutputFormat = canFormatOutput(lab.slug, mode);
+    const displayedOutput = useMemo(() => {
+        if (!result.output) {
+            return '';
+        }
+
+        if (!canChangeOutputFormat) {
+            return result.output;
+        }
+
+        return formatOutputValue(result.output, outputFormat).value;
+    }, [canChangeOutputFormat, outputFormat, result.output]);
 
     const handleConvert = () => {
         if (!result.output) {
             return;
         }
 
-        setInputValue(result.output);
+        // Output baru jadi input — pakai format yang sama agar bisa langsung diproses.
+        setInputValue(displayedOutput);
+        setInputFormat(canChangeOutputFormat ? outputFormat : 'ascii');
         setMode((m) => (m === 'encrypt' ? 'decrypt' : 'encrypt'));
     };
 
@@ -113,6 +133,8 @@ export default function LabsShow({ lab }: LabShowProps) {
         setKeyValue('');
         setInputValue('');
         setMode('encrypt');
+        setInputFormat('ascii');
+        setOutputFormat('ascii');
         player.reset();
     };
 
@@ -147,8 +169,13 @@ export default function LabsShow({ lab }: LabShowProps) {
                         inputLabel={inputLabelByLab(lab.slug, mode)}
                         inputPlaceholder={inputPlaceholderByLab(lab.slug, mode)}
                         inputHelper={inputHelperByLab(lab.slug, mode)}
-                        output={result.output}
+                        inputFormat={inputFormat}
+                        onInputFormatChange={setInputFormat}
+                        output={displayedOutput}
                         outputLabel={result.outputLabel}
+                        outputFormat={outputFormat}
+                        onOutputFormatChange={setOutputFormat}
+                        canChangeOutputFormat={canChangeOutputFormat}
                         error={result.error}
                         onReset={handleReset}
                         onConvert={handleConvert}

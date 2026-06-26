@@ -10,8 +10,24 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { SimulationMode } from '@/types/labs';
+import type { FormatValue, SimulationMode } from '@/types/labs';
+
+/** Format options dengan ASCII sebagai default (paling mudah dipahami). */
+const FORMAT_OPTIONS: Array<{ value: FormatValue; label: string }> = [
+    { value: 'ascii', label: 'Nama karakter (ASCII) — default' },
+    { value: 'hex', label: 'Heksadesimal' },
+    { value: 'binary', label: 'Biner' },
+    { value: 'base64', label: 'Base64' },
+    { value: 'decimal', label: 'Byte desimal' },
+];
 
 interface Props {
     mode: SimulationMode;
@@ -25,8 +41,13 @@ interface Props {
     inputLabel: string;
     inputPlaceholder: string;
     inputHelper: string;
+    inputFormat: FormatValue;
+    onInputFormatChange: (f: FormatValue) => void;
     output: string;
     outputLabel: string;
+    outputFormat: FormatValue;
+    onOutputFormatChange: (f: FormatValue) => void;
+    canChangeOutputFormat: boolean;
     error: string | null;
     onReset: () => void;
     onConvert: () => void;
@@ -43,8 +64,13 @@ export default function LabInputCard({
     inputLabel,
     inputPlaceholder,
     inputHelper,
+    inputFormat,
+    onInputFormatChange,
     output,
     outputLabel,
+    outputFormat,
+    onOutputFormatChange,
+    canChangeOutputFormat,
     error,
     onReset,
     onConvert,
@@ -73,7 +99,21 @@ export default function LabInputCard({
                     </Field>
 
                     <Field>
-                        <FieldLabel htmlFor="lab-input">{inputLabel}</FieldLabel>
+                        <div className="flex items-center justify-between gap-2">
+                            <FieldLabel htmlFor="lab-input">{inputLabel}</FieldLabel>
+                            <Select value={inputFormat} onValueChange={onInputFormatChange}>
+                                <SelectTrigger size="sm" className="h-7 w-auto gap-1 text-xs">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    {FORMAT_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <Textarea
                             id="lab-input"
                             value={inputValue}
@@ -87,18 +127,34 @@ export default function LabInputCard({
                     <Field>
                         <div className="flex items-center justify-between gap-2">
                             <FieldLabel htmlFor="lab-output">{outputLabel}</FieldLabel>
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={onConvert}
-                                disabled={!output || !!error}
-                                title="Pindahkan output ke input dan balik arah"
-                                className="h-7 gap-1.5 text-xs"
-                            >
-                                <ArrowDownUp className="size-3.5" />
-                                Convert
-                            </Button>
+                            <div className="flex items-center gap-1.5">
+                                {canChangeOutputFormat && (
+                                    <Select value={outputFormat} onValueChange={onOutputFormatChange}>
+                                        <SelectTrigger size="sm" className="h-7 w-auto gap-1 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent align="end">
+                                            {FORMAT_OPTIONS.map((opt) => (
+                                                <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={onConvert}
+                                    disabled={!output || !!error}
+                                    title="Pindahkan output ke input dan balik arah"
+                                    className="h-7 gap-1.5 text-xs"
+                                >
+                                    <ArrowDownUp className="size-3.5" />
+                                    Convert
+                                </Button>
+                            </div>
                         </div>
                         <Textarea
                             id="lab-output"
