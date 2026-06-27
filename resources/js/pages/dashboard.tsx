@@ -73,7 +73,7 @@ import { useRealtime } from '@/hooks/use-realtime';
 import { useSmartPolling } from '@/hooks/use-smart-polling';
 import { cn } from '@/lib/utils';
 import { dashboard as dashboardRoute } from '@/routes';
-import { index as coursesIndex, show as courseShow } from '@/routes/courses';
+import { index as coursesIndex } from '@/routes/courses';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 import type { Auth, UserLevel } from '@/types/auth';
 import type {
@@ -299,179 +299,6 @@ function DecayWarningBanner({
                 <X className="size-3.5" />
             </Button>
         </Alert>
-    );
-}
-
-function BadgeGoalCard({ badgeGoal }: { badgeGoal?: BadgeGoal | null }) {
-    if (!badgeGoal) {
-        return null;
-    }
-
-    return (
-        <Card
-            className={cn(
-                bentoPanelClass,
-                'col-span-2 md:col-span-3 lg:col-span-4',
-            )}
-        >
-            <CardHeader className="gap-1">
-                <CardTitle>Badge Berikutnya</CardTitle>
-                <CardDescription>{badgeGoal.title}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <p className="text-sm text-muted-foreground">
-                    {badgeGoal.description ??
-                        'Lanjutkan aktivitas untuk membuka badge ini.'}
-                </p>
-                <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium tabular-nums">
-                        {formatNumber(badgeGoal.currentValue)} /{' '}
-                        {formatNumber(badgeGoal.targetValue)}
-                    </span>
-                </div>
-                <Progress value={badgeGoal.progressPercentage} />
-                <Button variant="outline" size="sm" className="w-fit" asChild>
-                    <Link href={badgeGoal.url}>
-                        {badgeGoal.actionLabel}
-                        <ArrowUpRight data-icon="inline-end" />
-                    </Link>
-                </Button>
-            </CardContent>
-        </Card>
-    );
-}
-
-function LearningHubCard({
-    recentCourses,
-    recommendedCourses,
-}: {
-    recentCourses: RecentCourse[];
-    recommendedCourses: RecommendedCourse[];
-}) {
-    const inProgress = recentCourses
-        .filter((course) => course.progressPercentage > 0)
-        .slice(0, 3);
-    const recommendations = recommendedCourses.slice(0, 2);
-
-    return (
-        <Card
-            className={cn(
-                bentoCardClass,
-                'col-span-2 flex flex-col md:col-span-6 lg:col-span-8',
-            )}
-        >
-            <CardHeader className="gap-1">
-                <CardTitle>Pembelajaran</CardTitle>
-                <CardDescription>
-                    Kursus berjalan dan jalur berikutnya
-                </CardDescription>
-                <CardAction>
-                    <Button variant="ghost" size="sm" asChild>
-                        <Link href={coursesIndex.url()}>
-                            Lihat Semua
-                            <ArrowUpRight data-icon="inline-end" />
-                        </Link>
-                    </Button>
-                </CardAction>
-            </CardHeader>
-            <CardContent className="grid flex-1 gap-3 lg:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
-                        <span>Sedang diikuti</span>
-                        <span>{formatNumber(inProgress.length)} aktif</span>
-                    </div>
-                    {inProgress.length === 0 ? (
-                        <CompactEmptyState
-                            icon={GraduationCap}
-                            title="Belum ada kursus berjalan"
-                            description="Mulai satu kursus agar progres utama muncul di sini."
-                            action={
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link href={coursesIndex.url()}>
-                                        Jelajahi Kursus
-                                        <ArrowUpRight data-icon="inline-end" />
-                                    </Link>
-                                </Button>
-                            }
-                        />
-                    ) : (
-                        inProgress.map((course) => (
-                            <Link
-                                key={course.id}
-                                href={
-                                    course.slug
-                                        ? courseShow.url({
-                                              course: course.slug,
-                                          })
-                                        : coursesIndex.url()
-                                }
-                                className="group rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50"
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium">
-                                            {course.title}
-                                        </p>
-                                        <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                                            {course.lessonCount ?? 0} pelajaran
-                                        </p>
-                                    </div>
-                                    <span className="text-sm font-semibold tabular-nums">
-                                        {Math.round(course.progressPercentage)}%
-                                    </span>
-                                </div>
-                                <Progress
-                                    value={course.progressPercentage}
-                                    className="mt-3 h-1.5"
-                                />
-                            </Link>
-                        ))
-                    )}
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
-                        <span>Rekomendasi</span>
-                        <span>
-                            {formatNumber(recommendations.length)} jalur
-                        </span>
-                    </div>
-                    {recommendations.length === 0 ? (
-                        <CompactEmptyState
-                            icon={BookOpen}
-                            title="Belum ada rekomendasi"
-                            description="Kursus yang dipublikasikan akan muncul sebagai jalur berikutnya."
-                        />
-                    ) : (
-                        recommendations.map((course) => (
-                            <Link
-                                key={course.id}
-                                href={courseShow.url({ course: course.slug })}
-                                className="group rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium">
-                                            {course.title}
-                                        </p>
-                                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                                            {course.summary ??
-                                                course.recommendationReason}
-                                        </p>
-                                    </div>
-                                    {course.difficulty ? (
-                                        <Badge variant="secondary">
-                                            {course.difficulty}
-                                        </Badge>
-                                    ) : null}
-                                </div>
-                            </Link>
-                        ))
-                    )}
-                </div>
-            </CardContent>
-        </Card>
     );
 }
 
@@ -931,9 +758,6 @@ function LearnerDashboard({
     academy,
     analytics,
     decayWarning,
-    badgeGoal,
-    recentCourses,
-    recommendedCourses,
     adminTabs,
 }: {
     stats: LearnerStats;
@@ -1086,11 +910,6 @@ function LearnerDashboard({
                     );
                 })()}
 
-                <LearningHubCard
-                    recentCourses={recentCourses ?? []}
-                    recommendedCourses={recommendedCourses ?? []}
-                />
-                <BadgeGoalCard badgeGoal={badgeGoal} />
                 <ActivityFeedTimeline
                     activities={academy.recentActivity ?? []}
                 />
