@@ -8,13 +8,17 @@ import {
     Award,
     BarChart3,
     BookOpen,
+    Crown,
     Download,
     Flame,
     Gauge,
     GraduationCap,
     Home,
     ListChecks,
+    Star,
     Target,
+    TrendingUp,
+    Trophy,
     X,
     Zap,
 } from 'lucide-react';
@@ -390,6 +394,127 @@ function WeeklyGoalCard({ goal }: { goal?: WeeklyGoal | null }) {
     );
 }
 
+/**
+ * KPI podium style — mirip PODIUM_STYLES di leaderboard tapi 4 varian
+ * untuk: Poin (gold), Level (sky), Kursus (emerald), Peringkat (violet).
+ */
+const KPI_STYLES = [
+    {
+        accent: 'border-t-amber-500',
+        card: 'border-amber-500/20 bg-linear-to-b from-amber-500/[0.08] to-transparent',
+        rankBg: 'bg-amber-500 text-amber-950',
+        iconBg: 'bg-amber-500/15 text-amber-500',
+        valueGradient: 'bg-linear-to-r from-amber-400 to-amber-500 bg-clip-text text-transparent',
+        progress: 'bg-amber-500',
+    },
+    {
+        accent: 'border-t-sky-500',
+        card: 'border-sky-500/20 bg-linear-to-b from-sky-500/[0.08] to-transparent',
+        rankBg: 'bg-sky-500 text-sky-950',
+        iconBg: 'bg-sky-500/15 text-sky-500',
+        valueGradient: 'bg-linear-to-r from-sky-400 to-sky-500 bg-clip-text text-transparent',
+        progress: 'bg-sky-500',
+    },
+    {
+        accent: 'border-t-emerald-500',
+        card: 'border-emerald-500/20 bg-linear-to-b from-emerald-500/[0.08] to-transparent',
+        rankBg: 'bg-emerald-500 text-emerald-950',
+        iconBg: 'bg-emerald-500/15 text-emerald-500',
+        valueGradient: 'bg-linear-to-r from-emerald-400 to-emerald-500 bg-clip-text text-transparent',
+        progress: 'bg-emerald-500',
+    },
+    {
+        accent: 'border-t-violet-500',
+        card: 'border-violet-500/20 bg-linear-to-b from-violet-500/[0.08] to-transparent',
+        rankBg: 'bg-violet-500 text-violet-50',
+        iconBg: 'bg-violet-500/15 text-violet-500',
+        valueGradient: 'bg-linear-to-r from-violet-400 to-violet-500 bg-clip-text text-transparent',
+        progress: 'bg-violet-500',
+    },
+] as const;
+
+/**
+ * KpiPodiumCard — KPI card dengan style podium leaderboard:
+ * top accent line + badge top-right + icon bg + value gradient + hover lift.
+ */
+function KpiPodiumCard({
+    label,
+    value,
+    description,
+    icon: Icon,
+    style,
+    progress,
+    badge,
+}: {
+    label: string;
+    value: string;
+    description: string;
+    icon: typeof Trophy;
+    style: (typeof KPI_STYLES)[number];
+    progress?: number;
+    badge?: string;
+}) {
+    return (
+        <Card
+            className={cn(
+                'group relative col-span-2 overflow-hidden border p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg md:col-span-2 lg:col-span-3',
+                style.card,
+            )}
+        >
+            {/* Top accent line */}
+            <div
+                className={cn(
+                    'absolute top-0 right-0 left-0 h-0.5',
+                    style.accent.replace('border-t-', 'bg-'),
+                )}
+            />
+
+            {/* Badge top-right */}
+            {badge && (
+                <div
+                    className={cn(
+                        'absolute top-3 right-3 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                        style.rankBg,
+                    )}
+                >
+                    {badge}
+                </div>
+            )}
+
+            {/* Icon */}
+            <div
+                className={cn(
+                    'mb-3 flex size-10 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110',
+                    style.iconBg,
+                )}
+            >
+                <Icon className="size-5" />
+            </div>
+
+            {/* Label */}
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                {label}
+            </p>
+
+            {/* Value */}
+            <p className={cn('mt-1 text-2xl font-bold tabular-nums', style.valueGradient)}>
+                {value}
+            </p>
+
+            {/* Description */}
+            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+
+            {/* Optional progress bar (untuk Level) */}
+            {typeof progress === 'number' && (
+                <Progress
+                    value={progress}
+                    className="mt-3 h-1.5"
+                />
+            )}
+        </Card>
+    );
+}
+
 function LearnerOverviewCard({
     stats,
     level,
@@ -406,53 +531,63 @@ function LearnerOverviewCard({
         ? `${formatNumber(rankProgress.pointsToNextRank)} poin ke #${formatNumber(rankProgress.nextRank)}`
         : 'Posisi teratas';
 
+    const items: Array<{
+        key: string;
+        label: string;
+        value: string;
+        description: string;
+        icon: typeof Trophy;
+        style: (typeof KPI_STYLES)[number];
+        progress?: number;
+        badge?: string;
+    }> = [
+        {
+            key: 'points',
+            label: 'Total Poin',
+            value: formatNumber(stats.points),
+            description: 'Akumulasi skor',
+            icon: Trophy,
+            style: KPI_STYLES[0],
+            badge: 'POIN',
+        },
+        {
+            key: 'level',
+            label: 'Level',
+            value: `Level ${level?.level ?? 1}`,
+            description: level?.next_level_xp
+                ? `${formatNumber(level.current_xp)} / ${formatNumber(level.next_level_xp)} XP`
+                : 'Mulai kumpulkan XP',
+            icon: Star,
+            style: KPI_STYLES[1],
+            progress: level?.next_level_xp ? level.progress : undefined,
+            badge: 'XP',
+        },
+        {
+            key: 'courses',
+            label: 'Kursus Selesai',
+            value: formatNumber(stats.completedCourses),
+            description: `${formatNumber(stats.completedLessons)} pelajaran`,
+            icon: TrendingUp,
+            style: KPI_STYLES[2],
+            badge: 'PROGRES',
+        },
+        {
+            key: 'rank',
+            label: 'Peringkat',
+            value: rankLabel,
+            description: rankDescription,
+            icon: Crown,
+            style: KPI_STYLES[3],
+            badge: 'RANK',
+        },
+    ];
+
     return (
-        <Card
-            className={cn(
-                bentoCardClass,
-                'col-span-2 md:col-span-3 lg:col-span-4',
-            )}
-        >
-            <CardHeader className="gap-1">
-                <CardTitle>Ringkasan Belajar</CardTitle>
-                <CardDescription>
-                    Poin, level, kursus, dan posisi
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-                <MetricTile
-                    label="Total poin"
-                    value={formatNumber(stats.points)}
-                    description="Akumulasi skor"
-                />
-                <MetricTile
-                    label="Level"
-                    value={`Level ${level?.level ?? 1}`}
-                    description={
-                        level?.next_level_xp
-                            ? `${formatNumber(level.current_xp)} / ${formatNumber(level.next_level_xp)} XP`
-                            : 'Mulai kumpulkan XP'
-                    }
-                >
-                    {level?.next_level_xp ? (
-                        <Progress
-                            value={level.progress}
-                            className="mt-2 h-1.5"
-                        />
-                    ) : null}
-                </MetricTile>
-                <MetricTile
-                    label="Kursus selesai"
-                    value={formatNumber(stats.completedCourses)}
-                    description={`${formatNumber(stats.completedLessons)} pelajaran`}
-                />
-                <MetricTile
-                    label="Peringkat"
-                    value={rankLabel}
-                    description={rankDescription}
-                />
-            </CardContent>
-        </Card>
+        <>
+            {items.map(({ key, ...item }) => (
+                <KpiPodiumCard key={key} {...item} />
+            ))}
+        </>
     );
 }
 
