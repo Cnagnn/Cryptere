@@ -626,39 +626,11 @@ clearTimeout(levelFilterTimer.current);
     );
 }
 
-/* ─── Podium Section (Geist + shadcn/ui redesign, Behance/Pinterest inspired) ─── */
+/* ─── Podium Section — stepped blocks with Pixabot mascot avatars ─── */
 
-const PODIUM_ORDER = [1, 0, 2] as const; // Display: #2, #1, #3
-
-const PODIUM_STYLES = [
-    // #1 — Gold
-    {
-        accent: 'border-t-amber-500',
-        card: 'border-amber-500/20 bg-linear-to-b from-amber-500/[0.06] to-transparent',
-        rankBg: 'bg-amber-500 text-amber-950',
-        avatarRing: 'ring-amber-500/40',
-        badge: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-        pointsGradient: 'bg-linear-to-r from-amber-400 to-amber-500 bg-clip-text text-transparent',
-    },
-    // #2 — Silver
-    {
-        accent: 'border-t-slate-400',
-        card: 'border-slate-400/15 bg-linear-to-b from-slate-400/[0.04] to-transparent',
-        rankBg: 'bg-slate-400 text-slate-950',
-        avatarRing: 'ring-slate-400/30',
-        badge: 'bg-slate-400/10 text-slate-400 border-slate-400/20',
-        pointsGradient: '',
-    },
-    // #3 — Bronze
-    {
-        accent: 'border-t-amber-700',
-        card: 'border-amber-700/15 bg-linear-to-b from-amber-700/[0.04] to-transparent',
-        rankBg: 'bg-amber-700 text-amber-50',
-        avatarRing: 'ring-amber-700/30',
-        badge: 'bg-amber-700/10 text-amber-700 border-amber-700/20',
-        pointsGradient: '',
-    },
-] as const;
+const PLAQUE_GOLD = { label: '#1', subtitle: 'CHAMPION' } as const;
+const PLAQUE_SILVER = { label: '#2', subtitle: 'RUNNER-UP' } as const;
+const PLAQUE_BRONZE = { label: '#3', subtitle: '3RD PLACE' } as const;
 
 function PodiumSection({
     top3,
@@ -668,147 +640,113 @@ function PodiumSection({
     pointsFormatter: Intl.NumberFormat;
 }) {
     const getInitials = useInitials();
-    const ordered = PODIUM_ORDER.map((i) => top3[i]).filter(Boolean);
+    const byRank = (rank: number) => top3.find((e) => e.rank === rank);
+    const gold = byRank(1);
+    const silver = byRank(2);
+    const bronze = byRank(3);
 
-    if (ordered.length === 0) {
+    if (!gold) {
         return null;
     }
 
-    const gridCols =
-        ordered.length === 1
-            ? 'grid-cols-1 max-w-xs mx-auto'
-            : ordered.length === 2
-              ? 'grid-cols-2 max-w-lg mx-auto'
-              : 'grid-cols-3';
-
     return (
-        <div className={cn('grid gap-4', gridCols)}>
-            {ordered.map((entry) => {
-                const rankIndex = entry.rank - 1;
-                const style = PODIUM_STYLES[rankIndex];
-                const isFirst = entry.rank === 1;
+        <div className="flex flex-col items-center gap-3 pt-4">
+            {/* Desktop: horizontal stepped podium */}
+            <div className="hidden items-end justify-center gap-1 sm:flex">
+                {silver ? (
+                    <PodiumBlock entry={silver} getInitials={getInitials} pointsFormatter={pointsFormatter}
+                        height="h-36" color="bg-slate-300" rim="border-slate-200"
+                        plaque={PLAQUE_SILVER} avatarSize="size-14" />
+                ) : <div className="w-28" />}
 
-                return (
-                    <Card
-                        key={entry.id}
-                        className={cn(
-                            'group relative flex flex-col items-center gap-4 overflow-hidden border p-6 pt-7 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg',
-                            style.card,
-                            isFirst && 'shadow-md shadow-amber-500/5',
-                        )}
-                    >
-                        {/* Top accent line */}
-                        <div
-                            className={cn(
-                                'absolute top-0 left-0 right-0 h-0.5',
-                                style.accent,
-                            )}
-                        />
+                <PodiumBlock entry={gold} getInitials={getInitials} pointsFormatter={pointsFormatter}
+                    height="h-48" color="bg-amber-400" rim="border-amber-300"
+                    plaque={PLAQUE_GOLD} avatarSize="size-20" isChampion />
 
-                        {/* Rank badge — top-right */}
-                        <div
-                            className={cn(
-                                'absolute top-3 right-3 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
-                                style.rankBg,
-                            )}
-                        >
-                            {isFirst && <Crown className="size-3" />}
-                            #{entry.rank}
-                        </div>
+                {bronze ? (
+                    <PodiumBlock entry={bronze} getInitials={getInitials} pointsFormatter={pointsFormatter}
+                        height="h-28" color="bg-amber-700" rim="border-amber-600"
+                        plaque={PLAQUE_BRONZE} avatarSize="size-12" />
+                ) : <div className="w-28" />}
+            </div>
 
-                        {/* Avatar */}
-                        <Avatar
-                            className={cn(
-                                'ring-2 ring-offset-2 ring-offset-background transition-transform duration-300 group-hover:scale-105',
-                                style.avatarRing,
-                                isFirst ? 'size-24' : 'size-16',
-                            )}
-                        >
-                            <AvatarImage
-                                src={entry.avatar || undefined}
-                                alt={
-                                    entry.username
-                                        ? `@${entry.username}`
-                                        : entry.name
-                                }
-                                onError={(e) =>
-                                    (e.currentTarget.style.display = 'none')
-                                }
-                            />
-                            <AvatarFallback
-                                className={cn(
-                                    'font-semibold tracking-tight',
-                                    isFirst ? 'text-xl' : 'text-sm',
-                                )}
-                            >
-                                {getInitials(entry.username ?? entry.name)}
-                            </AvatarFallback>
-                        </Avatar>
+            {/* Mobile: stacked */}
+            <div className="flex flex-col items-center gap-3 sm:hidden">
+                <PodiumBlock entry={gold} getInitials={getInitials} pointsFormatter={pointsFormatter}
+                    height="h-40" color="bg-amber-400" rim="border-amber-300"
+                    plaque={PLAQUE_GOLD} avatarSize="size-16" isChampion />
+                <div className="flex items-end justify-center gap-1">
+                    {silver && (
+                        <PodiumBlock entry={silver} getInitials={getInitials} pointsFormatter={pointsFormatter}
+                            height="h-32" color="bg-slate-300" rim="border-slate-200"
+                            plaque={PLAQUE_SILVER} avatarSize="size-12" />
+                    )}
+                    {bronze && (
+                        <PodiumBlock entry={bronze} getInitials={getInitials} pointsFormatter={pointsFormatter}
+                            height="h-24" color="bg-amber-700" rim="border-amber-600"
+                            plaque={PLAQUE_BRONZE} avatarSize="size-10" />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
 
-                        {/* Info */}
-                        <div className="flex flex-col items-center gap-0.5 text-center">
-                            <span
-                                className={cn(
-                                    'font-semibold leading-tight',
-                                    isFirst ? 'text-base' : 'text-sm',
-                                )}
-                            >
-                                @{entry.username ?? 'unknown'}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground leading-tight">
-                                {entry.name}
-                            </span>
-                        </div>
+function PodiumBlock({
+    entry, getInitials, pointsFormatter, height, color, rim, plaque, avatarSize, isChampion = false,
+}: {
+    entry: LeaderboardEntry;
+    getInitials: (name: string) => string;
+    pointsFormatter: Intl.NumberFormat;
+    height: string;
+    color: string;
+    rim: string;
+    plaque: typeof PLAQUE_GOLD | typeof PLAQUE_SILVER | typeof PLAQUE_BRONZE;
+    avatarSize: string;
+    isChampion?: boolean;
+}) {
+    return (
+        <div className="flex flex-col items-center">
+            {/* Avatar on top of podium */}
+            <div className="relative z-10 mb-[-1rem]">
+                <div className={cn(isChampion && 'rounded-full bg-linear-to-b from-amber-300 to-amber-500 p-[3px]')}>
+                    <Avatar className={cn(avatarSize, 'ring-4 ring-offset-2 ring-offset-background shadow-lg',
+                        isChampion ? 'ring-amber-400/60' : 'ring-white/15')}>
+                        <AvatarImage src={entry.avatar || undefined}
+                            alt={entry.username ? `@${entry.username}` : entry.name}
+                            onError={(e) => (e.currentTarget.style.display = 'none')} />
+                        <AvatarFallback className={cn('font-bold', isChampion ? 'text-lg' : 'text-sm')}>
+                            {getInitials(entry.username ?? entry.name)}
+                        </AvatarFallback>
+                    </Avatar>
+                </div>
+                {isChampion && (
+                    <Crown className="absolute -top-3 left-1/2 -translate-x-1/2 size-5 text-amber-400 drop-shadow-md" />
+                )}
+            </div>
 
-                        {/* Stats row */}
-                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                            <span className="inline-flex items-center gap-1">
-                                <Flame className="size-3 fill-orange-500 text-orange-500" />
-                                {entry.longestStreak}d streak
-                            </span>
-                            <span className="text-border">|</span>
-                            <span>Lv.{entry.level}</span>
-                        </div>
+            {/* Podium block */}
+            <div className={cn('relative flex w-28 flex-col items-center justify-end overflow-hidden rounded-t-xl border-2 border-b-0 shadow-xl', height, color, rim)}>
+                <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/15 via-transparent to-white/10" />
+                <div className="z-10 mb-2 flex flex-col items-center gap-0.5 text-center">
+                    <span className="text-[10px] font-black tracking-widest text-white/90 drop-shadow-sm">{plaque.label}</span>
+                    <span className="max-w-[80%] truncate text-[10px] font-semibold text-white/80 drop-shadow-sm">
+                        {entry.username ?? entry.name}
+                    </span>
+                    {isChampion && (
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-white/60">{plaque.subtitle}</span>
+                    )}
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 h-2 bg-black/15" />
+            </div>
 
-                        {/* Points — prominent */}
-                        <div className="flex flex-col items-center gap-0.5">
-                            <span
-                                className={cn(
-                                    'font-bold tabular-nums tracking-tight',
-                                    isFirst
-                                        ? `text-3xl ${style.pointsGradient}`
-                                        : 'text-2xl',
-                                )}
-                            >
-                                {pointsFormatter.format(entry.points)}
-                            </span>
-                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                                points
-                            </span>
-                        </div>
-
-                        {/* Rank trend badge */}
-                        {entry.rankChange && (
-                            <Badge
-                                variant="outline"
-                                className={cn(
-                                    'text-[10px] font-medium',
-                                    style.badge,
-                                )}
-                            >
-                                <RankTrend change={entry.rankChange} />
-                                <span className="ml-1">
-                                    {entry.rankChange === 'up'
-                                        ? 'Rising'
-                                        : entry.rankChange === 'down'
-                                          ? 'Slipping'
-                                          : 'Steady'}
-                                </span>
-                            </Badge>
-                        )}
-                    </Card>
-                );
-            })}
+            {/* Points */}
+            <div className="mt-1.5 flex flex-col items-center gap-0.5">
+                <span className={cn('text-xs font-bold tabular-nums', isChampion && 'text-amber-500')}>
+                    {pointsFormatter.format(entry.points)}
+                </span>
+                <span className="text-[9px] uppercase tracking-widest text-muted-foreground">pts</span>
+            </div>
         </div>
     );
 }
