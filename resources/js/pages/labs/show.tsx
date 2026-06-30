@@ -29,8 +29,12 @@ import {
 } from '@/lib/lab-simulations';
 import { index as labsIndex } from '@/routes/labs';
 import type {
+    AesTrace,
+    DesTrace,
     FormatValue,
     LabShowProps,
+    RsaKeyGenTraceData,
+    RsaSignatureTraceData,
     SimulationMode,
     SimulationResult,
 } from '@/types/labs';
@@ -59,10 +63,10 @@ interface ResultBundle {
     outputLabel: string;
     steps: string[];
     traces: {
-        aes?: import('@/types/labs').AesTrace;
-        des?: import('@/types/labs').DesTrace;
-        rsa?: import('@/types/labs').RsaKeyGenTraceData;
-        signature?: import('@/types/labs').RsaSignatureTraceData;
+        aes?: AesTrace;
+        des?: DesTrace;
+        rsa?: RsaKeyGenTraceData;
+        signature?: RsaSignatureTraceData;
     };
     error: string | null;
 }
@@ -269,17 +273,17 @@ export default function LabsShow({ lab }: LabShowProps) {
 
             <div className="relative flex flex-col gap-4 px-4 pt-3 pb-4 lg:gap-6 lg:pt-3 lg:pb-4">
                 {/* Header — back button sejajar dengan height title + desc */}
-                <header className="animate-fade-in-up flex items-start gap-2">
-                    <Link href={labsIndex.url()} className="self-stretch">
-                        <Button variant="ghost" size="icon" className="h-full w-11 shrink-0 rounded-lg">
+                <header className="animate-fade-in-up flex flex-col gap-3 sm:flex-row sm:items-start">
+                    <Link href={labsIndex.url()} className="self-start sm:self-stretch">
+                        <Button variant="ghost" size="icon" className="h-10 w-11 shrink-0 rounded-lg sm:h-full">
                             <ChevronLeft className="size-5" />
                         </Button>
                     </Link>
-                    <div className="flex min-w-0 flex-col gap-1">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <TypographyH1 className="text-2xl/none sm:text-3xl/none">{lab.title}</TypographyH1>
                         <TypographyMuted>{lab.summary}</TypographyMuted>
                     </div>
-                    <Tabs value={mode} onValueChange={(v) => handleModeChange(v as SimulationMode)} className="ml-auto shrink-0 self-end">
+                    <Tabs value={mode} onValueChange={(v) => handleModeChange(v as SimulationMode)} className="shrink-0 self-start sm:ml-auto sm:self-end">
                         <TabsList className="h-9 grid w-auto grid-cols-2">
                             <TabsTrigger value="encrypt" className="text-xs px-3">
                                 {isSignature ? 'Tandatangani' : 'Enkripsi'}
@@ -291,12 +295,10 @@ export default function LabsShow({ lab }: LabShowProps) {
                     </Tabs>
                 </header>
 
-                {/* Two-column layout: left=I/O, right=visualizer */}
                 <section
-                    className="animate-fade-in-up grid gap-3 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start"
+                    className="animate-fade-in-up grid gap-3 lg:grid-cols-[400px_minmax(0,1fr)] lg:items-start"
                     style={{ animationDelay: '100ms' }}
                 >
-                    {/* Left: input/output + about algorithm (merged card) */}
                     <LabIO
                         keyValue={keyValue}
                         onKeyChange={setKeyValue}

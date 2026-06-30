@@ -20,7 +20,7 @@ export default function Privacy() {
                 <div className="mx-auto max-w-3xl space-y-8">
                     <header className="space-y-6">
                         <a
-                            href={register()}
+                            href={register().url}
                             className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
                         >
                             <ArrowLeft className="size-4" />

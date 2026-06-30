@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -119,6 +120,8 @@ export default function LabIO({
     onReset,
 }: Props) {
     const [copied, setCopied] = useState(false);
+    const hasOutput = output.trim().length > 0;
+    const statusLabel = error ? 'Perlu diperbaiki' : hasOutput ? 'Output siap' : 'Siap input';
 
     const handleCopy = () => {
         navigator.clipboard.writeText(output).then(() => {
@@ -133,12 +136,15 @@ export default function LabIO({
                 {/* Header: Simulasi + examples dropdown */}
                 <div className="border-b px-4 py-4 sm:px-5">
                     <div className="flex items-center justify-between gap-3">
-                        <div>
+                        <div className="min-w-0">
                             <h2 className="text-sm font-semibold">Simulasi</h2>
                             <p className="mt-0.5 text-xs text-muted-foreground">
-                                Masukkan kunci dan data untuk diproses.
+                                Masukkan data, lihat hasil, lalu ikuti visualisasi langkah di panel kanan.
                             </p>
                         </div>
+                        <Badge variant={error ? 'destructive' : hasOutput ? 'default' : 'secondary'} className="hidden shrink-0 text-[10px] sm:inline-flex">
+                            {statusLabel}
+                        </Badge>
                         {examples.length > 0 && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -148,15 +154,17 @@ export default function LabIO({
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="min-w-52">
-                                    {examples.map((ex) => (
-                                        <DropdownMenuItem
-                                            key={ex.label}
-                                            onClick={() => onExampleSelect(ex)}
-                                            className="text-xs"
-                                        >
-                                            {ex.label}
-                                        </DropdownMenuItem>
-                                    ))}
+                                    <DropdownMenuGroup>
+                                        {examples.map((ex) => (
+                                            <DropdownMenuItem
+                                                key={ex.label}
+                                                onClick={() => onExampleSelect(ex)}
+                                                className="text-xs"
+                                            >
+                                                {ex.label}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuGroup>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         )}
@@ -206,7 +214,7 @@ export default function LabIO({
                             value={inputValue}
                             onChange={(e) => onInputChange(e.target.value)}
                             placeholder={inputPlaceholder}
-                            className="min-h-16 resize-none font-mono text-sm"
+                            className="min-h-24 resize-none font-mono text-sm"
                         />
                         {inputHelper && (
                             <FieldDescription className="text-xs">{inputHelper}</FieldDescription>
@@ -221,7 +229,7 @@ export default function LabIO({
                 </div>
 
                 {/* Output area */}
-                <div className="border-t p-4 sm:px-5 sm:py-4">
+                <div className="border-t bg-muted/10 p-4 sm:px-5 sm:py-4">
                     <Field>
                         <div className="flex items-center justify-between gap-2">
                             <FieldLabel className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
@@ -251,9 +259,9 @@ export default function LabIO({
                                     size="icon"
                                     className="h-6 w-6"
                                     onClick={handleCopy}
-                                    disabled={!output}
-                                    title={copied ? 'Tersalin' : 'Salin'}
-                                >
+                                disabled={!hasOutput}
+                                title={copied ? 'Tersalin' : 'Salin'}
+                            >
                                     {copied ? (
                                         <ClipboardCheck className="size-3 text-emerald-500" />
                                     ) : (
@@ -266,7 +274,7 @@ export default function LabIO({
                             readOnly
                             value={output}
                             placeholder="Hasil akan tampil di sini..."
-                            className="min-h-16 resize-none bg-background font-mono text-sm"
+                            className="min-h-24 resize-none bg-background font-mono text-sm"
                         />
                     </Field>
                 </div>

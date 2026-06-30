@@ -51,7 +51,7 @@ export default function LabPlayback({
     }
 
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2" aria-label="Kontrol visualisasi langkah">
             <Slider
                 value={[step]}
                 min={0}
@@ -59,9 +59,10 @@ export default function LabPlayback({
                 step={1}
                 onValueChange={([v]) => onStep(v!)}
                 className="h-4"
+                aria-label="Pilih langkah visualisasi"
             />
-            <div className="flex items-center justify-between">
-                <span className="text-[10px] tabular-nums text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="rounded-full bg-background px-2 py-1 text-[10px] font-medium tabular-nums text-muted-foreground">
                     {step + 1} / {total}
                 </span>
                 <div className="flex items-center gap-1">
@@ -71,15 +72,17 @@ export default function LabPlayback({
                         className="size-8"
                         onClick={onPrev}
                         disabled={step === 0}
+                        title="Langkah sebelumnya"
                     >
                         <ChevronLeft className="size-4" />
                     </Button>
-                    <Button size="icon" variant="secondary" className="size-8" onClick={onTogglePlay}>
+                    <Button size="sm" variant="secondary" className="h-8 gap-1.5 px-3 text-xs" onClick={onTogglePlay}>
                         {playing ? (
                             <Pause className="size-3.5" />
                         ) : (
                             <Play className="size-3.5" />
                         )}
+                        {playing ? 'Jeda' : 'Putar'}
                     </Button>
                     <Button
                         size="icon"
@@ -87,13 +90,15 @@ export default function LabPlayback({
                         className="size-8"
                         onClick={onNext}
                         disabled={step >= total - 1}
+                        title="Langkah berikutnya"
                     >
                         <ChevronRight className="size-4" />
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost" className="size-8">
+                            <Button size="sm" variant="ghost" className="h-8 gap-1.5 px-2 text-xs" title="Kecepatan playback">
                                 <Gauge className="size-3.5" />
+                                {SPEED_LABELS[String(speed)]}
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="min-w-24">
