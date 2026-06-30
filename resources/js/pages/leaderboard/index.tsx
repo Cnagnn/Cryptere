@@ -709,16 +709,14 @@ function PodiumBlock({
         <div className="flex flex-col items-center">
             {/* Avatar on top of podium */}
             <div className="relative z-10 mb-[-1rem]">
-                <div className={cn(isChampion && 'rounded-full bg-linear-to-b from-amber-300 to-amber-500 p-[3px]')}>
-                    <Avatar className={cn(avatarSize, 'rounded-full shadow-lg')}>
-                        <AvatarImage src={entry.avatar || undefined}
-                            alt={entry.username ? `@${entry.username}` : entry.name}
-                            onError={(e) => (e.currentTarget.style.display = 'none')} />
-                        <AvatarFallback className={cn('font-bold', isChampion ? 'text-lg' : 'text-sm')}>
-                            {getInitials(entry.username ?? entry.name)}
-                        </AvatarFallback>
-                    </Avatar>
-                </div>
+                <Avatar className={cn(avatarSize, 'rounded-full shadow-lg')}>
+                    <AvatarImage src={entry.avatar || undefined}
+                        alt={entry.username ? `@${entry.username}` : entry.name}
+                        onError={(e) => (e.currentTarget.style.display = 'none')} />
+                    <AvatarFallback className={cn('font-bold', isChampion ? 'text-lg' : 'text-sm')}>
+                        {getInitials(entry.username ?? entry.name)}
+                    </AvatarFallback>
+                </Avatar>
                 {isChampion && (
                     <Crown className="absolute -top-3 left-1/2 -translate-x-1/2 size-5 text-amber-400 drop-shadow-md" />
                 )}
