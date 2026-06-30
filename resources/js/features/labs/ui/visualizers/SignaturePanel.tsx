@@ -1,204 +1,114 @@
 /**
- * SignaturePanel — RSA Digital Signature visualization
- *
- * Shows the signing or verification flow with SHA-256 hash,
- * modular exponentiation, and result validation.
+ * SignaturePanel — centered arrow flow: sign / verify.
  */
+import { cn } from '@/lib/utils';
 
-import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { hexToBytes } from '@/features/labs/algorithms/aes';
-import type { RsaSignatureTraceData } from '@/types/labs';
-
-interface SignaturePanelProps {
-    trace: RsaSignatureTraceData;
-    steps: string[];
-    learnerMode: 'pemula' | 'mahir';
-    mode: 'encrypt' | 'decrypt';
+interface Props {
+    trace: { digestHex: string; digestPrefix: string; signatureInt?: string; isValid?: boolean; explanationSteps: string[] };
+    steps: string[]; learnerMode: string; mode: 'encrypt' | 'decrypt';
 }
 
-export default function SignaturePanel({
-    trace,
-    learnerMode,
-    mode,
-}: SignaturePanelProps) {
-    const isSigning = mode === 'encrypt';
-    const digestBytes = hexToBytes(trace.digestHex);
+function Bx({ L, V, c }: { L: string; V: string; c: string }) {
+    return (
+        <div className={cn('rounded-xl border px-5 py-3 text-center min-w-[200px]', c)}>
+            <p className="text-[10px] font-bold text-muted-foreground">{L}</p>
+            <p className="font-mono text-[11px] font-semibold break-all leading-tight mt-1">{V}</p>
+        </div>
+    );
+}
 
-    if (isSigning) {
+function SN({ n }: { n: number }) {
+    return (
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">
+            {n}
+        </span>
+    );
+}
+
+function Dn() {
+ return <span className="text-2xl text-muted-foreground/20">↓</span>; 
+}
+
+export default function SignaturePanel({ trace, mode }: Props) {
+    if (mode === 'encrypt') {
+        const chunks = trace.digestHex.match(/.{1,8}/g) ?? [];
+        const sig = trace.signatureInt
+            ? trace.signatureInt.slice(0, 50) + (trace.signatureInt.length > 50 ? '…' : '')
+            : '';
+
         return (
-            <div className="space-y-4">
-                {/* Step 1: Message Hash */}
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                            <span className="size-5 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400">1</span>
-                            Hash SHA-256
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        <div className="rounded bg-muted/40 p-2 text-xs font-mono break-all">
-                            {trace.digestHex}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="rounded bg-muted/30 p-2">
-                                <span className="text-muted-foreground">Panjang: </span>
-                                <span className="font-mono">{trace.digestHex.length} karakter heksa</span>
-                            </div>
-                            <div className="rounded bg-muted/30 p-2">
-                                <span className="text-muted-foreground">Byte: </span>
-                                <span className="font-mono">{digestBytes.length} byte</span>
-                            </div>
-                        </div>
-                        {learnerMode === 'mahir' && (
-                            <p className="text-xs text-muted-foreground italic">
-                                SHA-256 menghasilkan hash dengan panjang tetap 256-bit (32 byte) dari masukan apa pun.
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
+            <div className="flex flex-col items-center gap-3">
+                <p className="text-xs font-semibold text-muted-foreground">Alur Penandatanganan</p>
 
-                {/* Step 2: Digest → Integer */}
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                            <span className="size-5 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-[10px] font-bold text-orange-600 dark:text-orange-400">2</span>
-                            Digest → Bilangan Bulat
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="rounded bg-orange-50 dark:bg-orange-950/30 p-3 text-sm font-mono break-all border border-orange-200 dark:border-orange-800">
-                            {trace.digestPrefix}
-                        </div>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                            Digest SHA-256 256-bit dikonversi menjadi bilangan bulat untuk penandatanganan RSA.
-                        </p>
-                    </CardContent>
-                </Card>
+                <div className="flex flex-col items-center gap-1">
+                    <SN n={1} />
+                    <Bx L="Pesan" V="input pengirim" c="bg-sky-50 border-sky-200 dark:bg-sky-950/20" />
+                </div>
 
-                {/* Step 3: Signing */}
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                            <span className="size-5 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-[10px] font-bold text-green-600 dark:text-green-400">3</span>
-                            Tanda Tangan Digital
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="rounded bg-green-50 dark:bg-green-950/30 p-3 border border-green-200 dark:border-green-800 space-y-2">
-                            <div className="text-xs">
-                                <span className="text-muted-foreground">digest </span>
-                                <span className="font-mono font-bold">^ d </span>
-                                <span className="text-muted-foreground">mod n</span>
-                            </div>
-                            <div className="text-xs font-mono text-muted-foreground">
-                                {trace.digestPrefix}... ^ d mod n
-                            </div>
-                        </div>
-                        {trace.signatureInt && (
-                            <>
-                                <Separator />
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground">Tanda tangan (bilangan bulat)</span>
-                                    <div className="rounded bg-muted/40 p-2 text-xs font-mono break-all">
-                                        {trace.signatureInt}
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground">Tanda tangan (heksa)</span>
-                                    <div className="rounded bg-muted/40 p-2 text-xs font-mono break-all">
-                                        0x{BigInt(trace.signatureInt).toString(16).toUpperCase()}
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                        {learnerMode === 'mahir' && (
-                            <p className="text-xs text-muted-foreground italic">
-                                Hanya pemegang kunci privat yang dapat menghitung tanda tangan = digest^d mod n.
-                                Siapa pun dengan kunci publik dapat memverifikasinya.
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
+                <Dn />
+
+                <div className="flex flex-col items-center gap-1">
+                    <SN n={2} />
+                    <Bx L="Hash SHA-256" V={chunks.slice(0, 4).join(' ') + (chunks.length > 4 ? ' …' : '')} c="bg-amber-50 border-amber-200 dark:bg-amber-950/20" />
+                </div>
+
+                <Dn />
+
+                <div className="flex flex-col items-center gap-1">
+                    <SN n={3} />
+                    <Bx L="Tandatangani" V={sig || 'digest^d mod n'} c="bg-rose-50 border-rose-200 dark:bg-rose-950/20" />
+                </div>
+
+                <Dn />
+
+                <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 px-6 py-3 text-center">
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Token Tanda Tangan</p>
+                </div>
             </div>
         );
     }
 
-    // Verification mode
+    /* Verify */
     return (
-        <div className="space-y-4">
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                        <span className="size-5 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400">1</span>
-                        Verifikasi Tanda Tangan
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="rounded bg-muted/40 p-3 text-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs text-muted-foreground">Digest yang diharapkan (SHA-256)</span>
-                            <Badge variant={trace.isValid ? 'default' : 'destructive'}>
-                                {trace.isValid ? 'VALID' : 'TIDAK VALID'}
-                            </Badge>
-                        </div>
-                        <div className="font-mono text-xs break-all">
-                            {trace.digestHex || '(tidak ada)'}
-                        </div>
-                        {trace.digestPrefix && (
-                            <div className="mt-2 text-xs text-muted-foreground">
-                                Awalan yang dibandingkan: <span className="font-mono">{trace.digestPrefix}</span>
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+        <div className="flex flex-col items-center gap-3">
+            <p className="text-xs font-semibold text-muted-foreground">Alur Verifikasi</p>
 
-            {trace.explanationSteps.length > 0 && (
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Langkah Verifikasi</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2">
-                            {trace.explanationSteps.map((step, i) => (
-                                <div key={i} className="flex gap-2 text-xs">
-                                    <span className="text-muted-foreground font-mono shrink-0">{i + 1}.</span>
-                                    <span className="text-muted-foreground font-mono">{step}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+            <div className="flex flex-col items-center gap-1">
+                <SN n={1} />
+                <Bx L="Pesan + Token" V="diterima" c="bg-sky-50 border-sky-200 dark:bg-sky-950/20" />
+            </div>
 
-            <Card className={trace.isValid ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800'}>
-                <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                        <span className="text-2xl">
-                            {trace.isValid ? '✅' : '❌'}
-                        </span>
-                        <div>
-                            <p className="text-sm font-medium">
-                                {trace.isValid
-                                    ? 'Tanda tangan autentik'
-                                    : 'Verifikasi tanda tangan gagal'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                {trace.isValid
-                                    ? 'Pesan bersifat autentik dan tidak diubah.'
-                                    : 'Tanda tangan tidak cocok — pesan mungkin diubah atau kunci yang salah digunakan.'}
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            <Dn />
+
+            <div className="flex items-start justify-center gap-4 flex-wrap">
+                <div className="flex flex-col items-center gap-1">
+                    <SN n={2} />
+                    <Bx L="Hash ulang" V="SHA-256(pesan)" c="bg-amber-50 border-amber-200 dark:bg-amber-950/20" />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                    <SN n={3} />
+                    <Bx L="Dekripsi token" V="token^e mod n" c="bg-rose-50 border-rose-200 dark:bg-rose-950/20" />
+                </div>
+            </div>
+
+            <Dn />
+
+            <div className="flex flex-col items-center gap-1">
+                <SN n={4} />
+                <div className={cn(
+                    'rounded-xl border-2 px-6 py-3 text-center',
+                    trace.isValid
+                        ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20'
+                        : 'border-red-300 bg-red-50 dark:bg-red-950/20',
+                )}>
+                    <p className={cn(
+                        'text-sm font-bold',
+                        trace.isValid ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400',
+                    )}>
+                        {trace.isValid ? 'Digest Cocok — VALID' : 'Digest Berbeda — TIDAK VALID'}
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }

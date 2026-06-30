@@ -1,265 +1,138 @@
 /**
- * AesPanel — AES round-by-round visualization
- *
- * Shows the 4×4 state matrix evolution across AES rounds,
- * with SubBytes, ShiftRows, MixColumns, AddRoundKey details.
+ * AesPanel — centered pipeline: plaintext → [4 ops] → ciphertext.
  */
-
-import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { AesTrace } from '@/types/labs';
 
-interface AesPanelProps {
-    trace: AesTrace;
-    steps: string[];
-    learnerMode: 'pemula' | 'mahir';
-    activeStep: number;
-    onStepChange?: (n: number) => void;
+interface AesRound {
+    roundIndex: number; stateBefore: number[]; afterSubBytes: number[];
+    afterShiftRows: number[]; afterMixColumns: number[]; afterAddRoundKey: number[];
+    roundKey?: number[];
 }
 
-function hexValue(value: number): string {
-    return value.toString(16).padStart(2, '0').toUpperCase();
+interface Props {
+    trace: { plaintext: number[]; rounds: AesRound[]; ciphertext: number[] };
+    steps: string[]; learnerMode: string; activeStep: number; onStepChange: (n: number) => void;
 }
 
-function StateMatrix({
-    state,
-    highlightIndices = [],
-    title,
-}: {
-    state: number[];
-    highlightIndices?: number[];
-    title?: string;
-}) {
-    // Column-major: state[0-3]=col0, state[4-7]=col1, etc.
-    const cols = [
-        state.slice(0, 4),
-        state.slice(4, 8),
-        state.slice(8, 12),
-        state.slice(12, 16),
-    ];
+function H(b: number) {
+ return b.toString(16).padStart(2, '0').toUpperCase(); 
+}
+
+function Mat({ bytes }: { bytes: number[] }) {
+    const idx = [0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15];
 
     return (
-        <div className="space-y-1">
-            {title && (
-                <h5 className="text-xs font-medium text-muted-foreground">{title}</h5>
-            )}
-            <div className="grid grid-cols-4 gap-0.5">
-                {cols.map((col, colIdx) =>
-                    col.map((byte, rowIdx) => {
-                        const idx = colIdx * 4 + rowIdx;
-                        const isHighlight = highlightIndices.includes(idx);
-
-                        return (
-                            <div
-                                key={`${colIdx}-${rowIdx}`}
-                                className={cn(
-                                    'flex flex-col items-center justify-center rounded border p-1 text-[10px]',
-                                    'min-w-10 min-h-10',
-                                    isHighlight
-                                        ? 'border-red-400 bg-red-50 dark:bg-red-950/50 ring-1 ring-red-400/50'
-                                        : 'border-muted bg-muted/20',
-                                )}
-                            >
-                                <span className="font-mono font-semibold text-foreground text-xs">
-                                    {byte}
-                                </span>
-                                <span className="font-mono text-[8px] text-muted-foreground">
-                                    0x{hexValue(byte)}
-                                </span>
-                            </div>
-                        );
-                    }),
-                )}
-            </div>
-            <div className="grid grid-cols-4 gap-0.5">
-                {[0, 1, 2, 3].map((col) => (
-                    <div key={col} className="flex justify-center text-[8px] text-muted-foreground">
-                        Kol {col}
-                    </div>
-                ))}
-            </div>
-        </div>
+        <span className="inline-grid grid-cols-4 gap-[2px]">
+            {idx.map((i) => (
+                <span key={i} className="flex h-7 w-10 items-center justify-center rounded border bg-background font-mono text-[11px] font-bold shadow-sm">
+                    {H(bytes[i])}
+                </span>
+            ))}
+        </span>
     );
 }
 
-export default function AesPanel({
-    trace,
-    learnerMode,
-    activeStep,
-    onStepChange,
-}: AesPanelProps) {
-    const rounds = trace.rounds;
-    const totalRounds = rounds.length;
+function StepNum({ n }: { n: number }) {
+    return (
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+            {n}
+        </span>
+    );
+}
 
-    // Map active step to a round index
-    // Step 0: initial state
-    // Steps 1-10: rounds 1-10
-    // Steps 11+: final state
-    let currentRoundIndex = -1;
-    let phase: 'initial' | 'round' | 'final' = 'initial';
-
-    if (activeStep === 0) {
-        phase = 'initial';
-    } else if (activeStep <= totalRounds) {
-        phase = 'round';
-        currentRoundIndex = activeStep - 1;
-    } else {
-        phase = 'final';
-    }
-
-    const currentRound = currentRoundIndex >= 0 ? rounds[currentRoundIndex] : null;
+export default function AesPanel({ trace, activeStep, onStepChange }: Props) {
+    const rounds = trace.rounds ?? [];
+    const round = rounds[activeStep];
+    const ctext = trace.ciphertext ?? [];
 
     return (
-        <div className="space-y-3 overflow-auto">
-            {/* Overview */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                        AES-128
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                        {totalRounds} putaran
-                    </span>
-                </div>
-                {currentRound && (
-                    <Badge variant="secondary" className="text-xs">
-                        Putaran {currentRound.roundIndex + 1}
-                    </Badge>
-                )}
+        <div className="space-y-4">
+            {/* Round selector — centered */}
+            <div className="flex flex-wrap justify-center gap-1">
+                {rounds.map((_, i) => (
+                    <Button key={i} size="sm" variant={activeStep === i ? 'default' : 'outline'}
+                        className={cn('h-6 px-2 text-[10px]', activeStep === i && 'ring-2 ring-primary/30')}
+                        onClick={() => onStepChange(i)}>
+                        R{i + 1}
+                    </Button>
+                ))}
             </div>
 
-            {/* State matrix visualization */}
-            {phase === 'initial' && (
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Matriks State Awal</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <StateMatrix state={trace.plaintext} title="Plaintext (sebelum AddRoundKey)" />
-                        {learnerMode === 'mahir' && (
-                            <p className="mt-2 text-xs text-muted-foreground italic">
-                                16 byte dimuat secara kolom-utama ke matriks 4×4.
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
+            {round && (
+                <div className="flex flex-col items-center gap-4">
+                    {/* Title */}
+                    <p className="text-xs font-semibold text-muted-foreground">
+                        Putaran {activeStep + 1} / {rounds.length}
+                        {activeStep === rounds.length - 1 ? ' · Final' : ''}
+                    </p>
 
-            {phase === 'round' && currentRound && (
-                <div className="space-y-3">
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">
-                                Putaran {currentRound.roundIndex + 1} — Evolusi State
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <StateMatrix
-                                state={currentRound.stateBefore}
-                                title="Sebelum Putaran"
-                            />
+                    {/* Pipeline: horizontal flow */}
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-4">
+                        {/* ① Plaintext */}
+                        <div className="flex flex-col items-center gap-1">
+                            <StepNum n={1} />
+                            <span className="text-[9px] text-muted-foreground">input state</span>
+                            <Mat bytes={round.stateBefore} />
+                        </div>
 
-                            <div className="text-center text-xs text-muted-foreground">↓</div>
+                        <span className="text-2xl text-muted-foreground/20 shrink-0 self-center">→</span>
 
-                            <StateMatrix
-                                state={currentRound.afterSubBytes}
-                                title="Setelah SubBytes (S-box)"
-                                highlightIndices={[]}
-                            />
+                        {/* ② SubBytes */}
+                        <div className="flex flex-col items-center gap-1">
+                            <StepNum n={2} />
+                            <span className="text-[9px] text-amber-600 font-semibold">SubBytes</span>
+                            <Mat bytes={round.afterSubBytes} />
+                        </div>
 
-                            <div className="text-center text-xs text-muted-foreground">↓</div>
+                        <span className="text-2xl text-muted-foreground/20 shrink-0 self-center">→</span>
 
-                            <StateMatrix
-                                state={currentRound.afterShiftRows}
-                                title="Setelah ShiftRows"
-                            />
+                        {/* ③ ShiftRows */}
+                        <div className="flex flex-col items-center gap-1">
+                            <StepNum n={3} />
+                            <span className="text-[9px] text-sky-600 font-semibold">ShiftRows</span>
+                            <Mat bytes={round.afterShiftRows} />
+                        </div>
 
-                            {currentRound.roundIndex < 9 && (
-                                <>
-                                    <div className="text-center text-xs text-muted-foreground">↓</div>
-                                    <StateMatrix
-                                        state={currentRound.afterMixColumns}
-                                        title="Setelah MixColumns (GF(2^8) × 4)"
-                                    />
-                                </>
-                            )}
+                        <span className="text-2xl text-muted-foreground/20 shrink-0 self-center">→</span>
 
-                            <div className="text-center text-xs text-muted-foreground">↓</div>
+                        {/* ④ MixColumns */}
+                        <div className="flex flex-col items-center gap-1">
+                            <StepNum n={4} />
+                            <span className="text-[9px] text-emerald-600 font-semibold">MixColumns</span>
+                            <Mat bytes={round.afterMixColumns} />
+                        </div>
 
-                            <StateMatrix
-                                state={currentRound.afterAddRoundKey}
-                                title={
-                                    currentRound.roundIndex < 9
-                                        ? 'Setelah AddRoundKey (round key dicampur)'
-                                        : 'Setelah AddRoundKey (putaran akhir — tanpa MixColumns)'
-                                }
-                            />
-                        </CardContent>
-                    </Card>
+                        <span className="text-2xl text-muted-foreground/20 shrink-0 self-center">→</span>
 
-                    {/* Operation summary for mahir */}
-                    {learnerMode === 'mahir' && (
-                        <Card className="border-blue-200 dark:border-blue-800">
-                            <CardContent className="p-3 space-y-1">
-                                <p className="text-xs font-medium">Operasi Putaran:</p>
-                                <ul className="text-xs text-muted-foreground space-y-0.5">
-                                    <li>• SubBytes: Setiap byte diganti melalui S-box (substitusi non-linear)</li>
-                                    <li>• ShiftRows: Baris dirotasi ke kiri (baris 0: 0, baris 1: 1, baris 2: 2, baris 3: 3)</li>
-                                    {currentRound.roundIndex < 9 && (
-                                        <li>• MixColumns: Setiap kolom dikalikan dalam GF(2^8) (pencampuran kolom)</li>
-                                    )}
-                                    <li>• AddRoundKey: XOR dengan round key (pencampuran bergantung kunci)</li>
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Round navigation dots */}
-                    <div className="flex justify-center gap-1 flex-wrap">
-                        {rounds.map((r, i) => (
-                            <button
-                                key={r.roundIndex}
-                                onClick={() => onStepChange?.(i + 1)}
-                                className={cn(
-                                    'size-2 rounded-full text-[8px] flex items-center justify-center transition-colors',
-                                    i === currentRoundIndex
-                                        ? 'bg-primary'
-                                        : 'bg-muted hover:bg-muted-foreground/30',
-                                )}
-                                title={`Putaran ${i + 1}`}
-                            />
-                        ))}
+                        {/* ⑤ AddRoundKey */}
+                        <div className="flex flex-col items-center gap-1">
+                            <StepNum n={5} />
+                            <span className="text-[9px] text-rose-600 font-semibold">AddRoundKey</span>
+                            <Mat bytes={round.afterAddRoundKey} />
+                        </div>
                     </div>
-                </div>
-            )}
 
-            {phase === 'final' && (
-                <Card className="border-green-200 dark:border-green-800">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Ciphertext (State Akhir)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <StateMatrix state={trace.ciphertext} title="Setelah semua putaran" />
-                        <div className="mt-2 rounded bg-green-50 dark:bg-green-950/30 p-2 text-xs">
-                            <span className="text-muted-foreground">Heksa: </span>
-                            <span className="font-mono font-medium">
-                                {trace.ciphertext.map(hexValue).join('')}
+                    {/* Round key display */}
+                    {round.roundKey && (
+                        <div className="flex flex-col items-center gap-1 rounded-xl border bg-muted/10 px-4 py-2">
+                            <span className="text-[9px] font-medium text-muted-foreground">
+                                Round Key {activeStep + 1}
+                            </span>
+                            <span className="font-mono text-[11px] tracking-wide">
+                                {round.roundKey.map(H).join(' ')}
                             </span>
                         </div>
-                        {learnerMode === 'mahir' && (
-                            <p className="mt-2 text-xs text-muted-foreground italic">
-                                Dekripsi AES membalik semua 10 putaran menggunakan operasi invers
-                                (InvShiftRows, InvSubBytes, InvAddRoundKey, InvMixColumns).
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
+                    )}
+
+                    {/* Last round → ciphertext */}
+                    {activeStep === rounds.length - 1 && (
+                        <div className="flex flex-col items-center gap-1 rounded-xl border-2 border-primary/20 bg-primary/5 px-6 py-3">
+                            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">Ciphertext</span>
+                            <span className="font-mono text-sm font-bold text-primary">{ctext.map(H).join(' ')}</span>
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );
