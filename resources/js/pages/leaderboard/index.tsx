@@ -710,7 +710,7 @@ function PodiumBlock({
             {/* Avatar on top of podium */}
             <div className="relative z-10 mb-[-1rem]">
                 <div className={cn(isChampion && 'rounded-full bg-linear-to-b from-amber-300 to-amber-500 p-[3px]')}>
-                    <Avatar className={cn(avatarSize, 'shadow-lg')}>
+                    <Avatar className={cn(avatarSize, 'rounded-full shadow-lg')}>
                         <AvatarImage src={entry.avatar || undefined}
                             alt={entry.username ? `@${entry.username}` : entry.name}
                             onError={(e) => (e.currentTarget.style.display = 'none')} />
