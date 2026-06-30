@@ -8,8 +8,8 @@
 import { useGSAP } from '@gsap/react';
 import { usePage } from '@inertiajs/react';
 import gsap from 'gsap';
-import { useRef  } from 'react';
-import type {ReactNode} from 'react';
+import { useRef } from 'react';
+import type { ReactNode } from 'react';
 
 export default function PageTransition({ children }: { children: ReactNode }) {
     const ref = useRef<HTMLDivElement | null>(null);

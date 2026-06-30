@@ -1,5 +1,6 @@
 import { createInertiaApp } from '@inertiajs/react';
 import * as Sentry from '@sentry/react';
+import PageTransition from '@/components/page-transition';
 import SmoothScroll from '@/components/smooth-scroll';
 import { DirectionProvider } from '@/components/ui/direction';
 import { Toaster } from '@/components/ui/sonner';
@@ -64,7 +65,7 @@ createInertiaApp({
                 <DirectionProvider dir="ltr">
                     <TooltipProvider delayDuration={0}>
                         <SmoothScroll>
-                            {app}
+                            <PageTransition>{app}</PageTransition>
                             <Toaster />
                         </SmoothScroll>
                     </TooltipProvider>

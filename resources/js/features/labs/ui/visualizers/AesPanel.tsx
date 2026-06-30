@@ -1,139 +1,152 @@
 /**
- * AesPanel — centered pipeline: plaintext → [4 ops] → ciphertext.
+ * AesPanel — shared-shell AES visualizer.
  */
 import { Button } from '@/components/ui/button';
+import VisualizerShell from '@/features/labs/visualizers/VisualizerShell';
 import { cn } from '@/lib/utils';
 
 interface AesRound {
-    roundIndex: number; stateBefore: number[]; afterSubBytes: number[];
-    afterShiftRows: number[]; afterMixColumns: number[]; afterAddRoundKey: number[];
+    roundIndex: number;
+    stateBefore: number[];
+    afterSubBytes: number[];
+    afterShiftRows: number[];
+    afterMixColumns: number[];
+    afterAddRoundKey: number[];
     roundKey?: number[];
 }
 
 interface Props {
     trace: { plaintext: number[]; rounds: AesRound[]; ciphertext: number[] };
-    steps: string[]; learnerMode: string; activeStep: number; onStepChange: (n: number) => void;
+    steps: string[];
+    learnerMode: string;
+    activeStep: number;
+    onStepChange: (n: number) => void;
 }
 
-function H(b: number) {
- return b.toString(16).padStart(2, '0').toUpperCase(); 
+function toHex(byte: number): string {
+    return byte.toString(16).padStart(2, '0').toUpperCase();
 }
 
-function Mat({ bytes }: { bytes: number[] }) {
-    const idx = [0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15];
+function Matrix({ bytes }: { bytes: number[] }) {
+    const order = [0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15];
 
     return (
-        <span className="inline-grid grid-cols-4 gap-[2px]">
-            {idx.map((i) => (
-                <span key={i} className="flex h-7 w-10 items-center justify-center rounded border bg-background font-mono text-[11px] font-bold shadow-sm">
-                    {H(bytes[i])}
+        <span className="inline-grid grid-cols-4 gap-1">
+            {order.map((index) => (
+                <span
+                    key={index}
+                    className="flex h-9 w-12 items-center justify-center rounded-md border bg-background font-mono text-xs font-bold shadow-sm"
+                >
+                    {toHex(bytes[index])}
                 </span>
             ))}
         </span>
     );
 }
 
-function StepNum({ n }: { n: number }) {
+function StepMarker({ value }: { value: number }) {
     return (
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-            {n}
+        <span className="flex h-7 w-7 items-center justify-center rounded-full border bg-background text-[11px] font-bold text-foreground">
+            {value}
         </span>
+    );
+}
+
+function ResultCard({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-lg border bg-muted/20 px-3 py-2">
+            <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                {label}
+            </p>
+            <p className="mt-1 font-mono text-[11px] text-foreground">
+                {value}
+            </p>
+        </div>
     );
 }
 
 export default function AesPanel({ trace, activeStep, onStepChange }: Props) {
     const rounds = trace.rounds ?? [];
     const round = rounds[activeStep];
-    const ctext = trace.ciphertext ?? [];
+    const ciphertext = trace.ciphertext ?? [];
 
-    return (
-        <div className="space-y-4">
-            {/* Round selector — centered */}
-            <div className="flex flex-wrap justify-center gap-1">
-                {rounds.map((_, i) => (
-                    <Button key={i} size="sm" variant={activeStep === i ? 'default' : 'outline'}
-                        className={cn('h-6 px-2 text-[10px]', activeStep === i && 'ring-2 ring-primary/30')}
-                        onClick={() => onStepChange(i)}>
-                        R{i + 1}
+    if (!round) {
+        return null;
+    }
+
+    const operations = [
+        { step: 1, label: 'Input', bytes: round.stateBefore },
+        { step: 2, label: 'SubBytes', bytes: round.afterSubBytes },
+        { step: 3, label: 'ShiftRows', bytes: round.afterShiftRows },
+        { step: 4, label: 'MixColumns', bytes: round.afterMixColumns },
+        { step: 5, label: 'AddRoundKey', bytes: round.afterAddRoundKey },
+    ];
+
+    const stage = (
+        <div className="flex w-full max-w-6xl flex-col items-center gap-5">
+            <div className="flex flex-wrap justify-center gap-2">
+                {rounds.map((_, index) => (
+                    <Button
+                        key={index}
+                        size="sm"
+                        variant={activeStep === index ? 'default' : 'outline'}
+                        className={cn(
+                            'h-7 px-3 text-[11px]',
+                            activeStep === index && 'ring-2 ring-foreground/15',
+                        )}
+                        onClick={() => onStepChange(index)}
+                    >
+                        R{index + 1}
                     </Button>
                 ))}
             </div>
 
-            {round && (
-                <div className="flex flex-col items-center gap-4">
-                    {/* Title */}
-                    <p className="text-xs font-semibold text-muted-foreground">
-                        Putaran {activeStep + 1} / {rounds.length}
-                        {activeStep === rounds.length - 1 ? ' · Final' : ''}
-                    </p>
-
-                    {/* Pipeline: horizontal flow */}
-                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-4">
-                        {/* ① Plaintext */}
-                        <div className="flex flex-col items-center gap-1">
-                            <StepNum n={1} />
-                            <span className="text-[9px] text-muted-foreground">input state</span>
-                            <Mat bytes={round.stateBefore} />
-                        </div>
-
-                        <span className="text-2xl text-muted-foreground/20 shrink-0 self-center">→</span>
-
-                        {/* ② SubBytes */}
-                        <div className="flex flex-col items-center gap-1">
-                            <StepNum n={2} />
-                            <span className="text-[9px] text-amber-600 font-semibold">SubBytes</span>
-                            <Mat bytes={round.afterSubBytes} />
-                        </div>
-
-                        <span className="text-2xl text-muted-foreground/20 shrink-0 self-center">→</span>
-
-                        {/* ③ ShiftRows */}
-                        <div className="flex flex-col items-center gap-1">
-                            <StepNum n={3} />
-                            <span className="text-[9px] text-sky-600 font-semibold">ShiftRows</span>
-                            <Mat bytes={round.afterShiftRows} />
-                        </div>
-
-                        <span className="text-2xl text-muted-foreground/20 shrink-0 self-center">→</span>
-
-                        {/* ④ MixColumns */}
-                        <div className="flex flex-col items-center gap-1">
-                            <StepNum n={4} />
-                            <span className="text-[9px] text-emerald-600 font-semibold">MixColumns</span>
-                            <Mat bytes={round.afterMixColumns} />
-                        </div>
-
-                        <span className="text-2xl text-muted-foreground/20 shrink-0 self-center">→</span>
-
-                        {/* ⑤ AddRoundKey */}
-                        <div className="flex flex-col items-center gap-1">
-                            <StepNum n={5} />
-                            <span className="text-[9px] text-rose-600 font-semibold">AddRoundKey</span>
-                            <Mat bytes={round.afterAddRoundKey} />
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-5">
+                {operations.map((operation, index) => (
+                    <div key={operation.label} className="contents">
+                        {index > 0 && (
+                            <span className="text-2xl text-muted-foreground/20">
+                                -&gt;
+                            </span>
+                        )}
+                        <div className="flex flex-col items-center gap-2">
+                            <StepMarker value={operation.step} />
+                            <span className="text-[10px] font-semibold text-foreground">
+                                {operation.label}
+                            </span>
+                            <Matrix bytes={operation.bytes} />
                         </div>
                     </div>
-
-                    {/* Round key display */}
-                    {round.roundKey && (
-                        <div className="flex flex-col items-center gap-1 rounded-xl border bg-muted/10 px-4 py-2">
-                            <span className="text-[9px] font-medium text-muted-foreground">
-                                Round Key {activeStep + 1}
-                            </span>
-                            <span className="font-mono text-[11px] tracking-wide">
-                                {round.roundKey.map(H).join(' ')}
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Last round → ciphertext */}
-                    {activeStep === rounds.length - 1 && (
-                        <div className="flex flex-col items-center gap-1 rounded-xl border-2 border-primary/20 bg-primary/5 px-6 py-3">
-                            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">Ciphertext</span>
-                            <span className="font-mono text-sm font-bold text-primary">{ctext.map(H).join(' ')}</span>
-                        </div>
-                    )}
-                </div>
-            )}
+                ))}
+            </div>
         </div>
+    );
+
+    const detail = (
+        <div className="flex flex-col gap-3 text-xs">
+            <ResultCard
+                label="Putaran"
+                value={`${activeStep + 1} / ${rounds.length}${activeStep === rounds.length - 1 ? ' · final' : ''}`}
+            />
+            {round.roundKey && (
+                <ResultCard
+                    label="Round Key"
+                    value={round.roundKey.map(toHex).join(' ')}
+                />
+            )}
+            <ResultCard
+                label="Ciphertext"
+                value={ciphertext.map(toHex).join(' ')}
+            />
+        </div>
+    );
+
+    return (
+        <VisualizerShell
+            step={activeStep}
+            caption="AES divisualisasikan sebagai alur state per putaran agar transformasi byte lebih mudah diikuti."
+            stage={stage}
+            detail={detail}
+        />
     );
 }

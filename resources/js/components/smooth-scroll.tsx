@@ -9,8 +9,8 @@
  * upgrade: switch to context provider when nested scroll containers needed.
  */
 import { ReactLenis, useLenis } from 'lenis/react';
-import { useEffect  } from 'react';
-import type {ReactNode} from 'react';
+import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 
 function LenisGsapBridge() {

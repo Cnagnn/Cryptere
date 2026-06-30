@@ -1,114 +1,122 @@
 /**
- * SignaturePanel — centered arrow flow: sign / verify.
+ * SignaturePanel — shared-shell signature visualizer.
  */
+import VisualizerShell from '@/features/labs/visualizers/VisualizerShell';
 import { cn } from '@/lib/utils';
 
 interface Props {
-    trace: { digestHex: string; digestPrefix: string; signatureInt?: string; isValid?: boolean; explanationSteps: string[] };
-    steps: string[]; learnerMode: string; mode: 'encrypt' | 'decrypt';
+    trace: {
+        digestHex: string;
+        digestPrefix: string;
+        signatureInt?: string;
+        isValid?: boolean;
+        explanationSteps: string[];
+    };
+    steps: string[];
+    learnerMode: string;
+    mode: 'encrypt' | 'decrypt';
 }
 
-function Bx({ L, V, c }: { L: string; V: string; c: string }) {
+function FlowCard({
+    label,
+    value,
+    muted = false,
+}: {
+    label: string;
+    value: string;
+    muted?: boolean;
+}) {
     return (
-        <div className={cn('rounded-xl border px-5 py-3 text-center min-w-[200px]', c)}>
-            <p className="text-[10px] font-bold text-muted-foreground">{L}</p>
-            <p className="font-mono text-[11px] font-semibold break-all leading-tight mt-1">{V}</p>
+        <div
+            className={cn(
+                'min-w-[240px] rounded-xl border px-6 py-4 text-center',
+                muted ? 'bg-muted/20' : 'bg-background',
+            )}
+        >
+            <p className="text-[10px] font-bold text-muted-foreground">
+                {label}
+            </p>
+            <p className="mt-1 font-mono text-[11px] leading-tight font-semibold break-all">
+                {value}
+            </p>
         </div>
     );
 }
 
-function SN({ n }: { n: number }) {
+function DetailCard({ label, value }: { label: string; value: string }) {
     return (
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">
-            {n}
-        </span>
+        <div className="rounded-lg border bg-muted/20 px-3 py-2">
+            <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                {label}
+            </p>
+            <p className="mt-1 font-mono text-[11px] break-all text-foreground">
+                {value}
+            </p>
+        </div>
     );
-}
-
-function Dn() {
- return <span className="text-2xl text-muted-foreground/20">↓</span>; 
 }
 
 export default function SignaturePanel({ trace, mode }: Props) {
-    if (mode === 'encrypt') {
-        const chunks = trace.digestHex.match(/.{1,8}/g) ?? [];
-        const sig = trace.signatureInt
-            ? trace.signatureInt.slice(0, 50) + (trace.signatureInt.length > 50 ? '…' : '')
-            : '';
+    const signaturePreview = trace.signatureInt
+        ? `${trace.signatureInt.slice(0, 50)}${trace.signatureInt.length > 50 ? '...' : ''}`
+        : 'digest^d mod n';
 
-        return (
-            <div className="flex flex-col items-center gap-3">
-                <p className="text-xs font-semibold text-muted-foreground">Alur Penandatanganan</p>
-
-                <div className="flex flex-col items-center gap-1">
-                    <SN n={1} />
-                    <Bx L="Pesan" V="input pengirim" c="bg-sky-50 border-sky-200 dark:bg-sky-950/20" />
-                </div>
-
-                <Dn />
-
-                <div className="flex flex-col items-center gap-1">
-                    <SN n={2} />
-                    <Bx L="Hash SHA-256" V={chunks.slice(0, 4).join(' ') + (chunks.length > 4 ? ' …' : '')} c="bg-amber-50 border-amber-200 dark:bg-amber-950/20" />
-                </div>
-
-                <Dn />
-
-                <div className="flex flex-col items-center gap-1">
-                    <SN n={3} />
-                    <Bx L="Tandatangani" V={sig || 'digest^d mod n'} c="bg-rose-50 border-rose-200 dark:bg-rose-950/20" />
-                </div>
-
-                <Dn />
-
-                <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 px-6 py-3 text-center">
-                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Token Tanda Tangan</p>
-                </div>
+    const stage =
+        mode === 'encrypt' ? (
+            <div className="flex w-full max-w-6xl flex-wrap items-center justify-center gap-4">
+                <FlowCard label="Pesan" value="input pengirim" muted />
+                <span className="text-2xl text-muted-foreground/20">-&gt;</span>
+                <FlowCard
+                    label="Hash SHA-256"
+                    value={trace.digestHex.slice(0, 32)}
+                />
+                <span className="text-2xl text-muted-foreground/20">-&gt;</span>
+                <FlowCard label="Tandatangani" value={signaturePreview} muted />
+                <span className="text-2xl text-muted-foreground/20">-&gt;</span>
+                <FlowCard label="Token" value="signature token" />
+            </div>
+        ) : (
+            <div className="flex w-full max-w-6xl flex-wrap items-center justify-center gap-4">
+                <FlowCard label="Pesan + Token" value="diterima" muted />
+                <span className="text-2xl text-muted-foreground/20">-&gt;</span>
+                <FlowCard label="Hash ulang" value="SHA-256(pesan)" />
+                <span className="text-2xl text-muted-foreground/20">-&gt;</span>
+                <FlowCard label="Dekripsi token" value="token^e mod n" muted />
+                <span className="text-2xl text-muted-foreground/20">-&gt;</span>
+                <FlowCard
+                    label="Hasil"
+                    value={
+                        trace.isValid
+                            ? 'Digest Cocok - VALID'
+                            : 'Digest Berbeda - TIDAK VALID'
+                    }
+                />
             </div>
         );
-    }
 
-    /* Verify */
-    return (
-        <div className="flex flex-col items-center gap-3">
-            <p className="text-xs font-semibold text-muted-foreground">Alur Verifikasi</p>
-
-            <div className="flex flex-col items-center gap-1">
-                <SN n={1} />
-                <Bx L="Pesan + Token" V="diterima" c="bg-sky-50 border-sky-200 dark:bg-sky-950/20" />
-            </div>
-
-            <Dn />
-
-            <div className="flex items-start justify-center gap-4 flex-wrap">
-                <div className="flex flex-col items-center gap-1">
-                    <SN n={2} />
-                    <Bx L="Hash ulang" V="SHA-256(pesan)" c="bg-amber-50 border-amber-200 dark:bg-amber-950/20" />
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                    <SN n={3} />
-                    <Bx L="Dekripsi token" V="token^e mod n" c="bg-rose-50 border-rose-200 dark:bg-rose-950/20" />
-                </div>
-            </div>
-
-            <Dn />
-
-            <div className="flex flex-col items-center gap-1">
-                <SN n={4} />
-                <div className={cn(
-                    'rounded-xl border-2 px-6 py-3 text-center',
-                    trace.isValid
-                        ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20'
-                        : 'border-red-300 bg-red-50 dark:bg-red-950/20',
-                )}>
-                    <p className={cn(
-                        'text-sm font-bold',
-                        trace.isValid ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400',
-                    )}>
-                        {trace.isValid ? 'Digest Cocok — VALID' : 'Digest Berbeda — TIDAK VALID'}
-                    </p>
-                </div>
-            </div>
+    const detail = (
+        <div className="flex flex-col gap-3 text-xs">
+            <DetailCard label="Digest" value={trace.digestHex} />
+            {trace.signatureInt && (
+                <DetailCard label="Token" value={trace.signatureInt} />
+            )}
+            <DetailCard
+                label="Status"
+                value={trace.isValid ? 'VALID' : 'MENUNGGU / TIDAK VALID'}
+            />
         </div>
+    );
+
+    return (
+        <VisualizerShell
+            step={mode === 'encrypt' ? 0 : 1}
+            caption={
+                mode === 'encrypt'
+                    ? 'Tanda tangan digital divisualisasikan sebagai alur pesan -> hash -> penandatanganan -> token hasil.'
+                    : 'Verifikasi divisualisasikan sebagai alur pesan + token -> hash ulang -> dekripsi token -> hasil validasi.'
+            }
+            stage={stage}
+            detail={detail}
+        />
     );
 }
