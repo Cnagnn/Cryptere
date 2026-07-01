@@ -1,1 +1,0 @@
-import{aO as r,ak as e}from"./app-wZDDr85o.js";import{ac as i}from"./ui-vendor-C9R2O0JU.js";function o({className:a,...s}){return r.jsx(i,{"data-slot":"spinner",role:"status","aria-label":"Loading",className:e("size-4 animate-spin",a),...s})}export{o as S};
