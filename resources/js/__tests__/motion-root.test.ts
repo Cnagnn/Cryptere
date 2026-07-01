@@ -29,5 +29,7 @@ describe('global motion root', () => {
         expect(smoothScroll).toContain('gsap.ticker.add');
         expect(pageTransition).toContain("from '@gsap/react'");
         expect(pageTransition).toContain("from 'gsap'");
+        expect(pageTransition).not.toContain("from '@inertiajs/react'");
+        expect(pageTransition).not.toContain('usePage');
     });
 });
