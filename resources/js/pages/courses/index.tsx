@@ -47,7 +47,7 @@ import type {
     SortValue,
 } from '@/types/courses';
 
-const COURSES_PER_PAGE = 4;
+const COURSES_PER_PAGE = 6;
 
 /* ── Course Thumbnail ── */
 function CourseThumbnail({
@@ -1097,4 +1097,3 @@ export default function CoursesIndex({
         </>
     );
 }
-
