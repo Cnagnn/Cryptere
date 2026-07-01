@@ -37,3 +37,15 @@ describe('app sidebar account links', () => {
         expect(sidebarHeader).not.toContain('Connected Accounts');
     });
 });
+
+describe('app sidebar mobile navigation', () => {
+    it('closes the mobile sidebar when a navigation link is clicked', () => {
+        const sidebar = readFileSync(
+            resolve(process.cwd(), 'resources/js/components/app-sidebar.tsx'),
+            'utf8',
+        );
+
+        expect(sidebar).toContain('setOpenMobile(false)');
+        expect(sidebar).toContain('onClick={closeMobileSidebar}');
+    });
+});

@@ -120,6 +120,8 @@ function submitPostForm(action: string): void {
 
 export function UserMenuContent({ user }: { user: UserType }) {
     const urls = useAppUrls();
+    const { setOpenMobile } = useSidebar();
+    const closeMobileSidebar = () => setOpenMobile(false);
 
     const handleLogout = () => {
         submitPostForm(urls.logout);
@@ -181,6 +183,7 @@ export function UserMenuContent({ user }: { user: UserType }) {
                         href={profileShow.url({
                             user: user.username ?? String(user.id),
                         })}
+                        onClick={closeMobileSidebar}
                     >
                         <User className="mr-2 size-4" />
                         <span>Profile</span>
@@ -191,6 +194,7 @@ export function UserMenuContent({ user }: { user: UserType }) {
                         href={profileSettings.url({
                             user: user.username ?? String(user.id),
                         })}
+                        onClick={closeMobileSidebar}
                     >
                         <Settings className="mr-2 size-4" />
                         <span>Account settings</span>
@@ -211,8 +215,9 @@ export function AppSidebar() {
     const { auth } = page.props;
     const user = auth?.user;
     const { isCurrentUrl } = useCurrentUrl();
-    const { state } = useSidebar();
+    const { state, setOpenMobile } = useSidebar();
     const isCollapsed = state === 'collapsed';
+    const closeMobileSidebar = () => setOpenMobile(false);
 
     const isCourseManagementPage =
         isCurrentUrl(adminCoursesIndex(), undefined, true) ||
@@ -234,7 +239,11 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link
+                                href={dashboard()}
+                                onClick={closeMobileSidebar}
+                                prefetch
+                            >
                                 <div className="flex w-full justify-center">
                                     <img
                                         src="/images/Logo/Logomark-Black.svg"
@@ -293,7 +302,11 @@ export function AppSidebar() {
                                             asChild
                                             isActive={isCurrentUrl(item.href)}
                                         >
-                                            <Link href={item.href} prefetch>
+                                            <Link
+                                                href={item.href}
+                                                onClick={closeMobileSidebar}
+                                                prefetch
+                                            >
                                                 {item.icon && <item.icon />}
                                                 <span>{item.title}</span>
                                             </Link>
@@ -347,6 +360,9 @@ export function AppSidebar() {
                                                                     },
                                                                 },
                                                             )}
+                                                            onClick={
+                                                                closeMobileSidebar
+                                                            }
                                                             prefetch
                                                         >
                                                             <span>Courses</span>
@@ -369,6 +385,9 @@ export function AppSidebar() {
                                                                     },
                                                                 },
                                                             )}
+                                                            onClick={
+                                                                closeMobileSidebar
+                                                            }
                                                             prefetch
                                                         >
                                                             <span>
@@ -386,6 +405,9 @@ export function AppSidebar() {
                                                     >
                                                         <Link
                                                             href={adminQuestionBankIndex.url()}
+                                                            onClick={
+                                                                closeMobileSidebar
+                                                            }
                                                             prefetch
                                                         >
                                                             <span>
@@ -406,7 +428,11 @@ export function AppSidebar() {
                                             isActive={isCurrentUrl(item.href)}
                                             tooltip={{ children: item.title }}
                                         >
-                                            <Link href={item.href} prefetch>
+                                            <Link
+                                                href={item.href}
+                                                onClick={closeMobileSidebar}
+                                                prefetch
+                                            >
                                                 {item.icon && <item.icon />}
                                                 <span>{item.title}</span>
                                             </Link>
